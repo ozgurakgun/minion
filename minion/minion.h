@@ -54,6 +54,9 @@
 #include "tuple_container.h"
 
 #include "playing/backtrackable_monotonic_set.h"
+// Following ghastly code by IPG to avoid understanding boolean containers 
+VARDEF(BacktrackableMonotonicSet* hack_bms);
+
 
 /** @brief Represents a change in domain. 
  *
