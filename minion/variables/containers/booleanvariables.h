@@ -31,6 +31,7 @@ struct BoolVarRef_internal
 {
   static const bool isBool = true;
   static const BoundType isBoundConst = Bound_No;
+
   
   bool isBound()
   { return false;}
@@ -38,13 +39,14 @@ struct BoolVarRef_internal
   data_type shift_offset;
   unsigned data_offset;
   unsigned var_num;
-  VirtualBackTrackOffset data_position;
+  // VirtualBackTrackOffset data_position;
   VirtualMemOffset value_position;
   
   BoolVarRef_internal(int value, BooleanContainer* b_con);
   
   BoolVarRef_internal(const BoolVarRef_internal& b) :
-    shift_offset(b.shift_offset), data_offset(b.data_offset), var_num(b.var_num), data_position(b.data_position),
+    //shift_offset(b.shift_offset), data_offset(b.data_offset), var_num(b.var_num), data_position(b.data_position),
+    shift_offset(b.shift_offset), data_offset(b.data_offset), var_num(b.var_num), 
     value_position(b.value_position)
   {}
   
@@ -53,14 +55,16 @@ struct BoolVarRef_internal
     D_DATA(shift_offset = data_offset = var_num = ~1); 
   }
   
-  data_type& assign_ptr() const
+  /*
+   data_type& assign_ptr() const
   { return *static_cast<data_type*>(data_position.get_ptr()); }
-  
+  */
+   
   data_type& value_ptr() const
   { return *static_cast<data_type*>(value_position.get_ptr()); }
   
   bool isAssigned() const
-  { return (bool)(assign_ptr() & shift_offset); }
+  { return !(hack_bms->isMember(var_num)); }
   
   int getAssignedValue() const
   {
@@ -102,16 +106,18 @@ struct BoolVarRef_internal
 };
 
 struct GetBooleanContainer;
-typedef QuickVarRefType<GetBooleanContainer, BoolVarRef_internal> BoolVarRef;
+ typedef QuickVarRefType<GetBooleanContainer, BoolVarRef_internal> BoolVarRef;
 
 /// Container for boolean variables
 struct BooleanContainer
 {
   static const int width = 7;
-  BackTrackOffset assign_offset;
+  // BackTrackOffset assign_offset;
   MemOffset values_mem;
   unsigned var_count_m;
   TriggerList trigger_list;
+
+
   /// When false, no variable can be altered. When true, no variables can be created.
   bool lock_m;
   
@@ -121,11 +127,11 @@ struct BooleanContainer
   const data_type* value_ptr() const
   { return static_cast<const data_type*>(values_mem.get_ptr()); }
   
-  data_type* assign_ptr()
-  { return static_cast<data_type*>(assign_offset.get_ptr()); }
+  // data_type* assign_ptr()
+  // { return static_cast<data_type*>(assign_offset.get_ptr()); }
   
-  const data_type* assign_ptr() const
-  { return static_cast<const data_type*>(assign_offset.get_ptr()); }
+ //  const data_type* assign_ptr() const
+  // { return static_cast<const data_type*>(assign_offset.get_ptr()); }
   
   void lock()
   { 
@@ -133,7 +139,10 @@ struct BooleanContainer
     lock_m = true;
     // The "+sizeof(data_type)" is because I can't be bothered to think about endian issues.
 	// It's only a single int overhead, so I won't worry.
-    assign_offset.request_bytes((var_count_m) + sizeof(data_type));
+    // assign_offset.request_bytes((var_count_m) + sizeof(data_type));
+    
+    hack_bms = new BacktrackableMonotonicSet(var_count_m);
+
     values_mem.request_bytes((var_count_m) + sizeof(data_type));
 	// Min domain value = 0, max domain val = 1.
     trigger_list.lock(var_count_m, 0, 1);
@@ -147,6 +156,7 @@ struct BooleanContainer
   
   /// Returns a reference to the ith Boolean variable which was previously created.
   BoolVarRef get_var_num(int i);
+
   
   
   void setMax(const BoolVarRef_internal& d, int i) 
@@ -195,7 +205,8 @@ struct BooleanContainer
 	  Controller::fail();
 	  return;
 	}
-    assign_ptr()[d.data_offset] |= d.shift_offset;
+    hack_bms->remove(d.var_num);
+    // assign_ptr()[d.data_offset] |= d.shift_offset;
     trigger_list.push_domain(d.var_num);
     trigger_list.push_assign(d.var_num, b);
 	trigger_list.push_domain_removal(d.var_num, 1 - b);
@@ -281,7 +292,7 @@ inline BoolVarRef BooleanContainer::get_var_num(int i)
 
 inline BoolVarRef_internal::BoolVarRef_internal(int value, BooleanContainer* b_con) : 
   data_offset(value / (sizeof(data_type)*8)), var_num(value),  
-  data_position(b_con->assign_offset, data_offset*sizeof(data_type)),
+  // data_position(b_con->assign_offset, data_offset*sizeof(data_type)),
   value_position(b_con->values_mem, data_offset*sizeof(data_type))
 { shift_offset = one << (value % (sizeof(data_type)*8)); }
 
