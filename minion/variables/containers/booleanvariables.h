@@ -130,7 +130,7 @@ struct BooleanContainer
     D_ASSERT(!lock_m);
     lock_m = true;
     
-    hack_bms = new BacktrackableMonotonicSet(2*var_count_m);
+    hack_bms = new MonotonicSet(2*var_count_m);
 
 	// Min domain value = 0, max domain val = 1.
     trigger_list.lock(var_count_m, 0, 1);
