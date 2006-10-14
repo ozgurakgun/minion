@@ -42,7 +42,7 @@ struct BigRangeVarContainer {
   static const d_type one = static_cast<d_type>(1);
   BackTrackOffset bound_data;
   // MemOffset bms_pointers;
-  BacktrackableMonotonicSet* bms_array;
+  MonotonicSet* bms_array;
   TriggerList trigger_list;
 
   
@@ -61,10 +61,6 @@ struct BigRangeVarContainer {
   }
   
   
-  /* 
-   * BacktrackableMonotonicSet*& bms_pointer(BigRangeVarRef_internal i)
-  { return static_cast<BacktrackableMonotonicSet**>(bms_pointers.get_ptr())[i.var_num]; }
-  */
 
   domain_bound_type& lower_bound(BigRangeVarRef_internal i) const
   { return static_cast<domain_bound_type*>(bound_data.get_ptr())[i.var_num*2]; }
@@ -141,11 +137,8 @@ struct BigRangeVarContainer {
     D_ASSERT(!lock_m);
     lock_m = true;
     bound_data.request_bytes(var_count_m * 2 * sizeof(domain_bound_type));
-   // bms_array = new BacktrackableMonotonicSet*[var_count_m];
-    bms_array = new BacktrackableMonotonicSet(var_offset.back());
-    //bms_pointers.request_bytes(var_count_m * sizeof(BacktrackableMonotonicSet*));
+    bms_array = new MonotonicSet(var_offset.back());
     domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_ptr());
-    // BacktrackableMonotonicSet** bms_ptr = static_cast<BacktrackableMonotonicSet**>(bms_pointers.get_ptr());
     for(unsigned int i = 0; i < var_count_m; ++i)
     {
       bound_ptr[2*i] = initial_bounds[i].first;
@@ -153,9 +146,6 @@ struct BigRangeVarContainer {
 #ifdef DEBUG 
   cout << "About to create new BMS " << endl;
 #endif
-      //bms_ptr[i] = new BacktrackableMonotonicSet( 
-     // bms_array[i] = new BacktrackableMonotonicSet( 
-       //                 initial_bounds[i].second-initial_bounds[i].first + 1);
     }
     
 	int min_domain_val = 0;

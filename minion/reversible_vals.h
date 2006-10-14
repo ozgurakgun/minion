@@ -40,6 +40,12 @@ public:
       return --(*int_ptr)  ;
 }
 
+  int increment()
+{
+      int* int_ptr = (int*)(backtrack_ptr.get_ptr());
+      return ++(*int_ptr)  ;
+}
+
 
 
 ReversibleInt()
