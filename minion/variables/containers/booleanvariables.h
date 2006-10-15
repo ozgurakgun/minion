@@ -17,7 +17,7 @@
 */
 
 
-// Subversion Identity $Id:$
+
 
 /// Standard data type used for storing compressed booleans 
 typedef unsigned long data_type;
@@ -36,73 +36,68 @@ struct BoolVarRef_internal
   bool isBound()
   { return false;}
   
+  data_type shift_offset;
+  unsigned data_offset;
   unsigned var_num;
-  unsigned twice_var_num;
+  // VirtualBackTrackOffset data_position;
+  VirtualMemOffset value_position;
   
   BoolVarRef_internal(int value, BooleanContainer* b_con);
   
   BoolVarRef_internal(const BoolVarRef_internal& b) :
-    var_num(b.var_num), 
-    twice_var_num(b.twice_var_num)
+    //shift_offset(b.shift_offset), data_offset(b.data_offset), var_num(b.var_num), data_position(b.data_position),
+    shift_offset(b.shift_offset), data_offset(b.data_offset), var_num(b.var_num), 
+    value_position(b.value_position)
   {}
   
   BoolVarRef_internal()
   { 
-    D_DATA(var_num = twice_var_num = ~1); 
+    D_DATA(shift_offset = data_offset = var_num = ~1); 
   }
   
-
-  bool inDomain_noBoundCheck(int b) const
-  {
-    D_ASSERT(b == 0 || b == 1);
-    return hack_bms->isMember(twice_var_num+b);
-  }
+  /*
+   data_type& assign_ptr() const
+  { return *static_cast<data_type*>(data_position.get_ptr()); }
+  */
    
-  bool isAssigned() const               
-  { return (!inDomain_noBoundCheck(0) || !inDomain_noBoundCheck(1)) ; }
-
-
+  data_type& value_ptr() const
+  { return *static_cast<data_type*>(value_position.get_ptr()); }
+  
+  bool isAssigned() const
+  { return !(hack_bms->isMember(var_num)); }
   
   int getAssignedValue() const
   {
-    // possibly trying to be too clever here since this returns int
-    // Idea is that (since we assume var is assigned) it's value is 1 iff 1 is in 
-    //   the domain, else 0.
     D_ASSERT(isAssigned());
-    //return (int)inDomain_noBoundCheck(1);
-    if (inDomain_noBoundCheck(1)) {return 1;}
-    return 0;
+    return (bool)(value_ptr() & shift_offset);
   }
   
   bool inDomain(int b) const
   {
-    if(b < 0 || b > 1) return false;
-    return inDomain_noBoundCheck(b);
+    if(b < 0 || b > 1) 
+	  return false;
+    return (!isAssigned()) || (b == getAssignedValue());
   }
   
+  bool inDomain_noBoundCheck(int b) const
+  {
+    D_ASSERT(b == 0 || b == 1);
+	return (!isAssigned()) || (b == getAssignedValue());
+  }
   
   int getMin() const
   {
-    // possibly trying to be too clever again since this returns int
-    // Idea is that min is 0 iff 0 is in the domain
-    // Assumes it is ok to return 1 even if 1 is not in the domain in case of 
-    // domain wipe out, since failure should occur for other reasons.
-
-    if (inDomain_noBoundCheck(0)) {return 0;}
-    return 1;
-    // Could put ASSERT here that 1 is in the domain if we return 1, but don't want 
-    // to since it could happen legally I think.
+    if(!isAssigned()) return 0;
+    return getAssignedValue();
   }
   
   int getMax() const
-    // see comments for getMin
   {
-    //return (int)inDomain_noBoundCheck(1);
-    if (inDomain_noBoundCheck(1)) {return 1;}
-    return 0;
+    if(!isAssigned()) return 1;
+    return getAssignedValue();
   }
  
-  int getInitialMin() const
+   int getInitialMin() const
   { return 0; }
   
   int getInitialMax() const
@@ -117,6 +112,8 @@ struct GetBooleanContainer;
 struct BooleanContainer
 {
   static const int width = 7;
+  // BackTrackOffset assign_offset;
+  MemOffset values_mem;
   unsigned var_count_m;
   TriggerList trigger_list;
 
@@ -124,14 +121,29 @@ struct BooleanContainer
   /// When false, no variable can be altered. When true, no variables can be created.
   bool lock_m;
   
+  data_type* value_ptr()
+  { return static_cast<data_type*>(values_mem.get_ptr()); }
+  
+  const data_type* value_ptr() const
+  { return static_cast<const data_type*>(values_mem.get_ptr()); }
+  
+  // data_type* assign_ptr()
+  // { return static_cast<data_type*>(assign_offset.get_ptr()); }
+  
+ //  const data_type* assign_ptr() const
+  // { return static_cast<const data_type*>(assign_offset.get_ptr()); }
   
   void lock()
   { 
     D_ASSERT(!lock_m);
     lock_m = true;
+    // The "+sizeof(data_type)" is because I can't be bothered to think about endian issues.
+	// It's only a single int overhead, so I won't worry.
+    // assign_offset.request_bytes((var_count_m) + sizeof(data_type));
     
-    hack_bms = new MonotonicSet(2*var_count_m);
+    hack_bms = new MonotonicSet(var_count_m);
 
+    values_mem.request_bytes((var_count_m) + sizeof(data_type));
 	// Min domain value = 0, max domain val = 1.
     trigger_list.lock(var_count_m, 0, 1);
   }
@@ -156,7 +168,7 @@ struct BooleanContainer
 	}
 
     D_ASSERT(i >= 0);
-      if(i==0)
+	if(i==0)
       propogateAssign(d,0);
   }
   
@@ -186,25 +198,28 @@ struct BooleanContainer
   
   void uncheckedAssign(const BoolVarRef_internal& d, int b)
   {
-    D_ASSERT(lock_m && d.var_num < var_count_m && d.twice_var_num == 2*d.var_num);
+    D_ASSERT(lock_m && d.var_num < var_count_m);
     D_ASSERT(!d.isAssigned());
-    if(b!=0 && b!=1)
+	if(b!=0 && b!=1)
     {
 	  Controller::fail();
 	  return;
-    }
-    hack_bms->remove(d.twice_var_num+1-b);
+	}
+    hack_bms->remove(d.var_num);
+    // assign_ptr()[d.data_offset] |= d.shift_offset;
     trigger_list.push_domain(d.var_num);
     trigger_list.push_assign(d.var_num, b);
-    trigger_list.push_domain_removal(d.var_num, 1 - b);
+	trigger_list.push_domain_removal(d.var_num, 1 - b);
     
     if(b)
     {
       trigger_list.push_lower(d.var_num, 1);
+      value_ptr()[d.data_offset] |= d.shift_offset;
     }
     else
     {
       trigger_list.push_upper(d.var_num, 1);
+      value_ptr()[d.data_offset] &= ~d.shift_offset;
     }
   }
   
@@ -276,8 +291,8 @@ inline BoolVarRef BooleanContainer::get_var_num(int i)
 }
 
 inline BoolVarRef_internal::BoolVarRef_internal(int value, BooleanContainer* b_con) : 
-  var_num(value)  
-{ 
-  twice_var_num = 2*var_num;
-}
+  data_offset(value / (sizeof(data_type)*8)), var_num(value),  
+  // data_position(b_con->assign_offset, data_offset*sizeof(data_type)),
+  value_position(b_con->values_mem, data_offset*sizeof(data_type))
+{ shift_offset = one << (value % (sizeof(data_type)*8)); }
 
