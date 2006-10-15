@@ -32,13 +32,13 @@ class TrailedMonotonicSet
   ReversibleInt _backtrack_depth;
 
   MemOffset _array;
-  MemOffset _undo_values;
+  // MemOffset _undo_values;
   MemOffset _undo_indexes;
   
   BackTrackOffset backtrack_ptr;
 
-  value_type& undo_values(int i)
-  { return static_cast<value_type*>(_undo_values.get_ptr())[i]; }
+  // value_type& undo_values(int i)
+  // { return static_cast<value_type*>(_undo_values.get_ptr())[i]; }
 
   int& undo_indexes(int i)
   { return static_cast<int*>(_undo_indexes.get_ptr())[i]; }
@@ -71,7 +71,7 @@ public:
     for(; _local_depth > bt_depth; ) 
     {
       -- _local_depth;
-      array(undo_indexes(_local_depth)) = undo_values(_local_depth);
+      array(undo_indexes(_local_depth)) = one ; // undo_values(_local_depth);
     }
 
 #ifdef DEBUG
@@ -87,7 +87,7 @@ public:
 
     D_ASSERT( !needs_undoing() && 0 <= index && index < size());
     undo_indexes(_local_depth) = index;
-    undo_values(_local_depth) = array(index);
+    // undo_values(_local_depth) = array(index);
 
     _local_depth++;
     _backtrack_depth.increment();
@@ -124,7 +124,7 @@ void initialise(const int& size, const int& max_undos)
     _backtrack_depth.set(0);
 
     _array.request_bytes(_size*sizeof(value_type)); 
-    _undo_values.request_bytes(_max_depth*sizeof(value_type));
+    // _undo_values.request_bytes(_max_depth*sizeof(value_type));
     _undo_indexes.request_bytes(_max_depth*sizeof(int));
 
 #ifdef DEBUG
@@ -161,7 +161,8 @@ void print_state()
   cout << "  history: ";
   for(int i = 0; i < _local_depth ; ++i) 
   { 
-    cout << "[" << undo_indexes(i) << ":" << undo_values(i) << "] " ;
+    cout << "[" << undo_indexes(i) //<< ":" << undo_values(i) 
+         << "] " ;
   }
   cout << endl ;
 }
