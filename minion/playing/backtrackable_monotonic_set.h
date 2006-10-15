@@ -111,6 +111,8 @@ BacktrackableMonotonicSet(const int& n)
 
 }
 
+inline void undo() { } ;        // does nothing but needed if world.pop calls undo 
+
 void print_state() { print_state(4);}
 void print_state(int spaces)
 {

@@ -58,5 +58,7 @@ namespace Controller
   {
     D_INFO(0,DI_SOLVER,"World Pop");
     backtrackable_memory.world_pop();
+    hack_bms->undo();            // this is unnecessary for BMS's 
+    big_rangevar_container.bms_array->undo();
   }
 }
