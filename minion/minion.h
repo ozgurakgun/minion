@@ -57,9 +57,9 @@
 
 
 #include "playing/backtrackable_monotonic_set.h"
+#include "playing/trailed_monotonic_set.h"
 
-
-typedef BacktrackableMonotonicSet MonotonicSet;
+typedef TrailedMonotonicSet MonotonicSet;
 
 // Following ghastly code by IPG to avoid understanding boolean containers 
 VARDEF(MonotonicSet* hack_bms);
