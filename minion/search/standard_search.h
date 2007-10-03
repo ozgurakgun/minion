@@ -50,6 +50,7 @@ namespace Controller
 		{
 		  maybe_print_search_state("Node: ", v);
 		  world_push();
+		  varContainer.getBigRangevarContainer().bms_array.branch_left();
 		  order.branch_left();
 		  queues.propagateQueue();
 		}
@@ -64,6 +65,7 @@ namespace Controller
 
 		  world_pop();
           maybe_print_search_action("bt");
+          varContainer.getBigRangevarContainer().bms_array.branch_right();
 		  order.branch_right();
 		  set_optimise_and_propagate_queue();
 		}

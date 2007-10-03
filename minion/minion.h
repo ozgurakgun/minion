@@ -68,15 +68,17 @@
 
 VARDEF(TableOut tableout);
 
+
 #include "memory_management/backtrackable_memory.h"
 #include "memory_management/backtrackable_memory_extra.h"
 #include "memory_management/nonbacktrack_memory.h"
 
 #include "reversible_vals.h"
 
+#include "memory_management/backtrackable_monotonic_set.h"
 #include "memory_management/trailed_monotonic_set.h"
 
-typedef TrailedMonotonicSet MonotonicSet;
+typedef BacktrackableMonotonicSet MonotonicSet;
 
 #include "tuple_container.h"
 
@@ -160,5 +162,7 @@ namespace Controller
 #include "preprocess/preprocess.h"
 
 #include "test_functions.h"
+
+
 
 #endif
