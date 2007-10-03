@@ -35,6 +35,7 @@ namespace Controller
     D_INFO(0,DI_SOLVER,"World Push");
 	D_ASSERT(queues.isQueuesEmpty());
     backtrackable_memory.world_push();
+    backtrackable_memory_extra.world_push();
   }
   
   /// Pops the state of the whole world.
@@ -43,6 +44,7 @@ namespace Controller
     D_INFO(0,DI_SOLVER,"World Pop");
 	D_ASSERT(queues.isQueuesEmpty());
     backtrackable_memory.world_pop();
+    backtrackable_memory_extra.world_pop();
     varContainer.getBigRangevarContainer().bms_array.undo();
   }
   

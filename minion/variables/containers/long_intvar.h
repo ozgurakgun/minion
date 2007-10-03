@@ -45,7 +45,7 @@ struct BigRangeVarContainer {
   typedef DomainInt domain_bound_type;
   static const int var_step = sizeof(d_type) * 8;
   static const d_type one = static_cast<d_type>(1);
-  BackTrackOffset bound_data;
+  BackTrackOffsetExtra bound_data;
   // MemOffset bms_pointers;
   MonotonicSet bms_array;
   TriggerList trigger_list;
