@@ -76,7 +76,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <cmath>
+// #include <cmath>
 
 #include<stdio.h>
 #include<stdlib.h>

@@ -45,7 +45,7 @@ struct BigRangeVarContainer {
   typedef DomainInt domain_bound_type;
   static const int var_step = sizeof(d_type) * 8;
   static const d_type one = static_cast<d_type>(1);
-  BackTrackOffsetExtra bound_data;
+  BackTrackOffset bound_data;
   // MemOffset bms_pointers;
   MonotonicSet bms_array;
   TriggerList trigger_list;
@@ -142,16 +142,17 @@ struct BigRangeVarContainer {
     D_ASSERT(!lock_m);
     lock_m = true;
     bound_data.request_bytes(var_count_m * 2 * sizeof(domain_bound_type));
-    bms_array.initialise(var_offset.back(), var_offset.back());
+    bms_array.initialise(var_offset.back());
     domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_ptr());
     for(unsigned int i = 0; i < var_count_m; ++i)
     {
       bound_ptr[2*i] = initial_bounds[i].first;
       bound_ptr[2*i+1] = initial_bounds[i].second;
+    }
 #ifdef DEBUG 
   cout << "About to create new BMS " << endl;
 #endif
-    }
+    
     
 	int min_domain_val = 0;
 	int max_domain_val = 0;

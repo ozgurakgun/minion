@@ -95,7 +95,7 @@ struct TableConstraint : public Constraint
         } while(!satisfied && increment(v, check_var));
         if(!satisfied)
         {
-          D_INFO(0,DI_TABLECON,string("Removing:")+to_string(check_var,check_dom));
+          // D_INFO(0,DI_TABLECON,string("Removing:")+to_string(check_var,check_dom));
           vars[check_var].removeFromDomain(check_dom);
         }
       }
