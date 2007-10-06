@@ -16,18 +16,22 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-typedef long node_number_type;  // make type_maximum consistent with this
-static const node_number_type node_number_maximum = LONG_MAX;
+#define INTTYPE unsigned long
+
+typedef INTTYPE node_number_type;  // make type_maximum consistent with this
+static const int type_bits = sizeof(INTTYPE) * CHAR_BIT;
+
+static const node_number_type node_number_maximum = ULONG_MAX;
 
 class BacktrackableMonotonicSet
 {
 
 	static const node_number_type branch_rate = 2;
-	static const node_number_type base = branch_rate + 1;
+	static const node_number_type base = branch_rate;
 
 	static const node_number_type one = 1;
 
-	static const node_number_type bms_bottom = -1;
+	static const node_number_type bms_bottom = 0;
 	static const node_number_type bms_top = node_number_maximum;
 	
 	
@@ -94,11 +98,11 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 		}
 		else
 		{
-			// Suppose we are working base 3, branching rate 2.
-			// Want to replace a 2 in base 3 representation with a 0
+			// Suppose we are working base 2, branching rate 2.
+			// Want to replace a 1 in base 2 representation with a 0
 			// at the relevant depth only.
 			D_ASSERT( largest_exponent - _backtrack_depth >= 0)
-			_node_number = _node_number - branch_rate*integer_exponent(base,largest_exponent-_backtrack_depth) ;
+			_node_number = _node_number - integer_exponent(base,largest_exponent-_backtrack_depth) ;
 		}
 		D_ASSERT(_node_number >= 0);
 #ifdef DEBUG
@@ -118,8 +122,9 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 		}
 		else
 		{
-			// Want to replace a 2 in base 3 with a 1
-			_node_number = _node_number - integer_exponent(base,largest_exponent-_backtrack_depth) ;
+			// Want to replace a 1 in base 2 with a 1
+			// Of course this is a no-op
+			// _node_number = _node_number - integer_exponent(base,largest_exponent-_backtrack_depth) ;
 			D_ASSERT( largest_exponent - _backtrack_depth >= 0)
 		}
 #ifdef DEBUG
@@ -144,18 +149,31 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 
 	void values_sweep()
 	{
+		node_number_type tmp ;
 		for(int i=0; i< _size; i++) {
-			if (isMember(i))
-			{ array(i) = bms_bottom; }
-			else
-			{ array(i) = bms_top; }
+			tmp = array(i) ;
+			if ((tmp == bms_top)||(tmp == bms_bottom))
+			{ }	                      // nothing to do
+			else if ( _node_number > tmp ) // isMember true
+			{ array(i) = bms_bottom ; }
+			else			      // isMember false
+			{ array(i) = bms_top; }       // only case to be reversed  
 		};
 		reset_internals() ;
 	}
 
 	void reset_internals()
 	{
-		_node_number = integer_exponent(base,largest_exponent) - 1 ;
+		// I think of initial representation as 11111 ... 11 
+		// with as many 1s as depth in the tree 
+		// But this means that the number 0 can occur on the leftmost 
+		// branch. 
+		// To allow bms_bottom to be 0 I add 1 to the representation
+		// Thus node_number starts of as 100000000 
+		// with as many 0s as depth in the tree
+		
+		_node_number = integer_exponent(base,largest_exponent) ;
+		D_ASSERT(_node_number < bms_top);
 		_backtrack_depth = 1;
 		_sideways_counter = 0;
 	}
@@ -203,7 +221,7 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 	{
 
 		_num_copies = 0 ;
-		absolute_max_depth = 10;
+		absolute_max_depth = type_bits-2; // would like to be smarter here
 		_world_depth = 0;
 		_local_world_depth = 0;
 		
@@ -218,7 +236,10 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 
 #ifdef DEBUG
 		cout << "initialising BacktrackableMonotonicSet with value of size= " << size << endl;
-		// print_state();
+		cout << "type bits: " << type_bits << " bms_top: " << bms_top << " bms_bottom: " << bms_bottom << endl ;
+		cout << "max depth: " << absolute_max_depth  << " largest exponent: " << largest_exponent ; 
+		
+		print_state();
 #endif
 
 		for(int i=0; i<size; i++) {
