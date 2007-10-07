@@ -20,11 +20,16 @@
 
 typedef INTTYPE node_number_type;  // make type_maximum consistent with this
 static const int type_bits = sizeof(INTTYPE) * CHAR_BIT;
-
 static const node_number_type node_number_maximum = ULLONG_MAX;
 
 class BacktrackableMonotonicSet
 {
+
+	static const int depth_bits = 8;	
+	static const int position_bits = type_bits - depth_bits;
+	static const node_number_type world_max_depth = (1 << depth_bits) - 1; 
+//	static const node_number_type depth_max_shifted = (world_max_depth << position_bits);
+//	static const node_number_type depth_unit = (1 << position_bits);
 
 	static const node_number_type branch_rate = 2;
 	static const node_number_type base = branch_rate;
@@ -33,9 +38,10 @@ class BacktrackableMonotonicSet
 
 	static const node_number_type bms_bottom = 0;
 	static const node_number_type bms_top = node_number_maximum;
-	
-	
+
+
 	long _num_copies;
+	long _num_sweeps;
 
 	node_number_type absolute_max_depth ;
 	//         checked_cast<node_number_type>(floor( log(node_number_maximum)/log(base) )) - 1;
@@ -46,10 +52,13 @@ class BacktrackableMonotonicSet
 	int _size;
 	int _copy_depth;
 
-	int _local_world_depth;
-	ReversibleInt _world_depth;
-	ReversibleInt _backtrack_depth;
-	ReversibleInt _sideways_counter;
+	// Depth could be quite large and C++ only guarantees int goes up to 32767
+	Reversible<long> 	_backtrack_depth;
+	int 			_sideways_counter;  // do not (currently) need to revert this
+	Reversible<long>	_world_depth;
+	ReversibleInt 	        _mega_world_depth;
+	int 		        _local_mega_world_depth;
+	
 	Reversible<node_number_type> _node_number; // i.e. node number for node where we are.
 
 	/* We could recompute _node_number on backtracking.  It's easier just to store it in BT memory.
@@ -64,7 +73,7 @@ public:
 
 	node_number_type& array(DomainInt i) const
 	{
-		D_ASSERT( i >= 0 && i < size());
+		D_ASSERT( i >= 0 && i < _size);
 		int val = checked_cast<int>(i);
 		return static_cast<node_number_type*>(_array.get_ptr())[val];
 	}
@@ -78,11 +87,11 @@ public:
 	bool isMember(DomainInt index) const
 	{
 		/*
-#ifdef DEBUG
-cout << "isMember: index:" << index << ": node_number: " << _node_number 
-     << " array(index)" << array(index) 
-     << " Result: " << (_node_number > array(index)) << endl;
-#endif
+		#ifdef DEBUG
+		cout << "isMember: index:" << index << ": node_number: " << _node_number 
+		   << " array(index)" << array(index) 
+		   << " Result: " << (_node_number > array(index)) << endl;
+		#endif
 		*/
 		return (bool) ( _node_number > array(index) ) ;
 	}
@@ -92,7 +101,7 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 		++_backtrack_depth;
 		_sideways_counter = 0;
 
-		if (need_to_copy_state())
+		if (need_to_push_state())
 		{
 			bms_world_push();
 		}
@@ -116,7 +125,7 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 		_sideways_counter = 1;
 
 		D_ASSERT( _sideways_counter < branch_rate)  ;
-		if (need_to_copy_state())
+		if (need_to_push_state())
 		{
 			bms_world_push();
 		}
@@ -125,66 +134,100 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 			// Want to replace a 1 in base 2 with a 1
 			// Of course this is a no-op
 			// _node_number = _node_number - integer_exponent(base,largest_exponent-_backtrack_depth) ;
-			D_ASSERT( largest_exponent - _backtrack_depth >= 0)
+			D_ASSERT( largest_exponent >= _backtrack_depth );
 		}
 #ifdef DEBUG
 		cout << "branch right" << endl; print_state();
 #endif
 		D_ASSERT(_node_number > bms_bottom);
 	}
-	
-	bool need_to_copy_state()
+
+	bool need_to_push_state()
 	{
 		return (_backtrack_depth % _copy_depth) == 0;
 	}
-	
-	void bms_world_push() 
+
+	void bms_world_push()
 	{
-		++_local_world_depth;
 		++_world_depth;
-		backtrackable_memory_extra.world_push();
-		++_num_copies;
-		values_sweep();
+		if (need_to_copy_state()) {bms_mega_world_push();}
+	        values_sweep();
 	}
+
 
 	void values_sweep()
 	{
+		++_num_sweeps;
 		node_number_type tmp ;
-		for(int i=0; i< _size; i++) {
+		for(int i=0; i< _size; i++) 
+		{
+			// Only one case in which work is necessary
+			// isMember true but value is not bms_bottom.
+			
 			tmp = array(i) ;
-			if ((tmp == bms_top)||(tmp == bms_bottom))
-			{ }	                      // nothing to do
-			else if ( _node_number > tmp ) // isMember true
-			{ array(i) = bms_bottom ; }
-			else			      // isMember false
-			{ array(i) = bms_top; }       // only case to be reversed  
+			if ((tmp > bms_bottom) && ( _node_number > tmp ))
+				{ array(i) = bms_bottom ; }
 		};
 		reset_internals() ;
 	}
-
+		
 	void reset_internals()
 	{
-		// I think of initial representation as 11111 ... 11 
-		// with as many 1s as depth in the tree 
-		// But this means that the number 0 can occur on the leftmost 
-		// branch. 
+		// Following only refers to tree position part, not the bit 
+		// representation of the depth.   
+		// 
+		// I think of initial representation as 11111 ... 11
+		// with as many 1s as depth in the tree
+		// But this means that the number 0 can occur on the leftmost
+		// branch.
 		// To allow bms_bottom to be 0 I add 1 to the representation
-		// Thus node_number starts of as 100000000 
+		// Thus node_number starts of as 100000000
 		// with as many 0s as depth in the tree
-		
-		_node_number = integer_exponent(base,largest_exponent) ;
-		D_ASSERT(_node_number < bms_top);
+
+		_node_number =   ((world_max_depth - _world_depth) << position_bits)
+			       + integer_exponent(base,largest_exponent);
+		D_ASSERT(_node_number <= bms_top);
 		_backtrack_depth = 1;
 		_sideways_counter = 0;
 	}
 
-        node_number_type num_copies() { return _num_copies ; } 
+	node_number_type num_copies() { return _num_copies ; }
+	node_number_type num_sweeps() { return _num_sweeps ; }
+
+	bool need_to_copy_state()
+	{
+		return ((_world_depth % world_max_depth) == 0);
+	}
+
+	void bms_mega_world_push()
+	{
+		++_local_mega_world_depth;
+		++_mega_world_depth;
+		backtrackable_memory_extra.world_push();
+		++_num_copies;
+		values_reset();
+	}
+
+	void values_reset() 
+	{
+		for(int i=0; i< _size; i++) 
+		{
+			array(i) = bms_bottom;
+		};
+		_world_depth = 0;
+		reset_internals() ;
+	}
+
 	
 	bool need_to_undo_copy()
 	{
-		D_ASSERT(_local_world_depth >= _world_depth);
-		return _local_world_depth > _world_depth ; 
+		D_ASSERT(_local_mega_world_depth >= _mega_world_depth);
+		return _local_mega_world_depth > _mega_world_depth ;
 	}
+
+	// Only work in undo is when we have to pop the mega world 
+	// This only happens at depth 2^{depth_bits}*position_bits (roughly)
+	// But we want to get this rare case right and not wrong.
 	
 	void undo()
 	{
@@ -202,11 +245,11 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 
 		while (need_to_undo_copy())
 		{
-			--_local_world_depth; 
+			--_local_mega_world_depth;
 			backtrackable_memory_extra.world_pop();
 #ifdef DEBUG
-		cout << "undo popped to world depth " << _world_depth << endl;
-		print_state();
+			cout << "undo popped to (mega) world depth " << _mega_world_depth << endl;
+			print_state();
 #endif
 		}
 	}
@@ -221,30 +264,31 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 	{
 
 		_num_copies = 0 ;
-		absolute_max_depth = type_bits-2; // would like to be smarter here
-		_world_depth = 0;
-		_local_world_depth = 0;
-		
+		_num_sweeps = 0 ; 
+		absolute_max_depth = position_bits-2; // would like to be smarter here 
+
+		_mega_world_depth = 0;
+		_local_mega_world_depth = 0;
+
 		//checked_cast<node_number_type>(floor( log(node_number_maximum)/log(base) )) - 1;
 		// -1 above is for paranoia.    If changed also check below
 
 		largest_exponent = absolute_max_depth + 1; // see above
 		_size = size;
 		_copy_depth = absolute_max_depth;
-		reset_internals();
+		
 		_array.request_bytes(_size*sizeof(node_number_type));
 
 #ifdef DEBUG
 		cout << "initialising BacktrackableMonotonicSet with value of size= " << size << endl;
-		cout << "type bits: " << type_bits << " bms_top: " << bms_top << " bms_bottom: " << bms_bottom << endl ;
-		cout << "max depth: " << absolute_max_depth  << " largest exponent: " << largest_exponent ; 
-		
+		cout << " type bits: " << type_bits 
+		     << " depth bits: " << depth_bits << " position bits: " << position_bits 
+		     << " bms_top: " << bms_top << " bms_bottom: " << bms_bottom << endl ;
+		cout << " max depth: " << absolute_max_depth  << " largest exponent: " << largest_exponent ;
+
 		print_state();
 #endif
-
-		for(int i=0; i<size; i++) {
-			array(i) = bms_bottom;
-		};
+		values_reset();
 	}
 
 
@@ -256,11 +300,18 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 	{
 		if (exponent < 0) { return 0; }
 
-		node_number_type answer = 1 ;
-		for(node_number_type i = 0 ; i < exponent ; i++) {
-			answer *= radix;
+		if (radix == 2) 
+		{
+			return (1 << exponent); 
 		}
-		return answer;
+		else 
+		{
+			node_number_type answer = 1 ;
+			for(node_number_type i = 0 ; i < exponent ; i++) {
+				answer *= radix;
+			}
+			return answer;
+		}
 	}
 
 
@@ -268,13 +319,15 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 	{
 		cout << "printing state of BacktrackableMonotonicSet: " ;
 		cout << "array size: " << _size;
-		cout << " backtracking depth: " << _backtrack_depth ;
-		cout << " sideways: " << _sideways_counter ;
 		cout << " node number: " << _node_number;
 		cout << " copy depth: " << _copy_depth;
-		cout << " numcopies: " << _num_copies;
-		cout << " local world depth: " << _local_world_depth;
+		cout << " numcopies: " << _num_copies ;
+		cout << " numsweeps: " << _num_sweeps << endl; 
+		cout << " backtracking depth: " << _backtrack_depth ;
+		cout << " sideways: " << _sideways_counter ;
 		cout << " world depth: " << _world_depth;
+		cout << " local mega world depth: " << _local_mega_world_depth;
+		cout << " world mega depth: " << _mega_world_depth;
 		cout << endl << "   values: " ;
 		for(int i = 0; i < _size; ++i)
 		{

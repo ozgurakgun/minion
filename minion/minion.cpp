@@ -397,11 +397,14 @@ void SolveCSP(Reader& reader, MinionArguments args)
   }
   
   state.getTimer().maybePrintFinaltimestepStore("Solve Time: ", "SolveTime", tableout, !options->print_only_solution);
-  cout << "Total copies in BMS: " << varContainer.getBigRangevarContainer().bms_array.num_copies() << endl;
+;
   cout << "Total Nodes: " << state.getNodeCount() << endl;
   cout << "Problem solvable?: " 
 	<< (state.getSolutionCount() == 0 ? "no" : "yes") << endl;
   cout << "Solutions Found: " << state.getSolutionCount() << endl;
+  
+  cout << "Total copies in BMS: " << varContainer.getBigRangevarContainer().bms_array.num_copies() << endl;
+  cout << "Total sweeps in BMS: " << varContainer.getBigRangevarContainer().bms_array.num_sweeps() << endl;
   
   tableout.set("Nodes", to_string(state.getNodeCount()));
   tableout.set("Satisfiable", (state.getSolutionCount()==0 ? 0 : 1));
