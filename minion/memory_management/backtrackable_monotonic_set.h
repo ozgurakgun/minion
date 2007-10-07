@@ -16,12 +16,12 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#define INTTYPE unsigned long
+#define INTTYPE unsigned long long
 
 typedef INTTYPE node_number_type;  // make type_maximum consistent with this
 static const int type_bits = sizeof(INTTYPE) * CHAR_BIT;
 
-static const node_number_type node_number_maximum = ULONG_MAX;
+static const node_number_type node_number_maximum = ULLONG_MAX;
 
 class BacktrackableMonotonicSet
 {
@@ -130,7 +130,7 @@ cout << "isMember: index:" << index << ": node_number: " << _node_number
 #ifdef DEBUG
 		cout << "branch right" << endl; print_state();
 #endif
-		D_ASSERT(_node_number >= 0);
+		D_ASSERT(_node_number > bms_bottom);
 	}
 	
 	bool need_to_copy_state()
