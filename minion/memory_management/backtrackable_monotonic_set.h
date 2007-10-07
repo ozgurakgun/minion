@@ -286,9 +286,12 @@ public:
 		     << " bms_top: " << bms_top << " bms_bottom: " << bms_bottom << endl ;
 		cout << " max depth: " << absolute_max_depth  << " largest exponent: " << largest_exponent ;
 
-		print_state();
 #endif
 		values_reset();
+#ifdef DEBUG
+		
+		print_state();
+#endif
 	}
 
 
@@ -300,11 +303,12 @@ public:
 	{
 		if (exponent < 0) { return 0; }
 
-		if (radix == 2) 
+	/*	if (radix == 2) 
 		{
 			return (1 << exponent); 
 		}
-		else 
+		else
+			*/
 		{
 			node_number_type answer = 1 ;
 			for(node_number_type i = 0 ; i < exponent ; i++) {
