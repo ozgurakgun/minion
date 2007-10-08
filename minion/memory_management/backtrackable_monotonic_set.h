@@ -38,6 +38,8 @@ class BacktrackableMonotonicSet
 
 	static const node_number_type bms_bottom = 0;
 	static const node_number_type bms_top = node_number_maximum;
+	
+	static const node_number_type one_nn = 1;
 
 
 	long _num_copies;
@@ -301,14 +303,14 @@ public:
 
 	node_number_type integer_exponent(node_number_type radix, node_number_type exponent)
 	{
-		if (exponent < 0) { return 0; }
+		// if (exponent < 0) { return 0; }
 
-	/*	if (radix == 2) 
+		if (radix == 2) 
 		{
-			return (1 << exponent); 
+			return (one_nn << exponent); 
 		}
 		else
-			*/
+			
 		{
 			node_number_type answer = 1 ;
 			for(node_number_type i = 0 ; i < exponent ; i++) {
