@@ -12,7 +12,7 @@ ifdef DEBUG
 else
  DEBUG_FLAGS = -DNO_DEBUG
  ifdef PROFILE
-   FLAGS = -O2 -g -fno-inline -fno-inline-functions
+   FLAGS = -O2 -g -fno-inline -fno-inline-functions 
  else
    FLAGS = -O3 -fomit-frame-pointer
  endif
@@ -64,7 +64,7 @@ EXE=bin/$(NAME)
 #If you want to optimise for a particular CPU, enable one of these lines
 #CPU=
 #CPU=-march=pentium4
-CPU=-march=pentium-m -mdynamic-no-pic
+CPU= -march=nocona -mdynamic-no-pic -m64
 
 FULLFLAGS=-Wextra -Wno-sign-compare $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(WATCHED) $(QUICK_COMPILE) $(MORE_INFO_FLAGS) $(MYFLAGS)
 
