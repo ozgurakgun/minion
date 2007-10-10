@@ -142,7 +142,10 @@ struct BigRangeVarContainer {
     D_ASSERT(!lock_m);
     lock_m = true;
     bound_data.request_bytes(var_count_m * 2 * sizeof(domain_bound_type));
-    bms_array.initialise(var_offset.back());
+    bms_array.initialise(var_offset.back(),var_offset.back());
+    // This is larger size than we need if these are the search variables. 
+    // But we may not have the search variables here. 
+    
     domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_ptr());
     for(unsigned int i = 0; i < var_count_m; ++i)
     {
@@ -250,6 +253,10 @@ struct BigRangeVarContainer {
     trigger_list.push_domain(d.var_num);
     //bms_pointer(d)->remove(offset - initial_bounds[d.var_num].first);
     bms_array.remove(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first);
+    #ifdef DEBUG
+    cout << "bms.remove has returned " << endl ;
+    //bms_array.print_state();
+#endif
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first));
     domain_bound_type up_bound = upper_bound(d);
     if(offset == up_bound)

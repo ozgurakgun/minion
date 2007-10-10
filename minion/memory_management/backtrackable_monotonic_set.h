@@ -22,25 +22,29 @@ typedef INTTYPE node_number_type;  // make type_maximum consistent with this
 static const int type_bits = sizeof(INTTYPE) * CHAR_BIT;
 static const node_number_type node_number_maximum = ULLONG_MAX;
 
+
 class BacktrackableMonotonicSet
 {
 
-	static const int depth_bits = 8;	
-	static const int position_bits = type_bits - depth_bits;
-	static const node_number_type world_max_depth = (1 << depth_bits) - 1; 
+	static const node_number_type one_nn = 1;
+	static const int depth_bits = 20;	
+	
+	static const int counter_bits = type_bits - depth_bits;
+	
+	static const node_number_type search_max_depth = (one_nn << depth_bits) - 1; 
+	static const node_number_type depth_mask = search_max_depth;
+	
+	static const node_number_type max_counter = (one_nn << counter_bits) - 1; 
+	
 //	static const node_number_type depth_max_shifted = (world_max_depth << position_bits);
 //	static const node_number_type depth_unit = (1 << position_bits);
 
 	static const node_number_type branch_rate = 2;
 	static const node_number_type base = branch_rate;
 
-	static const node_number_type one = 1;
-
 	static const node_number_type bms_bottom = 0;
+	// bms_bottom is required to equate to depth 0 when masked
 	static const node_number_type bms_top = node_number_maximum;
-	
-	static const node_number_type one_nn = 1;
-
 
 	long _num_copies;
 	long _num_sweeps;
@@ -51,15 +55,20 @@ class BacktrackableMonotonicSet
 
 	node_number_type largest_exponent;
 
-	int _size;
+
 	int _copy_depth;
 
 	// Depth could be quite large and C++ only guarantees int goes up to 32767
-	Reversible<long> 	_backtrack_depth;
-	int 			_sideways_counter;  // do not (currently) need to revert this
-	Reversible<long>	_world_depth;
-	ReversibleInt 	        _mega_world_depth;
-	int 		        _local_mega_world_depth;
+	
+	Reversible<node_number_type> 	_backtrack_depth;
+	node_number_type		_local_depth;
+	node_number_type		_visited_max_depth;
+	
+	DomainInt		_max_depth;
+	DomainInt		_size;
+	node_number_type _counter ; 
+	
+	
 	
 	Reversible<node_number_type> _node_number; // i.e. node number for node where we are.
 
@@ -67,8 +76,9 @@ class BacktrackableMonotonicSet
 	   It's not an obvious tradeoff but probably not important either.
 	*/
 
-	BackTrackOffsetExtra _array;
-
+	MemOffset _array;
+	MemOffset _depth_numbers;
+	
 public:
 
 	// following allows external types destructive changes to the array
@@ -79,10 +89,18 @@ public:
 		int val = checked_cast<int>(i);
 		return static_cast<node_number_type*>(_array.get_ptr())[val];
 	}
+	
+	node_number_type& depth_numbers(node_number_type i) const
+	{
+		D_ASSERT( i >= 0 && i <= _max_depth);
+		int val = checked_cast<int>(i);
+		return static_cast<node_number_type*>(_depth_numbers.get_ptr())[val];
+	}
 
 
 	void remove(DomainInt index)
 	{
+		D_ASSERT(isMember(index));
 		array(index) = _node_number;
 	}
 
@@ -95,27 +113,41 @@ public:
 		   << " Result: " << (_node_number > array(index)) << endl;
 		#endif
 		*/
-		return (bool) ( _node_number > array(index) ) ;
+		
+		node_number_type depth ;
+		node_number_type tmp ; 
+		
+		tmp = array(index); 
+		depth = ( tmp & depth_mask ); 
+		
+		return (bool) ( tmp != depth_numbers(depth) ) ;
 	}
 
+	node_number_type compute_node_number() 
+	{ 
+		return ((_counter << depth_bits) + _backtrack_depth);
+	}
+	
 	void branch_left()
 	{
-		++_backtrack_depth;
-		_sideways_counter = 0;
 
-		if (need_to_push_state())
-		{
-			bms_world_push();
-		}
-		else
-		{
-			// Suppose we are working base 2, branching rate 2.
-			// Want to replace a 1 in base 2 representation with a 0
-			// at the relevant depth only.
-			D_ASSERT( largest_exponent - _backtrack_depth >= 0)
-			_node_number = _node_number - integer_exponent(base,largest_exponent-_backtrack_depth) ;
-		}
-		D_ASSERT(_node_number >= 0);
+		++_backtrack_depth;
+		++_local_depth;
+		// only used for print_state
+		if (_local_depth > _visited_max_depth) 
+			{ _visited_max_depth = _local_depth;}
+		// 
+		++_counter;
+		_node_number = compute_node_number(); 
+		depth_numbers(_backtrack_depth) = _node_number; 
+
+		D_ASSERT(_backtrack_depth < search_max_depth); 
+		D_ASSERT(_counter < max_counter) ; // replace with sweep; 
+		
+		
+
+
+		D_ASSERT(_node_number > bms_bottom);
 #ifdef DEBUG
 		cout << "branch left" << endl; print_state();
 #endif
@@ -123,174 +155,103 @@ public:
 
 	void branch_right()
 	{
-		++_backtrack_depth;
-		_sideways_counter = 1;
+		// This does nothing so presumably gets optimised away 
+		// completely
+		
+		// _backtrack_depth is backtracked automatically
+		// and so is _node_number
+		
+		D_ASSERT( _node_number == depth_numbers(_backtrack_depth)); 
 
-		D_ASSERT( _sideways_counter < branch_rate)  ;
-		if (need_to_push_state())
-		{
-			bms_world_push();
-		}
-		else
-		{
-			// Want to replace a 1 in base 2 with a 1
-			// Of course this is a no-op
-			// _node_number = _node_number - integer_exponent(base,largest_exponent-_backtrack_depth) ;
-			D_ASSERT( largest_exponent >= _backtrack_depth );
-		}
 #ifdef DEBUG
 		cout << "branch right" << endl; print_state();
 #endif
 		D_ASSERT(_node_number > bms_bottom);
 	}
 
-	bool need_to_push_state()
-	{
-		return (_backtrack_depth % _copy_depth) == 0;
-	}
-
-	void bms_world_push()
-	{
-		++_world_depth;
-		if (need_to_copy_state()) {bms_mega_world_push();}
-	        values_sweep();
-	}
-
-
-	void values_sweep()
-	{
-		++_num_sweeps;
-		node_number_type tmp ;
-		for(int i=0; i< _size; i++) 
-		{
-			// Only one case in which work is necessary
-			// isMember true but value is not bms_bottom.
-			
-			tmp = array(i) ;
-			if ((tmp > bms_bottom) && ( _node_number > tmp ))
-				{ array(i) = bms_bottom ; }
-		};
-		reset_internals() ;
-	}
-		
-	void reset_internals()
-	{
-		// Following only refers to tree position part, not the bit 
-		// representation of the depth.   
-		// 
-		// I think of initial representation as 11111 ... 11
-		// with as many 1s as depth in the tree
-		// But this means that the number 0 can occur on the leftmost
-		// branch.
-		// To allow bms_bottom to be 0 I add 1 to the representation
-		// Thus node_number starts of as 100000000
-		// with as many 0s as depth in the tree
-
-		_node_number =   ((world_max_depth - _world_depth) << position_bits)
-			       + integer_exponent(base,largest_exponent);
-		D_ASSERT(_node_number <= bms_top);
-		_backtrack_depth = 1;
-		_sideways_counter = 0;
-	}
-
-	node_number_type num_copies() { return _num_copies ; }
 	node_number_type num_sweeps() { return _num_sweeps ; }
 
-	bool need_to_copy_state()
+	bool need_to_sweep_state()
 	{
-		return ((_world_depth % world_max_depth) == 0);
+		return (_counter == (max_counter-1));
 	}
-
-	void bms_mega_world_push()
-	{
-		++_local_mega_world_depth;
-		++_mega_world_depth;
-		backtrackable_memory_extra.world_push();
-		++_num_copies;
-		values_reset();
-	}
-
-	void values_reset() 
-	{
-		for(int i=0; i< _size; i++) 
-		{
-			array(i) = bms_bottom;
-		};
-		_world_depth = 0;
-		reset_internals() ;
-	}
-
-	
-	bool need_to_undo_copy()
-	{
-		D_ASSERT(_local_mega_world_depth >= _mega_world_depth);
-		return _local_mega_world_depth > _mega_world_depth ;
-	}
-
-	// Only work in undo is when we have to pop the mega world 
-	// This only happens at depth 2^{depth_bits}*position_bits (roughly)
-	// But we want to get this rare case right and not wrong.
 	
 	void undo()
 	{
 #ifdef DEBUG
-		cout << "undo called " << endl;
-		print_state();
+                cout << "undo called " << endl;
+                print_state();
 #endif
-		// undo() must be called AFTER the main world_pop.
-		//        see world_pop() in solver2.h
 
-		// Note that backtrack depth, sideways counter and node number are all
-		//    restored by the main world_pop since they are ReversibleInts.
-		// This function checks if this means we need to restore state with world pop
-		//    Only need to pop if we are back at a depth where we copied.
-
-		while (need_to_undo_copy())
+		D_ASSERT((_backtrack_depth == _local_depth) || 
+			(_backtrack_depth == (_local_depth - 1)) );
+		
+		if (_backtrack_depth == (_local_depth - 1))
 		{
-			--_local_mega_world_depth;
-			backtrackable_memory_extra.world_pop();
-#ifdef DEBUG
-			cout << "undo popped to (mega) world depth " << _mega_world_depth << endl;
-			print_state();
-#endif
+			depth_numbers(_local_depth) = bms_bottom;
+			--_local_depth;
 		}
+#ifdef DEBUG
+                print_state();
+#endif
 	}
-
 
 	int size() const
 	{
 		return _size;
 	}
 
-	void initialise(const int& size)
+	void values_reset() 
 	{
-
-		_num_copies = 0 ;
-		_num_sweeps = 0 ; 
-		absolute_max_depth = position_bits-2; // would like to be smarter here 
-
-		_mega_world_depth = 0;
-		_local_mega_world_depth = 0;
-
-		//checked_cast<node_number_type>(floor( log(node_number_maximum)/log(base) )) - 1;
-		// -1 above is for paranoia.    If changed also check below
-
-		largest_exponent = absolute_max_depth + 1; // see above
+		for(node_number_type i = 0; i < _max_depth; i++) 
+		{
+			depth_numbers(i) = bms_top;
+		}
+			
+		for(node_number_type j = 0; j < _size; j++)
+		{ 
+			array(j) = bms_bottom; 
+		}
+	}
+	
+	void initialise(const DomainInt& size, const DomainInt& max_depth)
+	{
+		D_ASSERT(max_depth <= search_max_depth); 
+		// would like to fail gracefully in this situation.
+		// Or better of course not fail.   
+		
 		_size = size;
-		_copy_depth = absolute_max_depth;
+		// Discard max depth
+		// _max_depth = max_depth+1; // because 0 is a dummy depth
+		
+		_max_depth = 10000 ;   //// aaargh
 		
 		_array.request_bytes(_size*sizeof(node_number_type));
+		_depth_numbers.request_bytes((_max_depth+1)*sizeof(node_number_type));
+		
+		values_reset();	
+		
+		_counter = 1;	// avoid 0 = bms_bottom just in case
+		
+		_backtrack_depth = 1; 
+		_local_depth = 1;
+		_visited_max_depth = 1; 
+	
+		
+
+		_node_number = compute_node_number(); 
+		depth_numbers(_backtrack_depth) = _node_number; 
+
+
+		_num_sweeps = 0 ; 
+
 
 #ifdef DEBUG
 		cout << "initialising BacktrackableMonotonicSet with value of size= " << size << endl;
 		cout << " type bits: " << type_bits 
-		     << " depth bits: " << depth_bits << " position bits: " << position_bits 
-		     << " bms_top: " << bms_top << " bms_bottom: " << bms_bottom << endl ;
-		cout << " max depth: " << absolute_max_depth  << " largest exponent: " << largest_exponent ;
-
-#endif
-		values_reset();
-#ifdef DEBUG
+		     << " depth bits: " << depth_bits << " counter bits: " << counter_bits 
+		     << " bms_bottom: " << bms_bottom  ;
+		cout << " max depth: " << _max_depth   ;
 		
 		print_state();
 #endif
@@ -301,24 +262,6 @@ public:
 	BacktrackableMonotonicSet()
 	{ }
 
-	node_number_type integer_exponent(node_number_type radix, node_number_type exponent)
-	{
-		// if (exponent < 0) { return 0; }
-
-		if (radix == 2) 
-		{
-			return (one_nn << exponent); 
-		}
-		else
-			
-		{
-			node_number_type answer = 1 ;
-			for(node_number_type i = 0 ; i < exponent ; i++) {
-				answer *= radix;
-			}
-			return answer;
-		}
-	}
 
 
 	void print_state()
@@ -326,24 +269,28 @@ public:
 		cout << "printing state of BacktrackableMonotonicSet: " ;
 		cout << "array size: " << _size;
 		cout << " node number: " << _node_number;
-		cout << " copy depth: " << _copy_depth;
-		cout << " numcopies: " << _num_copies ;
 		cout << " numsweeps: " << _num_sweeps << endl; 
 		cout << " backtracking depth: " << _backtrack_depth ;
-		cout << " sideways: " << _sideways_counter ;
-		cout << " world depth: " << _world_depth;
-		cout << " local mega world depth: " << _local_mega_world_depth;
-		cout << " world mega depth: " << _mega_world_depth;
+		cout << " local depth: " << _local_depth; 
+		cout << " depth mask: " << depth_mask;
+		cout << " calculated depth: " << (depth_mask & _node_number) ; 
+		cout << " calculated counter: " << ((~depth_mask & _node_number) >> depth_bits) ;
 		cout << endl << "   values: " ;
 		for(int i = 0; i < _size; ++i)
 		{
 			cout << isMember(i) << " ";
 		}
 		cout << endl ;
-		cout << "   stored data: ";
+		cout << "   array stored data: ";
 		for(int i = 0; i < _size; ++i)
 		{
 			cout << array(i) << " " ;
+		}
+		cout << endl ;		
+		cout << "   depth stored data: ";
+		for(int i = 0; i < _visited_max_depth; ++i)
+		{
+			cout << depth_numbers(i) << " " ;
 		}
 		cout << endl ;
 	}
