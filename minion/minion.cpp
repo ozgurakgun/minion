@@ -403,7 +403,6 @@ void SolveCSP(Reader& reader, MinionArguments args)
 	<< (state.getSolutionCount() == 0 ? "no" : "yes") << endl;
   cout << "Solutions Found: " << state.getSolutionCount() << endl;
   
-  cout << "Total copies in BMS: " << varContainer.getBigRangevarContainer().bms_array.num_copies() << endl;
   cout << "Total sweeps in BMS: " << varContainer.getBigRangevarContainer().bms_array.num_sweeps() << endl;
   
   tableout.set("Nodes", to_string(state.getNodeCount()));
