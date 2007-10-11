@@ -118,9 +118,25 @@ public:
 		node_number_type tmp ; 
 		
 		tmp = array(index); 
-		depth = ( tmp & depth_mask ); 
 		
-		return (bool) ( tmp != depth_numbers(depth) ) ;
+		if ( tmp == bms_bottom ) 
+		{ 
+			return 1;
+		}
+		else 
+		{
+			depth = ( tmp & depth_mask ); 
+		
+		        if (tmp == depth_numbers(depth) )
+			{
+				return 0;
+			}
+			else
+			{
+				array(index) = bms_bottom;
+				return 1;
+			}
+		}
 	}
 
 	node_number_type compute_node_number() 
