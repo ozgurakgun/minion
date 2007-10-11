@@ -16,57 +16,40 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#define INTTYPE unsigned long long
+#define INTTYPE DomainInt
 
 typedef INTTYPE node_number_type;  // make type_maximum consistent with this
 static const int type_bits = sizeof(INTTYPE) * CHAR_BIT;
-static const node_number_type node_number_maximum = ULLONG_MAX;
+static const node_number_type node_number_maximum = ULONG_MAX;
 
 
 class BacktrackableMonotonicSet
 {
-
-	static const node_number_type one_nn = 1;
-	static const int depth_bits = 20;	
+	static const int depth_bits = type_bits;	
 	
-	static const int counter_bits = type_bits - depth_bits;
+	static const int certificate_bits = type_bits - depth_bits;
 	
-	static const node_number_type search_max_depth = (one_nn << depth_bits) - 1; 
-	static const node_number_type depth_mask = search_max_depth;
+	static const node_number_type search_max_depth = node_number_maximum;
 	
-	static const node_number_type max_counter = (one_nn << counter_bits) - 1; 
-	
-//	static const node_number_type depth_max_shifted = (world_max_depth << position_bits);
-//	static const node_number_type depth_unit = (1 << position_bits);
-
-	static const node_number_type branch_rate = 2;
-	static const node_number_type base = branch_rate;
+	static const node_number_type max_certificate = node_number_maximum; 
 
 	static const node_number_type bms_bottom = 0;
 	// bms_bottom is required to equate to depth 0 when masked
 	static const node_number_type bms_top = node_number_maximum;
-
-	long _num_copies;
+	
 	long _num_sweeps;
 
 	node_number_type absolute_max_depth ;
-	//         checked_cast<node_number_type>(floor( log(node_number_maximum)/log(base) )) - 1;
-	// -1 above is for paranoia.    If changed also check below
-
-	node_number_type largest_exponent;
-
-
-	int _copy_depth;
 
 	// Depth could be quite large and C++ only guarantees int goes up to 32767
 	
 	Reversible<node_number_type> 	_backtrack_depth;
 	node_number_type		_local_depth;
-	node_number_type		_visited_max_depth;
+	node_number_type		_visited_max_depth;	 // only used for print state
 	
-	DomainInt		_max_depth;
-	DomainInt		_size;
-	node_number_type _counter ; 
+	node_number_type	_max_depth;
+	DomainInt			_size;
+	node_number_type	_certificate ; 
 	
 	
 	
@@ -88,20 +71,22 @@ public:
 		D_ASSERT( i >= 0 && i < _size);
 		int val = checked_cast<int>(i);
 		return static_cast<node_number_type*>(_array.get_ptr())[val];
-	}
+	}	
 	
-	node_number_type& depth_numbers(node_number_type i) const
+	node_number_type& depth_numbers(DomainInt i) const
 	{
-		D_ASSERT( i >= 0 && i <= _max_depth);
+		D_ASSERT( i >= 0 && i < _size);
 		int val = checked_cast<int>(i);
 		return static_cast<node_number_type*>(_depth_numbers.get_ptr())[val];
 	}
-
+	
 
 	void remove(DomainInt index)
 	{
-		D_ASSERT(isMember(index));
-		array(index) = _node_number;
+		D_ASSERT(isMember(index));  // errors occur if you remove the same value twice
+	
+		array(index*2) = _backtrack_depth;
+		array(index*2+1) = _node_number;
 	}
 
 	bool isMember(DomainInt index) const
@@ -114,34 +99,15 @@ public:
 		#endif
 		*/
 		
-		node_number_type depth ;
-		node_number_type tmp ; 
+		node_number_type depth = array(index*2);
+		node_number_type stored_certificate = array(index*2+1); 
 		
-		tmp = array(index); 
-		
-		if ( tmp == bms_bottom ) 
-		{ 
-			return 1;
-		}
-		else 
-		{
-			depth = ( tmp & depth_mask ); 
-		
-		        if (tmp == depth_numbers(depth) )
-			{
-				return 0;
-			}
-			else
-			{
-				array(index) = bms_bottom;
-				return 1;
-			}
-		}
+		return (bool) ( stored_certificate != depth_numbers(depth) ) ;
 	}
 
 	node_number_type compute_node_number() 
 	{ 
-		return ((_counter << depth_bits) + _backtrack_depth);
+		return (_certificate);
 	}
 	
 	void branch_left()
@@ -149,19 +115,18 @@ public:
 
 		++_backtrack_depth;
 		++_local_depth;
+#ifdef DEBUG
 		// only used for print_state
 		if (_local_depth > _visited_max_depth) 
 			{ _visited_max_depth = _local_depth;}
 		// 
-		++_counter;
+#endif
+		++_certificate;
 		_node_number = compute_node_number(); 
 		depth_numbers(_backtrack_depth) = _node_number; 
 
 		D_ASSERT(_backtrack_depth < search_max_depth); 
-		D_ASSERT(_counter < max_counter) ; // replace with sweep; 
-		
-		
-
+		D_ASSERT(_certificate < max_certificate) ; // replace with sweep; 
 
 		D_ASSERT(_node_number > bms_bottom);
 #ifdef DEBUG
@@ -189,7 +154,7 @@ public:
 
 	bool need_to_sweep_state()
 	{
-		return (_counter == (max_counter-1));
+		return (_certificate == (max_certificate-1));
 	}
 	
 	void undo()
@@ -242,12 +207,12 @@ public:
 		
 		_max_depth = 10000 ;   //// aaargh
 		
-		_array.request_bytes(_size*sizeof(node_number_type));
+		_array.request_bytes(2*_size*sizeof(node_number_type));
 		_depth_numbers.request_bytes((_max_depth+1)*sizeof(node_number_type));
 		
 		values_reset();	
 		
-		_counter = 1;	// avoid 0 = bms_bottom just in case
+		_certificate = 1;	// avoid 0 = bms_bottom just in case
 		
 		_backtrack_depth = 1; 
 		_local_depth = 1;
@@ -265,7 +230,6 @@ public:
 #ifdef DEBUG
 		cout << "initialising BacktrackableMonotonicSet with value of size= " << size << endl;
 		cout << " type bits: " << type_bits 
-		     << " depth bits: " << depth_bits << " counter bits: " << counter_bits 
 		     << " bms_bottom: " << bms_bottom  ;
 		cout << " max depth: " << _max_depth   ;
 		
@@ -284,13 +248,10 @@ public:
 	{
 		cout << "printing state of BacktrackableMonotonicSet: " ;
 		cout << "array size: " << _size;
-		cout << " node number: " << _node_number;
-		cout << " numsweeps: " << _num_sweeps << endl; 
 		cout << " backtracking depth: " << _backtrack_depth ;
+		cout << " node number: " << _node_number;
 		cout << " local depth: " << _local_depth; 
-		cout << " depth mask: " << depth_mask;
-		cout << " calculated depth: " << (depth_mask & _node_number) ; 
-		cout << " calculated counter: " << ((~depth_mask & _node_number) >> depth_bits) ;
+		cout << " numsweeps: " << _num_sweeps << endl; 
 		cout << endl << "   values: " ;
 		for(int i = 0; i < _size; ++i)
 		{
@@ -298,7 +259,7 @@ public:
 		}
 		cout << endl ;
 		cout << "   array stored data: ";
-		for(int i = 0; i < _size; ++i)
+		for(int i = 0; i < _size*2 ; ++i)
 		{
 			cout << array(i) << " " ;
 		}
