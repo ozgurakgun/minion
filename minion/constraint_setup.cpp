@@ -26,7 +26,7 @@ void lock()
 	state.getDynamicConstraintList()[i]->setup();
 #endif
   backtrackable_memory.lock();
-  backtrackable_memory_extra.lock();
+  // backtrackable_memory_extra.lock();
   memory_block.lock();
   atexit(Controller::finish);
   
@@ -37,7 +37,7 @@ void lock()
   triggerMem->finaliseTriggerLists();
   
   backtrackable_memory.final_lock();
-  backtrackable_memory_extra.final_lock();
+  // backtrackable_memory_extra.final_lock();
   memory_block.final_lock();  
   
   bool prop_to_do = true;
