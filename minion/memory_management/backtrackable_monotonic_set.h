@@ -238,7 +238,7 @@ domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_pt
 	
 	void initialise(const DomainInt& size, const DomainInt& max_depth)
 	{
-		D_ASSERT(max_depth <= search_max_depth); 
+		// D_ASSERT(max_depth <= search_max_depth); 
 		// would like to fail gracefully in this situation.
 		// Or better of course not fail.   
 		
