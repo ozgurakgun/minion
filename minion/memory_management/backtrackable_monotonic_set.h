@@ -65,7 +65,7 @@ public:
 
 	node_number_type& array(DomainInt i) const
 	{
-		D_ASSERT( i >= 0 && i < _size);
+		D_ASSERT( i >= 0 && i < _size*2);
 		int val = checked_cast<int>(i);
 		return static_cast<node_number_type*>(_array.get_ptr())[val];
 	}	

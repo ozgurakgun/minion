@@ -488,7 +488,6 @@ public:
 typedef BigRangeVarContainer<BitContainerType> BigRangeCon;
 
 
-
 template<typename T>
 inline BigRangeVarRef
 BigRangeVarContainer<T>::get_new_var(DomainInt i, DomainInt j)
