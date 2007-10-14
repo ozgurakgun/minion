@@ -245,14 +245,17 @@ struct BigRangeVarContainer {
     D_ASSERT(lock_m);
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
  
- //  if(! (bms_array.ifMember_remove(var_offset[d.var_num] + i - initial_bounds[d.var_num].first) ))
-  if (! inDomain(d,i)) 
+   if(! (bms_array.ifMember_remove(var_offset[d.var_num] + i - initial_bounds[d.var_num].first) ))
+ /*
+if (! inDomain(d,i)) 
+	*/
     {
 #ifdef DEBUG
       cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
 #endif
       return;
     }
+   
     
     // call to ifmember has removed value from domain
     DomainInt offset = i;
@@ -262,7 +265,7 @@ struct BigRangeVarContainer {
     trigger_list.push_domain(d.var_num);
     
     // use ifMember remove above, so delete following line
-   bms_array.remove(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first);
+ //  bms_array.remove(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first);
 
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first));
     domain_bound_type up_bound = upper_bound(d);
