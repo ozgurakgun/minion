@@ -55,9 +55,6 @@ class BacktrackableMonotonicSet
 	
 	Reversible<node_number_type> _node_number; // i.e. node number for node where we are.
 
-	/* We could recompute _node_number on backtracking.  It's easier just to store it in BT memory.
-	   It's not an obvious tradeoff but probably not important either.
-	*/
 
 	MemOffset _array;
 	MemOffset _depth_numbers;
@@ -80,15 +77,55 @@ public:
 		return static_cast<node_number_type*>(_depth_numbers.get_ptr())[val];
 	}
 	
+	bool ifMember_remove(DomainInt index)
+	// returns 1 if index was a member (and is not now)
+	// returns 0 if index was not a member so no removal necessary
+	{
 
+		/*
+		node_number_type* array_ptr = static_cast<node_number_type*>(_array.get_ptr());
+		DomainInt first = index*2; 
+		node_number_type depth = array_ptr[first]; 
+
+		
+		if  ( array_ptr[first+1] != depth_numbers(depth) )
+		{
+			array_ptr[first] = _backtrack_depth; 
+			array_ptr[first+1] = _node_number;
+			return 1;
+		}
+		{
+			return 0;
+		}
+		*/
+		
+		if (isMember(index)) { 
+				remove(index);
+				return 1; 
+		}
+		return 0; 
+	}
+
+	
 	void remove(DomainInt index)
 	{
 		D_ASSERT(isMember(index));  // errors occur if you remove the same value twice
-	
-		array(index*2) = _backtrack_depth;
-		array(index*2+1) = _node_number;
-	}
+	    
+		/*
 
+domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_ptr());
+    for(unsigned int i = 0; i < var_count_m; ++i)
+    {
+      bound_ptr[2*i] = initial_bounds[i].first;
+      bound_ptr[2*i+1] = initial_bounds[i].second;
+    }
+   */
+		DomainInt first = index*2; 
+		node_number_type* array_ptr = static_cast<node_number_type*>(_array.get_ptr());
+		array_ptr[first] = _backtrack_depth; 
+		array_ptr[first+1] = _node_number;
+	}
+	
 	bool isMember(DomainInt index) const
 	{
 		/*
@@ -98,11 +135,11 @@ public:
 		   << " Result: " << (_node_number > array(index)) << endl;
 		#endif
 		*/
+		DomainInt first = index*2; 
+		node_number_type* array_ptr = static_cast<node_number_type*>(_array.get_ptr());
 		
-		node_number_type depth = array(index*2);
-		node_number_type stored_certificate = array(index*2+1); 
-		
-		return (bool) ( stored_certificate != depth_numbers(depth) ) ;
+		node_number_type depth = array_ptr[first]; 
+		return (bool) ( array_ptr[first+1] != depth_numbers(depth) ) ;
 	}
 
 	node_number_type compute_node_number() 
@@ -110,7 +147,9 @@ public:
 		return (_certificate);
 	}
 	
-	void branch_left()
+	void before_branch_left() { return ; }
+	
+	void after_branch_left()
 	{
 
 		++_backtrack_depth;
@@ -134,7 +173,9 @@ public:
 #endif
 	}
 
-	void branch_right()
+	void before_branch_right() { return ; } 
+	
+	void after_branch_right()
 	{
 		// This does nothing so presumably gets optimised away 
 		// completely

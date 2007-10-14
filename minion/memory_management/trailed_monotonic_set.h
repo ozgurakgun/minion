@@ -16,7 +16,7 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-typedef int value_type;
+typedef bool value_type;
 
 class TrailedMonotonicSet
 {
@@ -82,7 +82,7 @@ public:
     for(; _local_depth > bt_depth; ) 
     {
       -- _local_depth;
-      array(undo_indexes(_local_depth)) = one ; // undo_values(_local_depth);
+      array(undo_indexes(_local_depth)) = one ; 
     }
 
 #ifdef DEBUG
@@ -98,11 +98,11 @@ public:
 
     // Assumes index is currently in the set.  Use checked_remove if this is not correct assumption.
  
-    D_ASSERT( !needs_undoing() && 0 <= index && index < size());
+    D_ASSERT( 0 <= index && index < size());
     undo_indexes(_local_depth) = checked_cast<int>(index);
 
     ++_local_depth;
-    ++_backtrack_depth;
+
     
     array(index) = 0;
   }
@@ -126,10 +126,15 @@ public:
     return (bool)array(index);
   }
 
-void branch_left()  // nothing to do
+void before_branch_left()
+  { _backtrack_depth = _local_depth;
+    return ; }
+ void after_branch_left()  // nothing to do
   { return ; }
   
-void branch_right()  // nothing to do
+void  before_branch_right()  // nothing to do
+  { return ; }
+void after_branch_right()  // nothing to do
   { return ; }
 
 void initialise(const int& size, const int& max_undos)
