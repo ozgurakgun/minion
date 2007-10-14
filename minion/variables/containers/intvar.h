@@ -407,8 +407,13 @@ struct RangeVarContainer {
 #endif
   
   bool valid_range(DomainInt lower, DomainInt upper)
-  { return 0 ; } // For testing purposes by ipg IPG
-	  // return (lower >= var_min && upper <= var_max); }
+#ifdef ALLBIG
+      { return 0 ; } // For testing purposes by ipg IPG
+      // call with e.g. "make MYFLAGS="-DALLBIG" minion"
+#endif
+#ifndef ALLBIG
+      { return (lower >= var_min && upper <= var_max); }
+#endif
 };
 
 typedef RangeVarContainer<0, BitContainerType> LRVCon;

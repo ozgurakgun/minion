@@ -16,6 +16,12 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+/* Optimisations to be done:
+
+	1.  build low bound into offset to save calculations 
+	2.  test check_and_remove 
+	*/
+
 
 struct BigRangeVarRef_internal
 {
@@ -234,29 +240,30 @@ struct BigRangeVarContainer {
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["
          << getInitialMin(d) << ":" << getInitialMax(d) << "]"
          << endl;
-    //bms_pointer(d)->print_state();
     bms_array.print_state();
 #endif
     D_ASSERT(lock_m);
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
-    if(!inDomain(d,i)) 
+ 
+ //  if(! (bms_array.ifMember_remove(var_offset[d.var_num] + i - initial_bounds[d.var_num].first) ))
+  if (! inDomain(d,i)) 
     {
 #ifdef DEBUG
       cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
 #endif
       return;
     }
+    
+    // call to ifmember has removed value from domain
     DomainInt offset = i;
 #ifdef FULL_DOMAIN_TRIGGERS
 	trigger_list.push_domain_removal(d.var_num, i);
 #endif
     trigger_list.push_domain(d.var_num);
-    //bms_pointer(d)->remove(offset - initial_bounds[d.var_num].first);
-    bms_array.remove(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first);
-    #ifdef DEBUG
-    cout << "bms.remove has returned " << endl ;
-    //bms_array.print_state();
-#endif
+    
+    // use ifMember remove above, so delete following line
+   bms_array.remove(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first);
+
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first));
     domain_bound_type up_bound = upper_bound(d);
     if(offset == up_bound)
@@ -481,12 +488,12 @@ typedef BigRangeVarContainer<BitContainerType> BigRangeCon;
 
 template<typename T>
 inline BigRangeVarRef
-BigRangeVarContainer<T>::get_new_var(int i, int j)
+BigRangeVarContainer<T>::get_new_var(DomainInt i, DomainInt j)
 {
   D_ASSERT(!lock_m);
  // D_ASSERT(i >= var_min && j <= var_max);
   initial_bounds.push_back(make_pair(i,j));
-  int domain_size;
+  DomainInt domain_size;
   domain_size = j - i + 1;
   var_offset.push_back( var_offset.back() + domain_size);
   return BigRangeVarRef(BigRangeVarRef_internal(var_count_m++));

@@ -70,16 +70,19 @@ VARDEF(TableOut tableout);
 
 
 #include "memory_management/backtrackable_memory.h"
-// #include "memory_management/backtrackable_memory_extra.h"
 #include "memory_management/nonbacktrack_memory.h"
 
 #include "reversible_vals.h"
 
-#include "memory_management/backtrackable_monotonic_set.h"
-#include "memory_management/trailed_monotonic_set.h"
 
-// typedef BacktrackableMonotonicSet MonotonicSet;
+
+#ifdef BMS
+#include "memory_management/backtrackable_monotonic_set.h"
+typedef BacktrackableMonotonicSet MonotonicSet;
+#else
+#include "memory_management/trailed_monotonic_set.h"
 typedef TrailedMonotonicSet MonotonicSet;
+#endif
 
 #include "tuple_container.h"
 
