@@ -20,8 +20,8 @@
 
 typedef INTTYPE node_number_type;  // make type_maximum consistent with this
 static const int type_bits = sizeof(INTTYPE) * CHAR_BIT;
-static const node_number_type node_number_maximum = ULONG_MAX;
-
+//static const node_number_type node_number_maximum = numeric_limits<INTTYPE>::max();
+static const node_number_type node_number_maximum = INT_MAX;
 
 class BacktrackableMonotonicSet
 {
@@ -72,7 +72,7 @@ public:
 	
 	node_number_type& depth_numbers(DomainInt i) const
 	{
-		D_ASSERT( i >= 0 && i < _size);
+		D_ASSERT( i >= 0 && i < _max_depth);
 		int val = checked_cast<int>(i);
 		return static_cast<node_number_type*>(_depth_numbers.get_ptr())[val];
 	}
@@ -82,7 +82,6 @@ public:
 	// returns 0 if index was not a member so no removal necessary
 	{
 
-		/*
 		node_number_type* array_ptr = static_cast<node_number_type*>(_array.get_ptr());
 		DomainInt first = index*2; 
 		node_number_type depth = array_ptr[first]; 
@@ -97,13 +96,7 @@ public:
 		{
 			return 0;
 		}
-		*/
 		
-		if (isMember(index)) { 
-				remove(index);
-				return 1; 
-		}
-		return 0; 
 	}
 
 	

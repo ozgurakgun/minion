@@ -99,14 +99,13 @@ struct BigRangeVarContainer {
 	  return upper_bound(d);
 	}
     /// Note: before calling isMember, remove the lower initial bound from the offset.
-    //if(bms_pointer(d)->isMember(loopvar - low_bound) && (loopvar >= lower))
-    if(bms_array.isMember(var_offset[d.var_num] + loopvar - low_bound) && (loopvar >= lower))
+    if(bms_array.isMember(var_offset[d.var_num] + loopvar) && (loopvar >= lower))
       return upper_bound(d);
     --loopvar;
     for(; loopvar >= lower; --loopvar)
     {
       //if(bms_pointer(d)->isMember(loopvar - low_bound)) 
-      if(bms_array.isMember(var_offset[d.var_num] + loopvar - low_bound)) 
+      if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
     Controller::fail();
@@ -130,12 +129,12 @@ struct BigRangeVarContainer {
 	}
   /// Note: before calling isMember, remove the lower initial bound from the offset.
     //if(bms_pointer(d)->isMember(loopvar - low_bound) && (loopvar <= upper))
-    if(bms_array.isMember(var_offset[d.var_num] + loopvar - low_bound) && (loopvar <= upper))
+    if(bms_array.isMember(var_offset[d.var_num] + loopvar) && (loopvar <= upper))
       return lower_bound(d);
     ++loopvar;
     for(; loopvar <= upper; ++loopvar)
     {
-      if(bms_array.isMember(var_offset[d.var_num] + loopvar - low_bound)) 
+      if(bms_array.isMember(var_offset[d.var_num] + loopvar )) 
         return loopvar;
     }
     Controller::fail();
@@ -149,6 +148,10 @@ struct BigRangeVarContainer {
     lock_m = true;
     bound_data.request_bytes(var_count_m * 2 * sizeof(domain_bound_type));
     bms_array.initialise(var_offset.back(),var_offset.back());
+
+    for(DomainInt j = 0; j < var_count_m; j++) {
+	       var_offset[j] = var_offset[j] - initial_bounds[j].first;
+    };
     // This is larger size than we need if these are the search variables. 
     // But we may not have the search variables here. 
     
@@ -200,7 +203,7 @@ struct BigRangeVarContainer {
     D_ASSERT(lock_m);
     if (i < lower_bound(d) || i > upper_bound(d))
       return false;
-    return bms_array.isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
+    return bms_array.isMember(var_offset[d.var_num] + i);
   }
   
   // Warning: If this is ever changed, be sure to check through the code for other places
@@ -210,7 +213,7 @@ struct BigRangeVarContainer {
     D_ASSERT(lock_m);
     D_ASSERT(i >= lower_bound(d));
     D_ASSERT(i <= upper_bound(d));
-    return bms_array.isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
+    return bms_array.isMember(var_offset[d.var_num] + i );
   }
   
   DomainInt getMin(BigRangeVarRef_internal d) const
@@ -245,10 +248,8 @@ struct BigRangeVarContainer {
     D_ASSERT(lock_m);
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
  
-   if(! (bms_array.ifMember_remove(var_offset[d.var_num] + i - initial_bounds[d.var_num].first) ))
- /*
-if (! inDomain(d,i)) 
-	*/
+if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(var_offset[d.var_num] + i) ))
+// if (! inDomain(d,i)) 
     {
 #ifdef DEBUG
       cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
@@ -265,9 +266,9 @@ if (! inDomain(d,i))
     trigger_list.push_domain(d.var_num);
     
     // use ifMember remove above, so delete following line
- //  bms_array.remove(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first);
+  //   bms_array.remove(var_offset[d.var_num] + offset);
 
-    D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset - initial_bounds[d.var_num].first));
+    D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset));
     domain_bound_type up_bound = upper_bound(d);
     if(offset == up_bound)
     {
@@ -327,9 +328,9 @@ private:
   {
 #ifdef FULL_DOMAIN_TRIGGERS
     // TODO : Optimise this function to only check values in domain.
-    int domainOffset = var_offset[d.var_num] - initial_bounds[d.var_num].first;
+    int domainOffset = var_offset[d.var_num] ;
     for(DomainInt loop = lower; loop <= upper; ++loop)
-    {
+    {  
       // def of inDomain: bms_array.isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
       if(bms_array.isMember(loop + domainOffset) && loop != offset)
         trigger_list.push_domain_removal(d.var_num, loop);
@@ -380,9 +381,9 @@ public:
     {
 #ifdef FULL_DOMAIN_TRIGGERS
 	  // TODO : Optimise this function to only check values in domain.
-      int domainOffset = var_offset[d.var_num] - initial_bounds[d.var_num].first;
+      int domainOffset = var_offset[d.var_num] ;
 	  for(DomainInt loop = offset + 1; loop <= up_bound; ++loop)
-	  {
+	  {  
         // Def of inDomain: bms_array.isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
 	    if(bms_array.isMember(domainOffset + loop))
 	      trigger_list.push_domain_removal(d.var_num, loop);
@@ -432,7 +433,7 @@ public:
     {
 #ifdef FULL_DOMAIN_TRIGGERS
 	  // TODO : Optimise this function to only check values in domain.
-      int domainOffset = var_offset[d.var_num] - initial_bounds[d.var_num].first;
+      int domainOffset = var_offset[d.var_num]; 
 	  for(DomainInt loop = low_bound; loop < offset; ++loop)
 	  {
         // def of inDomain: bms_array.isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
