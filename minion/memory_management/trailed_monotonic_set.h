@@ -121,6 +121,20 @@ public:
   }
   
 
+  bool ifMember_remove(DomainInt index)
+  {
+
+    D_ASSERT( 0 <= index && index < size());
+	  if (array(index)) 
+	  { 
+		  undo_indexes(_local_depth) = checked_cast<int>(index);
+		  ++_local_depth;
+		 array(index) = 0;	  
+		 return 1;
+	  }
+	  return 0; 
+  }
+
   bool isMember(DomainInt index) const
   {
     return (bool)array(index);
