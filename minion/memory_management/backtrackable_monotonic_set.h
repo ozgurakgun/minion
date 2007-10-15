@@ -86,8 +86,11 @@ public:
 		DomainInt first = index*2; 
 		node_number_type depth = array_ptr[first]; 
 
-		
-		if  ( array_ptr[first+1] != depth_numbers(depth) )
+#ifdef BLANKCERTS		
+		if  ( array_ptr[first+1] == bms_bottom && array_ptr[first+1] != depth_numbers(depth) )
+#else
+        if  (array_ptr[first+1] != depth_numbers(depth) )
+#endif
 		{
 			array_ptr[first] = _backtrack_depth; 
 			array_ptr[first+1] = _node_number;
@@ -130,9 +133,22 @@ domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_pt
 		*/
 		DomainInt first = index*2; 
 		node_number_type* array_ptr = static_cast<node_number_type*>(_array.get_ptr());
-		
+#ifdef BLANKCERTS
+        if(array_ptr[first + 1] == bms_bottom)
+          return true;
+        
+		node_number_type depth = array_ptr[first]; 
+        if(array_ptr[first + 1] != depth_numbers(depth))
+        {
+          array_ptr[first + 1] = bms_bottom;
+          return true;
+        }
+        else
+          return false;
+#else
 		node_number_type depth = array_ptr[first]; 
 		return (bool) ( array_ptr[first+1] != depth_numbers(depth) ) ;
+#endif
 	}
 
 	node_number_type compute_node_number() 
