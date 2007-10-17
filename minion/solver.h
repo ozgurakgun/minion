@@ -116,7 +116,7 @@ public:
   }
                           
   SearchState() : nodes(0), optimise_var(NULL), current_optimise_position(0), optimise(false), solutions(0),
-	dynamic_triggers_used(false), tupleListContainer(NULL), is_locked(false)
+	dynamic_triggers_used(false), finished(false), failed(false), tupleListContainer(NULL), is_locked(false)
   {}
   
   void markLocked()
