@@ -167,6 +167,9 @@ public:
                   lock_m(false), final_lock_m(false)
   { memBlockCache.registerNewMemoryBlock(this);}
   
+  ~NewMemoryBlock()
+  { memBlockCache.unregisterNewMemoryBlock(this);}
+  
   MoveablePointer request_bytes(unsigned byte_count)
   {
     // TODO: is the following line necessary?
