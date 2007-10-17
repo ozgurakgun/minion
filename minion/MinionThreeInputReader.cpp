@@ -82,6 +82,8 @@ void MinionThreeInputReader::read(InputFileReader* infile) {
         while(infile->peek_char() != '*')
           readConstraint(infile, false);
       }
+      else if(s == "**GADGET**")
+      { readGadget(infile); }
       else
         throw parse_exception("Don't understand '" + s + "'");
       s = infile->get_asciistring();
@@ -118,6 +120,40 @@ void MinionThreeInputReader::read(InputFileReader* infile) {
     instance.print_matrix = make_vec(instance.vars.get_all_vars());
 }
 
+struct Gadget
+{
+  string name;
+  int varCount;
+  vector<int> construction;
+};
+
+
+void MinionThreeInputReader::readGadget(InputFileReader* infile)
+{
+  Gadget g;
+  string s;
+  
+  s = infile->get_string();
+  if(s != "NAME")
+    throw parse_exception("Expected 'NAME', recieved :"+s);
+  g.name = infile->get_string();
+  
+  s = infile->get_string();
+  if(s != "VARCOUNT")
+    throw parse_exception("Expected 'VARCOUNT', recieved :"+s);
+  g.varCount = infile->read_num();
+  
+  s = infile->get_string();
+  if(s != "CONSTRUCTION_SITE")
+    throw parse_exception("Expected 'CONSTRUCTION_SITE', recieved :"+s);
+  g.construction = getConstantVector();
+  
+  while(infile->peek_char() == '*')
+  {
+    
+    
+  }
+}
 
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
