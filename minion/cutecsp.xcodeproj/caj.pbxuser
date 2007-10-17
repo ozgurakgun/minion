@@ -216,6 +216,7 @@
 			261F2C9E0CC66733008B1300 /* PBXTextBookmark */ = 261F2C9E0CC66733008B1300 /* PBXTextBookmark */;
 			261F2C9F0CC66733008B1300 /* PBXTextBookmark */ = 261F2C9F0CC66733008B1300 /* PBXTextBookmark */;
 			261F2CA00CC66733008B1300 /* PBXTextBookmark */ = 261F2CA00CC66733008B1300 /* PBXTextBookmark */;
+			261F2CA30CC66BF5008B1300 /* PBXTextBookmark */ = 261F2CA30CC66BF5008B1300 /* PBXTextBookmark */;
 			263ACAB40C74E7FB00AE5947 = 263ACAB40C74E7FB00AE5947 /* PBXTextBookmark */;
 			263ACAB60C74E7FB00AE5947 = 263ACAB60C74E7FB00AE5947 /* PBXTextBookmark */;
 			263ACB930C75BFD700AE5947 = 263ACB930C75BFD700AE5947 /* PBXTextBookmark */;
@@ -670,7 +671,7 @@
 		fRef = 26E34D160970235600058E70 /* minion.h */;
 		name = "minion.h: ~StateObj";
 		rLen = 0;
-		rLoc = 4436;
+		rLoc = 4439;
 		rType = 0;
 		vrLen = 760;
 		vrLoc = 3685;
@@ -724,6 +725,16 @@
 		rType = 0;
 		vrLen = 937;
 		vrLoc = 3389;
+	};
+	261F2CA30CC66BF5008B1300 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 26E34D160970235600058E70 /* minion.h */;
+		name = "minion.h: 175";
+		rLen = 0;
+		rLoc = 4392;
+		rType = 0;
+		vrLen = 800;
+		vrLoc = 3648;
 	};
 	261F572A0C450EFE0016D625 /* trailed_monotonic_set.h */ = {
 		uiCtxt = {
@@ -2112,9 +2123,9 @@
 	};
 	26E34D160970235600058E70 /* minion.h */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1090, 2534}}";
-			sepNavSelRange = "{3942, 18}";
-			sepNavVisRect = "{{0, 1917}, {1090, 491}}";
+			sepNavIntBoundsRect = "{{0, 0}, {1090, 2548}}";
+			sepNavSelRange = "{4392, 0}";
+			sepNavVisRect = "{{0, 2043}, {1090, 491}}";
 			sepNavWindowFrame = "{{233, 176}, {703, 702}}";
 		};
 	};
