@@ -221,8 +221,6 @@
 			<key>Layout</key>
 			<array>
 				<dict>
-					<key>BecomeActive</key>
-					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -296,7 +294,7 @@
 							<real>272</real>
 						</array>
 						<key>RubberWindowFrame</key>
-						<string>428 134 1431 744 0 0 1440 878 </string>
+						<string>5 134 1431 744 0 0 1440 878 </string>
 					</dict>
 					<key>Module</key>
 					<string>PBXSmartGroupTreeModule</string>
@@ -307,6 +305,8 @@
 					<key>Dock</key>
 					<array>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -324,7 +324,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>261F2CA00CC66733008B1300</string>
+										<string>261F2CA30CC66BF5008B1300</string>
 										<key>history</key>
 										<array>
 											<string>263ACAB40C74E7FB00AE5947</string>
@@ -443,7 +443,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {1137, 523}}</string>
 								<key>RubberWindowFrame</key>
-								<string>428 134 1431 744 0 0 1440 878 </string>
+								<string>5 134 1431 744 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -463,7 +463,7 @@
 								<key>Frame</key>
 								<string>{{0, 528}, {1137, 175}}</string>
 								<key>RubberWindowFrame</key>
-								<string>428 134 1431 744 0 0 1440 878 </string>
+								<string>5 134 1431 744 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
@@ -639,7 +639,7 @@
 		<string>/Users/caj/Documents/Minion/minion-private/branches/gadgets/minion/cutecsp.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
-	<string>428 134 1431 744 0 0 1440 878 </string>
+	<string>5 134 1431 744 0 0 1440 878 </string>
 	<key>WindowTools</key>
 	<array>
 		<dict>
@@ -865,7 +865,7 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CDD528C0622207200134675</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>minion.h</string>
+										<string>MemoryBlock.h</string>
 										<key>StatusBarVisibility</key>
 										<true/>
 									</dict>
@@ -874,7 +874,7 @@
 										<key>Frame</key>
 										<string>{{0, 0}, {1440, 481}}</string>
 										<key>RubberWindowFrame</key>
-										<string>-8 39 1440 839 0 0 1440 878 </string>
+										<string>67 -618 1440 839 0 0 1440 878 </string>
 									</dict>
 									<key>Module</key>
 									<string>PBXNavigatorGroup</string>
@@ -898,7 +898,7 @@
 								<key>Frame</key>
 								<string>{{0, 486}, {1440, 312}}</string>
 								<key>RubberWindowFrame</key>
-								<string>-8 39 1440 839 0 0 1440 878 </string>
+								<string>67 -618 1440 839 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXProjectFindModule</string>
@@ -927,11 +927,11 @@
 				<string>1CD0528E0623707200166675</string>
 			</array>
 			<key>WindowString</key>
-			<string>-8 39 1440 839 0 0 1440 878 </string>
+			<string>67 -618 1440 839 0 0 1440 878 </string>
 			<key>WindowToolGUID</key>
 			<string>1C530D57069F1CE1000CFCEE</string>
 			<key>WindowToolIsVisible</key>
-			<false/>
+			<true/>
 		</dict>
 		<dict>
 			<key>Identifier</key>
