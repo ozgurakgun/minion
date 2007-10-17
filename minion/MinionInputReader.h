@@ -277,7 +277,7 @@ class MinionThreeInputReader {
   vector<Var> readPossibleMatrixIdentifier(InputFileReader* infile);
   vector< vector<Var> > readLiteralMatrix(InputFileReader* infile) ;
   vector<Var> readLiteralVector(InputFileReader* infile) ;
-  vector<int> readConstantVector(InputFileReader* infile, char start, char end, bool = false);
+  vector<int> readConstantVector(InputFileReader* infile, char start = '[', char end = ']', bool = false);
   vector<int> readRange(InputFileReader* infile);
   void readObjective(InputFileReader* infile) ;
   void readTuples(InputFileReader* infile) ;

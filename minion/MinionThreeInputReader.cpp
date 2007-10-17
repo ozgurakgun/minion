@@ -146,7 +146,7 @@ void MinionThreeInputReader::readGadget(InputFileReader* infile)
   s = infile->get_string();
   if(s != "CONSTRUCTION_SITE")
     throw parse_exception("Expected 'CONSTRUCTION_SITE', recieved :"+s);
-  g.construction = getConstantVector();
+  g.construction = readConstantVector(infile);
   
   while(infile->peek_char() == '*')
   {
@@ -387,7 +387,7 @@ Var MinionThreeInputReader::readIdentifier(InputFileReader* infile) {
   Var var = instance.vars.getSymbol(name);
   if(var.type == VAR_MATRIX)
   {
-    vector<int> params = readConstantVector(infile,'[',']');
+    vector<int> params = readConstantVector(infile);
     vector<int> max_index = instance.vars.getMatrixSymbol(name);
     if(params.size() != max_index.size())
       throw parse_exception("Can't index a " + to_string(max_index.size()) + 
@@ -487,6 +487,7 @@ vector<Var> MinionThreeInputReader::readLiteralVector(InputFileReader* infile) {
 
 // Note: allowNulls maps '_' to -999 (a horrible hack I know).
 // That last parameter defaults to false.
+// The start and end default to '[' and ']'
 vector<int> MinionThreeInputReader::readConstantVector
           (InputFileReader* infile, char start, char end, bool allowNulls) 
 {
@@ -668,7 +669,7 @@ void MinionThreeInputReader::readVars(InputFileReader* infile) {
     {
       parser_info("Is array!");
       isArray = true;
-      indices = readConstantVector(infile,'[',']');
+      indices = readConstantVector(infile);
       parser_info("Found " + to_string(indices.size()) + " indices");
     }
     

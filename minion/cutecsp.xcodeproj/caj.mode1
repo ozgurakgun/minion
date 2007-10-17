@@ -269,11 +269,11 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>0</integer>
+									<integer>101</integer>
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
-							<string>{{0, 0}, {272, 687}}</string>
+							<string>{{0, 1140}, {272, 685}}</string>
 						</dict>
 						<key>PBXTopSmartGroupGIDs</key>
 						<array/>
@@ -285,14 +285,14 @@
 					<key>GeometryConfiguration</key>
 					<dict>
 						<key>Frame</key>
-						<string>{{0, 0}, {289, 705}}</string>
+						<string>{{0, 0}, {289, 703}}</string>
 						<key>GroupTreeTableConfiguration</key>
 						<array>
 							<string>MainColumn</string>
 							<real>272</real>
 						</array>
 						<key>RubberWindowFrame</key>
-						<string>404 132 1026 746 0 0 1440 878 </string>
+						<string>-14 134 1431 744 0 0 1440 878 </string>
 					</dict>
 					<key>Module</key>
 					<string>PBXSmartGroupTreeModule</string>
@@ -310,7 +310,7 @@
 								<key>PBXProjectModuleGUID</key>
 								<string>1CE0B20306471E060097A5F4</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>solver.h</string>
+								<string>MinionThreeInputReader.cpp</string>
 								<key>PBXSplitModuleInNavigatorKey</key>
 								<dict>
 									<key>Split0</key>
@@ -318,11 +318,11 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CE0B20406471E060097A5F4</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>solver.h</string>
+										<string>MinionThreeInputReader.cpp</string>
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>26EC822E0CC6597F002CAB07</string>
+										<string>26EC82600CC662C6002CAB07</string>
 										<key>history</key>
 										<array>
 											<string>263ACAB40C74E7FB00AE5947</string>
@@ -368,12 +368,12 @@
 											<string>2697720F0CB9717B00C5A5F9</string>
 											<string>268052A60CC386B8002B7BFF</string>
 											<string>268A21A70CC4F41D00C5E805</string>
-											<string>268A21A80CC4F41D00C5E805</string>
-											<string>26EC820D0CC65211002CAB07</string>
 											<string>26EC82280CC6597F002CAB07</string>
 											<string>26EC82290CC6597F002CAB07</string>
 											<string>26EC822A0CC6597F002CAB07</string>
-											<string>26EC82260CC6597D002CAB07</string>
+											<string>26EC82580CC662AE002CAB07</string>
+											<string>26EC82590CC662AE002CAB07</string>
+											<string>26EC825A0CC662AE002CAB07</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -428,6 +428,9 @@
 											<string>26EC822B0CC6597F002CAB07</string>
 											<string>26EC822C0CC6597F002CAB07</string>
 											<string>26EC822D0CC6597F002CAB07</string>
+											<string>26EC825B0CC662AE002CAB07</string>
+											<string>26EC825C0CC662AE002CAB07</string>
+											<string>26EC825D0CC662AE002CAB07</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -439,14 +442,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 0}, {732, 525}}</string>
+								<string>{{0, 0}, {1137, 523}}</string>
 								<key>RubberWindowFrame</key>
-								<string>404 132 1026 746 0 0 1440 878 </string>
+								<string>-14 134 1431 744 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
 							<key>Proportion</key>
-							<string>525pt</string>
+							<string>523pt</string>
 						</dict>
 						<dict>
 							<key>ContentConfiguration</key>
@@ -459,9 +462,9 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 530}, {732, 175}}</string>
+								<string>{{0, 528}, {1137, 175}}</string>
 								<key>RubberWindowFrame</key>
-								<string>404 132 1026 746 0 0 1440 878 </string>
+								<string>-14 134 1431 744 0 0 1440 878 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
@@ -470,7 +473,7 @@
 						</dict>
 					</array>
 					<key>Proportion</key>
-					<string>732pt</string>
+					<string>1137pt</string>
 				</dict>
 			</array>
 			<key>Name</key>
@@ -632,11 +635,13 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>26AAF86A096D3B9C00AD8C1A</string>
 		<string>1C530D57069F1CE1000CFCEE</string>
+		<string>26EC825F0CC662AE002CAB07</string>
 		<string>/Users/caj/Documents/Minion/minion-private/branches/gadgets/minion/cutecsp.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
-	<string>404 132 1026 746 0 0 1440 878 </string>
+	<string>-14 134 1431 744 0 0 1440 878 </string>
 	<key>WindowTools</key>
 	<array>
 		<dict>
@@ -715,7 +720,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>26AAF86A096D3B9C00AD8C1A</string>
-				<string>268A21AE0CC4F41D00C5E805</string>
+				<string>26EC82400CC66201002CAB07</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
