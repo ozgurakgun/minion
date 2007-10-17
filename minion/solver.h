@@ -124,6 +124,8 @@ public:
 
   bool isLocked()
   { return is_locked; }
+  
+  
 };
 
 
@@ -201,8 +203,9 @@ public:
   TriggerMem* triggerMem() { return triggerMem_m; }
   VariableContainer& varCon() { return *varContainer_m; }
 
-  // This has to be defined a long way away...
+  // These has to be defined a long way away...
   StateObj();
+  ~StateObj();
 };
 
 namespace Controller
