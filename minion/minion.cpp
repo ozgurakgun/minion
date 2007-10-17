@@ -557,6 +557,8 @@ int main(int argc, char** argv) {
     SolveCSP(stateObj, reader, args);
   }
   
+  delete stateObj;
+  
   return 0;
 }
 
