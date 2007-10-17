@@ -168,4 +168,13 @@ inline StateObj::StateObj() : searchMem_m(new Memory),
                               varContainer_m(new VariableContainer(this))
 { }
 
+inline StateObj::~StateObj()
+{ 
+  delete searchMem_m;
+  delete options_m;
+  delete queues_m;
+  delete triggerMem_m;
+  delete varContainer_m;
+}
+
 #endif
