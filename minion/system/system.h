@@ -87,6 +87,7 @@
 // so this can't be activated safely.
 #ifdef USE_HASHTABLE
 #include <ext/hash_map>
+#include <ext/hash_set>
 namespace __gnu_cxx
 {
 template<typename T>
@@ -98,9 +99,12 @@ template<typename T>
     };
 }
 #define MAP_TYPE __gnu_cxx::hash_map
+#define SET_TYPE __gnu_cxx::hash_set
 #else
 #include <map>
+#include <set>
 #define MAP_TYPE map
+#define SET_TYPE set
 #endif
 
 using namespace std;

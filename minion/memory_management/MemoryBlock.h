@@ -121,7 +121,7 @@ public:
   
   MemBlockCache() { }
   
-  set<NewMemoryBlock*> NewMemoryBlockCache;
+  SET_TYPE<NewMemoryBlock*> NewMemoryBlockCache;
 
   void registerNewMemoryBlock(NewMemoryBlock* mb)
   { NewMemoryBlockCache.insert(mb); }
@@ -154,7 +154,7 @@ class NewMemoryBlock
   unsigned maximum_bytes;
   bool lock_m;
   bool final_lock_m;
-  set<MoveablePointer*> pointers;
+  SET_TYPE<MoveablePointer*> pointers;
 public:
   
   char* getDataPtr()
@@ -205,7 +205,7 @@ public:
     char* new_data = (char*)malloc(byte_count);
     memset(new_data, 0, byte_count);
 
-    for(set<MoveablePointer*>::iterator it = pointers.begin(); it != pointers.end(); ++it)
+    for(SET_TYPE<MoveablePointer*>::iterator it = pointers.begin(); it != pointers.end(); ++it)
     {
       D_ASSERT((*it)->get_ptr() >= current_data && (*it)->get_ptr() < current_data + allocated_bytes);
       (*it)->set_ptr( ((char*)((*it)->get_ptr()) - current_data) + new_data );
@@ -319,7 +319,7 @@ inline void MemBlockCache::addPointerToNewMemoryBlock(MoveablePointer* vp)
     if(vp->get_ptr_noCheck() == NULL)
       return;
 
-    for(set<NewMemoryBlock*>::iterator it = NewMemoryBlockCache.begin();
+    for(SET_TYPE<NewMemoryBlock*>::iterator it = NewMemoryBlockCache.begin();
         it != NewMemoryBlockCache.end();
         ++it)
     {
@@ -332,7 +332,7 @@ inline void MemBlockCache::addPointerToNewMemoryBlock(MoveablePointer* vp)
 
   inline void MemBlockCache::removePointerFromNewMemoryBlock(MoveablePointer* vp)
   {
-    for(set<NewMemoryBlock*>::iterator it = NewMemoryBlockCache.begin();
+    for(SET_TYPE<NewMemoryBlock*>::iterator it = NewMemoryBlockCache.begin();
         it != NewMemoryBlockCache.end();
         ++it)
     {
@@ -346,7 +346,7 @@ inline void MemBlockCache::addPointerToNewMemoryBlock(MoveablePointer* vp)
   {
     if(vp->get_ptr_noCheck() == NULL)
       return true;
-    for(set<NewMemoryBlock*>::iterator it = NewMemoryBlockCache.begin();
+    for(SET_TYPE<NewMemoryBlock*>::iterator it = NewMemoryBlockCache.begin();
         it != NewMemoryBlockCache.end();
         ++it)
     {
