@@ -65,11 +65,23 @@ void MinionThreeInputReader::parser_info(string s)
 // read
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 void MinionThreeInputReader::read(InputFileReader* infile) {  
-
-    
     string s = infile->get_asciistring();
     parser_info("Read: '" + s + "'");
-    while(s != "**EOF**")
+    
+    string eof, wrong_eof;
+    
+    if(isGadgetReader())
+    {
+      eof = "**GADGET_END**";
+      wrong_eof = "**EOF**";
+    }
+    else
+    {
+      eof = "**EOF**";
+      wrong_eof = "**GADGET_END**";
+    }
+    
+    while(s != eof)
     {
       if(s == "**VARIABLES**")
         readVars(infile);
@@ -84,13 +96,21 @@ void MinionThreeInputReader::read(InputFileReader* infile) {
       }
       else if(s == "**GADGET**")
       { readGadget(infile); }
+      else if(s == wrong_eof)
+      { 
+        throw parse_exception("Section terminated with " + wrong_eof + 
+                              " instead of " + eof);
+      }
       else
-        throw parse_exception("Don't understand '" + s + "'");
+        throw parse_exception("Don't understand '" + s + "' as a section header");
       s = infile->get_asciistring();
       parser_info("Read: '" + s + "'");
     }
+    
+    parser_info("Reached end of CSP");
 
-
+    if(isGadgetReader() && constructionSite.empty())
+      throw parse_exception("Gadgets need a construction site!");
   
   // Fill in any missing defaults
   if(instance.var_order.empty())
@@ -120,39 +140,25 @@ void MinionThreeInputReader::read(InputFileReader* infile) {
     instance.print_matrix = make_vec(instance.vars.get_all_vars());
 }
 
-struct Gadget
-{
-  string name;
-  int varCount;
-  vector<int> construction;
-};
-
-
 void MinionThreeInputReader::readGadget(InputFileReader* infile)
 {
-  Gadget g;
-  string s;
+  parser_info("Entering gadget parsing");
+  if(isGadgetReader())
+    throw parse_exception("Gadgets can't have gadgets!");
   
-  s = infile->get_string();
-  if(s != "NAME")
-    throw parse_exception("Expected 'NAME', recieved :"+s);
-  g.name = infile->get_string();
+  infile->check_string("NAME");
+  string name = infile->get_string();
+  parser_info("Gadget name:" + name);
   
-  s = infile->get_string();
-  if(s != "VARCOUNT")
-    throw parse_exception("Expected 'VARCOUNT', recieved :"+s);
-  g.varCount = infile->read_num();
+  MinionThreeInputReader gadget;
+  gadget.setGadgetReader();
+  // Pass on parser verboseness
+  gadget.parser_verbose = parser_verbose;
+  gadget.read(infile);
   
-  s = infile->get_string();
-  if(s != "CONSTRUCTION_SITE")
-    throw parse_exception("Expected 'CONSTRUCTION_SITE', recieved :"+s);
-  g.construction = readConstantVector(infile);
-  
-  while(infile->peek_char() == '*')
-  {
-    
-    
-  }
+  // Take the CSPInstance out of the Minion3InputReader, and make a copy of it.
+  instance.addGadgetSymbol(name, shared_ptr<CSPInstance>(new CSPInstance(gadget.instance)));
+  parser_info("Exiting gadget parsing");
 }
 
 
@@ -640,6 +646,14 @@ void MinionThreeInputReader::readSearch(InputFileReader* infile) {
         instance.print_matrix = make_vec(readLiteralVector(infile));
       }
     }
+    else if(var_type == "CONSTRUCTION")
+    {
+      if(!isGadgetReader())
+        throw parse_exception("Only have construction sites on gadgets!");
+
+      constructionSite = readLiteralVector(infile);
+      parser_info("Read construction site, size " + to_string(constructionSite.size()));
+    }
     else
     {  throw parse_exception("Don't understand '" + var_type + "'"); }
   }
@@ -653,6 +667,7 @@ void MinionThreeInputReader::readSearch(InputFileReader* infile) {
 void MinionThreeInputReader::readVars(InputFileReader* infile) {
   while(infile->peek_char() != '*')
   {
+    parser_info("Begin reading variables");
     string var_type = infile->get_string();
 
     if(var_type != "BOOL" && var_type != "BOUND" && var_type != "SPARSEBOUND"
