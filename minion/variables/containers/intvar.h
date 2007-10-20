@@ -36,9 +36,15 @@ struct RangeVarRef_internal_template
   MoveablePointer bound_ptr;
   MoveablePointer data_ptr;
   int var_num;
+  
+#ifdef REENTER
   RangeVarContainer<var_min, d_type>* rangeCon;
   RangeVarContainer<var_min, d_type>& getCon() const { return *rangeCon; }
-
+#else
+  // Defined at end of file...
+  RangeVarContainer<var_min, d_type>& getCon() const;
+#endif
+  
  // The following methods are lifted from the container below, to try to simplify copying methods from there.
   const domain_type& raw_lower_bound() const
   { return *static_cast<domain_type*>(bound_ptr.get_ptr()); }
@@ -72,12 +78,17 @@ struct RangeVarRef_internal_template
   
   explicit RangeVarRef_internal_template(RangeVarContainer<var_min, d_type>* con, int i, domain_type* _bound_ptr,
                                                                                          d_type* _data_ptr) : 
-  rangeCon(con), var_num(i), bound_ptr(_bound_ptr), data_ptr(_data_ptr)
+#ifdef REENTER
+    rangeCon(con),
+#endif
+    var_num(i), bound_ptr(_bound_ptr), data_ptr(_data_ptr)
   {}
 
   void operator=(const RangeVarRef_internal_template& var) 
   {
+#ifdef REENTER
     rangeCon = var.rangeCon;
+#endif
     var_num = var.var_num;
     bound_ptr = var.bound_ptr;
     data_ptr = var.data_ptr;
@@ -126,28 +137,28 @@ struct RangeVarRef_internal_template
   }
 
   DomainInt getInitialMax() const
-  { return rangeCon->getInitialMax(*this); }
+  { return getCon().getInitialMax(*this); }
   
   DomainInt getInitialMin() const
-  { return rangeCon->getInitialMin(*this); }
+  { return getCon().getInitialMin(*this); }
   
   void setMax(DomainInt i)
-  { rangeCon->setMax(*this,i); }
+  { getCon().setMax(*this,i); }
   
   void setMin(DomainInt i)
-  { rangeCon->setMin(*this,i); }
+  { getCon().setMin(*this,i); }
   
   void uncheckedAssign(DomainInt b)
-  { rangeCon->uncheckedAssign(*this, b); }
+  { getCon().uncheckedAssign(*this, b); }
   
   void propagateAssign(DomainInt b)
-  { rangeCon->propagateAssign(*this, b); }
+  { getCon().propagateAssign(*this, b); }
   
   void removeFromDomain(DomainInt b)
-  { rangeCon->removeFromDomain(*this, b); }
+  { getCon().removeFromDomain(*this, b); }
   
   void addTrigger(Trigger t, TrigType type)
-  { rangeCon->addTrigger(*this, t, type); }
+  { getCon().addTrigger(*this, t, type); }
 
   friend std::ostream& operator<<(std::ostream& o, const RangeVarRef_internal_template& v)
   { return o << "RangeVar:" << v.var_num; }
@@ -157,7 +168,7 @@ struct RangeVarRef_internal_template
   
 #ifdef DYNAMICTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
-  {  rangeCon->addDynamicTrigger(*this, t, type, pos); }
+  {  getCon().addDynamicTrigger(*this, t, type, pos); }
 #endif
 
 };

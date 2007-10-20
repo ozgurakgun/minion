@@ -62,11 +62,16 @@ public:
   SparseBoundVarContainer<>& getSparseBoundvarContainer() { return sparseBoundvarContainer; }
 };
 
+
+#ifndef REENTER
+VARDEF(StateObj stateObj_no_reenter);
+VARDEF_ASSIGN(VariableContainer varCon_no_reenter,&stateObj_no_reenter);
+
 /*
 struct GetBoundVarContainer
 {
   static BoundVarContainer<>& con() 
-  {}//{ return stateObj->varCon().getBoundvarContainer(); }
+  { return varCon.getBoundvarContainer(); }
   static string name()
   { return "Bound"; }
 };
@@ -74,7 +79,7 @@ struct GetBoundVarContainer
 struct GetBooleanContainer
 { 
   static BooleanContainer& con() 
-  {}//{ return stateObj->varCon().getBooleanContainer(); } 
+  { return varCon.getBooleanContainer(); } 
   static string name()
   { return "Bool:"; }
 };
@@ -82,14 +87,22 @@ struct GetBooleanContainer
 struct GetRangeVarContainer
 {
   static LRVCon& con() 
-  {}//{ return stateObj->varCon().getRangevarContainer(); }
+  { return varCon.getRangevarContainer(); }
   static string name() { return "RangeVar:"; }
 };
+*/
+template<int var_min, typename d_type>
+inline RangeVarContainer<var_min, d_type>& RangeVarRef_internal_template<var_min, d_type>::getCon() const
+{ return varCon_no_reenter.getRangevarContainer(); }
 
+inline BooleanContainer& BoolVarRef_internal::getCon() const
+{ return varCon_no_reenter.getBooleanContainer(); }
+
+/*
 struct GetBigRangeVarContainer
 {
   static BigRangeCon& con() 
-  {}//{ return stateObj->varCon().getBigRangevarContainer(); }
+  { return varCon.getBigRangevarContainer(); }
   static string name() { return "BigRangeVar"; }
 };
 
@@ -97,12 +110,13 @@ struct GetBigRangeVarContainer
 struct GetSparseBoundVarContainer
 {
   static SparseBoundVarContainer<>& con() 
-  {}//{ return stateObj->varCon().getSparseBoundvarContainer(); }
+  { return varCon.getSparseBoundvarContainer(); }
   
   static string name()
   { return "SparseBound:"; }
 };
 */
+#endif
 
 struct SmallDiscreteCheck
 {
