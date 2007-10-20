@@ -243,6 +243,7 @@ public:
       return false;
     else
     {
+      D_INFO(0,DI_MEMBLOCK, "Pointer removed!");
       pointers.erase(vp);
       return true;
     }
@@ -289,7 +290,8 @@ inline MoveablePointer::MoveablePointer(const MoveablePointer& b) : ptr(b.ptr)
 inline void MoveablePointer::operator=(const MoveablePointer& b)
 {
   D_INFO(0, DI_POINTER, "Make " + to_string(this)+ " point to " + to_string(b.ptr) + " instead of " + to_string(ptr));
-  memBlockCache.removePointerFromNewMemoryBlock(this);
+  if(ptr != NULL)
+    memBlockCache.removePointerFromNewMemoryBlock(this);
   ptr = b.ptr;
   memBlockCache.addPointerToNewMemoryBlock(this);
 }
@@ -327,7 +329,6 @@ inline void MemBlockCache::addPointerToNewMemoryBlock(MoveablePointer* vp)
       if((*it)->checkAddToTracker(vp))
         return;
     }
-    ;
     D_FATAL_ERROR("Fatal Memory Corruption when adding to tracker!");
   }
 
