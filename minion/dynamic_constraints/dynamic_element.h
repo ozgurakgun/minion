@@ -178,7 +178,7 @@ struct ElementConstraintDynamic : public DynamicConstraint
   {
     D_ASSERT(indexvar.isAssigned());
     int indexval = checked_cast<int>(indexvar.getAssignedValue());
-    VarRef var = var_array[indexval];
+    VarRef& var = var_array[indexval];
 	
     DomainInt lower = resultvar.getMin(); 
     if( lower > var.getMin() ) 
