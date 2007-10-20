@@ -303,7 +303,8 @@ inline MoveablePointer::MoveablePointer(void* _ptr) : ptr(_ptr)
 inline MoveablePointer::~MoveablePointer()
 {
   D_INFO(0,DI_POINTER,"Remove pointer at " + to_string(this));
-  memBlockCache.removePointerFromNewMemoryBlock(this);
+  if(ptr != NULL)
+    memBlockCache.removePointerFromNewMemoryBlock(this);
 }
 
 #ifndef NO_DEBUG
