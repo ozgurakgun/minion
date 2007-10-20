@@ -99,7 +99,8 @@ template<typename T>
     };
 }
 #define MAP_TYPE __gnu_cxx::hash_map
-#define SET_TYPE __gnu_cxx::hash_set
+// This could be __gnu_cxx::hash_set, but it seems super-slow.
+#define SET_TYPE set
 #else
 #include <map>
 #include <set>
@@ -114,7 +115,7 @@ using namespace std;
 #define VARDEF_ASSIGN(x,y) extern x
 #define VARDEF(x) extern x
 #else
-#define VARDEF_ASSIGN(x,y) x = y
+#define VARDEF_ASSIGN(x,y) x(y)
 #define VARDEF(x) x
 #endif
 
