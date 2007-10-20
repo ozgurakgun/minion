@@ -486,7 +486,11 @@ int main(int argc, char** argv) {
   
 //  state = new SearchState();
 //  searchstateObj->state().setTupleListContainer(new TupleListContainer);
+#ifdef REENTER
    StateObj* stateObj = new StateObj();
+#else
+  StateObj* stateObj = &stateObj_no_reenter;
+#endif
 //  stateObj->options() = new SearchOptions();
  // queues = new Queues();
 //  varContainer = new VariableContainer();
@@ -557,8 +561,9 @@ int main(int argc, char** argv) {
     SolveCSP(stateObj, reader, args);
   }
   
+#ifdef REENTER
   delete stateObj;
-  
+#endif
   return 0;
 }
 

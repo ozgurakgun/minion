@@ -45,19 +45,31 @@ struct BoolVarRef_internal
   unsigned var_num;
   MoveablePointer data_position;
   MemOffset value_position;
+  
+#ifdef REENTER
   BooleanContainer* boolCon;
+  BooleanContainer& getCon() const { return *boolCon; }
+#else
+  BooleanContainer& getCon() const;
+#endif
   
   BoolVarRef_internal(int value, BooleanContainer* b_con);
   
   BoolVarRef_internal(const BoolVarRef_internal& b) :
     shift_offset(b.shift_offset), data_offset(b.data_offset), var_num(b.var_num), data_position(b.data_position),
-    value_position(b.value_position), boolCon(b.boolCon)
+    value_position(b.value_position)
+#ifdef REENTER
+    ,boolCon(b.boolCon)
+#endif
   {}
   
-  BoolVarRef_internal() : shift_offset(~1), data_offset(~1), var_num(~1), boolCon(NULL)
+  BoolVarRef_internal() : shift_offset(~1), data_offset(~1), var_num(~1)
+#ifdef REENTER
+    , boolCon(NULL)
+#endif
   { }
 
-  BooleanContainer& getCon() const { return *boolCon; }
+
   
   data_type& assign_ptr() const
   { return *static_cast<data_type*>(data_position.get_ptr()); }
@@ -292,7 +304,10 @@ inline BoolVarRef BooleanContainer::get_var_num(int i)
 inline BoolVarRef_internal::BoolVarRef_internal(int value, BooleanContainer* b_con) : 
   data_offset(value / (sizeof(data_type)*8)), var_num(value),  
   data_position(b_con->assign_offset, data_offset*sizeof(data_type)),
-  value_position(b_con->values_mem, data_offset*sizeof(data_type)), boolCon(b_con)
+  value_position(b_con->values_mem, data_offset*sizeof(data_type))
+#ifdef REENTER
+, boolCon(b_con)
+#endif
 { shift_offset = one << (value % (sizeof(data_type)*8)); }
 
 

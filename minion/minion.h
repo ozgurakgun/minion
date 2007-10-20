@@ -165,12 +165,18 @@ inline StateObj::StateObj() : searchMem_m(new Memory),
                               state_m(),
                               queues_m(new Queues(this)),
                               triggerMem_m(new TriggerMem(this)),
+#ifdef REENTER
                               varContainer_m(new VariableContainer(this))
+#else
+                              varContainer_m(&varCon_no_reenter)
+#endif
 { }
 
 inline StateObj::~StateObj()
 { 
+#ifdef REENTER
   delete varContainer_m;
+#endif
   delete triggerMem_m;
   delete queues_m;
   delete options_m;
