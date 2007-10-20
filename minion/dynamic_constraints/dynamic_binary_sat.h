@@ -25,8 +25,7 @@
 */
 
 
-
-// VarToCount = 1 means leq, = 0 means geq.
+//! Specialised SAT implementation for just 2 variables
 template<typename VarArray>
 struct BoolBinarySATConstraintDynamic : public DynamicConstraint
 {
