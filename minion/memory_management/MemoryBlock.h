@@ -35,12 +35,7 @@ struct MoveablePointer
 
   explicit MoveablePointer(void* _ptr);
 
-  explicit MoveablePointer(const MoveablePointer& b, int offset)
-  {
-    D_INFO(0,DI_POINTER,"Create offset of " + to_string(b.ptr) + " by " + to_string(offset));
-    D_ASSERT(b.get_ptr() != NULL);
-    *this = MoveablePointer(((char*)b.ptr) + offset); 
-  }
+  explicit MoveablePointer(const MoveablePointer& b, int offset);
 
   void* ptr;
 
@@ -308,6 +303,14 @@ inline MoveablePointer::~MoveablePointer()
   if(ptr != NULL)
     memBlockCache.removePointerFromNewMemoryBlock(this);
 }
+
+explicit MoveablePointer::MoveablePointer(const MoveablePointer& b, int offset) : ptr(((char*)b.ptr) + offset)
+{
+  D_INFO(0,DI_POINTER,"Create offset of " + to_string(b.ptr) + " by " + to_string(offset));
+  D_ASSERT(b.get_ptr() != NULL);
+  memBlockCache.addPointerToNewMemoryblock(this);
+}
+
 
 #ifndef NO_DEBUG
 inline void* MoveablePointer::get_ptr() const
