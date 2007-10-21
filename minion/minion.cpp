@@ -28,6 +28,8 @@ using namespace ProbSpec;
 
 #include "svn_header.h"
 
+#include "system/defined_macros.h"
+
 struct MinionArguments
 {
   enum PreProcess
@@ -99,6 +101,9 @@ void print_info()
 #else
 	"on" << endl;
 #endif
+    
+    cout << "The following preprocessor flags were active:" << endl;
+    print_macros();
 	exit(0);
 }
   

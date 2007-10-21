@@ -29,6 +29,7 @@
 // Only GCC has hashtables
 #ifdef __GNUC__
 #define USE_HASHTABLE
+#define USE_HASHSET
 #endif
 
 // On linux systems, _longjmp and _setjmp are faster versions that ignore
@@ -87,7 +88,6 @@
 // so this can't be activated safely.
 #ifdef USE_HASHTABLE
 #include <ext/hash_map>
-#include <ext/hash_set>
 namespace __gnu_cxx
 {
 template<typename T>
@@ -99,12 +99,16 @@ template<typename T>
     };
 }
 #define MAP_TYPE __gnu_cxx::hash_map
-// This could be __gnu_cxx::hash_set, but it seems super-slow.
-#define SET_TYPE set
 #else
 #include <map>
-#include <set>
 #define MAP_TYPE map
+#endif
+
+#ifdef USE_HASHSET
+#include <ext/hash_set>
+#define SET_TYPE __gnu_cxx::hash_set
+#else
+#include <set>
 #define SET_TYPE set
 #endif
 
