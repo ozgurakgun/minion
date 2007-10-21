@@ -279,7 +279,8 @@ public:
 inline MoveablePointer::MoveablePointer(const MoveablePointer& b) : ptr(b.ptr)
 {
   D_INFO(0,DI_POINTER,"Copy pointer to " + to_string(ptr) + " from vp " + to_string(&b) + " to " + to_string(this));
-  memBlockCache.addPointerToNewMemoryBlock(this);
+  if(ptr != NULL)
+    memBlockCache.addPointerToNewMemoryBlock(this);
 }
 
 inline void MoveablePointer::operator=(const MoveablePointer& b)
@@ -288,13 +289,15 @@ inline void MoveablePointer::operator=(const MoveablePointer& b)
   if(ptr != NULL)
     memBlockCache.removePointerFromNewMemoryBlock(this);
   ptr = b.ptr;
-  memBlockCache.addPointerToNewMemoryBlock(this);
+  if(ptr != NULL)
+    memBlockCache.addPointerToNewMemoryBlock(this);
 }
 
 inline MoveablePointer::MoveablePointer(void* _ptr) : ptr(_ptr)
 {
   D_INFO(0,DI_POINTER,"Create pointer from raw to:" + to_string(ptr) + " at " + to_string(this));
-  memBlockCache.addPointerToNewMemoryBlock(this);
+  if(ptr != NULL)
+    memBlockCache.addPointerToNewMemoryBlock(this);
 }
 
 inline MoveablePointer::~MoveablePointer()
@@ -304,11 +307,11 @@ inline MoveablePointer::~MoveablePointer()
     memBlockCache.removePointerFromNewMemoryBlock(this);
 }
 
-explicit MoveablePointer::MoveablePointer(const MoveablePointer& b, int offset) : ptr(((char*)b.ptr) + offset)
+inline MoveablePointer::MoveablePointer(const MoveablePointer& b, int offset) : ptr(((char*)b.ptr) + offset)
 {
   D_INFO(0,DI_POINTER,"Create offset of " + to_string(b.ptr) + " by " + to_string(offset));
   D_ASSERT(b.get_ptr() != NULL);
-  memBlockCache.addPointerToNewMemoryblock(this);
+  memBlockCache.addPointerToNewMemoryBlock(this);
 }
 
 
