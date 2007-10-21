@@ -50,6 +50,7 @@ class BacktrackableMonotonicSet
 	node_number_type	_max_depth;
 	DomainInt			_size;
 	node_number_type	_certificate ;
+	node_number_type 	_memo_certificate; 
 
 
 
@@ -89,7 +90,7 @@ public:
 
 		if  (array_ptr[first+2] != depth_numbers(depth) )
 				{
-				        array_ptr[first] = _node_number;
+				        array_ptr[first] = _memo_certificate;
 				 	 array_ptr[first+1] = _backtrack_depth;
 				        array_ptr[first+2] = _node_number;
 					 
@@ -128,13 +129,9 @@ public:
 		
 		 node_number_type stored_cert = array_ptr[first] ;
 
-	       if (stored_cert == max_certificate)  
+	       if (stored_cert >= _memo_certificate)  
 		{
-			return 1;
-		}
-		else if  (stored_cert == _node_number) 
-		{
-			return 0 ; 
+			return (stored_cert == max_certificate) ;
 		}
 		else
 		{
@@ -146,7 +143,7 @@ public:
 			}
 			else
 			{
-				array_ptr[first] = _node_number;
+				array_ptr[first] = _memo_certificate;
 				return 0; 
 			}
 		}
@@ -172,11 +169,13 @@ public:
 		//
 #endif
 		++_certificate;
+		++_memo_certificate;
 		_node_number = compute_node_number();
 		depth_numbers(_backtrack_depth) = _node_number;
 
 		D_ASSERT(_backtrack_depth < search_max_depth);
 		D_ASSERT(_certificate < max_certificate) ; // replace with sweep;
+		D_ASSERT(_memo_certificate < max_certificate) ; // replace with sweep;
 
 		D_ASSERT(_node_number > bms_bottom);
 #ifdef DEBUGBMS
@@ -195,6 +194,7 @@ public:
 		// and so is _node_number
 
 		D_ASSERT( _node_number == depth_numbers(_backtrack_depth));
+		++_memo_certificate;
 
 #ifdef DEBUGBMS
 		cout << "branch right" << endl; print_state();
@@ -267,6 +267,7 @@ public:
 		values_reset();
 
 		_certificate = 1;	// avoid 0 = bms_bottom just in case
+		_memo_certificate = 1;
 
 		_backtrack_depth = 1;
 		_local_depth = 1;
@@ -306,6 +307,7 @@ public:
 		cout << " node number: " << _node_number;
 		cout << " local depth: " << _local_depth;
 		cout << " numsweeps: " << _num_sweeps << endl;
+		cout << " memo cert: " << _memo_certificate << endl;
 		cout << endl << "   values: " ;
 		for(int i = 0; i < _size; ++i)
 		{
