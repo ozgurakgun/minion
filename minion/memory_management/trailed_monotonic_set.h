@@ -16,13 +16,23 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#ifdef TRAILEDBMS 
+typedef int value_type;
+static const value_type  value_maximum = INT_MAX;
+#else
 typedef bool value_type;
+#endif
 
 class TrailedMonotonicSet
 {
 
+#ifdef TRAILEDBMS 
+  static const value_type tms_in_set = value_maximum;
+#else
+  static const value_type tms_in_set = 1;
+#endif
 
-  static const value_type one = 1;
+
   static const int _num_sweeps = 0;
 
   int _size;
@@ -82,7 +92,7 @@ public:
     for(; _local_depth > bt_depth; ) 
     {
       -- _local_depth;
-      array(undo_indexes(_local_depth)) = one ; 
+      array(undo_indexes(_local_depth)) = tms_in_set ; 
     }
 
 #ifdef DEBUG
@@ -103,8 +113,11 @@ public:
 
     ++_local_depth;
 
-    
+#ifdef TRAILEDBMS  
+    array(index) = _local_depth;
+#else
     array(index) = 0;
+#endif
   }
 
   void checked_remove(DomainInt index) 
@@ -125,6 +138,17 @@ public:
   {
 
     D_ASSERT( 0 <= index && index < size());
+#ifdef TRAILEDBMS  
+	  if (array(index) > _local_depth) 
+	  { 
+		  undo_indexes(_local_depth) = checked_cast<int>(index);
+		  ++_local_depth;
+		 array(index) = _local_depth ;	  
+		 return 1;
+	  }
+	  return 0;
+#else
+
 	  if (array(index)) 
 	  { 
 		  undo_indexes(_local_depth) = checked_cast<int>(index);
@@ -132,12 +156,18 @@ public:
 		 array(index) = 0;	  
 		 return 1;
 	  }
-	  return 0; 
+	  return 0;
+#endif
   }
 
   bool isMember(DomainInt index) const
   {
+#ifdef TRAILEDBMS
+    return array(index) > _local_depth ;
+#else
     return (bool)array(index);
+#endif
+
   }
 
 void before_branch_left()
@@ -176,7 +206,7 @@ void initialise(const int& size, const int& max_undos)
 #endif
     
     for(int i=0; i<size; i++) {
-      array(i) = one;
+      array(i) = tms_in_set;
     };
   }
 
