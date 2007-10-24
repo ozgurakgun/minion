@@ -53,21 +53,32 @@ class TrailedMonotonicSet
 
   bool* & undo_indexes(int i)
   { 
-	return static_cast<bool**>(_undo_indexes.get_ptr())[i]; 
+	return static_cast<value_type**>(_undo_indexes.get_ptr())[i]; 
   }
 
+  const bool* & undo_indexes(int i) const
+  { 
+	return static_cast<const value_type**>(_undo_indexes.get_ptr())[i]; 
+  }
 public:
   // following allows external types destructive changes to array 
   // but we probably do not want to allow this to force them to use set()
 
   
-  value_type& array(DomainInt i) const
+  value_type& array(DomainInt i) 
   { 
     D_ASSERT( i >= 0 && i < size());
 	int val = checked_cast<int>(i);
     return static_cast<value_type*>(_array.get_ptr())[val]; 
   }
-
+  
+  const value_type& array(DomainInt i) const
+  { 
+    D_ASSERT( i >= 0 && i < size());
+	int val = checked_cast<int>(i);
+    return static_cast<const value_type*>(_array.get_ptr())[val]; 
+  }
+  
   bool needs_undoing()
   {
     D_ASSERT( _local_depth < _max_depth && _local_depth >= _backtrack_depth);
@@ -164,7 +175,7 @@ void initialise(const int& size, const int& max_undos)
 
     _array.request_bytes(_size*sizeof(value_type)); 
     // _undo_values.request_bytes(_max_depth*sizeof(value_type));
-    _undo_indexes.request_bytes(_max_depth*sizeof(int));
+    _undo_indexes.request_bytes(_max_depth*sizeof(value_type**));
 
 #ifdef DEBUG
     cout << "initialising TrailedMonotonicSet with value of size= " << size << endl;
