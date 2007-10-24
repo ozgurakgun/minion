@@ -109,7 +109,7 @@ public:
 	bool isMember(DomainInt index) const
 	{
 	        /*
-	        #ifdef DEBUG
+	        #ifdef DEBUG-BMS
 	        cout << "isMember: index:" << index << ": node_number: " << _node_number 
 	           << " array(index)" << array(index) 
 	           << " Result: " << (_node_number > array(index)) << endl;
@@ -149,7 +149,7 @@ public:
 
 		++_backtrack_depth;
 		++_local_depth;
-#ifdef DEBUG
+#ifdef DEBUG-BMS
 		// only used for print_state
 		if (_local_depth > _visited_max_depth)
 		{ _visited_max_depth = _local_depth;}
@@ -163,7 +163,7 @@ public:
 	// 	D_ASSERT(_certificate < max_certificate) ; // replace with sweep;
 
 		D_ASSERT(_node_number > bms_bottom);
-#ifdef DEBUG
+#ifdef DEBUG-BMS
 		cout << "branch left" << endl; print_state();
 #endif
 	}
@@ -180,7 +180,7 @@ public:
 
 		D_ASSERT( _node_number == depth_numbers(_backtrack_depth));
 
-#ifdef DEBUG
+#ifdef DEBUG-BMS
 		cout << "branch right" << endl; print_state();
 #endif
 		D_ASSERT(_node_number > bms_bottom);
@@ -195,7 +195,7 @@ public:
 
 	void undo()
 	{
-#ifdef DEBUG
+#ifdef DEBUG-BMS
 		cout << "undo called " << endl;
 		print_state();
 #endif
@@ -211,7 +211,7 @@ public:
 			
 			--_local_depth;
 		}
-#ifdef DEBUG
+#ifdef DEBUG-BMS
 		print_state();
 #endif
 	}
@@ -270,7 +270,7 @@ public:
 		_array.request_bytes(2*_size*sizeof(node_number_type));
 		_depth_numbers.request_bytes((_max_depth+1)*sizeof(node_number_type));
 
-#ifdef DEBUG
+#ifdef DEBUG-BMS
 		cout << "About to call values_reset " << size << endl;
 		cout << " type bits: " << type_bits
 		<< " bms_bottom: " << bms_bottom  ;
@@ -295,7 +295,7 @@ public:
 		_num_sweeps = 0 ;
 
 
-#ifdef DEBUG
+#ifdef DEBUG-BMS
 		cout << "initialising BacktrackableMonotonicSet with value of size= " << size << endl;
 		cout << " type bits: " << type_bits
 		<< " bms_bottom: " << bms_bottom  ;
