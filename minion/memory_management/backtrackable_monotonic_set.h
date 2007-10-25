@@ -58,7 +58,7 @@ class BacktrackableMonotonicSet
 	Reversible<node_number_type> _node_number; // i.e. node number for node where we are.
 
 	MemOffset _array;
-	MemOffset _depth_numbers;
+	node_number_type* _depth_numbers;	// CURRENTLY NOT DELETED WHEN FINISHED
 
 public:
 
@@ -75,7 +75,7 @@ public:
 	{
 	        D_ASSERT( i >= 0 && i < _max_depth);
 	        int val = checked_cast<int>(i);
-	        return static_cast<node_number_type*>(_depth_numbers.get_ptr())[val];
+	        return _depth_numbers[val];
 	}
 
 	bool ifMember_remove(DomainInt index)
@@ -240,7 +240,7 @@ NOT DONE
 		_max_depth = 10000 ;   //// aaargh
 
 		_array.request_bytes(2*_size*sizeof(ARRAY_ELEMENT));
-		_depth_numbers.request_bytes((_max_depth+1)*sizeof(node_number_type));
+		_depth_numbers = new node_number_type[_max_depth+1]; 
 
 		values_reset();
 
