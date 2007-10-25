@@ -24,16 +24,13 @@ static const int type_bits = sizeof(INTTYPE) * CHAR_BIT;
 static const node_number_type node_number_maximum = INT_MAX;
 
 typedef union {
-	node_number_type  depth;
+	node_number_type* depth;
         node_number_type  cert;
 } ARRAY_ELEMENT;
 
 
 class BacktrackableMonotonicSet
 {
-	static const int depth_bits = type_bits;
-
-	static const int certificate_bits = type_bits - depth_bits;
 
 	static const node_number_type search_max_depth = node_number_maximum;
 
@@ -50,6 +47,7 @@ class BacktrackableMonotonicSet
 	// Depth could be quite large and C++ only guarantees int goes up to 32767
 
 	Reversible<node_number_type> 	_backtrack_depth;
+	node_number_type*		_depth_cert_pointer;
 	node_number_type		_local_depth;
 	node_number_type		_visited_max_depth;	 // only used for print state
 
@@ -57,10 +55,7 @@ class BacktrackableMonotonicSet
 	DomainInt			_size;
 	node_number_type	_certificate ;
 
-
-
 	Reversible<node_number_type> _node_number; // i.e. node number for node where we are.
-
 
 	MemOffset _array;
 	MemOffset _depth_numbers;
@@ -90,15 +85,16 @@ public:
 
 		ARRAY_ELEMENT* array_ptr = static_cast<ARRAY_ELEMENT*>(_array.get_ptr());
 		DomainInt first = index*2;
-		node_number_type depth = array_ptr[first].depth;
+	        node_number_type depth_certificate = *(array_ptr[first].depth);
 
 #ifdef BLANKCERTS
+NOT DONE
 		if  ( array_ptr[first+1].cert == bms_bottom || array_ptr[first+1].cert != depth_numbers(depth) )
 #else
-		if  (array_ptr[first+1].cert != depth_numbers(depth) )
+		if  (array_ptr[first+1].cert != depth_certificate )
 #endif
 				{
-				        array_ptr[first].depth = _backtrack_depth;
+				        array_ptr[first].depth = _depth_cert_pointer;
 				        array_ptr[first+1].cert = _node_number;
 				        return 1;
 				}
@@ -113,6 +109,7 @@ public:
 	        DomainInt first = index*2;
 	        ARRAY_ELEMENT* array_ptr = static_cast<ARRAY_ELEMENT*>(_array.get_ptr());
 #ifdef BLANKCERTS
+	NOT CHANGED
 	        if(array_ptr[first + 1].cert == bms_bottom)
 	        return true;
 
@@ -125,8 +122,8 @@ public:
 		 else
 			 return false;
 #else
-			        node_number_type depth = array_ptr[first].depth;
-			        return (bool) ( array_ptr[first+1].cert != depth_numbers(depth) ) ;
+			        node_number_type depth_certificate = *(array_ptr[first].depth);
+			        return (bool) ( array_ptr[first+1].cert != depth_certificate ) ;
 #endif
 			
 	}
@@ -152,6 +149,7 @@ public:
 		++_certificate;
 		_node_number = compute_node_number();
 		depth_numbers(_backtrack_depth) = _node_number;
+		_depth_cert_pointer = &(depth_numbers(_backtrack_depth));
 
 		D_ASSERT(_backtrack_depth < search_max_depth);
 		D_ASSERT(_certificate < max_certificate) ; // replace with sweep;
@@ -199,9 +197,12 @@ public:
 
 		if (_backtrack_depth == (_local_depth - 1))
 		{
-			depth_numbers(_local_depth) = bms_bottom;
+			depth_numbers(_local_depth) = bms_top;
 			--_local_depth;
 		}
+
+		_depth_cert_pointer = &(depth_numbers(_local_depth));
+
 #ifdef DEBUG
 		print_state();
 #endif
@@ -221,7 +222,7 @@ public:
 
 		for(node_number_type j = 0; j < _size; j++)
 		{
-			array(j*2).depth = bms_bottom;
+			array(j*2).depth = &(depth_numbers(0));
 			array(j*2+1).cert = bms_bottom;
 		}
 	}
@@ -245,7 +246,8 @@ public:
 
 		_certificate = 1;	// avoid 0 = bms_bottom just in case
 
-		_backtrack_depth = 1;
+		_backtrack_depth = 1;		// because 0 is a dummy depth
+		_depth_cert_pointer = &(depth_numbers(_backtrack_depth)); 
 		_local_depth = 1;
 		_visited_max_depth = 1;
 
