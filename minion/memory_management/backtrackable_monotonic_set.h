@@ -23,6 +23,12 @@ static const int type_bits = sizeof(INTTYPE) * CHAR_BIT;
 //static const node_number_type node_number_maximum = numeric_limits<INTTYPE>::max();
 static const node_number_type node_number_maximum = INT_MAX;
 
+typedef union {
+	node_number_type  depth;
+        node_number_type  cert;
+} ARRAY_ELEMENT;
+
+
 class BacktrackableMonotonicSet
 {
 	static const int depth_bits = type_bits;
@@ -63,11 +69,11 @@ public:
 
 	// following allows external types destructive changes to the array
 
-	node_number_type& array(DomainInt i) const
+	ARRAY_ELEMENT& array(DomainInt i) const
 	{
 	        D_ASSERT( i >= 0 && i < _size*2);
 	        int val = checked_cast<int>(i);
-	        return static_cast<node_number_type*>(_array.get_ptr())[val];
+	        return static_cast<ARRAY_ELEMENT*>(_array.get_ptr())[val];
 	}
 
 	node_number_type& depth_numbers(DomainInt i) const
@@ -82,18 +88,18 @@ public:
 	// returns 0 if index was not a member so no removal necessary
 	{
 
-		node_number_type* array_ptr = static_cast<node_number_type*>(_array.get_ptr());
+		ARRAY_ELEMENT* array_ptr = static_cast<ARRAY_ELEMENT*>(_array.get_ptr());
 		DomainInt first = index*2;
-		node_number_type depth = array_ptr[first];
+		node_number_type depth = array_ptr[first].depth;
 
 #ifdef BLANKCERTS
-		if  ( array_ptr[first+1] == bms_bottom || array_ptr[first+1] != depth_numbers(depth) )
+		if  ( array_ptr[first+1].cert == bms_bottom || array_ptr[first+1].cert != depth_numbers(depth) )
 #else
-		if  (array_ptr[first+1] != depth_numbers(depth) )
+		if  (array_ptr[first+1].cert != depth_numbers(depth) )
 #endif
 				{
-				        array_ptr[first] = _backtrack_depth;
-				        array_ptr[first+1] = _node_number;
+				        array_ptr[first].depth = _backtrack_depth;
+				        array_ptr[first+1].cert = _node_number;
 				        return 1;
 				}
 			{
@@ -102,52 +108,25 @@ public:
 
 	}
 
-
-	void remove(DomainInt index)
-	{
-		D_ASSERT(isMember(index));  // errors occur if you remove the same value twice
-
-		/*
-
-		domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_ptr());
-		  for(unsigned int i = 0; i < var_count_m; ++i)
-		  {
-		    bound_ptr[2*i] = initial_bounds[i].first;
-		    bound_ptr[2*i+1] = initial_bounds[i].second;
-		  }
-		 */
-		DomainInt first = index*2;
-		node_number_type* array_ptr = static_cast<node_number_type*>(_array.get_ptr());
-		array_ptr[first] = _backtrack_depth;
-		array_ptr[first+1] = _node_number;
-	}
-
 	bool isMember(DomainInt index) const
 	{
-	        /*
-	        #ifdef DEBUG
-	        cout << "isMember: index:" << index << ": node_number: " << _node_number 
-	           << " array(index)" << array(index) 
-	           << " Result: " << (_node_number > array(index)) << endl;
-	        #endif
-	        */
 	        DomainInt first = index*2;
-	        node_number_type* array_ptr = static_cast<node_number_type*>(_array.get_ptr());
+	        ARRAY_ELEMENT* array_ptr = static_cast<ARRAY_ELEMENT*>(_array.get_ptr());
 #ifdef BLANKCERTS
-	        if(array_ptr[first + 1] == bms_bottom)
+	        if(array_ptr[first + 1].cert == bms_bottom)
 	        return true;
 
 	        node_number_type depth = array_ptr[first];
-	        if(array_ptr[first + 1] != depth_numbers(depth))
+	        if(array_ptr[first + 1].cert != depth_numbers(depth))
 	        {
-		        array_ptr[first + 1] = bms_bottom;
+		        array_ptr[first + 1].cert = bms_bottom;
 			 return true;
 		 }
 		 else
 			 return false;
 #else
-			        node_number_type depth = array_ptr[first];
-			        return (bool) ( array_ptr[first+1] != depth_numbers(depth) ) ;
+			        node_number_type depth = array_ptr[first].depth;
+			        return (bool) ( array_ptr[first+1].cert != depth_numbers(depth) ) ;
 #endif
 			
 	}
@@ -240,9 +219,10 @@ public:
 			depth_numbers(i) = bms_top;
 		}
 
-		for(node_number_type j = 0; j < _size*2; j++)
+		for(node_number_type j = 0; j < _size; j++)
 		{
-			array(j) = bms_bottom;
+			array(j*2).depth = bms_bottom;
+			array(j*2+1).cert = bms_bottom;
 		}
 	}
 
@@ -258,7 +238,7 @@ public:
 
 		_max_depth = 10000 ;   //// aaargh
 
-		_array.request_bytes(2*_size*sizeof(node_number_type));
+		_array.request_bytes(2*_size*sizeof(ARRAY_ELEMENT));
 		_depth_numbers.request_bytes((_max_depth+1)*sizeof(node_number_type));
 
 		values_reset();
@@ -312,7 +292,7 @@ public:
 		cout << "   array stored data: ";
 		for(int i = 0; i < _size*2 ; ++i)
 		{
-			cout << array(i) << " " ;
+			cout << array(i).cert << " " ;
 		}
 		cout << endl ;
 		cout << "   depth stored data: ";
