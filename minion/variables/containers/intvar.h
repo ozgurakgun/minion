@@ -37,7 +37,7 @@ struct RangeVarRef_internal_template
   MoveablePointer data_ptr;
   int var_num;
   
-#ifdef REENTER
+#ifdef MANY_VAR_CONTAINERS
   RangeVarContainer<var_min, d_type>* rangeCon;
   RangeVarContainer<var_min, d_type>& getCon() const { return *rangeCon; }
 #else
@@ -78,7 +78,7 @@ struct RangeVarRef_internal_template
   
   explicit RangeVarRef_internal_template(RangeVarContainer<var_min, d_type>* con, int i, domain_type* _bound_ptr,
                                                                                          d_type* _data_ptr) : 
-#ifdef REENTER
+#ifdef MANY_VAR_CONTAINERS
     rangeCon(con),
 #endif
     var_num(i), bound_ptr(_bound_ptr), data_ptr(_data_ptr)
@@ -86,7 +86,7 @@ struct RangeVarRef_internal_template
 
   void operator=(const RangeVarRef_internal_template& var) 
   {
-#ifdef REENTER
+#ifdef MANY_VAR_CONTAINERS
     rangeCon = var.rangeCon;
 #endif
     var_num = var.var_num;
@@ -125,16 +125,10 @@ struct RangeVarRef_internal_template
   }
 
   DomainInt getMin() const
-  {
-    D_ASSERT(getCon().stateObj->state().isFailed() || inDomain(lower_bound()));
-    return lower_bound();
-  }
+  { return lower_bound(); }
   
   DomainInt getMax() const
-  {
-    D_ASSERT(getCon().stateObj->state().isFailed() || inDomain(upper_bound()));
-    return upper_bound();
-  }
+  { return upper_bound(); }
 
   DomainInt getInitialMax() const
   { return getCon().getInitialMax(*this); }
@@ -253,7 +247,7 @@ struct RangeVarContainer {
 	    return loopvar;
       }
     }
-    stateObj->state().setFailed(true);
+    getState(stateObj).setFailed(true);
 	return old_loopvar;
   }
   
@@ -274,7 +268,7 @@ struct RangeVarContainer {
 	    return loopvar;
       }
     }
-    stateObj->state().setFailed(true);
+    getState(stateObj).setFailed(true);
 	return old_loopvar;
   }
      
@@ -321,14 +315,14 @@ struct RangeVarContainer {
   DomainInt getMin(const RangeVarRef_internal& d) const
   {
     D_ASSERT(lock_m);
-    D_ASSERT(stateObj->state().isFailed() || inDomain(d,lower_bound(d)));
+    D_ASSERT(getState(stateObj).isFailed() || inDomain(d,lower_bound(d)));
     return lower_bound(d);
   }
   
   DomainInt getMax(const RangeVarRef_internal& d) const
   {
     D_ASSERT(lock_m);
-    D_ASSERT(stateObj->state().isFailed() || inDomain(d,upper_bound(d)));
+    D_ASSERT(getState(stateObj).isFailed() || inDomain(d,upper_bound(d)));
     return upper_bound(d);
   }
 
@@ -372,7 +366,7 @@ struct RangeVarContainer {
   {
     DomainInt offset = i - var_min;
     if(!inDomain(d,i))
-      {stateObj->state().setFailed(true); return;}
+      {getState(stateObj).setFailed(true); return;}
 	
 	int raw_lower = raw_lower_bound(d);
 	int raw_upper = raw_upper_bound(d);
@@ -381,7 +375,7 @@ struct RangeVarContainer {
       return;
 	if(offset < raw_lower || offset > raw_upper)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
     trigger_list.push_domain(d.var_num);
@@ -424,7 +418,7 @@ struct RangeVarContainer {
 	
 	if(offset < low_bound)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	
@@ -465,7 +459,7 @@ struct RangeVarContainer {
 	
 	if(offset > up_bound)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	
@@ -559,7 +553,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
    // In theory, I should be able to put the definitions of bound_data and val_data on one
    // line, but for some reason g++ produces the most bizarre compile-time error when I try.
    // One day, I might figure out why...
-   BackTrackMemory& btm = stateObj->searchMem().backTrack();
+   BackTrackMemory& btm = getMemory(stateObj).backTrack();
 
    bound_data = btm.requestArray<domain_type>(var_count_m*2);
    val_data = btm.requestArray<d_type>(var_count_m);  

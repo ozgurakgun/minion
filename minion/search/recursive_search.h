@@ -23,8 +23,8 @@ namespace Controller
 	
 	maybe_print_search_state(stateObj, "Node: ", v);
 	
-	stateObj->state().incrementNodeCount();
-	if(stateObj->state().getNodeCount() == stateObj->options()->nodelimit)
+	getState(stateObj).incrementNodeCount();
+	if(getState(stateObj).getNodeCount() == getOptions(stateObj).nodelimit)
 	  return;
 	if(do_checks(stateObj))
 		return;
@@ -43,17 +43,17 @@ namespace Controller
 	maybe_print_search_state(stateObj, "Node: ", v);
 	world_push(stateObj);
 	order.branch_left();
-	stateObj->queues().propagateQueue();
-	if(!stateObj->state().isFailed())
+	getQueue(stateObj).propagateQueue();
+	if(!getState(stateObj).isFailed())
 	  solve_loop_recursive(order, v);
 	
-	stateObj->state().setFailed(false);
+	getState(stateObj).setFailed(false);
 	
 	world_pop(stateObj);
 	order.branch_right();
     set_optimise_and_propagate_queue(stateObj);
 	
-	if(!stateObj->state().isFailed())
+	if(!getState(stateObj).isFailed())
 	  solve_loop_recursive(order, v);
 }
 }

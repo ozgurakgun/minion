@@ -75,7 +75,7 @@ struct LiteralSumConstraintDynamic : public DynamicConstraint
 	  num_unwatched = array_size - var_sum - 1 ;
 	  D_ASSERT(num_unwatched >= 0);
 	  
-	  unwatched_indexes = stateObj->searchMem().nonBackTrack().request_bytes(sizeof(unsigned) * num_unwatched);
+	  unwatched_indexes = getMemory(stateObj).nonBackTrack().request_bytes(sizeof(unsigned) * num_unwatched);
 	  // above line might request 0 bytes
 	  last = 0;
 	  
@@ -104,7 +104,7 @@ struct LiteralSumConstraintDynamic : public DynamicConstraint
 	
 	if(triggers_wanted > 1)    // Then we have failed, forget it.
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	else if(triggers_wanted == 1)      // Then we can propagate 

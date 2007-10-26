@@ -112,7 +112,7 @@ struct ReifiedEqualConstraint : public Constraint
         if(var1.isAssigned() && var2.isAssigned())
 		{ 
 		  if(var1.getAssignedValue() == var2.getAssignedValue())
-			stateObj->state().setFailed(true);
+			getState(stateObj).setFailed(true);
 		}
 		break;
     }

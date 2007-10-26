@@ -75,7 +75,7 @@ struct OccurrenceEqualConstraint : public Constraint
     }
     //D_ASSERT(occs >= oalc_count());
     if(occs > val_count)
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
   }
   
   void not_occurrence_limit_reached()
@@ -95,7 +95,7 @@ struct OccurrenceEqualConstraint : public Constraint
     }
     //D_ASSERT(occs >= oalc_count());
     if(occs > (static_cast<int>(var_array.size()) - val_count))
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
   }
   
   PROPAGATE_FUNCTION(int i, DomainDelta)
@@ -163,12 +163,12 @@ struct OccurrenceEqualConstraint : public Constraint
     int j = not_occurrences_count;
     D_INFO(1,DI_SUMCON,to_string("Full Propagate, count",i));
     if(i > val_count)
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
     if(i == val_count)
       occurrence_limit_reached();
     if(j > (static_cast<int>(var_array.size() - val_count)))
     {
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
     }
     if(j == (static_cast<int>(var_array.size() - val_count)))
       not_occurrence_limit_reached();
@@ -278,7 +278,7 @@ struct OccurrenceLeqConstraint : public Constraint
       { it->removeFromDomain(value); }
     }
     if(occs > val_count)
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
   }
   
   PROPAGATE_FUNCTION(int i, DomainDelta)
@@ -311,7 +311,7 @@ struct OccurrenceLeqConstraint : public Constraint
     int i = count.get();
     D_INFO(1,DI_SUMCON,to_string("Full Propagate, count",i));
     if(i > val_count)
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
     if(i == val_count)
       limit_reached();  
   }

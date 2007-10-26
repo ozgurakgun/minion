@@ -78,7 +78,7 @@ struct GACElementConstraint : public Constraint
 	
 	if(index < 0 || index >= array_size)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	

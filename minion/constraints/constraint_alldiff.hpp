@@ -189,7 +189,7 @@ By: John Tromp
 		}
 		
 		if( (status_lower == INCONSISTENT) || (status_upper == INCONSISTENT) ) {
-		  stateObj->state().setFailed(true);
+		  getState(stateObj).setFailed(true);
 		}
 		else
 		  if( (status_lower == CHANGES) || (status_upper == CHANGES) ) {

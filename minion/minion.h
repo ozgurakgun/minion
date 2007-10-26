@@ -28,6 +28,7 @@
 #ifndef MINION_H
 #define MINION_H
 
+
 #include "svn_header.h"
 #include "system/system.h"
 
@@ -116,7 +117,7 @@ class DynamicTrigger;
 namespace Controller
 {
   /// Add a new list of triggers to the queue.
-  inline void stateObj->queues().pushTriggers(TriggerRange new_triggers);
+  inline void getQueue(stateObj).pushTriggers(TriggerRange new_triggers);
   inline void push_special_trigger(Constraint* trigger);
 #ifdef DYNAMICTRIGGERS
   inline void push_dynamic_triggers(DynamicTrigger* trigs);
@@ -160,28 +161,76 @@ namespace Controller
 
 #include "test_functions.h"
 
-inline StateObj::StateObj() : searchMem_m(new Memory),
-                              options_m(new SearchOptions),
-                              state_m(),
-                              queues_m(new Queues(this)),
-                              triggerMem_m(new TriggerMem(this)),
 #ifdef REENTER
-                              varContainer_m(new VariableContainer(this))
-#else
-                              varContainer_m(&varCon_no_reenter)
-#endif
-{ }
-
-inline StateObj::~StateObj()
-{ 
-#ifdef REENTER
-  delete varContainer_m;
-#endif
-  delete triggerMem_m;
-  delete queues_m;
-  delete options_m;
-  delete searchMem_m;
+struct StateObj
+{
+  // Forbid copying this type!
+  StateObj(const StateObj&);
+  void operator=(const StateObj&);
   
-}
+  Memory* searchMem_m;
+  SearchOptions* options_m;
+  SearchState state_m;
+  Queues* queues_m;
+  TriggerMem* triggerMem_m;
+  VariableContainer* varContainer_m;
+public:
+  StateObj() :
+    searchMem_m(new Memory),
+    options_m(new SearchOptions),
+    state_m(),
+    queues_m(new Queues(this)),
+    triggerMem_m(new TriggerMem(this)),
+    varContainer_m(new VariableContainer(this))
+  { }
+
+  ~StateObj()
+  { 
+    delete varContainer_m;
+    delete triggerMem_m;
+    delete queues_m;
+    delete options_m;
+    delete searchMem_m;    
+  }
+};
+
+inline SearchOptions& getOptions(StateObj* stateObj)
+{ return *(stateObj->options_m); }
+inline SearchState& getState(StateObj* stateObj)
+{ return stateObj->state_m; }
+inline Queues& getQueue(StateObj* stateObj)
+{ return *(stateObj->queues_m); }
+inline Memory& getMemory(StateObj* stateObj)
+{ return *(stateObj->searchMem_m); }
+inline TriggerMem& getTriggerMem(StateObj* stateObj)
+{ return *(stateObj->triggerMem_m); }
+inline VariableContainer& getVars(StateObj* stateObj)
+{ return *(stateObj->varContainer_m); }
+
+#else
+
+struct StateObj {};
+VARDEF(StateObj _noreenter_stateObj);
+VARDEF(Memory searchMem_m);
+VARDEF(SearchOptions options_m);
+VARDEF(SearchState state_m);
+VARDEF_ASSIGN(Queues queues_m, &_noreenter_stateObj);
+VARDEF_ASSIGN(TriggerMem triggerMem_m, &_noreenter_stateObj);
+VARDEF_ASSIGN(VariableContainer varContainer_m, &_noreenter_stateObj);
+
+inline SearchOptions& getOptions(StateObj* stateObj)
+{ return options_m; }
+inline SearchState& getState(StateObj* stateObj)
+{ return state_m; }
+inline Queues& getQueue(StateObj* stateObj)
+{ return queues_m; }
+inline Memory& getMemory(StateObj* stateObj)
+{ return searchMem_m; }
+inline TriggerMem& getTriggerMem(StateObj* stateObj)
+{ return triggerMem_m; }
+inline VariableContainer& getVars(StateObj* stateObj)
+{ return varContainer_m; }
+#endif
+
 
 #endif

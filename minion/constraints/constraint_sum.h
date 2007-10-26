@@ -91,7 +91,7 @@ struct BoolLessSumConstraint : public Constraint
     }
     //D_ASSERT(one_vars >= occ_count());
     if(one_vars > occ_count())
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
   }
   
   PROPAGATE_FUNCTION(int i, DomainDelta)
@@ -140,7 +140,7 @@ struct BoolLessSumConstraint : public Constraint
     count = occs;
     D_INFO(1,DI_SUMCON,to_string("Full Propagate, count:",occs));
     if(occs > occ_count())
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
     if(occs == occ_count())
       limit_reached();  
   }

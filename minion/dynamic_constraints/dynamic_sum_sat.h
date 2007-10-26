@@ -70,7 +70,7 @@ struct BoolSATConstraintDynamic : public DynamicConstraint
 
 	if(index == array_size)
 	{ // Not enough triggers
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	

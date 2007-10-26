@@ -145,7 +145,7 @@ struct reify : public Constraint
     if(i == -99998 || i == -99999)
     {
 	  constraint_locked = true;
-	  stateObj->queues().pushSpecialTrigger(this);
+	  getQueue(stateObj).pushSpecialTrigger(this);
 	  
       if(i==-99999)
       {

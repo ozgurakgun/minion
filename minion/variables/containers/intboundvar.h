@@ -44,17 +44,26 @@ struct BoundVarRef_internal
   const DomType& upper_bound() const
   { return *(static_cast<DomType*>(var_bound_data.get_ptr())+ 1); }
 
-
+#ifdef MANY_VAR_CONTAINERS
   BoundVarContainer<DomType>* boundCon;
   BoundVarContainer<DomType>& getCon() const { return *boundCon; }
-
+#else
+  BoundVarContainer<DomType>& getCon() const; 
+#endif
   
   int var_num;
-  BoundVarRef_internal() : var_num(-1), boundCon(NULL)
+  BoundVarRef_internal() : var_num(-1)
+#ifdef MANY_VAR_CONTAINERS
+    ,boundCon(NULL)
+#endif
   { }
   
   explicit BoundVarRef_internal(BoundVarContainer<DomType>* con, int i, DomType* ptr) : 
-  var_num(i), boundCon(con), var_bound_data(ptr)
+  var_num(i), 
+#ifdef MANY_VAR_CONTAINERS
+    boundCon(con),
+#endif
+    var_bound_data(ptr)
   {}
 
   BOOL isAssigned() const
@@ -93,28 +102,28 @@ struct BoundVarRef_internal
   { return upper_bound(); }
 
    DomainInt getInitialMax() const
-  { return boundCon->getInitialMax(*this); }
+  { return getCon().getInitialMax(*this); }
   
   DomainInt getInitialMin() const
-  { return boundCon->getInitialMin(*this); }
+  { return getCon().getInitialMin(*this); }
   
   void setMax(DomainInt i)
-  { boundCon->setMax(*this,i); }
+  { getCon().setMax(*this,i); }
   
   void setMin(DomainInt i)
-  { boundCon->setMin(*this,i); }
+  { getCon().setMin(*this,i); }
   
   void uncheckedAssign(DomainInt b)
-  { boundCon->uncheckedAssign(*this, b); }
+  { getCon().uncheckedAssign(*this, b); }
   
   void propagateAssign(DomainInt b)
-  { boundCon->propagateAssign(*this, b); }
+  { getCon().propagateAssign(*this, b); }
   
   void removeFromDomain(DomainInt b)
-  { boundCon->removeFromDomain(*this, b); }
+  { getCon().removeFromDomain(*this, b); }
   
   void addTrigger(Trigger t, TrigType type)
-  { boundCon->addTrigger(*this, t, type); }
+  { getCon().addTrigger(*this, t, type); }
 
   friend std::ostream& operator<<(std::ostream& o, const BoundVarRef_internal& v)
   { return o << "BoundVar:" << v.var_num; }
@@ -124,7 +133,7 @@ struct BoundVarRef_internal
   
 #ifdef DYNAMICTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
-  {  boundCon->addDynamicTrigger(*this, t, type, pos); }
+  {  getCon().addDynamicTrigger(*this, t, type, pos); }
 #endif
 
 };
@@ -200,14 +209,14 @@ struct BoundVarContainer {
   DomainInt getMin(const BoundVarRef_internal<BoundType>& d) const
   {
     D_ASSERT(lock_m);
-    D_ASSERT(stateObj->state().isFailed() || inDomain(d,lower_bound(d)));
+    D_ASSERT(getState(stateObj).isFailed() || inDomain(d,lower_bound(d)));
     return lower_bound(d);
   }
   
   DomainInt getMax(const BoundVarRef_internal<BoundType>& d) const
   {
     D_ASSERT(lock_m);
-    D_ASSERT(stateObj->state().isFailed() || inDomain(d,upper_bound(d)));
+    D_ASSERT(getState(stateObj).isFailed() || inDomain(d,upper_bound(d)));
     return upper_bound(d);
   }
  
@@ -229,7 +238,7 @@ struct BoundVarContainer {
     DomainInt max_val = getMax(d);
     if(min_val > i || max_val < i)
     {
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
       return;
     }
     
@@ -263,7 +272,7 @@ struct BoundVarContainer {
     
     if(i < low_bound)
     {
-       stateObj->state().setFailed(true);
+       getState(stateObj).setFailed(true);
        return;
     }
     
@@ -285,7 +294,7 @@ struct BoundVarContainer {
     
     if(i > up_bound)
     {
-      stateObj->state().setFailed(true);
+      getState(stateObj).setFailed(true);
       return;
     }
     
@@ -319,7 +328,7 @@ struct BoundVarContainer {
       }
     }
 
-    bound_data = stateObj->searchMem().backTrack().request_bytes(var_count_m*2*sizeof(BoundType));
+    bound_data = getMemory(stateObj).backTrack().request_bytes(var_count_m*2*sizeof(BoundType));
     BoundType* bound_ptr = static_cast<BoundType*>(bound_data.get_ptr());
     for(unsigned int i = 0; i < var_count_m; ++i)
     {

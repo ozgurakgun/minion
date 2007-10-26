@@ -192,7 +192,7 @@ struct AlldiffGacSlow : public Constraint
       {
         // The constraint is unsatisfiable (no matching).
         //cout<<"Fail."<<endl;
-        stateObj->state().setFailed(true);
+        getState(stateObj).setFailed(true);
         return;
       }
     }
@@ -382,7 +382,7 @@ struct AlldiffGacSlow : public Constraint
                 {
                     //cout<<"Adding "<<tempval<<endl;
                     var_array[tempvar].removeFromDomain(tempval);
-                    if(stateObj->state().isFailed()) return;
+                    if(getState(stateObj).isFailed()) return;
                 }
             }
         }

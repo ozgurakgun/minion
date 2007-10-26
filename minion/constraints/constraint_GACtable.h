@@ -234,7 +234,7 @@ struct GACTableConstraint : public DynamicConstraint
 	  vars[i].setMin(dom_min);
 	  vars[i].setMax(dom_max - 1);
 	  
-	  if(stateObj->state().isFailed()) return;
+	  if(getState(stateObj).isFailed()) return;
 	  
 	  for(int x = vars[i].getMin(); x <= vars[i].getMax(); ++x)
 	  {

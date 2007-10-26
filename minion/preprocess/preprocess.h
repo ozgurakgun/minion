@@ -11,8 +11,8 @@ bool inline check_fail(StateObj* stateObj, Var& var, DomainInt val, Vars& vars, 
   var.propagateAssign(val);
   prop(stateObj, vars, checkBounds);
   
-  bool check_failed = stateObj->state().isFailed();
-  stateObj->state().setFailed(false);
+  bool check_failed = getState(stateObj).isFailed();
+  getState(stateObj).setFailed(false);
   
   Controller::world_pop(stateObj);
   
@@ -22,8 +22,8 @@ bool inline check_fail(StateObj* stateObj, Var& var, DomainInt val, Vars& vars, 
 template <typename Var, typename Prop>
 void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop, bool checkBounds)
 {
-  stateObj->queues().propagateQueue();
-  if(stateObj->state().isFailed())
+  getQueue(stateObj).propagateQueue();
+  if(getState(stateObj).isFailed())
 	return;
   
   bool reduced = true;
@@ -40,7 +40,7 @@ void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop,
           reduced = true;
           var.setMax(var.getMax() - 1);
           prop(stateObj, vararray, checkBounds);
-          if(stateObj->state().isFailed())
+          if(getState(stateObj).isFailed())
             return;
         }
         
@@ -49,7 +49,7 @@ void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop,
           reduced = true;
           var.setMin(var.getMin() + 1);
           prop(stateObj, vararray, checkBounds);
-          if(stateObj->state().isFailed())
+          if(getState(stateObj).isFailed())
             return;
         }
       }
@@ -62,7 +62,7 @@ void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop,
             reduced = true;
             var.removeFromDomain(val);
             prop(stateObj, vararray, checkBounds);
-            if(stateObj->state().isFailed())
+            if(getState(stateObj).isFailed())
               return;          
           }
         }

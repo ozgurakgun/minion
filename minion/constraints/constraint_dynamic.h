@@ -174,9 +174,9 @@ public:
   {
     int trigs = dynamic_trigger_count();
 #ifdef WATCHEDLITERALS
-    _DynamicTriggerCache = stateObj->searchMem().nonBackTrack().request_bytes((sizeof(DynamicTrigger) * trigs));
+    _DynamicTriggerCache = getMemory(stateObj).nonBackTrack().request_bytes((sizeof(DynamicTrigger) * trigs));
 #else
-	_DynamicTriggerCache = stateObj->searchMem().backTrack().request_bytes(sizeof(DynamicTrigger) * trigs);
+	_DynamicTriggerCache = getMemory(stateObj).backTrack().request_bytes(sizeof(DynamicTrigger) * trigs);
 #endif
 	DynamicTrigger* start = dynamic_trigger_start();
 	for(int i = 0 ; i < trigs; ++i)

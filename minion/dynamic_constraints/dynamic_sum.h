@@ -105,7 +105,7 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
           
 #ifndef WATCHEDLITERALS
           // Note that this BOOL array could be compacted using masks for lookup
-          vals_watched.stateObj->searchMem().backTrack()(request_bytes(sizeof(BOOL) * array_size));
+          vals_watched.getMemory(stateObj).backTrack()(request_bytes(sizeof(BOOL) * array_size));
           for(int i = 0; i < array_size; i++) 
             values_watched(i) = false;
 #endif
@@ -113,7 +113,7 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
           num_unwatched = array_size - var_sum - 1 ;
           D_ASSERT(num_unwatched >= 0);
 
-          unwatched_indexes = stateObj->searchMem().nonBackTrack().request_bytes(sizeof(unsigned) * num_unwatched);
+          unwatched_indexes = getMemory(stateObj).nonBackTrack().request_bytes(sizeof(unsigned) * num_unwatched);
           // above line might request 0 bytes
           last = 0;
 
@@ -154,7 +154,7 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
 	
 	if(triggers_wanted > 1)    // Then we have failed, forget it.
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	else if(triggers_wanted == 1)      // Then we can propagate 

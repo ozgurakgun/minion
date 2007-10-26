@@ -104,7 +104,6 @@
 		269174BC097EA1D400B88B0E /* constraint_min.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = constraint_min.h; path = constraints/constraint_min.h; sourceTree = "<group>"; };
 		269206DC0B2F24A40042AC2B /* recursive_search.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = recursive_search.h; path = search/recursive_search.h; sourceTree = "<group>"; };
 		269206E70B2F26A10042AC2B /* common_search.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = common_search.h; path = search/common_search.h; sourceTree = "<group>"; };
-		269206E80B2F26C40042AC2B /* slow_queue.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = slow_queue.h; path = queue/slow_queue.h; sourceTree = "<group>"; };
 		269DC8DA098451AA00F52AF2 /* trigger_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = trigger_list.h; sourceTree = "<group>"; };
 		26A83EEF097A923F009DD39A /* VarRefType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VarRefType.h; path = variables/VarRefType.h; sourceTree = "<group>"; };
 		26A857BC099B6A6200ECA923 /* CSPSpec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CSPSpec.h; sourceTree = "<group>"; };
@@ -138,7 +137,6 @@
 		26CDE8F7099BF9C500C985F3 /* BuildConstraint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BuildConstraint.h; sourceTree = "<group>"; };
 		26CE28F00A234F8400110C21 /* AnyVarRef.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AnyVarRef.h; path = variables/AnyVarRef.h; sourceTree = "<group>"; };
 		26CFEBEC0AA64E5A00A35D56 /* VariableOrders.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VariableOrders.h; path = search/VariableOrders.h; sourceTree = "<group>"; };
-		26D14ACF0CB8DCD500C8D3AC /* MemoryManager.txt */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; name = MemoryManager.txt; path = "../code-notes/MemoryManager.txt"; sourceTree = SOURCE_ROOT; };
 		26D83CAF0CAFB92000625B8C /* constraint_alldiff_gac_slow.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = constraint_alldiff_gac_slow.h; path = constraints/constraint_alldiff_gac_slow.h; sourceTree = "<group>"; };
 		26D83CB00CAFB94800625B8C /* array_functions.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = array_functions.h; path = system/array_functions.h; sourceTree = "<group>"; };
 		26D83CB10CAFB94800625B8C /* tableout.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = tableout.h; path = system/tableout.h; sourceTree = "<group>"; };
@@ -225,7 +223,6 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				26D83CFF0CAFF4DB00625B8C /* CT_ALLDIFF_GACSLOW.cpp */,
 				260A0A4F0C3BB39A00CFEEE1 /* FrontEnd */,
 				260A0A490C3BB32600CFEEE1 /* Queue */,
 				260A0A420C3BB28700CFEEE1 /* BuildConstraints */,
@@ -287,7 +284,6 @@
 		260A0A400C3BB25A00CFEEE1 /* MemoryManagement */ = {
 			isa = PBXGroup;
 			children = (
-				26D14ACF0CB8DCD500C8D3AC /* MemoryManager.txt */,
 				261EDC180CB78B850083ADF6 /* MemoryBlock.h */,
 				266F5EAA097C0AA200D9CC72 /* backtrackable_memory.h */,
 				26ABEEF0099415F400F94E03 /* nonbacktrack_memory.h */,
@@ -316,7 +312,6 @@
 		260A0A490C3BB32600CFEEE1 /* Queue */ = {
 			isa = PBXGroup;
 			children = (
-				269206E80B2F26C40042AC2B /* slow_queue.h */,
 				26CD0D5C0A1B810E007D8889 /* standard_queue.h */,
 			);
 			name = Queue;
@@ -441,6 +436,7 @@
 				2643EA700C4573CD004231DE /* constraint_setup.cpp */,
 				2643EA710C4573CD004231DE /* debug_functions.cpp */,
 				26FB02060B63D2230062AD1B /* CT_ALLDIFF.cpp */,
+				26D83CFF0CAFF4DB00625B8C /* CT_ALLDIFF_GACSLOW.cpp */,
 				26FB02070B63D2230062AD1B /* CT_DISEQ.cpp */,
 				26FB02080B63D2230062AD1B /* CT_ELEMENT.cpp */,
 				26FB02090B63D2230062AD1B /* CT_EQ.cpp */,

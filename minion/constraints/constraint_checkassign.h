@@ -54,7 +54,7 @@ struct CheckAssignConstraint : public Constraint
   {
 	PROP_INFO_ADDONE(CheckAssign);
     if(check_unsat(prop_val, delta))
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
   }
   
   virtual BOOL check_unsat(int,DomainDelta)
@@ -112,7 +112,7 @@ struct CheckAssignConstraint : public Constraint
   virtual void full_propagate()
   {
     if(full_check_unsat())
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
   }
   
   virtual BOOL check_assignment(vector<DomainInt> v)

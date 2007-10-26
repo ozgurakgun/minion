@@ -116,15 +116,15 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
   {
     const string command(argv[i]);
 	if(command == string("-findallsols"))
-	{ stateObj->options()->setFindAllSolutions(); }
+	{ getOptions(stateObj).setFindAllSolutions(); }
 	else if(command == string("-quiet"))
 	{ reader.parser_verbose = false; }
 	else if(command == string("-printsols"))
-	{ stateObj->options()->print_solution = true; }
+	{ getOptions(stateObj).print_solution = true; }
 	else if(command == string("-noprintsols"))
-	{ stateObj->options()->print_solution = false; }
+	{ getOptions(stateObj).print_solution = false; }
 	else if(command == string("-printsolsonly"))
-	{ stateObj->options()->print_only_solution = true; }
+	{ getOptions(stateObj).print_only_solution = true; }
 	else if(command == string("-verbose"))
 	{ reader.parser_verbose = true; }
 	else if(command == string("-sac-root"))
@@ -139,7 +139,7 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	else if(command == string("-fullprop"))
 	{
 #ifndef NO_DEBUG
-	  stateObj->options()->fullpropagate = true; 
+	  getOptions(stateObj).fullpropagate = true; 
 #else
 	  cout << "This version of minion was not built to support the '-fullprop' command. Sorry" << endl;
 	  FAIL_EXIT();
@@ -148,7 +148,7 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	else if(command == string("-nocheck"))
 	{
 #ifndef NO_DEBUG
-	  stateObj->options()->nocheck = true; 
+	  getOptions(stateObj).nocheck = true; 
 #else
 	  cout << "# WARNING: This version of minion was not built to support the '-nocheck' command." << endl;
 	  cout << "# WARNING: Solutions will not be checked in this version." << endl;
@@ -158,15 +158,15 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	
 	else if(command == string("-dumptree"))
 	{
-	  stateObj->options()->dumptree = true; 
+	  getOptions(stateObj).dumptree = true; 
 	}
 	else if(command == string("-crash"))
 	{ debug_crash = true; }
 	else if(command == string("-nodelimit"))
 	{
 	  ++i;
-	  stateObj->options()->nodelimit = atoi(argv[i]);
-	  if(stateObj->options()->nodelimit == 0)
+	  getOptions(stateObj).nodelimit = atoi(argv[i]);
+	  if(getOptions(stateObj).nodelimit == 0)
 	  {
 		cout << "Did not understand parameter to nodelimit:" << argv[i] << endl;
 		FAIL_EXIT();
@@ -175,9 +175,9 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	else if(command == string("-sollimit"))
 	{
 	  ++i;
-	  stateObj->options()->sollimit = atoi(argv[i]);
-	  stateObj->options()->setFindAllSolutions(); 
-	  if(stateObj->options()->sollimit == 0)
+	  getOptions(stateObj).sollimit = atoi(argv[i]);
+	  getOptions(stateObj).setFindAllSolutions(); 
+	  if(getOptions(stateObj).sollimit == 0)
 	  {
 	    cout << "Did not understand the parameter to sollimit:" << argv[i] << endl;
 		FAIL_EXIT();
@@ -186,8 +186,8 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	else if(command == string("-timelimit"))
 	{
 	  ++i;
-	  stateObj->options()->time_limit = atoi(argv[i]);
-	  if(stateObj->options()->time_limit == 0)
+	  getOptions(stateObj).time_limit = atoi(argv[i]);
+	  if(getOptions(stateObj).time_limit == 0)
 	  {
 	    cout << "Did not understand the parameter to timelimit:" << argv[i] << endl;
 		FAIL_EXIT();
@@ -235,7 +235,7 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	}
     else if(command == string("-tableout"))
     {
-        stateObj->options()->tableout=true;
+        getOptions(stateObj).tableout=true;
         ++i;
         tableout.set_filename(argv[i]);
     }
@@ -297,8 +297,8 @@ void BuildCSP(StateObj* stateObj, Reader& reader)
     if(it->is_dynamic())
     {
 #ifdef DYNAMICTRIGGERS
-      stateObj->state().addDynamicConstraint(build_dynamic_constraint(stateObj, *it));
-      stateObj->state().setDynamicTriggersUsed(true);
+      getState(stateObj).addDynamicConstraint(build_dynamic_constraint(stateObj, *it));
+      getState(stateObj).setDynamicTriggersUsed(true);
 #else
       cout << "Sorry, cannot process this constraint as it needs dynamic triggers or watched literals." << endl ;
       cout << "use an alternative encoding or recompile with -DWATCHEDLITERALS or -DDYNAMICTRIGGERS in command line" << endl;
@@ -306,7 +306,7 @@ void BuildCSP(StateObj* stateObj, Reader& reader)
 #endif
     }
     else
-      stateObj->state().addConstraint(build_constraint(stateObj, *it));
+      getState(stateObj).addConstraint(build_constraint(stateObj, *it));
   }
 
 
@@ -328,9 +328,9 @@ void SolveCSP(StateObj* stateObj, Reader& reader, MinionArguments args)
     // should be one for varorder as well.
     tableout.set("MinionVersion", SVN_VER);
     tableout.set("TimeOut", 0); // will be set to 1 if a timeout occurs.
-    stateObj->state().getTimer().maybePrintTimestepStore("Parsing Time: ", "ParsingTime", tableout, !stateObj->options()->print_only_solution);
+    getState(stateObj).getTimer().maybePrintTimestepStore("Parsing Time: ", "ParsingTime", tableout, !getOptions(stateObj).print_only_solution);
     
-    stateObj->state().setTupleListContainer(reader.tupleListContainer);
+    getState(stateObj).setTupleListContainer(reader.tupleListContainer);
     
     BuildCSP(stateObj, reader);
     
@@ -361,7 +361,7 @@ void SolveCSP(StateObj* stateObj, Reader& reader, MinionArguments args)
         }
     }
   // Solve!
-  stateObj->state().getTimer().maybePrintTimestepStore("Setup Time: ", "SetupTime", tableout, !stateObj->options()->print_only_solution);
+  getState(stateObj).getTimer().maybePrintTimestepStore("Setup Time: ", "SetupTime", tableout, !getOptions(stateObj).print_only_solution);
   
   long long initial_lit_count = 0;
   
@@ -370,7 +370,7 @@ void SolveCSP(StateObj* stateObj, Reader& reader, MinionArguments args)
   
   Controller::initalise_search(stateObj);
   
-  if(!stateObj->state().isFailed())
+  if(!getState(stateObj).isFailed())
   {
 	if(args.preprocess != MinionArguments::None)
 	{
@@ -393,26 +393,26 @@ void SolveCSP(StateObj* stateObj, Reader& reader, MinionArguments args)
 		cout << "Removed " << (lits - lit_count(var_val_order.first)) << " literals" << endl;
 	  }
 	}
-    stateObj->state().getTimer().maybePrintTimestepStore("First node time: ", "FirstNodeTime", tableout, !stateObj->options()->print_only_solution);
-	if(!stateObj->state().isFailed())
-        solve(stateObj, args.order, var_val_order);   // add a stateObj->state().getTimer().maybePrintTimestepStore to search..
+    getState(stateObj).getTimer().maybePrintTimestepStore("First node time: ", "FirstNodeTime", tableout, !getOptions(stateObj).print_only_solution);
+	if(!getState(stateObj).isFailed())
+        solve(stateObj, args.order, var_val_order);   // add a getState(stateObj).getTimer().maybePrintTimestepStore to search..
   }
   else
   {
-      stateObj->state().getTimer().maybePrintTimestepStore("First node time: ", "FirstNodeTime", tableout, !stateObj->options()->print_only_solution);
+      getState(stateObj).getTimer().maybePrintTimestepStore("First node time: ", "FirstNodeTime", tableout, !getOptions(stateObj).print_only_solution);
   }
   
-  stateObj->state().getTimer().maybePrintFinaltimestepStore("Solve Time: ", "SolveTime", tableout, !stateObj->options()->print_only_solution);
-  cout << "Total Nodes: " << stateObj->state().getNodeCount() << endl;
+  getState(stateObj).getTimer().maybePrintFinaltimestepStore("Solve Time: ", "SolveTime", tableout, !getOptions(stateObj).print_only_solution);
+  cout << "Total Nodes: " << getState(stateObj).getNodeCount() << endl;
   cout << "Problem solvable?: " 
-	<< (stateObj->state().getSolutionCount() == 0 ? "no" : "yes") << endl;
-  cout << "Solutions Found: " << stateObj->state().getSolutionCount() << endl;
+	<< (getState(stateObj).getSolutionCount() == 0 ? "no" : "yes") << endl;
+  cout << "Solutions Found: " << getState(stateObj).getSolutionCount() << endl;
   
-  tableout.set("Nodes", to_string(stateObj->state().getNodeCount()));
-  tableout.set("Satisfiable", (stateObj->state().getSolutionCount()==0 ? 0 : 1));
-  tableout.set("SolutionsFound", stateObj->state().getSolutionCount());
+  tableout.set("Nodes", to_string(getState(stateObj).getNodeCount()));
+  tableout.set("Satisfiable", (getState(stateObj).getSolutionCount()==0 ? 0 : 1));
+  tableout.set("SolutionsFound", getState(stateObj).getSolutionCount());
   
-  if(stateObj->options()->tableout)
+  if(getOptions(stateObj).tableout)
   {
       tableout.print_line();  // Outputs a line to the table file.
   }
@@ -489,25 +489,17 @@ catch(parse_exception& s)
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 int main(int argc, char** argv) {
   
-//  state = new SearchState();
-//  searchstateObj->state().setTupleListContainer(new TupleListContainer);
-#ifdef REENTER
-   StateObj* stateObj = new StateObj();
-#else
-  StateObj* stateObj = &stateObj_no_reenter;
-#endif
-//  stateObj->options() = new SearchOptions();
- // queues = new Queues();
-//  varContainer = new VariableContainer();
+  StateObj* stateObj = new StateObj();
+
   
-  stateObj->state().getTimer().startClock();
+  getState(stateObj).getTimer().startClock();
   
   cout << "# " << VERSION << endl ;
   cout << "# Svn version: " << SVN_VER << endl; 
   if (argc == 1)
     print_info();
   
-  if (!stateObj->options()->print_only_solution) 
+  if (!getOptions(stateObj).print_only_solution) 
   { 
     
     cout << "# Svn last changed date: " << SVN_DATE << endl;
@@ -566,9 +558,6 @@ int main(int argc, char** argv) {
     SolveCSP(stateObj, reader, args);
   }
   
-#ifdef REENTER
-  delete stateObj;
-#endif
   return 0;
 }
 

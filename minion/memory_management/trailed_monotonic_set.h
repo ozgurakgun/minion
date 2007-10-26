@@ -133,9 +133,9 @@ void initialise(const int& size, const int& max_undos)
     _local_depth = 0;
     _backtrack_depth = 0;
 
-    _array = stateObj->searchMem().nonBackTrack().request_bytes(_size*sizeof(value_type)); 
+    _array = getMemory(stateObj).nonBackTrack().request_bytes(_size*sizeof(value_type)); 
     // _undo_values.request_bytes(_max_depth*sizeof(value_type));
-    _undo_indexes = stateObj->searchMem().nonBackTrack().request_bytes(_max_depth*sizeof(int));
+    _undo_indexes = getMemory(stateObj).nonBackTrack().request_bytes(_max_depth*sizeof(int));
 
 #ifdef DEBUG
     cout << "initialising TrailedMonotonicSet with value of size= " << size << endl;

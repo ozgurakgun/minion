@@ -82,7 +82,7 @@ struct LexLeqConstraint : public Constraint
     {
       if(i == n || i == beta)
       {
-		stateObj->state().setFailed(true);
+		getState(stateObj).setFailed(true);
 		return;
       }
       if (!x[i].isAssigned() || !y[i].isAssigned() ||
@@ -120,7 +120,7 @@ struct LexLeqConstraint : public Constraint
       }
       i-- ;    
     }
-    stateObj->state().setFailed(true);
+    getState(stateObj).setFailed(true);
     
   }
   
@@ -138,7 +138,7 @@ struct LexLeqConstraint : public Constraint
 	//Not sure why we need this, but we seem to.
 	if(b <= a)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	
@@ -264,13 +264,13 @@ struct LexLeqConstraint : public Constraint
 		if (betaBound == -1)  beta = i;
 		else if (betaBound == -1) beta = betaBound ;
       }
-      if (alpha >= beta) stateObj->state().setFailed(true);
+      if (alpha >= beta) getState(stateObj).setFailed(true);
       propagate(alpha,0) ;             //initial propagation, if necessary.
     }
     else 
     {
       if(Less)
-		stateObj->state().setFailed(true);
+		getState(stateObj).setFailed(true);
       else
 		F = true;
     }

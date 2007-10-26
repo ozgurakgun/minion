@@ -28,14 +28,25 @@ struct BigRangeVarRef_internal_template
   BOOL isBound()
   { return false;}
   
+#ifdef MANY_VAR_CONTAINERS
   BigRangeVarContainer<d_type>* rangeCon;
   BigRangeVarContainer<d_type>& getCon() const { return *rangeCon; }
-
+#else
+  BigRangeVarContainer<d_type>& getCon() const;
+#endif
+  
   int var_num;
-  BigRangeVarRef_internal_template() : var_num(-1), rangeCon(NULL)
+  BigRangeVarRef_internal_template() : var_num(-1)
+#ifdef MANY_VAR_CONTAINERS
+    , rangeCon(NULL)
+#endif
   { }
   
-  explicit BigRangeVarRef_internal_template(BigRangeVarContainer<d_type>* con, int i) : rangeCon(con), var_num(i)
+  explicit BigRangeVarRef_internal_template(BigRangeVarContainer<d_type>* con, int i) : 
+#ifdef MANY_VAR_CONTAINERS
+    rangeCon(con),
+#endif
+    var_num(i)
   {}
 };
 
@@ -92,7 +103,7 @@ struct BigRangeVarContainer {
     DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar < lower)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  /// Here just remove the value which should lead to the least work.
 	  return upper_bound(d);
 	}
@@ -107,7 +118,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar - low_bound)) 
         return loopvar;
     }
-    stateObj->state().setFailed(true);
+    getState(stateObj).setFailed(true);
     return old_up_bound;
   }
   
@@ -122,7 +133,7 @@ struct BigRangeVarContainer {
     DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar > upper)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  /// Here just remove the value which should lead to the least work.
 	  return lower_bound(d);
 	}
@@ -136,7 +147,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar - low_bound)) 
         return loopvar;
     }
-    stateObj->state().setFailed(true);
+    getState(stateObj).setFailed(true);
     return old_low_bound;
   }
   
@@ -164,7 +175,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
   }
 
  
-    bound_data = stateObj->searchMem().backTrack().request_bytes(var_count_m * 2 * sizeof(domain_bound_type));
+    bound_data = getMemory(stateObj).backTrack().request_bytes(var_count_m * 2 * sizeof(domain_bound_type));
     bms_array.initialise(var_offset.back(), var_offset.back());
     domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_ptr());
     for(unsigned int i = 0; i < var_count_m; ++i)
@@ -228,14 +239,14 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
   DomainInt getMin(BigRangeVarRef_internal d) const
   {
     D_ASSERT(lock_m);
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     return lower_bound(d);
   }
   
   DomainInt getMax(BigRangeVarRef_internal d) const
   {
     D_ASSERT(lock_m);
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     return upper_bound(d);
   }
   
@@ -256,7 +267,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
     bms_array.print_state();
 #endif
     D_ASSERT(lock_m);
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     if(!inDomain(d,i)) 
     {
 #ifdef DEBUG
@@ -288,7 +299,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
     
     if(upper_bound(d) == lower_bound(d))
       trigger_list.push_assign(d.var_num, getAssignedValue(d));
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
 #ifdef DEBUG
     cout << "Exiting removeFromDomain: " << d.var_num << " " << i << " [" 
@@ -302,9 +313,9 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
   
   void propagateAssign(BigRangeVarRef_internal d, DomainInt offset)
   {
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     if(!inDomain(d,offset))
-	  {stateObj->state().setFailed(true); return;}
+	  {getState(stateObj).setFailed(true); return;}
 	DomainInt lower = lower_bound(d);
 	DomainInt upper = upper_bound(d);
     if(offset == upper && offset == lower)
@@ -312,7 +323,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
 	
 	if(offset > upper || offset < lower)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
     commonAssign(d, offset, lower, upper);
@@ -355,7 +366,7 @@ private:
       trigger_list.push_upper(d.var_num, up_bound - offset);
       upper_bound(d) = offset;
     }
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
   }    
 public:
 
@@ -370,13 +381,13 @@ public:
     bms_array.print_state();
 #endif
 
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     DomainInt up_bound = upper_bound(d);
     DomainInt low_bound = lower_bound(d);
 	
 	if(offset < low_bound)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
     }
 	
@@ -402,7 +413,7 @@ public:
       if(lower_bound(d) == upper_bound(d)) 
         trigger_list.push_assign(d.var_num, getAssignedValue(d));
     }
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 #ifdef DEBUG
     cout << "Exiting setMax: " << d.var_num << " " << upper_bound(d) << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["
@@ -421,14 +432,14 @@ public:
          << endl;
     bms_array.print_state();
 #endif
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
 	DomainInt up_bound = upper_bound(d);
     DomainInt low_bound = lower_bound(d);
     
 	if(offset > up_bound)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	
@@ -444,7 +455,7 @@ public:
 	      trigger_list.push_domain_removal(d.var_num, loop);
 	  }
 #endif
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
     lower_bound(d) = offset;
     DomainInt new_lower = find_new_lower_bound(d);    
@@ -455,7 +466,7 @@ public:
     if(lower_bound(d) == upper_bound(d)) 
       trigger_list.push_assign(d.var_num, getAssignedValue(d)); 
     }
-    D_ASSERT(stateObj->state().isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 #ifdef DEBUG
     cout << "Exiting setMin: " << d.var_num << " " << lower_bound(d) << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["

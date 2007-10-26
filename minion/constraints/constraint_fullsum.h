@@ -100,7 +100,7 @@ struct LessEqualSumConstraint : public Constraint
 	DomainInt looseness = var_sum.getMax() - sum;
 	if(looseness < 0)
 	{ 
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 

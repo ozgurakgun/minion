@@ -148,7 +148,7 @@ struct GACTableConstraint : public DynamicConstraint
       D_INFO(2, DI_TABLECON, "Full prop");
       if(tuples->size()==0)
       {   // it seems to work without this explicit check, but I put it in anyway.
-          stateObj->state().setFailed(true);
+          getState(stateObj).setFailed(true);
           return;
       }
       for(int varIndex = 0; varIndex < vars.size(); ++varIndex) 
@@ -156,7 +156,7 @@ struct GACTableConstraint : public DynamicConstraint
 	    vars[varIndex].setMin((tuples->dom_smallest)[varIndex]);
 	    vars[varIndex].setMax((tuples->dom_smallest)[varIndex] + (tuples->dom_size)[varIndex]);
 		
-		if(stateObj->state().isFailed()) return;
+		if(getState(stateObj).isFailed()) return;
 		
         DomainInt max = vars[varIndex].getMax();
         for(DomainInt i = vars[varIndex].getMin(); i <= max; ++i) 

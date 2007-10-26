@@ -94,7 +94,7 @@ public:
   bool setFailed(bool f) {
 #ifdef USE_SETJMP
     if(f)
-      SYSTEM_LONGJMP(*(stateObj->state().getJmpBufPtr()),1);
+      SYSTEM_LONGJMP(*(getState(stateObj).getJmpBufPtr()),1);
 #endif
     failed = f; 
   }
@@ -173,8 +173,6 @@ public:
   { return find_one_sol; }
 };
 
-//VARDEF(SearchOptions* stateObj->options());
-//VARDEF(SearchState state);
 
 class Queues;
 class MemBlockCache;
@@ -182,31 +180,14 @@ class Memory;
 class TriggerMem;
 class VariableContainer;
 
-class StateObj
-{
-  // Forbid copying this type!
-  StateObj(const StateObj&);
-  void operator=(const StateObj&);
+class StateObj;
 
-  Memory* searchMem_m;
-  SearchOptions* options_m;
-  SearchState state_m;
-  Queues* queues_m;
-  TriggerMem* triggerMem_m;
-  VariableContainer* varContainer_m;
-public:
-    
-  SearchOptions* options() { return options_m; }
-  SearchState& state() { return state_m; }
-  Queues& queues() { return *queues_m; }
-  Memory& searchMem() { return *searchMem_m; }
-  TriggerMem* triggerMem() { return triggerMem_m; }
-  VariableContainer& varCon() { return *varContainer_m; }
-
-  // These has to be defined a long way away...
-  StateObj();
-  ~StateObj();
-};
+inline SearchOptions& getOptions(StateObj* stateObj);
+inline SearchState& getState(StateObj* stateObj);
+inline Queues& getQueue(StateObj* stateObj);
+inline Memory& getMemory(StateObj* stateObj);
+inline TriggerMem& getTriggerMem(StateObj* stateObj);
+inline VariableContainer& getVars(StateObj* stateObj);
 
 namespace Controller
 {
