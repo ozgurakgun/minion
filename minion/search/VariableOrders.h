@@ -32,7 +32,7 @@
 template<typename T>
 void inline maybe_print_search_assignment(StateObj* stateObj, T& var, DomainInt val, BOOL equal)
 {
-    if(stateObj->options()->dumptree)
+    if(getOptions(stateObj).dumptree)
         cout << "SearchAssign:" << var << (equal?" = ":" != ") << val << endl;
 }
 

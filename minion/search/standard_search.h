@@ -27,8 +27,8 @@ namespace Controller
 	  
 	  while(true)
 	  {
-		stateObj->state().incrementNodeCount();
-		if(stateObj->state().getNodeCount() == stateObj->options()->nodelimit)
+		getState(stateObj).incrementNodeCount();
+		if(getState(stateObj).getNodeCount() == getOptions(stateObj).nodelimit)
 		  return;
 	
 		if(do_checks(stateObj))
@@ -44,20 +44,20 @@ namespace Controller
 		  deal_with_solution(stateObj);
 
 		  // fail here to force backtracking.
-		  stateObj->state().setFailed(true);
+		  getState(stateObj).setFailed(true);
 		}
 		else
 		{
 		  maybe_print_search_state(stateObj, "Node: ", v);
 		  world_push(stateObj);
 		  order.branch_left();
-		  stateObj->queues().propagateQueue();
+		  getQueue(stateObj).propagateQueue();
 		}
 		
 		// Either search failed, or a solution was found.
-		while(stateObj->state().isFailed())
+		while(getState(stateObj).isFailed())
 		{
-		  stateObj->state().setFailed(false);
+		  getState(stateObj).setFailed(false);
 		  
 		  if(order.finished_search())
 			return;

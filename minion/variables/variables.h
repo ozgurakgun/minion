@@ -63,59 +63,26 @@ public:
 };
 
 
-#ifndef REENTER
-VARDEF(StateObj stateObj_no_reenter);
-VARDEF_ASSIGN(VariableContainer varCon_no_reenter,&stateObj_no_reenter);
+#ifndef MANY_VAR_CONTAINERS
 
-/*
-struct GetBoundVarContainer
-{
-  static BoundVarContainer<>& con() 
-  { return varCon.getBoundvarContainer(); }
-  static string name()
-  { return "Bound"; }
-};
+template<typename DomType>
+struct BoundVarContainer<DomType>& BoundVarRef_internal<DomType>::getCon() const
+{ return getVars(NULL).getBoundvarContainer(); }
 
-struct GetBooleanContainer
-{ 
-  static BooleanContainer& con() 
-  { return varCon.getBooleanContainer(); } 
-  static string name()
-  { return "Bool:"; }
-};
-
-struct GetRangeVarContainer
-{
-  static LRVCon& con() 
-  { return varCon.getRangevarContainer(); }
-  static string name() { return "RangeVar:"; }
-};
-*/
 template<int var_min, typename d_type>
 inline RangeVarContainer<var_min, d_type>& RangeVarRef_internal_template<var_min, d_type>::getCon() const
-{ return varCon_no_reenter.getRangevarContainer(); }
+{ return getVars(NULL).getRangevarContainer(); }
 
 inline BooleanContainer& BoolVarRef_internal::getCon() const
-{ return varCon_no_reenter.getBooleanContainer(); }
+{ return getVars(NULL).getBooleanContainer(); }
 
-/*
-struct GetBigRangeVarContainer
-{
-  static BigRangeCon& con() 
-  { return varCon.getBigRangevarContainer(); }
-  static string name() { return "BigRangeVar"; }
-};
+template<typename DomType>
+inline SparseBoundVarContainer<DomType>& SparseBoundVarRef_internal<DomType>::getCon() const
+{ return getVars(NULL).getSparseBoundvarContainer(); }
 
-
-struct GetSparseBoundVarContainer
-{
-  static SparseBoundVarContainer<>& con() 
-  { return varCon.getSparseBoundvarContainer(); }
-  
-  static string name()
-  { return "SparseBound:"; }
-};
-*/
+template<typename d_type>
+inline BigRangeVarContainer<d_type>& BigRangeVarRef_internal_template<d_type>::getCon() const
+{ return getVars(NULL).getBigRangevarContainer(); }
 #endif
 
 struct SmallDiscreteCheck
@@ -126,7 +93,7 @@ struct SmallDiscreteCheck
 
   template<typename T>
   bool operator()(const T& lower, const T& upper) const
-  { return stateObj->varCon().getRangevarContainer().valid_range(lower, upper); }
+  { return getVars(stateObj).getRangevarContainer().valid_range(lower, upper); }
 };
 
 #include "mappings/variable_neg.h"

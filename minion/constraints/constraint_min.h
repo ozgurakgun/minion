@@ -86,7 +86,7 @@ struct MinConstraint : public Constraint
 		  ++it;
 		if(it == var_array.end())
 		{
-		  stateObj->state().setFailed(true);
+		  getState(stateObj).setFailed(true);
 		  return;
 		}
 		

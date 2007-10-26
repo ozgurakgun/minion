@@ -32,17 +32,17 @@ get_AnyVarRef_from_Var(StateObj* stateObj, Var v)
   switch(v.type)
 		{
 		  case VAR_BOOL:
-			return AnyVarRef(stateObj->varCon().getBooleanContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getBooleanContainer().get_var_num(v.pos));
 		  case VAR_NOTBOOL:
-		    return AnyVarRef(VarNotRef(stateObj->varCon().getBooleanContainer().get_var_num(v.pos)));
+		    return AnyVarRef(VarNotRef(getVars(stateObj).getBooleanContainer().get_var_num(v.pos)));
 		  case VAR_BOUND:
-			return AnyVarRef(stateObj->varCon().getBoundvarContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getBoundvarContainer().get_var_num(v.pos));
 		  case VAR_SPARSEBOUND:
-			return AnyVarRef(stateObj->varCon().getSparseBoundvarContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getSparseBoundvarContainer().get_var_num(v.pos));
 		  case VAR_DISCRETE_SHORT:
-			return AnyVarRef(stateObj->varCon().getRangevarContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getRangevarContainer().get_var_num(v.pos));
 		  case VAR_DISCRETE_LONG:
-			return AnyVarRef(stateObj->varCon().getBigRangevarContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getBigRangevarContainer().get_var_num(v.pos));
 		  case VAR_SPARSEDISCRETE:	
 			D_FATAL_ERROR("Sparse Discrete not supported at present");
 		  case VAR_CONSTANT:
@@ -72,9 +72,9 @@ get_AnyVarRef_from_Var(StateObj* stateObj, Var v)
   /// Create all the variables used in the CSP.
   void build_variables(StateObj* stateObj, const ProbSpec::VarContainer& vars)
   {
-    stateObj->varCon().getBooleanContainer().setVarCount(vars.BOOLs);
-	stateObj->varCon().getBoundvarContainer().addVariables(vars.bound);
-    stateObj->varCon().getSparseBoundvarContainer().addVariables(vars.sparse_bound);
+    getVars(stateObj).getBooleanContainer().setVarCount(vars.BOOLs);
+	getVars(stateObj).getBoundvarContainer().addVariables(vars.bound);
+    getVars(stateObj).getSparseBoundvarContainer().addVariables(vars.sparse_bound);
 
 
     vector<pair<int, Bounds> > smallRange;
@@ -82,14 +82,14 @@ get_AnyVarRef_from_Var(StateObj* stateObj, Var v)
 
 	for(unsigned int i = 0; i < vars.discrete.size(); ++i)
 	{
-        if(stateObj->varCon().getRangevarContainer().valid_range(vars.discrete[i].second.lower_bound, vars.discrete[i].second.upper_bound))
+        if(getVars(stateObj).getRangevarContainer().valid_range(vars.discrete[i].second.lower_bound, vars.discrete[i].second.upper_bound))
           smallRange.push_back(vars.discrete[i]);
         else
           largeRange.push_back(vars.discrete[i]);
     }
 	
-    stateObj->varCon().getRangevarContainer().addVariables(smallRange);
-    stateObj->varCon().getBigRangevarContainer().addVariables(largeRange);
+    getVars(stateObj).getRangevarContainer().addVariables(smallRange);
+    getVars(stateObj).getBigRangevarContainer().addVariables(largeRange);
 	
 	for(unsigned int i = 0; i < vars.sparse_discrete.size(); ++i)
 	{ D_FATAL_ERROR("Sparse discrete disabled at present due to bugs. Sorry."); }

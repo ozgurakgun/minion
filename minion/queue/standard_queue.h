@@ -103,7 +103,7 @@ public:
   
   bool propagateDynamicTriggerLists()
   {
-	bool* fail_ptr = stateObj->state().getFailedPtr();
+	bool* fail_ptr = getState(stateObj).getFailedPtr();
 	while(!dynamic_trigger_list.empty())
 	{
 	  DynamicTrigger* t = dynamic_trigger_list.back();
@@ -138,7 +138,7 @@ public:
   
   bool propagateStaticTriggerLists()
   {
-	bool* fail_ptr = stateObj->state().getFailedPtr();
+	bool* fail_ptr = getState(stateObj).getFailedPtr();
 	while(!propagate_trigger_list.empty())
 	{
 	  TriggerRange t = propagate_trigger_list.back();
@@ -156,7 +156,7 @@ public:
 #endif
 		
 #ifndef NO_DEBUG
-		if(stateObj->options()->fullpropagate)
+		if(getOptions(stateObj).fullpropagate)
 		  it->full_propagate();
 		else
 		{
@@ -179,12 +179,12 @@ public:
   {
     D_INFO(2, DI_QUEUE, "Starting Propagation");
 #ifdef USE_SETJMP
-    int setjmp_return = SYSTEM_SETJMP(*(stateObj->state().getJmpBufPtr()));
+    int setjmp_return = SYSTEM_SETJMP(*(getState(stateObj).getJmpBufPtr()));
 	if(setjmp_return != 0)
 	{ // Failure has occured
-	  D_ASSERT(!stateObj->state().isFailed());
-	  stateObj->state().setFailed(true);
-	  stateObj->queues().clearQueues();
+	  D_ASSERT(!getState(stateObj).isFailed());
+	  getState(stateObj).setFailed(true);
+	  getQueue(stateObj).clearQueues();
 	  printf("!\n");
 	  return;
 	}
@@ -193,7 +193,7 @@ public:
 	while(true)
 	{
 #ifdef DYNAMICTRIGGERS
-	  if (stateObj->state().isDynamicTriggersUsed()) 
+	  if (getState(stateObj).isDynamicTriggersUsed()) 
 	  {
 		while(!propagate_trigger_list.empty() || !dynamic_trigger_list.empty())
 		{
@@ -238,4 +238,4 @@ public:
 // Just checking the bounds doesn't make sense here, so we ignore it.
 template<typename Vars>
 inline void propagate_queue_vars(StateObj* stateObj, Vars& vars, bool /*CheckBounds*/)
-{	stateObj->queues().propagateQueue(); }
+{	getQueue(stateObj).propagateQueue(); }

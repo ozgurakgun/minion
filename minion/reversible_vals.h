@@ -52,7 +52,7 @@ public:
 
 Reversible(StateObj* stateObj)
 { 
-   backtrack_ptr = stateObj->searchMem().backTrack().request_bytes(sizeof(Type));
+   backtrack_ptr = getMemory(stateObj).backTrack().request_bytes(sizeof(Type));
    D_ASSERT( (size_t)(backtrack_ptr.get_ptr()) % sizeof(Type) == 0);
 }
 

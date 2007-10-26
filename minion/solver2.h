@@ -33,22 +33,22 @@ namespace Controller
   inline void world_push(StateObj* stateObj)
   {
     D_INFO(0,DI_SOLVER,"World Push");
-	D_ASSERT(stateObj->queues().isQueuesEmpty());
-    stateObj->searchMem().backTrack().world_push();
+	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+    getMemory(stateObj).backTrack().world_push();
   }
   
   /// Pops the state of the whole world.
   inline void world_pop(StateObj* stateObj)
   {
     D_INFO(0,DI_SOLVER,"World Pop");
-	D_ASSERT(stateObj->queues().isQueuesEmpty());
-    stateObj->searchMem().backTrack().world_pop();
-    stateObj->varCon().getBigRangevarContainer().bms_array.undo();
+	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+    getMemory(stateObj).backTrack().world_pop();
+    getVars(stateObj).getBigRangevarContainer().bms_array.undo();
   }
   
   inline void world_pop_all(StateObj* stateObj)
   {
-	int depth = stateObj->searchMem().backTrack().current_depth();
+	int depth = getMemory(stateObj).backTrack().current_depth();
 	for(int i = 0; i < depth; ++i)
 	  world_pop(stateObj); 
   }

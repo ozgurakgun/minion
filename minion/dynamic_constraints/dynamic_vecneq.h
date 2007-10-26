@@ -84,7 +84,7 @@ struct VecNeqDynamic : public DynamicConstraint
 	// Vectors are assigned and equal.
 	if(index == size)
 	{
-	  stateObj->state().setFailed(true);
+	  getState(stateObj).setFailed(true);
 	  return;
 	}
 	
