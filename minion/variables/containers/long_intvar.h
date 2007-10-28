@@ -49,10 +49,8 @@ typedef VarRefType<GetBigRangeVarContainer, BigRangeVarRef_internal> BigRangeVar
 template<typename d_type>
 struct BigRangeVarContainer {
   typedef DomainInt domain_bound_type;
-  static const int var_step = sizeof(d_type) * 8;
   static const d_type one = static_cast<d_type>(1);
   BackTrackOffset bound_data;
-  // MemOffset bms_pointers;
   MonotonicSet bms_array;
   TriggerList trigger_list;
 
@@ -258,15 +256,12 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
     }
    
     
-    // call to ifmember has removed value from domain
     DomainInt offset = i;
 #ifdef FULL_DOMAIN_TRIGGERS
 	trigger_list.push_domain_removal(d.var_num, i);
 #endif
     trigger_list.push_domain(d.var_num);
     
-    // use ifMember remove above, so delete following line
-  //   bms_array.remove(var_offset[d.var_num] + offset);
 
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset));
     domain_bound_type up_bound = upper_bound(d);
