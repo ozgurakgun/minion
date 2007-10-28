@@ -51,21 +51,15 @@ class TrailedMonotonicSet
   // value_type& undo_values(int i)
   // { return static_cast<value_type*>(_undo_values.get_ptr())[i]; }
 
-  bool* & undo_indexes(int i)
+  int& undo_indexes(int i)
   { 
-	return static_cast<value_type**>(_undo_indexes.get_ptr())[i]; 
+	return static_cast<int*>(_undo_indexes.get_ptr())[i]; 
   }
 
-  const bool* & undo_indexes(int i) const
-  { 
-	return static_cast<const value_type**>(_undo_indexes.get_ptr())[i]; 
-  }
 public:
   // following allows external types destructive changes to array 
   // but we probably do not want to allow this to force them to use set()
-
-  
-  value_type& array(DomainInt i) 
+  value_type& array(DomainInt i)
   { 
     D_ASSERT( i >= 0 && i < size());
 	int val = checked_cast<int>(i);
@@ -78,7 +72,7 @@ public:
 	int val = checked_cast<int>(i);
     return static_cast<const value_type*>(_array.get_ptr())[val]; 
   }
-  
+
   bool needs_undoing()
   {
     D_ASSERT( _local_depth < _max_depth && _local_depth >= _backtrack_depth);
@@ -98,7 +92,7 @@ public:
     for(; _local_depth > bt_depth; ) 
     {
       -- _local_depth;
-     *( undo_indexes(_local_depth) ) = tms_in_set ; 
+      array(undo_indexes(_local_depth)) = tms_in_set ; 
     }
 
 #ifdef DEBUG
@@ -106,6 +100,32 @@ public:
 #endif
 
     D_ASSERT(_local_depth == bt_depth);
+  }
+
+  void remove(DomainInt index)
+  {
+    // cout << "index: " << index << " value: " << newval << " local: " << _local_depth << " bt: " << _backtrack_depth.get() << endl; 
+
+    // Assumes index is currently in the set.  Use checked_remove if this is not correct assumption.
+ 
+    D_ASSERT( 0 <= index && index < size());
+    undo_indexes(_local_depth) = checked_cast<int>(index);
+
+    ++_local_depth;
+
+#ifdef TRAILEDBMS  
+    array(index) = _local_depth;
+#else
+    array(index) = 0;
+#endif
+  }
+
+  void checked_remove(DomainInt index) 
+  {
+    // check for membership to reduce amount of trailing 
+    // or to ensure correctness
+  
+    if (isMember(index)) { remove(index); }
   }
   
   int size() const
@@ -121,7 +141,7 @@ public:
 #ifdef TRAILEDBMS  
 	  if (array(index) > _local_depth) 
 	  { 
-		  undo_indexes(_local_depth) = &(checked_cast<bool*>(_array.get_ptr())[index]);
+		  undo_indexes(_local_depth) = checked_cast<int>(index);
 		  ++_local_depth;
 		 array(index) = _local_depth ;	  
 		 return 1;
@@ -131,7 +151,7 @@ public:
 
 	  if (array(index)) 
 	  { 
-		  undo_indexes(_local_depth) = &(checked_cast<value_type*>(_array.get_ptr())[index]);
+		  undo_indexes(_local_depth) = checked_cast<int>(index);
 		  ++_local_depth;
 		 array(index) = 0;	  
 		 return 1;
@@ -175,7 +195,7 @@ void initialise(const int& size, const int& max_undos)
 
     _array.request_bytes(_size*sizeof(value_type)); 
     // _undo_values.request_bytes(_max_depth*sizeof(value_type));
-    _undo_indexes.request_bytes(_max_depth*sizeof(value_type**));
+    _undo_indexes.request_bytes(_max_depth*sizeof(int));
 
 #ifdef DEBUG
     cout << "initialising TrailedMonotonicSet with value of size= " << size << endl;
