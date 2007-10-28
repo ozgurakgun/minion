@@ -243,53 +243,73 @@ struct BigRangeVarContainer {
          << endl;
     bms_array.print_state();
 #endif
+
     D_ASSERT(lock_m);
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
- 
-if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(var_offset[d.var_num] + i) ))
-// if (! inDomain(d,i)) 
-    {
-#ifdef DEBUG
-      cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
-#endif
-      return;
-    }
-   
     
-    DomainInt offset = i;
+    domain_bound_type up_bound = upper_bound(d);
+    domain_bound_type low_bound = lower_bound(d);
+
+    if((i <= low_bound) || (i >= up_bound))
+    {
+	    if(i == up_bound)
+	    {
+		    setMax(d,i-1);
+		    return;
+	    }
+	    if(i == low_bound)
+	    {
+		    setMin(d,i+1);
+		    return;
+	    } 
+#ifdef DEBUG
+      	    cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
+#endif
+     	    return; // i < low bound or > up  bound
+    }
+    
+    if (bms_array.ifMember_remove(var_offset[d.var_num] + i) )
+    {	// otherwise nothing to do 
+	    
 #ifdef FULL_DOMAIN_TRIGGERS
 	trigger_list.push_domain_removal(d.var_num, i);
 #endif
-    trigger_list.push_domain(d.var_num);
+    	trigger_list.push_domain(d.var_num);
     
 
-    D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset));
-    domain_bound_type up_bound = upper_bound(d);
-    if(offset == up_bound)
+	D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + i));
+  
+	/*  if(i == up_bound)
     {
       upper_bound(d) = find_new_upper_bound(d);
       trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
     }
     
-    domain_bound_type low_bound = lower_bound(d);
-    if(offset == low_bound)
+    if(i == low_bound)
     {
       lower_bound(d) = find_new_lower_bound(d);
       trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
     }
-    
-    if(upper_bound(d) == lower_bound(d))
-      trigger_list.push_assign(d.var_num, getAssignedValue(d));
-    D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    */
+  
+    	D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
 #ifdef DEBUG
-    cout << "Exiting removeFromDomain: " << d.var_num << " " << i << " [" 
-         << lower_bound(d) << ":" << upper_bound(d) << "] original ["
-         << getInitialMin(d) << ":" << getInitialMax(d) << "]"
-         << endl;
-    bms_array.print_state();
+    	cout << "Exiting removeFromDomain: " << d.var_num << " " << i << " [" 
+             << lower_bound(d) << ":" << upper_bound(d) << "] original ["
+             << getInitialMin(d) << ":" << getInitialMax(d) << "]"
+             << endl;
+	bms_array.print_state();
 #endif
-    return;
+    	return;
+    }
+#ifdef DEBUG
+	else
+	{
+		cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
+	}
+#endif
+
   }
   
   void propagateAssign(BigRangeVarRef_internal d, DomainInt offset)
@@ -415,7 +435,7 @@ public:
 #endif
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
-	DomainInt up_bound = upper_bound(d);
+    DomainInt up_bound = upper_bound(d);
     DomainInt low_bound = lower_bound(d);
     
 	if(offset > up_bound)
