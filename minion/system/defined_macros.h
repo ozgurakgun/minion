@@ -69,7 +69,8 @@ cout << "REENTER" << " ";
 #endif
 #ifdef MANY_VAR_CONTAINERS
 cout << "MANY_VAR_CONTAINERS" << " "; 
-#endif#ifdef REGINLHOMME
+#endif
+#ifdef REGINLHOMME
 cout << "REGINLHOMME" << " "; 
 #endif
 #ifdef SATSPECIAL1

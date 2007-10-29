@@ -57,7 +57,7 @@ struct GACElementConstraint : public Constraint
 	var_array_min_val = min_val;
 	var_array_max_val = max_val;
 	
-	DomainInt domain_size = var_array_max_val - var_array_min_val + 1;
+	// DomainInt domain_size = var_array_max_val - var_array_min_val + 1;
 	for(int i = 0; i < array_size; ++i)
 	{
 	  t.push_back(make_trigger(var_array[i], Trigger(this, i), DomainChanged));
@@ -123,7 +123,7 @@ struct GACElementConstraint : public Constraint
   {
 	PROP_INFO_ADDONE(GACElement);
     int array_size = var_array.size();
-	DomainInt domain_size = (var_array_max_val - var_array_min_val + 1);
+	// DomainInt domain_size = (var_array_max_val - var_array_min_val + 1);
 	
 	if(indexvar.isAssigned())
 	{ index_assigned(); }

@@ -26,6 +26,10 @@
 
 typedef MoveablePointer MemOffset;
 
+// \addtogroup Memory
+// @{
+
+/// Encapsulates both the backtrackable and nonbacktrackable memory of a CSP instance.
 class Memory
 {
   BackTrackMemory backtrack_memory;
@@ -34,3 +38,5 @@ public:
   BackTrackMemory& backTrack() { return backtrack_memory; }
   NewMemoryBlock& nonBackTrack() { return nonbacktrack_memory; }
 };
+
+// @}

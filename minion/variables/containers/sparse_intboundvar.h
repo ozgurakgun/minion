@@ -96,7 +96,7 @@ struct SparseBoundVarContainer {
   BoundType& upper_bound(SparseBoundVarRef_internal<BoundType> i)
   { return static_cast<BoundType*>(bound_data.get_ptr())[i.var_num*2 + 1]; }
   
-  /// find the small possible lower bound above @new_lower_bound.
+  /// find the small possible lower bound above new_lower_bound.
   /// Does not actually change the lower bound.  
   DomainInt find_lower_bound(SparseBoundVarRef_internal<BoundType> d, DomainInt new_lower_bound)
   {
@@ -111,7 +111,7 @@ struct SparseBoundVarContainer {
     return *it;
   }
   
-  /// find the largest possible upper bound below @new_upper_bound.
+  /// find the largest possible upper bound below new_upper_bound.
   /// Does not actually change the upper bound.
   DomainInt find_upper_bound(SparseBoundVarRef_internal<BoundType>& d, DomainInt new_upper_bound)
   {
@@ -392,7 +392,6 @@ template<typename T>
 inline SparseBoundVarRef
 SparseBoundVarContainer<T>::get_var_num(int i)
 {
-  D_ASSERT(!lock_m);
   D_ASSERT(i < var_count_m);
   return SparseBoundVarRef(SparseBoundVarRef_internal<T>(this, i));
 }

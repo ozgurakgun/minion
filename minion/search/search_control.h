@@ -13,19 +13,19 @@ enum VarOrder
   ORDER_ORIGINAL
 };
 
-  template<typename VarValOrder>
-  void solve(StateObj* stateObj, VarOrder order, VarValOrder& var_val_order)
+  template<typename VarValOrder, typename Propogator>
+  void solve(StateObj* stateObj, VarOrder order_in, VarValOrder& search_order, Propogator& prop)
   {
     typedef typename VarValOrder::first_type::value_type VarType;
-	switch(order)
+	switch(order_in)
 	{
 	  case ORDER_STATIC:
 	  {
 		Controller::VariableOrder<VarType, Controller::SlowStaticBranch> 
-		order(stateObj, var_val_order.first, var_val_order.second);
+		order(stateObj, search_order.first, search_order.second);
 		
 		try 
-		{ Controller::solve_loop(stateObj, order, var_val_order.first); }
+		{ Controller::solve_loop(stateObj, order, search_order.first, prop); }
 		catch(...)
 		{ }
 	  }
@@ -33,10 +33,10 @@ enum VarOrder
 	  case ORDER_SDF:
 	  {
 		   Controller::VariableOrder<VarType, Controller::SDFBranch> 
-		   order(stateObj, var_val_order.first, var_val_order.second);
+		   order(stateObj, search_order.first, search_order.second);
 		   
 		   try 
-		   { Controller::solve_loop(stateObj, order, var_val_order.first); }
+		   { Controller::solve_loop(stateObj, order, search_order.first, prop); }
 		   catch(...)
 		   { }
 	  }
@@ -44,10 +44,10 @@ enum VarOrder
 	  case ORDER_LDF:
 	  {
 		Controller::VariableOrder<VarType, Controller::LDFBranch> 
-		order(stateObj, var_val_order.first, var_val_order.second);
+		order(stateObj, search_order.first, search_order.second);
 		
 		try 
-		{ Controller::solve_loop(stateObj, order, var_val_order.first); }
+		{ Controller::solve_loop(stateObj, order, search_order.first, prop); }
 		catch(...)
 		{ }
 	  }
@@ -56,9 +56,9 @@ enum VarOrder
 	  case ORDER_ORIGINAL:
 	  {  
 		Controller::VariableOrder<VarType, Controller::StaticBranch>
-		order(stateObj, var_val_order.first, var_val_order.second);
+		order(stateObj, search_order.first, search_order.second);
 		try
-		{ Controller::solve_loop(stateObj, order, var_val_order.first); }
+		{ Controller::solve_loop(stateObj, order, search_order.first, prop); }
 		catch(...)
 		{ }
 	  }

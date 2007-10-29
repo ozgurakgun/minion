@@ -231,11 +231,9 @@ public:
   
 };  
 
-//VARDEF(Queues queues);
-
 // This just allows SAC (which wants a list of vars)
 // and normal propagate to have the same input method.
 // Just checking the bounds doesn't make sense here, so we ignore it.
-template<typename Vars>
-inline void propagate_queue_vars(StateObj* stateObj, Vars& vars, bool /*CheckBounds*/)
-{	getQueue(stateObj).propagateQueue(); }
+//template<typename Vars>
+//inline void propagate_queue_vars(StateObj* stateObj, Vars& vars, bool /*CheckBounds*/)
+//{	getQueue(stateObj).propagateQueue(); }

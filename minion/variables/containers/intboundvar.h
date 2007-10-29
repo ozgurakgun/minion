@@ -407,7 +407,6 @@ template<typename T>
 inline BoundVarRef
 BoundVarContainer<T>::get_var_num(int i)
 {
-  D_ASSERT(!lock_m);
   D_ASSERT(i < var_count_m);
   // Note we assume in BoundVarRef_internal that upper_bound(i) is just after lower_bound(i)...
   return BoundVarRef(BoundVarRef_internal<>(this, i, static_cast<DomainInt*>(bound_data.get_ptr()) + i*2));

@@ -578,7 +578,6 @@ template<int var_min, typename T>
 inline LRangeVarRef
 RangeVarContainer<var_min,T>::get_var_num(int i)
 {
-  D_ASSERT(!lock_m);
   D_ASSERT(i < var_count_m);
   return LRangeVarRef(RangeVarRef_internal(this, i, &bound_data[i * 2], &val_data[i]));
 }

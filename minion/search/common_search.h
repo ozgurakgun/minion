@@ -16,7 +16,7 @@ namespace Controller
   template<typename VarRef>
 	void optimise_maximise_var(StateObj* stateObj, VarRef var)
   {
-	  getOptions(stateObj).setFindAllSolutions();
+	  getOptions(stateObj).findAllSolutions();
 	  getState(stateObj).setOptimiseVar(new AnyVarRef(var));
 	  getState(stateObj).setOptimisationProblem(true);
   }
@@ -25,7 +25,7 @@ namespace Controller
   template<typename VarRef>
 	void optimise_minimise_var(StateObj* stateObj, VarRef var)
   {
-	  getOptions(stateObj).setFindAllSolutions();
+	  getOptions(stateObj).findAllSolutions();
 	  getState(stateObj).setOptimiseVar(new AnyVarRef(VarNeg<VarRef>(var)));
 	  getState(stateObj).setOptimisationProblem(true);
   }
@@ -163,7 +163,8 @@ void inline maybe_print_search_action(StateObj* stateObj, const char* action)
 	  
 	  getState(stateObj).setOptimiseValue(getState(stateObj).getOptimiseVar()->getAssignedValue() + 1);			
 	}
-	if(getOptions(stateObj).lookingForOneSolution() || getState(stateObj).getSolutionCount() == getOptions(stateObj).sollimit)
+    // Note that sollimit = -1 if all solutions should be found.
+	if(getState(stateObj).getSolutionCount() == getOptions(stateObj).sollimit)
 	  throw 0;
   }
 
