@@ -250,11 +250,20 @@ struct BigRangeVarContainer {
     domain_bound_type up_bound = upper_bound(d);
     domain_bound_type low_bound = lower_bound(d);
 
-    if((i <= low_bound) || (i >= up_bound))
+    if((i < low_bound) || (i > up_bound) || !bms_array.isMember(var_offset[d.var_num]+i))
     {
+#ifdef DEBUG
+	
+		cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
+
+#endif
+	return;
+    }
+    
+    
 	    	  // We believe that upper and lower bounds always in domain
-	    D_ASSERT(bms_array.isMember(var_offset[d.var_num]+low_bound));
-	    D_ASSERT(bms_array.isMember(var_offset[d.var_num]+up_bound));
+	    D_ASSERT(state.isFailed() || bms_array.isMember(var_offset[d.var_num]+low_bound));
+	    D_ASSERT(state.isFailed() || bms_array.isMember(var_offset[d.var_num]+up_bound));
 
 	    if(i == up_bound)
 	    {
@@ -302,13 +311,10 @@ struct BigRangeVarContainer {
 			trigger_list.push_assign(d.var_num, loopvar);
 		return;  
 	    } 
-#ifdef DEBUG
-      	    cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
-#endif
-     	    return; // i < low bound or > up  bound
-    }
+
     
-    if (bms_array.ifMember_remove(var_offset[d.var_num] + i) )
+    bms_array.unchecked_remove(var_offset[d.var_num] + i); 
+    
     {	// otherwise nothing to do 
 	    
 #ifdef FULL_DOMAIN_TRIGGERS
@@ -337,8 +343,8 @@ struct BigRangeVarContainer {
 		cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
 	}
 #endif
-
   }
+  
   
   void propagateAssign(BigRangeVarRef_internal d, DomainInt offset)
   {
