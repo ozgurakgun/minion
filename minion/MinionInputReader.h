@@ -23,7 +23,7 @@ struct InputFileReader
   /// Peeks at the next character, including whitespace and comments.
   virtual char simplepeek_char() = 0;
   
-  /// Check if the next character from @infile is @sym.
+  /// Check if the next character from the file is sym.
   virtual void check_sym(char sym) = 0;
 
   /// Removes all comments after the current place in the file
@@ -39,13 +39,13 @@ struct InputFileReader
   
   /// Cleans rubbish off start of string.
   virtual void clean_string(string& s) = 0;
-  /// Checks the next string in the file is @s.
+  /// Checks the next string in the file is s.
   virtual void check_string(const string& s) = 0;
   /// Get the next line, ignoring comments.
   virtual string getline() = 0;  
   /// Get a line, including comments.
   virtual string simplegetline() = 0;
-  /// Get the line up until the first occurrence of @deliminator.
+  /// Get the line up until the first occurrence of deliminator.
   virtual string getline(char deliminator) = 0;
   /// Get a single character, ignoring whitespace and comments.
   virtual char get_char() = 0;
@@ -171,7 +171,7 @@ struct ConcreteFileReader : public InputFileReader
     return simplepeek_char();
   }
   
-  /// Check if the next character from @infile is @sym.
+  /// Check if the next character from infile is sym.
   virtual void check_sym(char sym)
   {
     check_for_comments();
@@ -278,10 +278,8 @@ class MinionInputReader {
   
   BOOL parser_verbose ;
   
-  MinionInputReader() : parser_verbose(false), tupleListContainer(new TupleListContainer)
+  MinionInputReader() : parser_verbose(false)
   {}
-  
-   TupleListContainer* tupleListContainer;
 };
 
 class MinionThreeInputReader {
@@ -320,16 +318,13 @@ public:
   bool print_all_vars;
   
   bool isGadgetReader_m;
-  vector<Var> constructionSite;
   
   void setGadgetReader()
   { isGadgetReader_m = true; }
   bool isGadgetReader()
   { return isGadgetReader_m; }
   
-  MinionThreeInputReader() : parser_verbose(false), print_all_vars(true), tupleListContainer(new TupleListContainer),
+  MinionThreeInputReader() : parser_verbose(false), print_all_vars(true),
     isGadgetReader_m(false)
   {}
-  
-   TupleListContainer* tupleListContainer;
 };

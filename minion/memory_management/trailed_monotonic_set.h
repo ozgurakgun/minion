@@ -121,9 +121,9 @@ public:
     return (bool)array(index);
   }
 
-void initialise(const int& size, const int& max_undos)
+void initialise(const int& new_size, const int& max_undos)
   { 
-    _size = size;
+    _size = new_size;
     _max_undos = max_undos;
 
     // should put in a D_ASSERT on MAXINT here
@@ -145,7 +145,7 @@ void initialise(const int& size, const int& max_undos)
     // print_state();
 #endif
     
-    for(int i=0; i<size; i++) {
+    for(int i=0; i< new_size; i++) {
       array(i) = one;
     };
   }

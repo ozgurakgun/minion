@@ -24,25 +24,52 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+/** \defgroup Memory
+ *  This group of classes deals with all of Minion's memory management.
+ */
 
+// \addtogroup Memory
+// @{
 
-
-struct MoveablePointer
+/** \brief Class which represents a moveable pointer.
+ *
+ * This class represents any point in Minion which should be moveable. The
+ * two main sources of these are both backtrackable and nonbacktrackable memory.
+ * There are always design tradeoffs with this kind of pointer. In this case the
+ * choice made has been to make storing and dereferencing the pointer as cheap
+ * as possible, while making copying the pointer quite expensive.
+ *
+ * Note that while this returns a raw pointer, it is important to not keep
+ * that pointer across any function call which could either allocate new memory
+ * or push or pop the search state stack.
+ *
+ *
+ */
+class MoveablePointer
 {
+  /// The physical pointer being wrapped.
+  void* ptr;
+public:
+  /// Copy constructor for MoveablePointer.
   MoveablePointer(const MoveablePointer& b);
   
+  /// Assignment for MoveablePointer.
   void operator=(const MoveablePointer& b);
 
-  explicit MoveablePointer(void* _ptr);
+  /// Constructs a MoveablePointer from a raw pointer ptr.
+  explicit MoveablePointer(void* ptr);
 
-  explicit MoveablePointer(const MoveablePointer& b, int offset);
+  /// Constructs a MoveablePointer from a MoveablePointer and an offset in bytes.
+  explicit MoveablePointer(const MoveablePointer& mp, int offset);
 
-  void* ptr;
-
-  // This is only for debugging code!
+  /// In debug mode, gets the pointer without checking if it is valid.
+  /** This can be used in non-debug mode, but does not do anything. It is used
+   *  by the code which does checking of get_ptr in debug mode.
+   */
   void* get_ptr_noCheck() const
   { return ptr; }
 
+  /// Returns the pointer.
   void* get_ptr() const
 #ifdef NO_DEBUG
   { return ptr; }
@@ -50,37 +77,51 @@ struct MoveablePointer
     ; // Defined at bottom of file.
 #endif
 
-  void set_ptr(void* _ptr) 
+  /// Manually alters the pointer being watched. This function should only
+  /// be used by those with a complete understanding of the whole memory system,
+  /// and in special circumstances.
+  void set_raw_ptr(void* _ptr) 
   { 
     D_INFO(0, DI_POINTER, "Manually set pointer at " + to_string(this) + " to:" + to_string(ptr));
     ptr = _ptr; 
   }
   
+  /// Produces a new MoveablePointer offset from the current one by a given number of bytes.
   MoveablePointer getOffset(unsigned bytes)
   { 
     D_INFO(0, DI_POINTER, "Offset " + to_string(ptr) + " by " + to_string(bytes));
     return MoveablePointer(((char*)ptr) + bytes); 
   }
 
+  /// Default constructor.
   MoveablePointer() : ptr(NULL)
   { D_INFO(0, DI_POINTER, "Create Empty Pointer at:" + to_string(this)); }
   
+  /// Destructor.
   ~MoveablePointer();
 };
 
+/// Provides a wrapper around \ref MoveablePointer which makes an array.
 template<typename T>
 class MoveableArray
 {
+  /// Pointer to start of array.
   MoveablePointer ptr;
+  /// Size of array.
   unsigned size;
+  
 public:
+  /// Main constructor, takes a MoveablePointer and the size of the array.
+  /** While this can be called manually, it would normally be called by allocateArray
+   */
   explicit MoveableArray(MoveablePointer _ptr, unsigned _size) : ptr(_ptr), size(_size)
   { }
 
   MoveableArray()
   {}
 
-  // A common C++ trick - declare an identical method, one for const, one without.
+  // A common C++ requiement - declaring two identical methods, one for const, one without.
+  
   T& operator[](int pos)
   { 
     D_ASSERT(pos >= 0 && pos < size);
@@ -93,30 +134,36 @@ public:
     return *(static_cast<T*>(ptr.get_ptr()) + pos);
   }
 
+  /// Gets a raw pointer to the start of the array.
   T* get_ptr()
   { return static_cast<T*>(ptr.get_ptr()); }
 
+  /// Gets a const raw pointer to the start of the array.
   const T* get_ptr() const
   { return static_cast<const T*>(ptr.get_ptr()); }
-
-
 };
 
 typedef MoveablePointer BackTrackOffset;
 
 class NewMemoryBlock;
 
+/// Singleton type which tracks all occurrences of \ref NewMemoryBlock.
+/** This class is the only singleton global variable in Minion when in reenterant
+ *  mode. It keeps track of all the occurrences of \ref NewMemoryBlock so when a
+ *  \ref MoveablePointer is copied, it is possible to find which block it was from.
+ */
 class MemBlockCache
 {
   // Forbid copying this type!
   MemBlockCache(const MemBlockCache&);
   void operator=(const MemBlockCache&);
-
+  SET_TYPE<NewMemoryBlock*> NewMemoryBlockCache;
+  
 public:    
   
   MemBlockCache() { }
   
-  SET_TYPE<NewMemoryBlock*> NewMemoryBlockCache;
+
 
   void registerNewMemoryBlock(NewMemoryBlock* mb)
   { NewMemoryBlockCache.insert(mb); }
@@ -134,14 +181,19 @@ public:
 VARDEF(MemBlockCache memBlockCache);
 
 
+/// Looks after all \ref MoveablePointer to a block of memory, and also the memory itself.
 /** A NewMemoryBlock is basically an extendable, moveable block of memory which
-  * keeps track of all pointers into it, and moves them when approriate
+ * keeps track of all pointers into it, and moves them when approriate.
+ *
+ * The main limitation of NewMemoryBlocks is that it is impossible to delete
+ * or alter particular allocations without deleting the whole class. This may
+ * be fixed in future if it is required.
  */
-/// Looks after all pointers to this block, and also the memory itself
 class NewMemoryBlock
 {
-  // Forbid copying this type!
+  /// Forbid copying.
   NewMemoryBlock(const NewMemoryBlock&);
+  /// Forbid copying.
   void operator=(const NewMemoryBlock&);
   
   char* current_data;
@@ -152,9 +204,11 @@ class NewMemoryBlock
   SET_TYPE<MoveablePointer*> pointers;
 public:
   
+  /// Gets a raw pointer to the start of the allocated memory.
   char* getDataPtr()
   { return current_data; }
 
+  /// Returns the size of the allocated memory in bytes.
   unsigned getDataSize()
   { return allocated_bytes; }
 
@@ -163,8 +217,12 @@ public:
   { memBlockCache.registerNewMemoryBlock(this);}
   
   ~NewMemoryBlock()
-  { memBlockCache.unregisterNewMemoryBlock(this);}
+  { 
+    memBlockCache.unregisterNewMemoryBlock(this);
+    free(current_data);
+  }
   
+  /// Request a new block of memory and returns a \ref MoveablePointer to it's start.
   MoveablePointer request_bytes(unsigned byte_count)
   {
     // TODO: is the following line necessary?
@@ -184,6 +242,7 @@ public:
     return MoveablePointer(return_val);
   }
 
+  /// Request a \ref MoveableArray.
   template<typename T>
   MoveableArray<T> requestArray(unsigned size)
   {
@@ -192,7 +251,7 @@ public:
   }
 
 
-  // Enlarges memory block and moves all pointers
+  /// Enlarges (or reduces) memory block and moves all \ref MoveablePointer to point to the new block.
   void reallocate(unsigned byte_count)
   {
     D_ASSERT(!lock_m);
@@ -203,7 +262,7 @@ public:
     for(SET_TYPE<MoveablePointer*>::iterator it = pointers.begin(); it != pointers.end(); ++it)
     {
       D_ASSERT((*it)->get_ptr() >= current_data && (*it)->get_ptr() < current_data + allocated_bytes);
-      (*it)->set_ptr( ((char*)((*it)->get_ptr()) - current_data) + new_data );
+      (*it)->set_raw_ptr( ((char*)((*it)->get_ptr()) - current_data) + new_data );
     }
    
     // TODO: Search codebase for memcpy, use realloc instead if possible.
@@ -214,7 +273,7 @@ public:
     maximum_bytes = byte_count;
   }
 
-  // This checks if this pointer could need adding to this tracker, and if so it does and returns true
+  /// Checks if vp points inside this memoryblock and if so registers it and returns true.
   bool checkAddToTracker(MoveablePointer* vp)
   {
     D_ASSERT(!final_lock_m);
@@ -230,7 +289,7 @@ public:
     }
   }
 
-  // Checks if this pointer belongs to this tracker, and if so removes and returns true
+  /// Checks if this pointer belongs to this tracker, and if so unregisters and returns true
   bool checkRemoveFromTracker(MoveablePointer* vp)
   {
     void* ptr = vp->get_ptr_noCheck();
@@ -244,6 +303,8 @@ public:
     }
   }
 
+  /// Checks if a given pointer should point into this block and if so checks for consistency
+  /* Used only in debug mode for validation. Should never fail. */
   bool checkPointerValid(const MoveablePointer*const vp)
   {
     void* ptr = vp->get_ptr_noCheck();
@@ -275,6 +336,7 @@ public:
    
 };
 
+// @}
 
 inline MoveablePointer::MoveablePointer(const MoveablePointer& b) : ptr(b.ptr)
 {
@@ -364,5 +426,3 @@ inline void MemBlockCache::addPointerToNewMemoryBlock(MoveablePointer* vp)
     ;
     D_FATAL_ERROR("Fatal Memory Error - invalid Pointer deferenced!");
   }
-
-

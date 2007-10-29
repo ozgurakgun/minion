@@ -510,7 +510,6 @@ template<typename T>
 inline BigRangeVarRef
 BigRangeVarContainer<T>::get_var_num(int i)
 {
-  D_ASSERT(!lock_m);
   D_ASSERT(i < var_count_m);
   return BigRangeVarRef(BigRangeVarRef_internal(this, i));
 }

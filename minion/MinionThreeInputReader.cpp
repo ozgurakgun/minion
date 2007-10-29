@@ -109,7 +109,7 @@ void MinionThreeInputReader::read(InputFileReader* infile) {
     
     parser_info("Reached end of CSP");
 
-    if(isGadgetReader() && constructionSite.empty())
+    if(isGadgetReader() && instance.constructionSite.empty())
       throw parse_exception("Gadgets need a construction site!");
   
   // Fill in any missing defaults
@@ -364,7 +364,7 @@ void MinionThreeInputReader::readConstraintTable(InputFileReader* infile, const 
 	  if(delim != ',' && delim!= '}')
 		throw parse_exception("Expected ',' or '}'");
 	}
-	tuplelist = tupleListContainer->getNewTupleList(tuples);
+	tuplelist = instance.tupleListContainer->getNewTupleList(tuples);
   }
 	
 	infile->check_sym(')');
@@ -556,7 +556,7 @@ void MinionThreeInputReader::readTuples(InputFileReader* infile)
 	int tuple_length = infile->read_num();
     parser_info("Reading tuplelist '" + name + "', length " + to_string(num_of_tuples) +
                 ", arity " + to_string(tuple_length) );
-	TupleList* tuplelist = tupleListContainer->getNewTupleList(num_of_tuples, tuple_length);
+	TupleList* tuplelist = instance.tupleListContainer->getNewTupleList(num_of_tuples, tuple_length);
     int* tuple_ptr = tuplelist->getPointer();
     for(int i = 0; i < num_of_tuples; ++i)
       for(int j = 0; j < tuple_length; ++j)
@@ -651,8 +651,8 @@ void MinionThreeInputReader::readSearch(InputFileReader* infile) {
       if(!isGadgetReader())
         throw parse_exception("Only have construction sites on gadgets!");
 
-      constructionSite = readLiteralVector(infile);
-      parser_info("Read construction site, size " + to_string(constructionSite.size()));
+      instance.constructionSite = readLiteralVector(infile);
+      parser_info("Read construction site, size " + to_string(instance.constructionSite.size()));
     }
     else
     {  throw parse_exception("Don't understand '" + var_type + "'"); }

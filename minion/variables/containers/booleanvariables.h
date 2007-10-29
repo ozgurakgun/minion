@@ -296,7 +296,6 @@ struct BooleanContainer
 
 inline BoolVarRef BooleanContainer::get_var_num(int i)
 {
-  D_ASSERT(!lock_m);
   D_ASSERT(i < (int)var_count_m);
   return BoolVarRef(BoolVarRef_internal(i, this));
 }

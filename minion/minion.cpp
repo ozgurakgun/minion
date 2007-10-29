@@ -30,19 +30,6 @@ using namespace ProbSpec;
 
 #include "system/defined_macros.h"
 
-struct MinionArguments
-{
-  enum PreProcess
-  { None, SAC, SSAC, SACBounds, SSACBounds  };
-
-  VarOrder order;
-  enum PreProcess preprocess;
-  unsigned random_seed;
-  MinionArguments() : order(ORDER_ORIGINAL), preprocess(None), random_seed((unsigned)time(NULL))
-  { }
-
-};
-
 void print_info()
 {
  cout << "Usage: minion {options}* nameofprob.minion" << endl
@@ -106,8 +93,7 @@ void print_info()
     print_macros();
 	exit(0);
 }
-  
-BOOL randomise_valvaroder = false;
+
 
 template<typename Reader>
 void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& args, int argc, char** argv)
@@ -116,7 +102,7 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
   {
     const string command(argv[i]);
 	if(command == string("-findallsols"))
-	{ getOptions(stateObj).setFindAllSolutions(); }
+	{ getOptions(stateObj).findAllSolutions(); }
 	else if(command == string("-quiet"))
 	{ reader.parser_verbose = false; }
 	else if(command == string("-printsols"))
@@ -135,7 +121,6 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	{ args.preprocess = MinionArguments::SACBounds; }
 	else if(command == string("-ssac-bound-root"))
 	{ args.preprocess = MinionArguments::SSACBounds; }
-    
 	else if(command == string("-fullprop"))
 	{
 #ifndef NO_DEBUG
@@ -157,9 +142,7 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	}
 	
 	else if(command == string("-dumptree"))
-	{
-	  getOptions(stateObj).dumptree = true; 
-	}
+	{ getOptions(stateObj).dumptree = true; }
 	else if(command == string("-crash"))
 	{ debug_crash = true; }
 	else if(command == string("-nodelimit"))
@@ -176,7 +159,7 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	{
 	  ++i;
 	  getOptions(stateObj).sollimit = atoi(argv[i]);
-	  getOptions(stateObj).setFindAllSolutions(); 
+	  getOptions(stateObj).findAllSolutions(); 
 	  if(getOptions(stateObj).sollimit == 0)
 	  {
 	    cout << "Did not understand the parameter to sollimit:" << argv[i] << endl;
@@ -207,17 +190,17 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	  else if(order == "sdf-random")
 	  {
 		args.order = ORDER_SDF;
-		randomise_valvaroder = true;
+		getOptions(stateObj).randomise_valvarorder = true;
 	  }
 	  else if(order == "ldf")
 		args.order = ORDER_LDF;
 	  else if(order == "ldf-random")
 	  {
 		args.order = ORDER_LDF;
-		randomise_valvaroder = true;
+		getOptions(stateObj).randomise_valvarorder = true;
 	  }
 	  else if(order == "random")
-		randomise_valvaroder = true;
+		getOptions(stateObj).randomise_valvarorder = true;
 	  else
 	  {
 		cerr << "I do not understand the order:" << order << endl;
@@ -226,7 +209,7 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	}
 	else if(command == string("-randomiseorder"))
 	{
-	  randomise_valvaroder = true;
+	  getOptions(stateObj).randomise_valvarorder = true;
 	}
 	else if(command == string("-randomseed"))
 	{
@@ -257,174 +240,14 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
   tableout.set("CommandLineArguments", s);
 }
 
-pair<vector<AnyVarRef>, vector<int> > var_val_order;
 
+
+/// Reads the CSP given by infile into reader.
+/** Most of the code in this function related to trying to provide nice
+  * output in the case when a parsing error occurs
+  */
 template<typename Reader>
-void BuildCSP(StateObj* stateObj, Reader& reader)
-{
-  // Fix up Bound / Sparse Bound
-  
-  // Fix up discrete variables.
-  reader.instance.fixDiscrete(SmallDiscreteCheck(stateObj));
-  
-  // Set up variables
-  BuildCon::build_variables(stateObj, reader.instance.vars);
-  
-  // Set up variable and value ordering
-  var_val_order = BuildCon::build_val_and_var_order(stateObj, reader.instance);
-  
-  // Set up optimisation
-  if(reader.instance.is_optimisation_problem)
-  {
-    if(reader.instance.optimise_minimising)
-      Controller::optimise_minimise_var(stateObj, BuildCon::get_AnyVarRef_from_Var(stateObj, reader.instance.optimise_variable));
-	else
-	  Controller::optimise_maximise_var(stateObj, BuildCon::get_AnyVarRef_from_Var(stateObj, reader.instance.optimise_variable));
-  }
-  
-  // Set up printing
-  Controller::print_matrix.resize(reader.instance.print_matrix.size());
-  for(unsigned i = 0; i < reader.instance.print_matrix.size(); ++i)
-  {
-    for(unsigned j = 0; j < reader.instance.print_matrix[i].size(); ++j)
-	  Controller::print_matrix[i].push_back(BuildCon::get_AnyVarRef_from_Var(stateObj, reader.instance.print_matrix[i][j]));
-  }
-  
-  // Impose Constraints
-  for(list<ConstraintBlob>::iterator it = reader.instance.constraints.begin();
-	  it != reader.instance.constraints.end(); ++it)
-  {
-    if(it->is_dynamic())
-    {
-#ifdef DYNAMICTRIGGERS
-      getState(stateObj).addDynamicConstraint(build_dynamic_constraint(stateObj, *it));
-      getState(stateObj).setDynamicTriggersUsed(true);
-#else
-      cout << "Sorry, cannot process this constraint as it needs dynamic triggers or watched literals." << endl ;
-      cout << "use an alternative encoding or recompile with -DWATCHEDLITERALS or -DDYNAMICTRIGGERS in command line" << endl;
-      FAIL_EXIT();
-#endif
-    }
-    else
-      getState(stateObj).addConstraint(build_constraint(stateObj, *it));
-  }
-
-
-}
-
-
-template<typename Reader>
-void SolveCSP(StateObj* stateObj, Reader& reader, MinionArguments args)
-{
-    // Copy args into tableout
-    tableout.set("RandomSeed", to_string(args.random_seed));
-    {   const char * b;
-        if(args.preprocess == MinionArguments::None) b="None";  // All this junk is because of C++'s lousy enums.
-        if(args.preprocess == MinionArguments::SAC) b="SAC";
-        if(args.preprocess == MinionArguments::SSAC) b="SSAC";
-        if(args.preprocess == MinionArguments::SACBounds) b="SACBounds";
-        if(args.preprocess == MinionArguments::SSACBounds) b="SSACBounds";
-        tableout.set("Preprocess", string(b));}
-    // should be one for varorder as well.
-    tableout.set("MinionVersion", SVN_VER);
-    tableout.set("TimeOut", 0); // will be set to 1 if a timeout occurs.
-    getState(stateObj).getTimer().maybePrintTimestepStore("Parsing Time: ", "ParsingTime", tableout, !getOptions(stateObj).print_only_solution);
-    
-    getState(stateObj).setTupleListContainer(reader.tupleListContainer);
-    
-    BuildCSP(stateObj, reader);
-    
-    if(randomise_valvaroder)
-    {
-        cout << "Using seed: " << args.random_seed << endl;
-        srand( args.random_seed );
-        
-        std::random_shuffle(var_val_order.first.begin(), var_val_order.first.end());
-        for(unsigned i = 0; i < var_val_order.second.size(); ++i)
-          var_val_order.second[i] = (rand() % 100) > 50;
-        
-        if(reader.parser_verbose)
-        {
-          int size = var_val_order.first.size();
-          if(size != 0)
-          {
-            cout << "Var Order: <" << var_val_order.first[0];
-            for(int i = 1; i < size; ++i)
-              cout << "," << var_val_order.first[i];
-            cout << ">" << endl;
-            
-            cout << "Val Order: <" << var_val_order.second[0];
-            for(int i = 1; i < size; ++i)
-              cout << "," << var_val_order.second[i];
-            cout << ">" << endl;
-          }
-        }
-    }
-  // Solve!
-  getState(stateObj).getTimer().maybePrintTimestepStore("Setup Time: ", "SetupTime", tableout, !getOptions(stateObj).print_only_solution);
-  
-  long long initial_lit_count = 0;
-  
-  if(args.preprocess != MinionArguments::None)
-    initial_lit_count = lit_count(var_val_order.first);
-  
-  Controller::initalise_search(stateObj);
-  
-  if(!getState(stateObj).isFailed())
-  {
-	if(args.preprocess != MinionArguments::None)
-	{
-      bool bounds_check = (args.preprocess == MinionArguments::SACBounds) ||
-      (args.preprocess == MinionArguments::SSACBounds);
-	  long long lits = lit_count(var_val_order.first);
-      cout << "Initial GAC loop literal removal:" << initial_lit_count - lits << endl;
-	  clock_t start_SAC_time = clock();
-	  PropagateSAC prop;
-      prop(stateObj, var_val_order.first, bounds_check);
-      cout << "Preprocess Time: " << (clock() - start_SAC_time) / (1.0 * CLOCKS_PER_SEC) << endl;
-	  cout << "Removed " << (lits - lit_count(var_val_order.first)) << " literals" << endl;
-	  if(args.preprocess == MinionArguments::SSAC || args.preprocess == MinionArguments::SSACBounds)
-	  {
-		long long lits = lit_count(var_val_order.first);
-		clock_t start_SAC_time = clock();
-		PropagateSSAC prop;
-		prop(stateObj, var_val_order.first, bounds_check);
-		cout << "Preprocess 2 Time: " << (clock() - start_SAC_time) / (1.0 * CLOCKS_PER_SEC) << endl;
-		cout << "Removed " << (lits - lit_count(var_val_order.first)) << " literals" << endl;
-	  }
-	}
-    getState(stateObj).getTimer().maybePrintTimestepStore("First node time: ", "FirstNodeTime", tableout, !getOptions(stateObj).print_only_solution);
-	if(!getState(stateObj).isFailed())
-        solve(stateObj, args.order, var_val_order);   // add a getState(stateObj).getTimer().maybePrintTimestepStore to search..
-  }
-  else
-  {
-      getState(stateObj).getTimer().maybePrintTimestepStore("First node time: ", "FirstNodeTime", tableout, !getOptions(stateObj).print_only_solution);
-  }
-  
-  getState(stateObj).getTimer().maybePrintFinaltimestepStore("Solve Time: ", "SolveTime", tableout, !getOptions(stateObj).print_only_solution);
-  cout << "Total Nodes: " << getState(stateObj).getNodeCount() << endl;
-  cout << "Problem solvable?: " 
-	<< (getState(stateObj).getSolutionCount() == 0 ? "no" : "yes") << endl;
-  cout << "Solutions Found: " << getState(stateObj).getSolutionCount() << endl;
-  
-  tableout.set("Nodes", to_string(getState(stateObj).getNodeCount()));
-  tableout.set("Satisfiable", (getState(stateObj).getSolutionCount()==0 ? 0 : 1));
-  tableout.set("SolutionsFound", getState(stateObj).getSolutionCount());
-  
-  if(getOptions(stateObj).tableout)
-  {
-      tableout.print_line();  // Outputs a line to the table file.
-  }
-  
-#ifdef MORE_SEARCH_INFO
-  print_search_info();
-#endif
-  
-}
-
-template<typename Reader>
-void ReadCSP(Reader& reader,  InputFileReader* infile, char* filename)
+void ReadCSP(Reader& reader, InputFileReader* infile, char* filename)
 {
 #ifndef NOCATCH  
   try
@@ -539,24 +362,55 @@ int main(int argc, char** argv) {
   if(inputFileVersionNumber > 3)
     D_FATAL_ERROR("This version of Minion only supports formats up to 3");
   
+  CSPInstance instance;
+  MinionArguments args;
+  
   if(inputFileVersionNumber == 3)
   {
     MinionThreeInputReader reader;
-    MinionArguments args;
     parse_command_line(stateObj, reader, args, argc, argv);
-    
     ReadCSP(reader, infile, argv[argc - 1]);
-    
-    SolveCSP(stateObj, reader, args);
-  }
+    instance = reader.instance;
+  } 
   else
   {
     MinionInputReader reader;
-    MinionArguments args;
     parse_command_line(stateObj, reader, args, argc, argv);
-     ReadCSP(reader, infile, argv[argc - 1]);
-    SolveCSP(stateObj, reader, args);
+    ReadCSP(reader, infile, argv[argc - 1]);
+    instance = reader.instance;
+  }  
+  
+  getState(stateObj).setTupleListContainer(instance.tupleListContainer);
+  
+  // Copy args into tableout
+  tableout.set("RandomSeed", to_string(args.random_seed));
+  {   const char * b = "";
+    switch (args.preprocess) {
+      case MinionArguments::None:
+        b = "None"; break;
+      case MinionArguments::SAC:
+        b = "SAC"; break;
+      case MinionArguments::SSAC:
+        b = "SSAC"; break;
+      case MinionArguments::SACBounds:
+        b = "SACBounds"; break;
+      case MinionArguments::SSACBounds:
+        b = "SSACBounds"; break;
+    }
+    tableout.set("Preprocess", string(b));
   }
+  // should be one for varorder as well.
+  tableout.set("MinionVersion", SVN_VER);
+  tableout.set("TimeOut", 0); // will be set to 1 if a timeout occurs.
+  getState(stateObj).getTimer().maybePrintTimestepStore("Parsing Time: ", "ParsingTime", tableout, !getOptions(stateObj).print_only_solution);
+  
+  BuildCSP(stateObj, instance);
+
+
+
+  
+  SolveCSP(stateObj, instance, args);
+  
   
   return 0;
 }

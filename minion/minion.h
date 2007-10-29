@@ -71,9 +71,7 @@ VARDEF(TableOut tableout);
 
 #include "memory_management/backtrackable_memory.h"
 #include "memory_management/nonbacktrack_memory.h"
-
 #include "reversible_vals.h"
-
 #include "memory_management/trailed_monotonic_set.h"
 
 typedef TrailedMonotonicSet MonotonicSet;
@@ -113,18 +111,6 @@ class DynamicTrigger;
 #include "constraints/constraint_dynamic.h"
 #endif 
 
-/*
-namespace Controller
-{
-  /// Add a new list of triggers to the queue.
-  inline void getQueue(stateObj).pushTriggers(TriggerRange new_triggers);
-  inline void push_special_trigger(Constraint* trigger);
-#ifdef DYNAMICTRIGGERS
-  inline void push_dynamic_triggers(DynamicTrigger* trigs);
-#endif
-}
-*/
-
 #include "queue/standard_queue.h"
 
 #include "trigger_list.h"
@@ -160,6 +146,8 @@ namespace Controller
 #include "preprocess/preprocess.h"
 
 #include "test_functions.h"
+
+#include "BuildCSP.h"
 
 #ifdef REENTER
 struct StateObj

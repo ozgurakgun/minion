@@ -18,8 +18,8 @@ namespace Controller
   // Constructor that takes existing variable and value ordering
   // (Feel free to ignore the value ordering!)
 
-  template<typename VarOrder, typename Variables>
-	inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v)
+  template<typename VarOrder, typename Variables, typename Propogator = PropogateGAC>
+	inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v, Propogator prop = Propogator())
   {
 	  D_INFO(0, DI_SOLVER, "Non-Boolean Search");
 	  

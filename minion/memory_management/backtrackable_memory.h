@@ -26,6 +26,13 @@
 
 #include "MemoryBlock.h"
 
+// \addtogroup Memory
+// @{
+
+/// Provides a wrapper around \ref NewMemoryBlock for backtrackable memory.
+/* This class acts like a stack, allowing the backtrackable state to be poped
+ * and pushed as required during search.
+ */
 class BackTrackMemory
 {
   NewMemoryBlock new_memory_block;
@@ -33,26 +40,35 @@ class BackTrackMemory
   char* backtrack_data; 
   int current_depth_m;
   int max_depth;
+  bool locked;
 public:
     
-  NewMemoryBlock& getMemBlock() { return new_memory_block; }
   
-  // Just a couple of little helper functions, to reduce writing
+  /// Wraps request_bytes of the internal \ref NewMemoryBlock.
   MoveablePointer request_bytes(unsigned byte_count)
-  { return new_memory_block.request_bytes(byte_count); }
+  { 
+    D_ASSERT(!locked);
+    return new_memory_block.request_bytes(byte_count); 
+  }
   
+  /// Wraps requestArray of the internal \ref NewMemoryBlock.
   template<typename T>
   MoveableArray<T> requestArray(unsigned size)
-  { return new_memory_block.requestArray<T>(size); }
+  { 
+    D_ASSERT(!locked);
+    return new_memory_block.requestArray<T>(size); 
+  }
   
   BackTrackMemory() : backtrack_data(NULL),
-    current_depth_m(0), max_depth(0)
+    current_depth_m(0), max_depth(0), locked(false)
   {
       
   }
   
+  /// Extends the number of copies of the backtrackable memory that can be stored.
   void extend(int new_max)
   {
+    D_ASSERT(locked);
     D_ASSERT(new_max > max_depth);
     unsigned data_size = new_memory_block.getDataSize();
     
@@ -68,11 +84,14 @@ public:
   void lock()
   { 
     new_memory_block.lock(); 
+    locked = true;
     extend(10);
   }
   
+  /// Copies the current state of backtrackable memory.
   void world_push()
   {
+    D_ASSERT(locked);
     if(current_depth_m == max_depth)
       extend(max_depth * 2);
     unsigned data_size = new_memory_block.getDataSize();
@@ -80,8 +99,10 @@ public:
     current_depth_m++;
   }
   
+  /// Restores the state of backtrackable memory to the last stored state.
   void world_pop()
   {
+    D_ASSERT(locked);
     D_ASSERT(current_depth_m > 0);
     current_depth_m--;
     
@@ -89,8 +110,7 @@ public:
     memcpy(new_memory_block.getDataPtr(), backtrack_data + current_depth_m * data_size, data_size);
   }
   
+  /// Returns the current number of stored copies of the state.
   int current_depth()
-  {
-    return current_depth_m;
-  }
+  { return current_depth_m; }
 };

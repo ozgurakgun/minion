@@ -25,7 +25,10 @@
 */
 
 
-
+/** Constraints two vectors of variables to be not equal.
+ *
+ *  \ingroup Constraints
+ */
 template<typename VarArray1, typename VarArray2>
 struct VecNeqDynamic : public DynamicConstraint
 {
