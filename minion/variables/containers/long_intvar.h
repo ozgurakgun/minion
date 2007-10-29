@@ -252,15 +252,55 @@ struct BigRangeVarContainer {
 
     if((i <= low_bound) || (i >= up_bound))
     {
+	    	  // We believe that upper and lower bounds always in domain
+	    D_ASSERT(bms_array.isMember(var_offset[d.var_num]+low_bound));
+	    D_ASSERT(bms_array.isMember(var_offset[d.var_num]+up_bound));
+
 	    if(i == up_bound)
 	    {
-		    setMax(d,i-1);
-		    return;
+	        if(i == low_bound)
+		{
+			Controller::fail();
+			return;
+		}
+
+#ifdef FULL_DOMAIN_TRIGGERS
+		trigger_list.push_domain_removal(d.var_num, i);
+#endif	 
+		DomainInt loopvar = i-1;
+		for(	; 
+			loopvar> low_bound && !bms_array.isMember(var_offset[d.var_num] + loopvar); 
+			--loopvar
+			) ; 
+		// we do not need to test i=low_bound because it must be in domain. 
+		
+      		upper_bound(d) = loopvar;      
+		trigger_list.push_domain(d.var_num);
+		trigger_list.push_upper(d.var_num, up_bound - loopvar);
+	  
+		if(low_bound == loopvar) 
+			trigger_list.push_assign(d.var_num, loopvar);
+		return;
 	    }
 	    if(i == low_bound)
 	    {
-		    setMin(d,i+1);
-		    return;
+#ifdef FULL_DOMAIN_TRIGGERS
+		trigger_list.push_domain_removal(d.var_num, i);
+#endif	 
+		DomainInt loopvar = i+1;
+		for(	; 
+			loopvar < up_bound && !bms_array.isMember(var_offset[d.var_num] + loopvar); 
+			++loopvar
+			) ; 
+		// we do not need to test i=up_bound because it must be in domain. 
+		
+      		lower_bound(d) = loopvar;      
+		trigger_list.push_domain(d.var_num);
+		trigger_list.push_lower(d.var_num, loopvar - low_bound);
+	  
+		if(up_bound == loopvar) 
+			trigger_list.push_assign(d.var_num, loopvar);
+		return;  
 	    } 
 #ifdef DEBUG
       	    cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
@@ -279,18 +319,6 @@ struct BigRangeVarContainer {
 
 	D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + i));
   
-	/*  if(i == up_bound)
-    {
-      upper_bound(d) = find_new_upper_bound(d);
-      trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
-    }
-    
-    if(i == low_bound)
-    {
-      lower_bound(d) = find_new_lower_bound(d);
-      trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
-    }
-    */
   
     	D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
