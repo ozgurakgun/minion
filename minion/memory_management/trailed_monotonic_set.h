@@ -102,7 +102,7 @@ public:
     D_ASSERT(_local_depth == bt_depth);
   }
 
-  void remove(DomainInt index)
+  void unchecked_remove(DomainInt index)
   {
     // cout << "index: " << index << " value: " << newval << " local: " << _local_depth << " bt: " << _backtrack_depth.get() << endl; 
 
@@ -120,14 +120,6 @@ public:
 #endif
   }
 
-  void checked_remove(DomainInt index) 
-  {
-    // check for membership to reduce amount of trailing 
-    // or to ensure correctness
-  
-    if (isMember(index)) { remove(index); }
-  }
-  
   int size() const
   {
     return _size;    

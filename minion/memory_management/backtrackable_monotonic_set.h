@@ -104,6 +104,18 @@ NOT DONE
 
 	}
 
+
+	void unchecked_remove(DomainInt index)
+	{
+		D_ASSERT(isMember(index)); 
+		
+		ARRAY_ELEMENT* array_ptr = static_cast<ARRAY_ELEMENT*>(_array.get_ptr());
+		DomainInt first = index*2;
+		array_ptr[first].depth = _depth_cert_pointer;
+		array_ptr[first+1].cert = _node_number;
+	}
+
+
 	bool isMember(DomainInt index) const
 	{
 	        DomainInt first = index*2;
