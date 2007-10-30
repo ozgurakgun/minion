@@ -188,7 +188,7 @@ struct BigRangeVarContainer {
   BOOL isAssigned(BigRangeVarRef_internal d) const
   { 
     D_ASSERT(lock_m);
-    return lower_bound(d) == upper_bound(d); 
+    return getMin(d) == getMax(d); 
   }
   
   DomainInt getAssignedValue(BigRangeVarRef_internal d) const
@@ -227,7 +227,12 @@ struct BigRangeVarContainer {
   {
     D_ASSERT(lock_m);
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+    DomainInt up = upper_bound(d); 
+    if (!inDomain_noBoundCheck(d,up)) 
+	    {  } 
+
     return upper_bound(d);
+	    
   }
   
   DomainInt getInitialMin(BigRangeVarRef_internal d) const
@@ -265,8 +270,6 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
 #endif
     trigger_list.push_domain(d.var_num);
     
-    // use ifMember remove above, so delete following line
-  //   bms_array.remove(var_offset[d.var_num] + offset);
 
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset));
     domain_bound_type up_bound = upper_bound(d);
