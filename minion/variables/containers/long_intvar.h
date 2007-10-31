@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* Minion
 * Copyright (C) 2006
 *
@@ -83,41 +81,54 @@ struct BigRangeVarContainer {
   
   
   
-  DomainInt find_new_upper_bound(BigRangeVarRef_internal d, DomainInt start)
+  /// Find new "true" upper bound.
+  /// This should be used by first setting the value of upper_bound(d), then calling
+  /// this function to move this value past any removed values.
+  DomainInt find_new_upper_bound(BigRangeVarRef_internal d)
   {
     DomainInt lower = lower_bound(d); 
-    DomainInt loopvar = start;
+    DomainInt old_up_bound = upper_bound(d);
+    DomainInt loopvar = old_up_bound; 
+    DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar < lower)
 	{
 	  Controller::fail();
-	  /// Here just return the value which should lead to the least work.
-	  return lower;
+	  /// Here just remove the value which should lead to the least work.
+	  return upper_bound(d);
 	}
-    if(bms_array.isMember(var_offset[d.var_num] + loopvar))
-      return loopvar;
+    /// Note: before calling isMember, remove the lower initial bound from the offset.
+    if(bms_array.isMember(var_offset[d.var_num] + loopvar) && (loopvar >= lower))
+      return upper_bound(d);
     --loopvar;
     for(; loopvar >= lower; --loopvar)
     {
+      //if(bms_pointer(d)->isMember(loopvar - low_bound)) 
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
     Controller::fail();
-    return lower;
+    return old_up_bound;
   }
   
-  DomainInt find_new_lower_bound(BigRangeVarRef_internal d, DomainInt start)
+  /// Find new "true" lower bound.
+  /// This should be used by first setting the value of lower_bound(d), then calling
+  /// this function to move this value past any removed values.
+  DomainInt find_new_lower_bound(BigRangeVarRef_internal d)
   {
     DomainInt upper = upper_bound(d); 
-    DomainInt loopvar = start;
+    DomainInt old_low_bound = lower_bound(d);
+    DomainInt loopvar = old_low_bound; 
     DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar > upper)
 	{
 	  Controller::fail();
-	  /// Here just return the value which should lead to the least work.
-	  return upper;
+	  /// Here just remove the value which should lead to the least work.
+	  return lower_bound(d);
 	}
-    if(bms_array.isMember(var_offset[d.var_num] + loopvar))
-      return start;
+  /// Note: before calling isMember, remove the lower initial bound from the offset.
+    //if(bms_pointer(d)->isMember(loopvar - low_bound) && (loopvar <= upper))
+    if(bms_array.isMember(var_offset[d.var_num] + loopvar) && (loopvar <= upper))
+      return lower_bound(d);
     ++loopvar;
     for(; loopvar <= upper; ++loopvar)
     {
@@ -125,7 +136,7 @@ struct BigRangeVarContainer {
         return loopvar;
     }
     Controller::fail();
-    return upper;
+    return old_low_bound;
   }
   
   
@@ -234,11 +245,9 @@ struct BigRangeVarContainer {
 #endif
     D_ASSERT(lock_m);
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
-    
-    domain_bound_type low_bound = lower_bound(d);
-    domain_bound_type up_bound = upper_bound(d);
-
-if((i < low_bound) || (i > up_bound) || ! (bms_array.ifMember_remove(var_offset[d.var_num] + i) ))
+ 
+if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(var_offset[d.var_num] + i) ))
+// if (! inDomain(d,i)) 
     {
 #ifdef DEBUG
       cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
@@ -247,31 +256,30 @@ if((i < low_bound) || (i > up_bound) || ! (bms_array.ifMember_remove(var_offset[
     }
    
     
+    DomainInt offset = i;
 #ifdef FULL_DOMAIN_TRIGGERS
 	trigger_list.push_domain_removal(d.var_num, i);
 #endif
     trigger_list.push_domain(d.var_num);
     
 
-    D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + i));
-    if(i == up_bound)
+    D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset));
+    domain_bound_type up_bound = upper_bound(d);
+    if(offset == up_bound)
     {
-      DomainInt new_bound = find_new_upper_bound(d,up_bound-1);
-      upper_bound(d) = new_bound;
-      trigger_list.push_upper(d.var_num, up_bound - new_bound);
-      if(new_bound == low_bound)
-	    trigger_list.push_assign(d.var_num, new_bound);
-    }
-    else if(i == low_bound)  // i could be both but find_new_upper_bound would fail
-    {
-      DomainInt new_bound = find_new_lower_bound(d,low_bound+1);
-      lower_bound(d) = new_bound;
-      trigger_list.push_lower(d.var_num, new_bound - low_bound);
-      if(new_bound == up_bound)
-	    trigger_list.push_assign(d.var_num, new_bound);
+      upper_bound(d) = find_new_upper_bound(d);
+      trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
     }
     
+    domain_bound_type low_bound = lower_bound(d);
+    if(offset == low_bound)
+    {
+      lower_bound(d) = find_new_lower_bound(d);
+      trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
+    }
     
+    if(upper_bound(d) == lower_bound(d))
+      trigger_list.push_assign(d.var_num, getAssignedValue(d));
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
 #ifdef DEBUG
@@ -376,7 +384,8 @@ public:
 	      trigger_list.push_domain_removal(d.var_num, loop);
 	  }
 #endif	 
-	  DomainInt new_upper = find_new_upper_bound(d,offset);
+      upper_bound(d) = offset;      
+	  DomainInt new_upper = find_new_upper_bound(d);
 	  upper_bound(d) = new_upper;
       
       trigger_list.push_domain(d.var_num);
@@ -429,7 +438,8 @@ public:
 #endif
     D_ASSERT(state.isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
-    DomainInt new_lower = find_new_lower_bound(d,offset);    
+    lower_bound(d) = offset;
+    DomainInt new_lower = find_new_lower_bound(d);    
     lower_bound(d) = new_lower; 
     
     trigger_list.push_domain(d.var_num); 
