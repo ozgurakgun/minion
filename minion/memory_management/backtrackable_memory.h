@@ -3,7 +3,7 @@
    
    For Licence Information see file LICENSE.txt 
 
-   $Id: backtrackable_memory.h 680 2007-10-01 08:19:53Z azumanga $
+   $Id$
 */
 
 /* Minion

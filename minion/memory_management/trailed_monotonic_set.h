@@ -1,3 +1,5 @@
+/* $Id$ */
+
 /* Minion
 * Copyright (C) 2006
 *
