@@ -239,7 +239,6 @@ struct BigRangeVarContainer {
     domain_bound_type up_bound = upper_bound(d);
 
 if((i < low_bound) || (i > up_bound) || ! (bms_array.ifMember_remove(var_offset[d.var_num] + i) ))
-// if (! inDomain(d,i)) 
     {
 #ifdef DEBUG
       cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
