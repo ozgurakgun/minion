@@ -5,17 +5,12 @@
 */
 
 
-enum VarOrder
-{
-  ORDER_STATIC,
-  ORDER_SDF,
-  ORDER_LDF,
-  ORDER_ORIGINAL
-};
+
 
   template<typename VarValOrder, typename Propogator>
-  void solve(StateObj* stateObj, VarOrder order_in, VarValOrder& search_order, Propogator& prop)
+  void solve(StateObj* stateObj, VarOrder order_in, VarValOrder& search_order, Propogator prop)
   {
+//    PropogateGAC prop = PropogateGAC();
     typedef typename VarValOrder::first_type::value_type VarType;
 	switch(order_in)
 	{

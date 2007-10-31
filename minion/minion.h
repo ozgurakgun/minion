@@ -135,6 +135,7 @@ class DynamicTrigger;
 #include "constraints/function_defs.hpp"
 
 
+#include "preprocess.h"
 
 #include "search/standard_search.h"
 #include "search/recursive_search.h"
@@ -142,8 +143,6 @@ class DynamicTrigger;
 #include "search/search_control.h"
 
 #include "constraint_setup.h"
-
-#include "preprocess/preprocess.h"
 
 #include "test_functions.h"
 

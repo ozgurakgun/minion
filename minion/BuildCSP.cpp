@@ -80,22 +80,27 @@ void SolveCSP(StateObj* stateObj, CSPInstance& instance, MinionArguments args)
       var_val_order.second[i] = (rand() % 100) > 50;
   }
   
-  // Do some preprocessing!
-  long long initial_lit_count = 0;  
-  
-  if(args.preprocess != MinionArguments::None)
-    initial_lit_count = lit_count(var_val_order.first);
-  
-  
-  
-  long long lits = lit_count(var_val_order.first);
-  cout << "Initial GAC loop literal removal:" << initial_lit_count - lits << endl;
   if(!getState(stateObj).isFailed())
   {
     preprocessCSP(stateObj, args.preprocess, var_val_order.first);
 	getState(stateObj).getTimer().maybePrintTimestepStore("First node time: ", "FirstNodeTime", tableout, !getOptions(stateObj).print_only_solution);
 	if(!getState(stateObj).isFailed())
-      solve(stateObj, args.order, var_val_order);   // add a getState(stateObj).getTimer().maybePrintTimestepStore to search..
+    {
+      switch(args.prop_method)
+      {
+        case MinionArguments::GAC:
+          solve(stateObj, args.order, var_val_order, PropogateGAC());   // add a getState(stateObj).getTimer().maybePrintTimestepStore to search..
+          break;
+        case MinionArguments::SAC:
+          solve(stateObj, args.order, var_val_order, PropagateSAC());
+          break;
+        case MinionArguments::SSAC:
+          solve(stateObj, args.order, var_val_order, PropagateSSAC());
+          break;
+        default:
+          abort();
+      }
+    }
   }
   else
   {
