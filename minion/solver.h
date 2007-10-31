@@ -160,7 +160,7 @@ public:
   /// Initialised to false.
   bool randomise_valvarorder;
   
-  SearchOptions() : print_only_solution(false), dumptree(false), sollimit(-1), fullpropagate(false), 
+  SearchOptions() : print_only_solution(false), dumptree(false), sollimit(1), fullpropagate(false), 
 	nocheck(false), nodelimit(0), tableout(false), randomise_valvarorder(false), 
     print_solution(true), time_limit(0)
   {}

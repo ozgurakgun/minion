@@ -18,8 +18,8 @@ namespace Controller
   // Constructor that takes existing variable and value ordering
   // (Feel free to ignore the value ordering!)
 
-  template<typename VarOrder, typename Variables, typename Propogator = PropogateGAC>
-	inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v, Propogator prop = Propogator())
+  template<typename VarOrder, typename Variables, typename Propogator>
+	inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v, Propogator prop = PropogateGAC())
   {
 	  D_INFO(0, DI_SOLVER, "Non-Boolean Search");
 	  
@@ -51,7 +51,8 @@ namespace Controller
 		  maybe_print_search_state(stateObj, "Node: ", v);
 		  world_push(stateObj);
 		  order.branch_left();
-		  getQueue(stateObj).propagateQueue();
+          prop(stateObj, v);
+		//  getQueue(stateObj).propagateQueue();
 		}
 		
 		// Either search failed, or a solution was found.

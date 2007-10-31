@@ -121,6 +121,22 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	{ args.preprocess = MinionArguments::SACBounds; }
 	else if(command == string("-ssac-bound-root"))
 	{ args.preprocess = MinionArguments::SSACBounds; }
+    else if(command == string("-X-prop-node"))
+    {
+      cout << "# WARNING: -X-prop-node is experimental. Do not use for benchmarking!" << endl;
+      ++i;
+      string prop_mode(argv[i]);
+      args.prop_method = MinionArguments::getPropMethod(prop_mode);
+      if(args.prop_method == MinionArguments::None)
+        cerr << "Must propagate at each node!" << endl;
+    }
+    else if(command == string("-X-preprocess"))
+    {
+      cout << "# WARNING: -X-preprocess is experimental. Do not use for benchmarking!" << endl;
+      ++i;
+      string prop_mode(argv[i]);
+      args.preprocess = MinionArguments::getPropMethod(prop_mode);
+    }
 	else if(command == string("-fullprop"))
 	{
 #ifndef NO_DEBUG
