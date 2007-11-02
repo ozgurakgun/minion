@@ -211,7 +211,9 @@ struct BooleanContainer
 	  return;
 	}
     assign_ptr()[d.data_offset] |= d.shift_offset;
+#ifndef NO_DOMAIN_TRIGGERS
     trigger_list.push_domain(d.var_num);
+#endif
     trigger_list.push_assign(d.var_num, b);
 	trigger_list.push_domain_removal(d.var_num, 1 - b);
     
