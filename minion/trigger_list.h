@@ -64,8 +64,17 @@ class TriggerList
   bool only_bounds;
   
 public:
-	TriggerList(bool _only_bounds) :
+
+  TriggerList(bool _only_bounds) :
 	only_bounds(_only_bounds)
+  { 
+	  var_count_m = 0;
+	  lock_first = lock_second = 0; 
+	  construct_nms = 0; 
+  }
+  
+  TriggerList(bool _only_bounds, bool _construct_nms) :
+	only_bounds(_only_bounds), construct_nms(_construct_nms)
   { 
 	  var_count_m = 0;
 	  lock_first = lock_second = 0; 
@@ -87,15 +96,23 @@ public:
   int lock_first;
   int lock_second;
   
+  bool construct_nms; 
+  
   DomainInt vars_min_domain_val;
   DomainInt vars_max_domain_val;
   unsigned vars_domain_size;
+  
+  NonMonotonicSet nms;
+  
   
   void lock(int size, DomainInt min_domain_val, DomainInt max_domain_val)
   {
 	D_ASSERT(!lock_first && !lock_second);
 	lock_first = true;
 	var_count_m = size;
+	if (construct_nms) {
+		nms.initialise(var_count_m);
+	}
 	vars_min_domain_val = min_domain_val;
 	vars_max_domain_val = max_domain_val;
 	vars_domain_size = checked_cast<unsigned>(max_domain_val - min_domain_val + 1);
@@ -280,6 +297,24 @@ public:
 	D_ASSERT(lock_second);
 	pair<Trigger*, Trigger*> range = get_trigger_range(var_num, DomainChanged);
 	if (range.first != range.second)	  
+	  queues.pushTriggers(TriggerRange(range.first, range.second, -1)); 
+#endif
+  }
+  
+void push_domain_checked(int var_num)
+  { 
+#ifdef DYNAMICTRIGGERS
+    if (state.isDynamicTriggersUsed()) dynamic_propagate(var_num, DomainChanged);
+#endif
+
+	D_ASSERT(construct_nms);
+	
+#ifdef SLOW_TRIGGERS
+	slow_trigger_push(var_num, DomainChanged, -1);
+#else
+	D_ASSERT(lock_second);
+	pair<Trigger*, Trigger*> range = get_trigger_range(var_num, DomainChanged);
+	if (range.first != range.second && nms.if_member_remove(var_num))	  
 	  queues.pushTriggers(TriggerRange(range.first, range.second, -1)); 
 #endif
   }

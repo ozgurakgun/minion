@@ -44,6 +44,8 @@ namespace Controller
 	D_ASSERT(queues.isQueuesEmpty());
     backtrackable_memory.world_pop();
     varContainer.getBigRangevarContainer().bms_array.undo();
+    varContainer.getBigRangevarContainer().trigger_list.nms.undo();
+
   }
   
   inline void world_pop_all()
