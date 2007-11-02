@@ -63,7 +63,8 @@ struct BigRangeVarContainer {
   unsigned var_count_m;
   BOOL lock_m;
   
-    BigRangeVarContainer() : var_count_m(0), lock_m(0), trigger_list(false)
+    BigRangeVarContainer() : var_count_m(0), lock_m(0), trigger_list(false,1) 
+    	// trigger_list wants a non monotonic set
   { 
     // Store where the first variable will go.
     var_offset.push_back(0);
@@ -254,23 +255,22 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
     }
    
     
-    DomainInt offset = i;
 #ifdef FULL_DOMAIN_TRIGGERS
 	trigger_list.push_domain_removal(d.var_num, i);
 #endif
-    trigger_list.push_domain(d.var_num);
+    trigger_list.push_domain_checked(d.var_num);
     
 
-    D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + offset));
+    D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + i));
     domain_bound_type up_bound = upper_bound(d);
-    if(offset == up_bound)
+    if(i == up_bound)
     {
       upper_bound(d) = find_new_upper_bound(d);
       trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
     }
     
     domain_bound_type low_bound = lower_bound(d);
-    if(offset == low_bound)
+    if(i == low_bound)
     {
       lower_bound(d) = find_new_lower_bound(d);
       trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
@@ -329,7 +329,7 @@ private:
         trigger_list.push_domain_removal(d.var_num, loop);
     }
 #endif
-    trigger_list.push_domain(d.var_num);
+    trigger_list.push_domain_checked(d.var_num);
     trigger_list.push_assign(d.var_num, offset);
     
     DomainInt low_bound = lower_bound(d);
@@ -386,7 +386,7 @@ public:
 	  DomainInt new_upper = find_new_upper_bound(d);
 	  upper_bound(d) = new_upper;
       
-      trigger_list.push_domain(d.var_num);
+      trigger_list.push_domain_checked(d.var_num);
       trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
 	  
       if(lower_bound(d) == upper_bound(d)) 
@@ -440,7 +440,7 @@ public:
     DomainInt new_lower = find_new_lower_bound(d);    
     lower_bound(d) = new_lower; 
     
-    trigger_list.push_domain(d.var_num); 
+    trigger_list.push_domain_checked(d.var_num); 
     trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
     if(lower_bound(d) == upper_bound(d)) 
       trigger_list.push_assign(d.var_num, getAssignedValue(d)); 

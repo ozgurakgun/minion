@@ -50,8 +50,12 @@ namespace Controller
 		{
 		  maybe_print_search_state("Node: ", v);
 		  varContainer.getBigRangevarContainer().bms_array.before_branch_left();
+		  varContainer.getBigRangevarContainer().trigger_list.nms.before_branch_left();
+
 		  world_push();
 		  varContainer.getBigRangevarContainer().bms_array.after_branch_left();
+		  varContainer.getBigRangevarContainer().trigger_list.nms.after_branch_left();
+
 		  order.branch_left();
 		  queues.propagateQueue();
 		}
@@ -67,7 +71,10 @@ namespace Controller
 		  world_pop();
           maybe_print_search_action("bt");
           varContainer.getBigRangevarContainer().bms_array.before_branch_right();
+	  varContainer.getBigRangevarContainer().trigger_list.nms.before_branch_right();
           varContainer.getBigRangevarContainer().bms_array.after_branch_right();
+	  varContainer.getBigRangevarContainer().trigger_list.nms.after_branch_right();
+
 		  order.branch_right();
 		  set_optimise_and_propagate_queue();
 		}

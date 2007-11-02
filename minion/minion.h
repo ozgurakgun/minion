@@ -84,6 +84,8 @@ typedef BacktrackableMonotonicSet MonotonicSet;
 typedef TrailedMonotonicSet MonotonicSet;
 #endif
 
+#include "memory_management/nonmonotonic_set.h"
+
 #include "tuple_container.h"
 
 /** @brief Represents a change in domain. 
