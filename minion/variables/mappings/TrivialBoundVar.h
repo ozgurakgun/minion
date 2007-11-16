@@ -71,6 +71,12 @@ struct TrivialBoundVar
   
   DomainInt getMin() const
   { return lower; }
+
+  void* getAntecedent() const
+  { return 0; }
+
+  unsigned getDepth() const
+  { return 0; }
   
   DomainInt getInitialMax() const
   { return upper; }
@@ -91,6 +97,9 @@ struct TrivialBoundVar
     if(lower > upper)
       getState(stateObj).setFailed(true); 
   }
+
+  void setAntecedent(void*, unsigned)
+  { return; }
   
   void uncheckedAssign(DomainInt)
   { FAIL_EXIT(); }

@@ -117,6 +117,7 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
 
   virtual void full_propagate()
   {
+    cout << "full prop dynamic_sum.h" << endl;
 	DynamicTrigger* dt = dynamic_trigger_start();
 	
     if(var_sum <= 0)
@@ -155,7 +156,9 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
               if(VarToCount)
                     var_array[i].setMax(0);
                   else
-                    var_array[i].setMin(1);          
+                    var_array[i].setMin(1);         
+	      unsigned depth = getMemory(stateObj).backTrack().current_depth();
+	      var_array[i].setAntecedent(this, depth);
             }
           }
         }
@@ -308,6 +311,8 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
 		  var_array[dt2->trigger_info()].setMax(0);
 		else
 		  var_array[dt2->trigger_info()].setMin(1);
+	    unsigned depth = getMemory(stateObj).backTrack().current_depth();
+	    var_array[dt2->trigger_info()].setAntecedent(this, depth);
 	  }
 	  dt2++;
 	}
@@ -383,32 +388,8 @@ BuildCT_WATCHED_GEQSUM(StateObj* stateObj,const light_vector<BoolVarRef>& t1, BO
   } 
   else 
   {
-	int sum = b.vars[1][0].pos;
-#ifndef SATSPECIAL1
-	if(sum == 1)
-	{
-#ifndef SATSPECIAL2
-	  if(t1.size() == 2)
-	  {
-		return BoolBinarySATConDynamic(stateObj, t1);
-	  }
-#ifndef SATSPECIAL3
-	  else if(t1.size() == 3)
-	  {
-		return BoolThreeSATConDynamic(stateObj, t1);
-	  }
-#endif
-	  else
-#endif
-	  {
-	    return BoolSATConDynamic(stateObj, t1);
-	  }
-	}
-	else
-#endif
-	{
-	  return BoolGreaterEqualSumConDynamic(stateObj, t1, runtime_val(sum)); 
-	}
+    int sum = b.vars[1][0].pos;
+    return BoolGreaterEqualSumConDynamic(stateObj, t1, runtime_val(sum)); 
   }
 }
 

@@ -144,6 +144,12 @@ struct MultiplyVar
 	  return data.getMax() * Multiply;  
   }
 
+  void* getAntecedent()
+  { return 0; }
+  
+  unsigned getDepth()
+  { return 0; }
+
   DomainInt getInitialMax() const
   {  
     if(Multiply >= 0)
@@ -175,6 +181,9 @@ struct MultiplyVar
 	else
 	  data.setMax(MultiplyHelp<VarRef>::round_down(-i, -Multiply));  
   }
+
+  void setAntecedent(void*,unsigned)
+  { return; }
   
   void uncheckedAssign(DomainInt b)
   { 

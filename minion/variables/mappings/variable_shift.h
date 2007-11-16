@@ -66,6 +66,12 @@ struct ShiftVar
   DomainInt getMin()
   { return data.getMin() + shift; }
 
+  void* getAntecedent()
+  { return 0; }
+
+  unsigned getDepth()
+  { return 0; }
+
   DomainInt getInitialMax() const
   { return data.getInitialMax() + shift; }
   
@@ -77,6 +83,9 @@ struct ShiftVar
   
   void setMin(DomainInt i)
   { data.setMin(i - shift); }
+
+  void setAntecedent(void*,unsigned)
+  { return; }
   
   void uncheckedAssign(DomainInt b)
   { data.uncheckedAssign(b - shift); }

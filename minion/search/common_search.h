@@ -136,8 +136,10 @@ namespace Controller
 template<typename T>
 void inline maybe_print_search_state(StateObj* stateObj, const char* name, T& vars)
 {
-  if(getOptions(stateObj).dumptree)
+  if(getOptions(stateObj).dumptree) {
 	cout << name << getState(stateObj).getNodeCount() << "," << get_dom_as_string(vars) << endl;
+	cout << "Tree depth=" << getMemory(stateObj).backTrack().current_depth() << endl;
+  }
 }
 
 void inline maybe_print_search_action(StateObj* stateObj, const char* action)

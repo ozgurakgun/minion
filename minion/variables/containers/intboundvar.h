@@ -119,6 +119,12 @@ struct BoundVarRef_internal
   DomainInt getMax() const
   { return upper_bound(); }
 
+  void* getAntecedent() const
+  { return 0; } //only recording this for bool vars!
+
+  unsigned getDepth() const
+  { return 0; }
+
    DomainInt getInitialMax() const
   { return GET_LOCAL_CON().getInitialMax(*this); }
   
@@ -131,6 +137,9 @@ struct BoundVarRef_internal
   void setMin(DomainInt i)
   { GET_LOCAL_CON().setMin(*this,i); }
   
+  void setAntecedent(void* i, unsigned depth)
+  { return; }
+
   void uncheckedAssign(DomainInt b)
   { GET_LOCAL_CON().uncheckedAssign(*this, b); }
   
@@ -325,6 +334,9 @@ struct BoundVarContainer {
 	    trigger_list.push_assign(d.var_num, i);
     }
   }
+
+  void setAntecedent(const BoundVarRef_internal<BoundType>& d, void* a, unsigned)
+  { return; }
   
 //  BoundVarRef get_new_var();
 //  BoundVarRef get_new_var(int i, int j);

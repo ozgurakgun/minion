@@ -62,6 +62,8 @@ struct BoolVarRef_internal
   unsigned var_num;
   MoveablePointer data_position;
   MemOffset value_position;
+  void* antecedent; //pointer to the clause that caused assignment to this var
+  unsigned depth;   //depth assignment was done at
   
 #ifdef MANY_VAR_CONTAINERS
   BooleanContainer* boolCon;
@@ -126,6 +128,12 @@ struct BoolVarRef_internal
     if(!isAssigned()) return 1;
     return getAssignedValue();
   }
+
+  void* getAntecedent() const
+  { return antecedent; }
+
+  unsigned getDepth() const
+  { return depth; }
  
   DomainInt getInitialMin() const
   { return 0; }
@@ -223,6 +231,13 @@ struct BooleanContainer
     D_ASSERT(i <= 1);
     if(i==1)
       propagateAssign(d,1);
+  }
+
+  void setAntecedent(BoolVarRef_internal& d, void* a, unsigned depth)
+  {
+    cout << "Setting " << d << " at depth " << depth << " due to " << a << endl;
+    d.antecedent = a;
+    d.depth = depth;
   }
   
   void removeFromDomain(const BoolVarRef_internal& d, DomainInt b)

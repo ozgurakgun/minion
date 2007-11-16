@@ -151,6 +151,12 @@ struct RangeVarRef_internal_template
   DomainInt getMax() const
   { return upper_bound(); }
 
+  void* getAntecedent() const
+  { return 0; } //only collecting for bools
+
+  unsigned getDepth() const
+  { return 0; }
+
   DomainInt getInitialMax() const
   { return GET_LOCAL_CON().getInitialMax(*this); }
   
@@ -163,6 +169,9 @@ struct RangeVarRef_internal_template
   void setMin(DomainInt i)
   { GET_LOCAL_CON().setMin(*this,i); }
   
+  void setAntecedent(void*, unsigned)
+  { return; }
+
   void uncheckedAssign(DomainInt b)
   { GET_LOCAL_CON().uncheckedAssign(*this, b); }
   
@@ -517,6 +526,9 @@ struct RangeVarContainer {
 	    trigger_list.push_assign(d.var_num, getAssignedValue(d));
     }
   }
+
+  void setAntecedent(const RangeVarRef_internal&, void*, unsigned) 
+  { return; }
   
   LRangeVarRef get_var_num(int i);
   LRangeVarRef get_new_var(int i, int j);

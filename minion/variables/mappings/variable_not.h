@@ -81,6 +81,12 @@ struct VarNot
   DomainInt getMin()
   { return swap(data.getMax()); }
 
+  void* getAntecedent()
+  { return 0; }
+
+  unsigned getDepth()
+  { return 0; }
+
   DomainInt getInitialMax() const
   { return swap(data.getInitialMin()); }
   
@@ -92,6 +98,9 @@ struct VarNot
   
   void setMin(DomainInt i)
   { data.setMax(swap(i)); }
+  
+  void setAntecedent(void*,unsigned)
+  { return; }
   
   void uncheckedAssign(DomainInt b)
   { data.uncheckedAssign(swap(b)); }

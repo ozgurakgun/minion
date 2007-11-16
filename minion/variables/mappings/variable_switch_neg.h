@@ -78,6 +78,12 @@ struct SwitchNeg
 	else
 	  return -data.getMax(); 
   }
+
+  void* getAntecedent()
+  { return 0; }
+
+  unsigned getDepth()
+  { return 0; }
   
   DomainInt getInitialMax() const
   { 
@@ -111,6 +117,9 @@ struct SwitchNeg
 	  data.setMax(-i); 
   }
   
+  void setAntecedent(void*,unsigned)
+  { return; }
+
   void uncheckedAssign(DomainInt b)
   { data.uncheckedAssign(b * multiplier); }
   

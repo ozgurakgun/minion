@@ -71,6 +71,12 @@ struct ConstantVar
   DomainInt getMin() const
   { return val; }
 
+  void* getAntecedent() const
+  { return 0; }
+
+  unsigned getDepth() const
+  { return 0; }
+
   DomainInt getInitialMax() const
   { return val; }
   
@@ -82,6 +88,9 @@ struct ConstantVar
   
   void setMin(DomainInt i)
   { if(i>val) getState(stateObj).setFailed(true); }
+
+  void setAntecedent(void*,unsigned)
+  { return; }
   
   void uncheckedAssign(DomainInt)
   { FAIL_EXIT(); }

@@ -67,6 +67,12 @@ struct VarNeg
   DomainInt getMin()
   { return -data.getMax(); }
 
+  void* getAntecedent()
+  { return 0; }
+
+  unsigned getDepth()
+  { return 0; }
+
   DomainInt getInitialMax() const
   { return -data.getInitialMin(); }
   
@@ -78,6 +84,9 @@ struct VarNeg
   
   void setMin(DomainInt i)
   { data.setMax(-i); }
+
+  void setAntecedent(void*,unsigned)
+  { return; }
   
   void uncheckedAssign(DomainInt b)
   { data.uncheckedAssign(-b); }

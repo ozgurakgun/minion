@@ -11,6 +11,11 @@
 namespace Controller
 {
 
+/*   int depth = 0; //a var that stores the current depth in the search */
+/* 		 //tree, where the root is at depth 0, after a left or */
+/* 		 //right branch from there search is at depth 1, and */
+/* 		 //so on */
+
 #include "VariableOrders.h"
   
   /// Variable Order objects
@@ -45,12 +50,14 @@ namespace Controller
 
 		  // fail here to force backtracking.
 		  getState(stateObj).setFailed(true);
+		  //depth -= 1;
 		}
 		else
 		{
 		  maybe_print_search_state(stateObj, "Node: ", v);
 		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_left();
 		  world_push(stateObj);
+		  //depth += 1;
 		  order.branch_left();
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_left();
           prop(stateObj, v);
@@ -69,6 +76,7 @@ namespace Controller
 	  
 	      getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_right();
 		  order.branch_right();
+		  //N.B. search depth is unchanged by this block
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_right();
 
 		  set_optimise_and_propagate_queue(stateObj);

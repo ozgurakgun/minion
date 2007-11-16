@@ -60,10 +60,13 @@ struct AnyVarRef_Abstract
   virtual BOOL inDomain_noBoundCheck(DomainInt b) = 0;
   virtual DomainInt getMax() = 0;
   virtual DomainInt getMin() = 0;
+  virtual void* getAntecedent() = 0;
+  virtual unsigned getDepth() = 0;
   virtual DomainInt getInitialMax() const = 0;
   virtual DomainInt getInitialMin() const = 0;
   virtual void setMax(DomainInt i) = 0;
   virtual void setMin(DomainInt i) = 0;
+  virtual void setAntecedent(void* a, unsigned depth) = 0;
   virtual void uncheckedAssign(DomainInt b) = 0;
   virtual void propagateAssign(DomainInt b) = 0;
   virtual void removeFromDomain(DomainInt b) = 0;
@@ -119,6 +122,12 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual DomainInt getMin()
   { return data.getMin(); }
 
+  virtual void* getAntecedent()
+  { return data.getAntecedent(); }
+  
+  virtual unsigned getDepth()
+  { return data.getDepth(); }
+
   virtual DomainInt getInitialMax() const
   { return data.getInitialMax(); }
   
@@ -130,6 +139,9 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   
   virtual void setMin(DomainInt i)
   { data.setMin(i); }
+
+  virtual void setAntecedent(void* a, unsigned depth)
+  { data.setAntecedent(a, depth); }
   
   virtual void uncheckedAssign(DomainInt b)
   { data.uncheckedAssign(b); }
@@ -203,6 +215,12 @@ public:
   DomainInt getMin()
   { return data->getMin(); }
 
+  void* getAntecedent()
+  { return data->getAntecedent(); }
+
+  unsigned getDepth()
+  { return data->getDepth(); }
+
   DomainInt getInitialMax() const
   { return data->getInitialMax(); }
   
@@ -215,6 +233,9 @@ public:
   void setMin(DomainInt i)
   { data->setMin(i); }
   
+  void setAntecedent(void* a, unsigned depth)
+  { data->setAntecedent(a, depth); }
+
   void uncheckedAssign(DomainInt b)
   { data->uncheckedAssign(b); }
   

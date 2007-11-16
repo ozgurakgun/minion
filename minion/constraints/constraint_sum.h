@@ -132,6 +132,7 @@ struct BoolLessSumConstraint : public Constraint
   
   virtual void full_propagate()
   {
+    cout << "full prop constraint_sum.h";
     int occs = 0;
     int array_size = var_array.size();
     for(int i = 0; i < array_size; ++i)

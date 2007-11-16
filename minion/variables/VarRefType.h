@@ -74,6 +74,12 @@ struct VarRefType
   DomainInt getMin()
   { return GET_CONTAINER().getMin(data); }
 
+  void* getAntecedent()
+  { return GET_CONTAINER().getAntecedent(data); }
+
+  unsigned getDepth()
+  { return GET_CONTAINER().getDepth(data); }
+
   DomainInt getInitialMax() const
   { return GET_CONTAINER().getInitialMax(data); }
   
@@ -86,6 +92,9 @@ struct VarRefType
   void setMin(DomainInt i)
   { GET_CONTAINER().setMin(data,i); }
   
+  void setAntecedent(void* a, unsigned depth)
+  { GET_CONTAINER().setAntecedent(data, a, depth); }
+
   void uncheckedAssign(DomainInt b)
   { GET_CONTAINER().uncheckedAssign(data, b); }
   
@@ -153,6 +162,12 @@ struct QuickVarRefType
   DomainInt getMin()
   { return data.getMin(); }
 
+  void* getAntecedent()
+  { return data.getAntecedent(); }
+
+  unsigned getDepth()
+  { return data.getDepth(); }
+
   DomainInt getInitialMax() const
   { return data.getInitialMax(); }
   
@@ -165,6 +180,9 @@ struct QuickVarRefType
   void setMin(DomainInt i)
   { GET_CONTAINER().setMin(data,i); }
   
+  void setAntecedent(void* a, unsigned depth)
+  { GET_CONTAINER().setAntecedent(data,a, depth); }
+
   void uncheckedAssign(DomainInt b)
   { GET_CONTAINER().uncheckedAssign(data, b); }
   
@@ -223,6 +241,12 @@ struct CompleteVarRefType
   DomainInt getMin()
   { return (data.getCon()).getMin(data); }
 
+  void* getAntecedent()
+  { return (data.getCon()).getAntecedent(data); }
+
+  unsigned getDepth()
+  { return (data.getCon()).getDepth(data); }
+
   DomainInt getInitialMax() const
   { return (data.getCon()).getInitialMax(data); }
   
@@ -235,6 +259,9 @@ struct CompleteVarRefType
   void setMin(DomainInt i)
   { (data.getCon()).setMin(data,i); }
   
+  void setAntecedent(void* a, unsigned depth)
+  { (data.getCon()).setAntecedent(data,a,depth); }
+
   void uncheckedAssign(DomainInt b)
   { (data.getCon()).uncheckedAssign(data, b); }
   

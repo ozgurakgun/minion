@@ -256,6 +256,12 @@ struct SparseBoundVarContainer {
     return upper_bound(d);
   }
 
+  void* getAntecedent(SparseBoundVarRef_internal<BoundType> d) const
+  { return 0; }
+
+  unsigned getDepth(SparseBoundVarRef_internal<BoundType> d) const
+  { return 0; }
+
   DomainInt getInitialMin(SparseBoundVarRef_internal<BoundType> d)
   { return get_domain_from_int(d.var_num).front(); }
   
@@ -365,6 +371,9 @@ struct SparseBoundVarContainer {
        trigger_list.push_assign(d.var_num, i);
     }
   }
+
+  void setAntecedent(SparseBoundVarRef_internal<BoundType> d, void* a, unsigned)
+  { return; }
   
 //  SparseBoundVarRef get_new_var();
   template<typename T>

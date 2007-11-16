@@ -241,6 +241,12 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     return upper_bound(d);
   }
+
+  void* getAntecedent(BigRangeVarRef_internal d) const
+  { return 0; }
+
+  unsigned getDepth(BigRangeVarRef_internal d) const
+  { return 0; }
   
   DomainInt getInitialMin(BigRangeVarRef_internal d) const
   { return initial_bounds[d.var_num].first; }
@@ -472,6 +478,9 @@ public:
     bms_array.print_state();
 #endif
   }
+
+  void setAntecedent(BigRangeVarRef_internal d, void* a, unsigned)
+  { return; }
   
   BigRangeVarRef get_var_num(int i);
   BigRangeVarRef get_new_var(int i, int j);
