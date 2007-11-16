@@ -41,6 +41,8 @@ Use of this variable in a constraint:
 eq(bool, 0) #variable bool equals 0
 */
 
+#include <vector>
+
 /// Standard data type used for storing compressed booleans 
 typedef unsigned long data_type;
 static const data_type one = 1;
@@ -169,6 +171,29 @@ struct BooleanContainer
   TriggerList trigger_list;
   /// When false, no variable can be altered. When true, no variables can be created.
   BOOL lock_m;
+
+  vector<void*> prop_order; //contains pointers to propagators in the
+			    //order they fired, a NULL pointer is
+			    //pushed at time the depth changes, so we
+			    //can backtrack
+
+  void prop_order_push()
+  {
+    prop_order.push_back(0);
+  }
+
+  void prop_order_pop()
+  {
+    void* back;
+    while(prop_order.back()) //while not null
+      prop_order.pop_back();
+    prop_order.pop_back(); //finally pop the null off too
+  }
+
+  void record_prop(void* p)
+  {
+    prop_order.push_back(p);
+  }
   
   data_type* value_ptr()
   { return static_cast<data_type*>(values_mem.get_ptr()); }
@@ -238,6 +263,7 @@ struct BooleanContainer
     cout << "Setting " << d << " at depth " << depth << " due to " << a << endl;
     d.antecedent = a;
     d.depth = depth;
+    prop_order.push_back(a);
   }
   
   void removeFromDomain(const BoolVarRef_internal& d, DomainInt b)
