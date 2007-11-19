@@ -18,6 +18,12 @@ namespace Controller
   // Constructor that takes existing variable and value ordering
   // (Feel free to ignore the value ordering!)
 
+  //learn a conflict and return a depth to jump back to
+  inline unsigned conflict_learn(StateObj* stateObj)
+  {
+    return getMemory(stateObj).backTrack().current_depth() - 1;
+  }
+
   template<typename VarOrder, typename Variables, typename Propogator>
 	inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v, Propogator prop = PropogateGAC())
   {
@@ -51,11 +57,10 @@ namespace Controller
 		  maybe_print_search_state(stateObj, "Node: ", v);
 		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_left();
 		  cout << getVars(stateObj).getBooleanContainer().prop_order << endl;
-		  getVars(stateObj).getBooleanContainer().prop_order_push();
 		  world_push(stateObj);
 		  order.branch_left();
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_left();
-          prop(stateObj, v);
+		  prop(stateObj, v);
 		}
 		
 		// Either search failed, or a solution was found.
@@ -66,11 +71,11 @@ namespace Controller
 		  if(order.finished_search())
 			return;
 
-		  getVars(stateObj).getBooleanContainer().prop_order_pop();
-		  world_pop(stateObj);
-          maybe_print_search_action(stateObj, "bt");
+		  unsigned bj_depth = conflict_learn(stateObj);
+		  world_pop(stateObj, bj_depth);
+		  maybe_print_search_action(stateObj, "bt");
 	  
-	      getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_right();
+		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_right();
 		  order.branch_right();
 		  //N.B. search depth is unchanged by this block
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_right();

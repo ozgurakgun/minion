@@ -307,12 +307,20 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
 	{
 	  if(dt != dt2)       // that one has just been set the other way
 	  {
-	    if(VarToCount)
-		  var_array[dt2->trigger_info()].setMax(0);
-		else
-		  var_array[dt2->trigger_info()].setMin(1);
+	    AnyVarRef var = var_array[dt2->trigger_info()];
+	    if(VarToCount) {
+	      if(var.inDomain(0)) 
+		 var.setMax(0);
+	      else 
+		getVars(stateObj).getBooleanContainer().setConflictVar(var);
+	    } else {
+	      if(var.inDomain(1))
+		var.setMin(1);
+	      else
+		getVars(stateObj).getBooleanContainer().setConflictVar(var);
+	    }
 	    unsigned depth = getMemory(stateObj).backTrack().current_depth();
-	    var_array[dt2->trigger_info()].setAntecedent(this, depth);
+	    var.setAntecedent(this, depth);
 	  }
 	  dt2++;
 	}

@@ -190,32 +190,33 @@ struct NeqConstraintBinary : public Constraint
   
   PROPAGATE_FUNCTION(int prop_val, DomainDelta)
   {
-	PROP_INFO_ADDONE(BinaryNeq);
+    PROP_INFO_ADDONE(BinaryNeq);
+    int min;
     if (prop_val == 1) {
       DomainInt remove_val = var1.getAssignedValue();
-	  if(var2.isBound())
-	  {
-		if(var2.getMin() == remove_val)
-		  var2.setMin(remove_val + 1);
-		if(var2.getMax() == remove_val)
-		  var2.setMax(remove_val - 1);
-	  }
-	  else
-        var2.removeFromDomain(remove_val);
-	}
-    else
-    {
+      if(var2.isBound()) { //ignore case for SAT
+	if(var2.getMin() == remove_val)
+	  var2.setMin(remove_val + 1);
+	if(var2.getMax() == remove_val)
+	  var2.setMax(remove_val - 1);
+      } else {
+	if((min = var2.getMin()) == var2.getMax() && min == remove_val) //wipeout
+	  getVars(stateObj).getBooleanContainer().setConflictVar((AnyVarRef)var2);
+	var2.removeFromDomain(remove_val);
+      }
+    } else {
       D_ASSERT(prop_val == 2);
       DomainInt remove_val = var2.getAssignedValue();
-	  if(var1.isBound())
-	  {
-		if(var1.getMin() == remove_val)
-		  var1.setMin(remove_val + 1);
-		if(var1.getMax() == remove_val)
-		  var1.setMax(remove_val - 1);
-	  }
-	  else
-        var1.removeFromDomain(remove_val);
+      if(var1.isBound()) { //ignore for SAT
+	if(var1.getMin() == remove_val)
+	  var1.setMin(remove_val + 1);
+	if(var1.getMax() == remove_val)
+	  var1.setMax(remove_val - 1);
+      } else {
+	if((min = var1.getMin()) == var1.getMax() && min == remove_val) //wipeout
+	  getVars(stateObj).getBooleanContainer().setConflictVar((AnyVarRef)var1);
+	var1.removeFromDomain(remove_val);
+      }
     }
   }
   

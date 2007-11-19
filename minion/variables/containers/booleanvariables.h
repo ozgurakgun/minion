@@ -177,6 +177,9 @@ struct BooleanContainer
 			    //pushed at time the depth changes, so we
 			    //can backtrack
 
+  AnyVarRef conflict_var; //the variable whose domain is wiped out to
+		      //cause last conflict
+
   void prop_order_push()
   {
     prop_order.push_back(0);
@@ -194,6 +197,15 @@ struct BooleanContainer
   {
     prop_order.push_back(p);
   }
+
+  void setConflictVar(AnyVarRef d)
+  { 
+    conflict_var = d; 
+    cout << "Conflict var: " << d << endl;
+  }
+
+  AnyVarRef getConflictVar()
+  { return conflict_var; }
   
   data_type* value_ptr()
   { return static_cast<data_type*>(values_mem.get_ptr()); }
