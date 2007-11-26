@@ -75,7 +75,7 @@ struct TrivialBoundVar
   unsigned getDepth() const
   { return 0; }
 
-  DynamicConstraint getAntecedent() const
+  DynamicConstraint* getAntecedent() const
   { return NULL; }
 
   int getId() const
@@ -103,7 +103,7 @@ struct TrivialBoundVar
 
   void setDepth(unsigned) {;}
 
-  void setAntecedent(DynamicConstraint) {;}
+  void setAntecedent(DynamicConstraint*) {;}
   
   void uncheckedAssign(DomainInt)
   { FAIL_EXIT(); }

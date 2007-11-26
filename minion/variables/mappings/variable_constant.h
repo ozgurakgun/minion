@@ -73,7 +73,7 @@ struct ConstantVar
   
   unsigned getDepth() const { return 0; }
 
-  DynamicConstraint getAntecedent() const { return NULL; }
+  DynamicConstraint* getAntecedent() const { return NULL; }
 
   int getId() const { return 0; }
 
@@ -91,7 +91,7 @@ struct ConstantVar
 
   void setDepth(unsigned) {;}
 
-  void setAntecedent(DomainInt) {;}
+  void setAntecedent(DynamicConstraint*) {;}
   
   void uncheckedAssign(DomainInt)
   { FAIL_EXIT(); }

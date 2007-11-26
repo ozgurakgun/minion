@@ -24,6 +24,9 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#ifndef CONSTRAINT_DYNAMIC
+#define CONSTRAINT_DYNAMIC
+
 #define DYNAMIC_PROPAGATE_FUNCTION virtual void propagate
 
 /// This is a trigger to a constraint, which can be dynamically moved around.
@@ -153,7 +156,8 @@ public:
   { }
   
   /// Method to get constraint name for debugging.
-  virtual string constraint_name() = 0;
+  virtual string constraint_name() 
+  { return ""; };
   
   /// Private member of the base class.
   MemOffset _DynamicTriggerCache;
@@ -179,23 +183,24 @@ public:
   }
   
   /// Defines the number of dynamic triggers the constraint wants.
-  virtual int dynamic_trigger_count() = 0;
+  virtual int dynamic_trigger_count() 
+  { return -1; }
   
   /// Performs a full round of propagation and sets up any data needs by propagate().
   /** This function can be called during search if the function is reified */
-  virtual void full_propagate() = 0;
+  virtual void full_propagate() {;}
   
   /// Iterative propagation function.
   /** Can assume full_propagate is always called at least once before propagate */
-  DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger*) = 0;
+  DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger*) {;};
   
   // Returns the variables of the constraint
-  virtual vector<AnyVarRef> get_vars() = 0;
+  virtual vector<AnyVarRef> get_vars() { return vector<AnyVarRef>();};
   
   
   /// Checks if an assignment is satisfied.
   /** This takes the variable order returned by, and is mainly only used by, get_table_constraint() */
-  virtual BOOL check_assignment(vector<DomainInt>) = 0;
+  virtual BOOL check_assignment(vector<DomainInt>) {;};
     
   virtual ~DynamicConstraint()
   {}
@@ -208,4 +213,4 @@ inline void DynamicTrigger::propagate()
   constraint->propagate(this); 
 }
 
-
+#endif

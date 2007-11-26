@@ -259,7 +259,7 @@ struct SparseBoundVarContainer {
   unsigned getDepth(SparseBoundVarRef_internal<BoundType> d) const
   { return 0; }
 
-  DynamicConstraint getAntecedent(SparseBoundVarRef_internal<BoundType> d) const
+  DynamicConstraint* getAntecedent(SparseBoundVarRef_internal<BoundType> d) const
   { return NULL; }
 
   int getId(SparseBoundVarRef_internal<BoundType> d) const
@@ -377,7 +377,7 @@ struct SparseBoundVarContainer {
 
   void setDepth(SparseBoundVarRef_internal<BoundType> d, unsigned) {;}
 
-  void setAntecedent(SparseBoundVarRef_internal<BoundType> d, DynamicConstraint)
+  void setAntecedent(SparseBoundVarRef_internal<BoundType> d, DynamicConstraint*)
   {;}
   
 //  SparseBoundVarRef get_new_var();

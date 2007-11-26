@@ -69,7 +69,7 @@ struct ShiftVar
   unsigned getDepth()
   { return 0; }
   
-  DynamicConstraint getAntecedent()
+  DynamicConstraint* getAntecedent()
   { return NULL; }
 
   int getId()
@@ -89,7 +89,7 @@ struct ShiftVar
 
   void setDepth(unsigned) {;}
 
-  void setAntecedent(DynamicConstraint) {;}
+  void setAntecedent(DynamicConstraint*) {;}
   
   void uncheckedAssign(DomainInt b)
   { data.uncheckedAssign(b - shift); }

@@ -146,7 +146,7 @@ struct MultiplyVar
 
   unsigned getDepth() { return 0; }
 
-  DynamicConstraint getAntecedent() { return NULL; }
+  DynamicConstraint* getAntecedent() { return NULL; }
 
   int getId() { return 0; }
 
@@ -184,7 +184,7 @@ struct MultiplyVar
 
   void setDepth(unsigned) {;}
 
-  void setAntecedent(DynamicConstraint) {;}
+  void setAntecedent(DynamicConstraint*) {;}
   
   void uncheckedAssign(DomainInt b)
   { 

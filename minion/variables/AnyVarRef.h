@@ -110,6 +110,8 @@ ALIAS c = a
 ALIAS c[2,2] = [[myvar,b[2]],[b[1],anothervar]]
 */
 
+#include "../constraints/constraint_dynamic.h"
+
 /// Internal type used by AnyVarRef.
 struct AnyVarRef_Abstract
 {
@@ -122,13 +124,13 @@ struct AnyVarRef_Abstract
   virtual DomainInt getMax() = 0;
   virtual DomainInt getMin() = 0;
   virtual unsigned getDepth() = 0;
-  virtual DynamicConstraint getAntecedent() = 0;
+  virtual DynamicConstraint* getAntecedent() = 0;
   virtual int getId() = 0;
   virtual DomainInt getInitialMax() const = 0;
   virtual DomainInt getInitialMin() const = 0;
   virtual void setMax(DomainInt i) = 0;
   virtual void setMin(DomainInt i) = 0;
-  virtual void setAntecedent(DynamicConstraint) = 0;
+  virtual void setAntecedent(DynamicConstraint*) = 0;
   virtual void setDepth(unsigned) = 0;
   virtual void uncheckedAssign(DomainInt b) = 0;
   virtual void propagateAssign(DomainInt b) = 0;
@@ -188,7 +190,7 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual unsigned getDepth()
   { return data.getDepth(); }
 
-  virtual DynamicConstraint getAntecedent()
+  virtual DynamicConstraint* getAntecedent()
   { return data.getAntecedent(); }
 
   virtual int getId()
@@ -209,7 +211,7 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual void setDepth(unsigned d)
   { data.setDepth(d); }
   
-  virtual void setAntecedent(DynamicConstraint dc)
+  virtual void setAntecedent(DynamicConstraint* dc)
   { data.setAntecedent(dc); }
   
   virtual void uncheckedAssign(DomainInt b)
@@ -287,7 +289,7 @@ public:
   unsigned getDepth()
   { return data->getDepth(); }
 
-  DynamicConstraint getAntecedent()
+  DynamicConstraint* getAntecedent()
   { return data->getAntecedent(); }
 
   int getId()
@@ -308,7 +310,7 @@ public:
   void setDepth(unsigned d)
   { data->setDepth(d); }
 
-  void setAntecedent(DynamicConstraint dc)
+  void setAntecedent(DynamicConstraint* dc)
   { data->setAntecedent(dc); }
   
   void uncheckedAssign(DomainInt b)

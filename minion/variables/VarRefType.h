@@ -77,11 +77,11 @@ struct VarRefType
   unsigned getDepth()
   { return GET_CONTAINER().getDepth(data); }
   
-  DynamicConstraint getAntecedent()
+  DynamicConstraint* getAntecedent()
   { return GET_CONTAINER().getAntecedent(data); }
 
   int getId()
-  { retunr GET_CONTAINER().getId(data); }
+  { return GET_CONTAINER().getId(data); }
 
   DomainInt getInitialMax() const
   { return GET_CONTAINER().getInitialMax(data); }
@@ -98,7 +98,7 @@ struct VarRefType
   void setDepth(unsigned d)
   { GET_CONTAINER().setDepth(data, d); }
 
-  void setAntecedent(DynamicConstraint d)
+  void setAntecedent(DynamicConstraint* d)
   { GET_CONTAINER().setAntecedent(data, d); }
   
   void uncheckedAssign(DomainInt b)
@@ -171,7 +171,7 @@ struct QuickVarRefType
   unsigned getDepth()
   { return data.getDepth(); }
 
-  DynamicConstraint getAntecedent()
+  DynamicConstraint* getAntecedent()
   { return data.getAntecedent(); }
 
   int getId()
@@ -192,7 +192,7 @@ struct QuickVarRefType
   void setDepth(unsigned d)
   { GET_CONTAINER().setDepth(data, d); }
 
-  void setAntecedent(DynamicConstraint dc)
+  void setAntecedent(DynamicConstraint* dc)
   { GET_CONTAINER().setAntecedent(data, dc); }
   
   void uncheckedAssign(DomainInt b)
@@ -256,7 +256,7 @@ struct CompleteVarRefType
   unsigned getDepth()
   { return (data.getCon()).getDepth(data); }
 
-  DynamicConstraint getAntecedent()
+  DynamicConstraint* getAntecedent()
   { return (data.getCon()).getAntecedent(data); }
 
   int getId()
@@ -277,7 +277,7 @@ struct CompleteVarRefType
   void setDepth(unsigned d)
   { (data.getCon()).setDepth(data, d); }
 
-  void setAntecedent(DynamicConstraint dc)
+  void setAntecedent(DynamicConstraint* dc)
   { (data.getCon()).setAntecedent(data, dc); }
   
   void uncheckedAssign(DomainInt b)

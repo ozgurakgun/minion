@@ -122,7 +122,7 @@ struct BoundVarRef_internal
   unsigned getDepth() const
   { return 0; }
 
-  DynamicConstraint getAntecedent() const
+  DynamicConstraint* getAntecedent() const
   { return NULL; }
 
   int getId() const
@@ -142,7 +142,7 @@ struct BoundVarRef_internal
   
   void setDepth(unsigned) {;}
   
-  void setAntecedent(DynamicConstraint) {;}
+  void setAntecedent(DynamicConstraint*) {;}
   
   void uncheckedAssign(DomainInt b)
   { GET_LOCAL_CON().uncheckedAssign(*this, b); }
@@ -254,7 +254,7 @@ struct BoundVarContainer {
   unsigned getDepth(const BoundVarRef_internal<BoundType>& d) const
   { return 0; }
   
-  DynamicConstraint getAntecedent(const BoundVarRef_internal<BoundType>& d) const
+  DynamicConstraint* getAntecedent(const BoundVarRef_internal<BoundType>& d) const
   { return NULL; }
   
   int getId(const BoundVarRef_internal<BoundType>& d) const
@@ -351,7 +351,7 @@ struct BoundVarContainer {
   void setDepth(const BoundVarRef_internal<BoundType>& d, unsigned) {;}
 
   void setAntecedent(const BoundVarRef_internal<BoundType>& d, 
-		     DynamicConstraint) 
+		     DynamicConstraint*) 
   {;}
   
 //  BoundVarRef get_new_var();

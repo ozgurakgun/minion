@@ -64,7 +64,7 @@ struct BoolVarRef_internal
   MemOffset value_position;
 
   unsigned depth;
-  DynamicConstraint antecedent;
+  DynamicConstraint* antecedent;
   
 #ifdef MANY_VAR_CONTAINERS
   BooleanContainer* boolCon;
@@ -133,7 +133,7 @@ struct BoolVarRef_internal
   unsigned getDepth() const
   { return depth; }
 
-  DynamicConstraint getAntecedent() const
+  DynamicConstraint* getAntecedent() const
   { return antecedent; }
 
   int getId() const
@@ -237,11 +237,11 @@ struct BooleanContainer
       propagateAssign(d,1);
   }
 
-  void setDepth(const BoolVarRef_internal& bvr, unsigned d)
+  void setDepth(BoolVarRef_internal& bvr, unsigned d)
   { bvr.depth = d; }
-
-  void setAntecedent(const BoolVarRef_internal& d, DynamicConstraint a)
-  { bvr.antecedent = a; }
+  
+  void setAntecedent(BoolVarRef_internal& d, DynamicConstraint* a)
+  { d.antecedent = a; }
   
   void removeFromDomain(const BoolVarRef_internal& d, DomainInt b)
   {

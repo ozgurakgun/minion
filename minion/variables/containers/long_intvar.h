@@ -245,8 +245,8 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
   unsigned getDepth(BigRangeVarRef_internal d) const
   { return 0; }
 
-  DynamicConstraint getAntecedent(BigRangeVarRef_internal d) const
-  { return NULL: }
+  DynamicConstraint* getAntecedent(BigRangeVarRef_internal d) const
+  { return NULL; }
 
   int getId(BigRangeVarRef_internal d) const
   { return 0; }
@@ -484,7 +484,7 @@ public:
 
   void setDepth(BigRangeVarRef_internal d, unsigned) {;}
 
-  void setAntecedent(BigRangeVarRef_internal d, DynamicConstraint) {;}
+  void setAntecedent(BigRangeVarRef_internal d, DynamicConstraint*) {;}
   
   BigRangeVarRef get_var_num(int i);
   BigRangeVarRef get_new_var(int i, int j);

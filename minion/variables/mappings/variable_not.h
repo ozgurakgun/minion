@@ -83,7 +83,7 @@ struct VarNot
 
   unsigned getDepth() { return 0; }
 
-  DynamicConstraint getAntecedent() { return NULL; }
+  DynamicConstraint* getAntecedent() { return NULL; }
 
   int getId() { return 0; }
 
@@ -101,7 +101,7 @@ struct VarNot
   
   void setDepth(unsigned) {;}
   
-  void setAntecedent(unsigned) {;}
+  void setAntecedent(DynamicConstraint*) {;}
   
   void uncheckedAssign(DomainInt b)
   { data.uncheckedAssign(swap(b)); }
