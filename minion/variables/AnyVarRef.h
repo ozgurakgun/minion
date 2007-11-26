@@ -1,0 +1,338 @@
+/* Minion Constraint Solver
+   http://minion.sourceforge.net
+   
+   For Licence Information see file LICENSE.txt 
+
+   $Id: AnyVarRef.h 831 2007-11-20 16:23:55Z neilmoore67 $
+*/
+
+/* Minion
+* Copyright (C) 2006
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 2
+* of the License, or (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+*/
+
+/** @help variables General
+Minion supports 4 different variable types, namely
+
+- 0/1 variables,
+- bounds variables,
+- sparse bounds variables, and
+- discrete variables.
+
+Sub-dividing the variable types in this manner affords the greatest
+opportunity for optimisation. In general, we recommend thinking of the
+variable types as a hierarchy, where 1 (0/1 variables) is the most
+efficient type, and 4 (Discrete variables) is the least. The
+user should use the variable which is the highest in the hierarchy,
+yet encompasses enough information to provide a full model for the
+problem they are attempting to solve.
+
+See the entry on vectors for information on how vectors, matrices and,
+more generally, tensors are handled in minion input. See also the
+alias entry for information on how to multiply name variables for
+convenience.
+*/
+
+/** @help variables;vectors Description 
+Vectors, matrices and tensors can be declared in minion
+input. Matrices and tensors are for convenience, as constraints do not
+take these as input; they must first undergo a flattening process to
+convert them to a vector before use.
+*/
+
+/** @help variables;vectors Examples
+A vector of 0/1 variables:
+
+BOOL myvec[5]
+
+A matrix of discrete variables:
+
+DISCRETE sudoku[9,9] {1..9}
+
+A 3D tensor of 0/1s:
+
+BOOL mycube[3,3,2]
+
+One can create a vector from scalars and elements of vectors, etc.:
+
+alldiff([x,y,myvec[1],mymatrix[3,4]])
+
+When a matrix or tensor is constrained, it is treated as a vector
+whose entries have been strung out into a vector in index order with
+the rightmost index changing most quickly, e.g.
+
+alldiff(sudoku)
+
+is equivalent to
+
+alldiff([sudoku[0,0],...,sudoku[0,8],...,sudoku[8,0],...,sudoku[8,8]])
+
+Furthermore, with indices filled selectively and the remainder filled
+with underscores (_) the flattening applies only to the underscore
+indices:
+
+alldiff(sudoku[4,_])
+
+is equivalent to
+
+alldiff([sudoku[4,0],...,sudoku[4,8]])
+
+Lastly, one can optionally add square brackets ([]) around an
+expression to be flattened to make it look more like a vector:
+
+alldiff([sudoku[4,_]])
+
+is equivalent to
+
+alldiff(sudoku[4,_])
+*/
+
+/** @help variables;alias Description
+Specifying an alias is a way to give a variable another name. Aliases
+appear in the **VARIABLES** section of an input file. It is best
+described using some examples:
+
+ALIAS c = a
+
+ALIAS c[2,2] = [[myvar,b[2]],[b[1],anothervar]]
+*/
+
+/// Internal type used by AnyVarRef.
+struct AnyVarRef_Abstract
+{
+  virtual BOOL isBound() = 0;
+  virtual BOOL isAssigned() = 0;  
+  virtual DomainInt getAssignedValue() = 0;
+  virtual BOOL isAssignedValue(DomainInt i) = 0;
+  virtual BOOL inDomain(DomainInt b) = 0;
+  virtual BOOL inDomain_noBoundCheck(DomainInt b) = 0;
+  virtual DomainInt getMax() = 0;
+  virtual DomainInt getMin() = 0;
+  virtual unsigned getDepth() = 0;
+  virtual DynamicConstraint getAntecedent() = 0;
+  virtual int getId() = 0;
+  virtual DomainInt getInitialMax() const = 0;
+  virtual DomainInt getInitialMin() const = 0;
+  virtual void setMax(DomainInt i) = 0;
+  virtual void setMin(DomainInt i) = 0;
+  virtual void setAntecedent(DynamicConstraint) = 0;
+  virtual void setDepth(unsigned) = 0;
+  virtual void uncheckedAssign(DomainInt b) = 0;
+  virtual void propagateAssign(DomainInt b) = 0;
+  virtual void removeFromDomain(DomainInt b) = 0;
+  virtual void addTrigger(Trigger t, TrigType type) = 0;
+
+  virtual string virtual_to_string() = 0;
+  
+  virtual ~AnyVarRef_Abstract()
+  {}
+  
+  virtual int getDomainChange(DomainDelta d) = 0;
+#ifdef DYNAMICTRIGGERS
+  virtual void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999) = 0;
+#endif
+};
+
+/// Internal type used by AnyVarRef.
+template<typename VarRef>
+struct AnyVarRef_Concrete : public AnyVarRef_Abstract
+{
+
+  virtual BOOL isBound()
+  { return data.isBound();}
+  
+  VarRef data;
+  AnyVarRef_Concrete(const VarRef& _data) : data(_data)
+  {}
+  
+  AnyVarRef_Concrete() 
+  {}
+  
+  AnyVarRef_Concrete(const AnyVarRef_Concrete& b) : data(b.data)
+  {}
+  
+  virtual BOOL isAssigned()
+  { return data.isAssigned(); }
+  
+  virtual DomainInt getAssignedValue()
+  { return data.getAssignedValue(); }
+  
+  virtual BOOL isAssignedValue(DomainInt i)
+  { return data.isAssignedValue(i); }
+  
+  virtual BOOL inDomain(DomainInt b)
+  { return data.inDomain(b); }
+  
+  virtual BOOL inDomain_noBoundCheck(DomainInt b)
+  { return data.inDomain_noBoundCheck(b); }
+  
+  virtual DomainInt getMax()
+  { return data.getMax(); }
+  
+  virtual DomainInt getMin()
+  { return data.getMin(); }
+
+  virtual unsigned getDepth()
+  { return data.getDepth(); }
+
+  virtual DynamicConstraint getAntecedent()
+  { return data.getAntecedent(); }
+
+  virtual int getId()
+  { return data.getId(); }
+
+  virtual DomainInt getInitialMax() const
+  { return data.getInitialMax(); }
+  
+  virtual DomainInt getInitialMin() const
+  { return data.getInitialMin(); }
+  
+  virtual void setMax(DomainInt i)
+  { data.setMax(i); }
+  
+  virtual void setMin(DomainInt i)
+  { data.setMin(i); }
+  
+  virtual void setDepth(unsigned d)
+  { data.setDepth(d); }
+  
+  virtual void setAntecedent(DynamicConstraint dc)
+  { data.setAntecedent(dc); }
+  
+  virtual void uncheckedAssign(DomainInt b)
+  { data.uncheckedAssign(b); }
+  
+  virtual void propagateAssign(DomainInt b)
+  { data.propagateAssign(b); }
+  
+  virtual void removeFromDomain(DomainInt b)
+  { data.removeFromDomain(b); }
+  
+  virtual void addTrigger(Trigger t, TrigType type)
+  { data.addTrigger(t, type); }
+  
+  virtual string virtual_to_string()
+  { return to_string(data); }
+  
+  virtual ~AnyVarRef_Concrete()
+  {}
+  
+  int getDomainChange(DomainDelta d)
+  { return data.getDomainChange(d); }
+
+#ifdef DYNAMICTRIGGERS
+  void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data.addDynamicTrigger(t, type, pos); }
+#endif
+};
+
+/// Provides a method of wrapping any variable type in a general wrapper.
+class AnyVarRef
+{
+public:
+  static const BOOL isBool = false;
+  static const BoundType isBoundConst = Bound_Maybe;
+  shared_ptr<AnyVarRef_Abstract> data;
+  
+  BOOL isBound()
+  { return data->isBound();}
+  
+  template<typename VarRef>
+    AnyVarRef(const VarRef& _data) 
+  { data = shared_ptr<AnyVarRef_Abstract>(new AnyVarRef_Concrete<VarRef>(_data)); }
+  
+  AnyVarRef() 
+  {}
+  
+  AnyVarRef(const AnyVarRef& b) : data(b.data)
+  {}
+  
+  BOOL isAssigned()
+  { return data->isAssigned(); }
+  
+  DomainInt getAssignedValue()
+  { return data->getAssignedValue(); }
+  
+  BOOL isAssignedValue(DomainInt i)
+  { 
+    return data->isAssigned() &&
+    data->getAssignedValue() == i;
+  }
+  
+  BOOL inDomain(DomainInt b)
+  { return data->inDomain(b); }
+
+  BOOL inDomain_noBoundCheck(DomainInt b)
+  { return data->inDomain_noBoundCheck(b); }
+  
+  DomainInt getMax()
+  { return data->getMax(); }
+  
+  DomainInt getMin()
+  { return data->getMin(); }
+
+  unsigned getDepth()
+  { return data->getDepth(); }
+
+  DynamicConstraint getAntecedent()
+  { return data->getAntecedent(); }
+
+  int getId()
+  { return data->getId(); }
+
+  DomainInt getInitialMax() const
+  { return data->getInitialMax(); }
+  
+  DomainInt getInitialMin() const
+  { return data->getInitialMin(); }
+  
+  void setMax(DomainInt i)
+  { data->setMax(i); }
+  
+  void setMin(DomainInt i)
+  { data->setMin(i); }
+
+  void setDepth(unsigned d)
+  { data->setDepth(d); }
+
+  void setAntecedent(DynamicConstraint dc)
+  { data->setAntecedent(dc); }
+  
+  void uncheckedAssign(DomainInt b)
+  { data->uncheckedAssign(b); }
+  
+  void propagateAssign(DomainInt b)
+  { data->propagateAssign(b); }
+  
+  void removeFromDomain(DomainInt b)
+  { data->removeFromDomain(b); }
+
+  void addTrigger(Trigger t, TrigType type)
+  { data->addTrigger(t, type); }
+  
+  friend std::ostream& operator<<(std::ostream& o, const AnyVarRef& avr)
+  { return o << "AnyVarRef:" << avr.data->virtual_to_string(); }
+  
+  int getDomainChange(DomainDelta d)
+  { return data->getDomainChange(d); }
+  
+#ifdef DYNAMICTRIGGERS
+  void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data->addDynamicTrigger(t, type, pos); }
+#endif
+};
+
+
