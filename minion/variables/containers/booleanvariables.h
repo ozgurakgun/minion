@@ -173,7 +173,30 @@ struct BooleanContainer
   TriggerList trigger_list;
   /// When false, no variable can be altered. When true, no variables can be created.
   BOOL lock_m;
-  
+
+  vector<DynamicConstraint*> props; //push pointers to constraint that
+				    //propagate
+
+  AnyVarRef* conflict_var; //last conflicting variable
+  DynamicConstraint* last_clause; //last clause to propagate
+
+  void props_push() { 
+    props.push_back((DynamicConstraint*)0); 
+  }
+
+  void props_pop()
+  {
+    void* back;
+    while(props.back()) //while not null
+      props.pop_back();
+    props.pop_back(); //finally pop the null off too
+  }
+
+  void record_prop(DynamicConstraint* c) { 
+    cout << "pushing" << c << endl;
+    props.push_back(c); 
+  }
+
   data_type* value_ptr()
   { return static_cast<data_type*>(values_mem.get_ptr()); }
   

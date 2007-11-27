@@ -33,7 +33,8 @@ namespace Controller
   inline void world_push(StateObj* stateObj)
   {
     D_INFO(0,DI_SOLVER,"World Push");
-	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+    D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+    getVars(stateObj).getBooleanContainer().props_push();
     getMemory(stateObj).backTrack().world_push();
   }
   
@@ -44,6 +45,17 @@ namespace Controller
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
     getMemory(stateObj).backTrack().world_pop();
     getVars(stateObj).getBigRangevarContainer().bms_array.undo();
+  }
+
+  inline void world_pop(StateObj* stateObj, unsigned i) //jump back to depth i
+  {
+    D_INFO(0,DI_SOLVER,"World Pop");
+    D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+    getMemory(stateObj).backTrack().world_pop(i);
+    unsigned times = getMemory(stateObj).backTrack().current_depth() - i;
+    for(; times > 0; times--) {
+      getVars(stateObj).getBigRangevarContainer().bms_array.undo();    
+    }
   }
   
   inline void world_pop_all(StateObj* stateObj)

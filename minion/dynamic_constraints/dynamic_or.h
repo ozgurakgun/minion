@@ -109,7 +109,17 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
       }
     }
     //if we get here, we couldn't find a place to put the watch, do UP
-    var_array[other_var].propagateAssign(negs[other_var]);
+    VarRef& v = var_array[other_var];
+    if(v.getMax() - v.getMin()) { //two values remain
+      v.propagateAssign(negs[other_var]);
+      getVars(stateObj).getBooleanContainer().record_prop(this);
+      v.setAntecedent(this);
+      v.setDepth(getMemory(stateObj).backTrack().current_depth()); //current depth
+    } else { //wiping out domain
+      BooleanContainer& bc = getVars(stateObj).getBooleanContainer();
+      bc.conflict_var = &v;
+      bc.last_clause = this;
+    }
   }
 
   virtual BOOL check_assignment(vector<DomainInt> v)
@@ -129,6 +139,8 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
       vars.push_back(AnyVarRef(var_array[i]));
     return vars;  
   }
+
+  virtual vector<int>* get_signs() { return &negs; }
 };
 
 template<typename T>

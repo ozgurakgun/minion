@@ -201,9 +201,10 @@ public:
   /// Checks if an assignment is satisfied.
   /** This takes the variable order returned by, and is mainly only used by, get_table_constraint() */
   virtual BOOL check_assignment(vector<DomainInt>) {;};
-    
-  virtual ~DynamicConstraint()
-  {}
+
+  virtual vector<int>* get_signs() { return new vector<int>();};
+  
+  virtual ~DynamicConstraint() {}
 };
 
 
