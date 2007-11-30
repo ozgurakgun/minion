@@ -117,7 +117,7 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
       v.setDepth(getMemory(stateObj).backTrack().current_depth()); //current depth
     } else { //wiping out domain
       BooleanContainer& bc = getVars(stateObj).getBooleanContainer();
-      bc.conflict_var = &v;
+      bc.conflict_var = new AnyVarRef(v);
       bc.last_clause = this;
     }
   }

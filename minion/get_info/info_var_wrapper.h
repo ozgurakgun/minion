@@ -60,6 +60,15 @@ struct InfoRefType
     return data.getMin(); 
   }
 
+  unsigned getDepth()
+  { return data.getDepth(); }
+
+  DynamicConstraint* getAntecedent()
+  { return data.getAntecedent(); }
+
+  int getId()
+  { return data.getId(); }
+
   DomainInt getInitialMax() const
   {
     VAR_INFO_ADDONE(VAR_TYPE, getInitialMax);
@@ -83,6 +92,12 @@ struct InfoRefType
     VAR_INFO_ADDONE(VAR_TYPE, setMin);
     data.setMin(i); 
   }
+
+  void setDepth(unsigned d)
+  { data.setDepth(d); }
+
+  void setAntecedent(DynamicConstraint* dc)
+  { data.setAntecedent(dc); }
   
   void uncheckedAssign(DomainInt b)
   { 
