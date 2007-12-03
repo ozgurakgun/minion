@@ -105,6 +105,7 @@ namespace Controller
 	  
 	  maybe_print_search_state(stateObj, "Node: ", v);
 	  
+	  BOOL solution_found; //true if we just found a solution
 	  while(true)
 	  {
 		getState(stateObj).incrementNodeCount();
@@ -117,6 +118,7 @@ namespace Controller
 		// order.find_next_unassigned returns true if all variables assigned.
 		if(order.find_next_unassigned())
 		{  		  
+		  solution_found = true;
 		  // We have found a solution!
 		  check_sol_is_correct(stateObj);
 		  // This function may escape from search if solution limit
@@ -128,6 +130,7 @@ namespace Controller
 		}
 		else
 		{
+		  solution_found = false;
 		  maybe_print_search_state(stateObj, "Node: ", v);
 		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_left();
 		  world_push(stateObj);
@@ -135,7 +138,7 @@ namespace Controller
 		  order.branch_left();
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_left();
 		  prop(stateObj, v);
-		}
+     		}
 		
 		// Either search failed, or a solution was found.
 		while(getState(stateObj).isFailed())
@@ -144,8 +147,13 @@ namespace Controller
 		  
 		  if(order.finished_search())
 			return;
-
-		  unsigned bj_depth = conflict_learn(stateObj);
+		  
+		  unsigned bj_depth;
+		  if(!solution_found) //definitely a failure due to a conflict
+		    bj_depth = conflict_learn(stateObj);
+		  else
+		    bj_depth = getMemory(stateObj).backTrack().current_depth() - 1;
+		  
 		  world_pop(stateObj, bj_depth);
 		  maybe_print_search_action(stateObj, "bt");
 	  

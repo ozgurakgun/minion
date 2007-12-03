@@ -114,7 +114,7 @@ public:
   void world_pop(int i)
   {
     D_ASSERT(current_depth_m > i);
-    D_ASSERT(i > 0);
+    D_ASSERT(i >= 0);
     unsigned data_size = new_memory_block.getDataSize();
     current_depth_m = i;
     memcpy(new_memory_block.getDataPtr(), backtrack_data + current_depth_m * data_size, data_size);

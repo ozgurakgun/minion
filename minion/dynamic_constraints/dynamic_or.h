@@ -96,7 +96,7 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
   {
     size_t prev_var = dt->trigger_info();
     size_t other_var = watched[0] == prev_var ? watched[1] : watched[0];
-    for(int i = 1; i < no_vars; i++) {
+    for(int i = 1; i <= no_vars; i++) {
       size_t j = (last + i) % no_vars;
       VarRef& v = var_array[j];
       int neg = negs[j];
@@ -112,13 +112,16 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
     VarRef& v = var_array[other_var];
     if(v.getMax() - v.getMin()) { //two values remain
       v.propagateAssign(negs[other_var]);
+      cout << v << " has been set, it has addr " << &v << " and antecedent " << this << endl;
       getVars(stateObj).getBooleanContainer().record_prop(this);
       v.setAntecedent(this);
       v.setDepth(getMemory(stateObj).backTrack().current_depth()); //current depth
     } else { //wiping out domain
+      cout << v << " has failed, it had addr " << &v << " and this time " << this << " caused the problem" << endl;
       BooleanContainer& bc = getVars(stateObj).getBooleanContainer();
       bc.conflict_var = new AnyVarRef(v);
       bc.last_clause = this;
+      v.propagateAssign(negs[other_var]); //now force a conflict
     }
   }
 
@@ -126,7 +129,7 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
   {
     D_INFO(2, DI_OR, "Checking soln in or constraint");
     for(int i = 0; i < no_vars; i++)
-      if(v[i])
+      if(v[i] == negs[i])
 	return true;
     return false;
   }

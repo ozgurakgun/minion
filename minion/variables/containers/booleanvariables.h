@@ -134,7 +134,8 @@ struct BoolVarRef_internal
   { return depth; }
 
   DynamicConstraint* getAntecedent() const
-  { return antecedent; }
+  { cout << "returning " << antecedent << " using " << this << endl;
+    return antecedent; }
 
   int getId() const
   { return var_num; }
@@ -264,7 +265,9 @@ struct BooleanContainer
   { bvr.depth = d; }
   
   void setAntecedent(BoolVarRef_internal& d, DynamicConstraint* a)
-  { d.antecedent = a; }
+  { cout << "setting " << a << "using ref " << &d << endl;
+  
+    d.antecedent = a; }
   
   void removeFromDomain(const BoolVarRef_internal& d, DomainInt b)
   {
