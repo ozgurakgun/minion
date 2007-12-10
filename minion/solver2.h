@@ -45,16 +45,19 @@ namespace Controller
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
     getMemory(stateObj).backTrack().world_pop();
     getVars(stateObj).getBigRangevarContainer().bms_array.undo();
+    getVars(stateObj).getBooleanContainer().props_pop();
   }
 
   inline void world_pop(StateObj* stateObj, unsigned i) //jump back to depth i
   {
-    D_INFO(0,DI_SOLVER,"World Pop");
+    D_INFO(0,DI_SOLVER,"World Pop D");
     D_ASSERT(getQueue(stateObj).isQueuesEmpty());
-    getMemory(stateObj).backTrack().world_pop(i);
     unsigned times = getMemory(stateObj).backTrack().current_depth() - i;
+    getMemory(stateObj).backTrack().world_pop(i);
+    cout << "times:" << times << endl;
     for(; times > 0; times--) {
       getVars(stateObj).getBigRangevarContainer().bms_array.undo();    
+      getVars(stateObj).getBooleanContainer().props_pop();
     }
   }
   

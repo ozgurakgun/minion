@@ -63,9 +63,6 @@ struct BoolVarRef_internal
   MoveablePointer data_position;
   MemOffset value_position;
 
-  unsigned depth;
-  DynamicConstraint* antecedent;
-  
 #ifdef MANY_VAR_CONTAINERS
   BooleanContainer* boolCon;
   BooleanContainer& getCon() const { return *boolCon; }
@@ -129,13 +126,10 @@ struct BoolVarRef_internal
     if(!isAssigned()) return 1;
     return getAssignedValue();
   }
-  
-  unsigned getDepth() const
-  { return depth; }
 
-  DynamicConstraint* getAntecedent() const
-  { cout << "returning " << antecedent << " using " << this << endl;
-    return antecedent; }
+  unsigned getDepth() const;
+
+  DynamicConstraint* getAntecedent() const;
 
   int getId() const
   { return var_num; }
@@ -181,16 +175,22 @@ struct BooleanContainer
   AnyVarRef* conflict_var; //last conflicting variable
   DynamicConstraint* last_clause; //last clause to propagate
 
+  vector<DynamicConstraint*> antecedents; //index by var no
+  vector<unsigned> depths; //index by var no
+
   void props_push() { 
     props.push_back((DynamicConstraint*)0); 
   }
 
   void props_pop()
   {
-    void* back;
-    while(props.back()) //while not null
+    cout << "before: " << props << endl;
+    DynamicConstraint* last;
+    do {
+      last = props.back();
       props.pop_back();
-    props.pop_back(); //finally pop the null off too
+    } while(last != (DynamicConstraint*)0);
+    cout << "after: " << props << endl;
   }
 
   void record_prop(DynamicConstraint* c) { 
@@ -224,6 +224,9 @@ struct BooleanContainer
   {
     D_ASSERT(!lock_m);
     var_count_m = bool_count;
+    
+    antecedents = vector<DynamicConstraint*>(bool_count, (DynamicConstraint*)0);
+    depths = vector<unsigned>(bool_count, 0);
 
 	int required_mem = var_count_m / 8 + 1;
 	// Round up to nearest data_type block
@@ -236,7 +239,7 @@ struct BooleanContainer
   BoolVarRef get_var_num(int i);
   
   
-  void setMax(const BoolVarRef_internal& d, DomainInt i) 
+  void setMax(BoolVarRef_internal& d, DomainInt i) 
   {
     if(i < 0)
 	{
@@ -249,7 +252,7 @@ struct BooleanContainer
       propagateAssign(d,0);
   }
   
-  void setMin(const BoolVarRef_internal& d, DomainInt i) 
+  void setMin(BoolVarRef_internal& d, DomainInt i) 
   {
     if(i > 1)
 	{
@@ -262,14 +265,18 @@ struct BooleanContainer
   }
 
   void setDepth(BoolVarRef_internal& bvr, unsigned d)
-  { bvr.depth = d; }
+  { 
+    cout << "setting depth " << d << " for " << &d << " for var " << bvr << endl;
+    depths[bvr.var_num] = d; 
+  }
   
   void setAntecedent(BoolVarRef_internal& d, DynamicConstraint* a)
-  { cout << "setting " << a << "using ref " << &d << endl;
+  { 
+    cout << "setting " << a << "using ref " << &d << " for var " << d << endl;
+    antecedents[d.var_num] = a; 
+  }
   
-    d.antecedent = a; }
-  
-  void removeFromDomain(const BoolVarRef_internal& d, DomainInt b)
+  void removeFromDomain(BoolVarRef_internal& d, DomainInt b)
   {
     D_ASSERT(lock_m && d.var_num < var_count_m);
     if(b != 0 && b != 1)
@@ -284,15 +291,17 @@ struct BooleanContainer
       uncheckedAssign(d,1-b);
   }
   
-  void uncheckedAssign(const BoolVarRef_internal& d, DomainInt b)
+  void uncheckedAssign(BoolVarRef_internal& d, DomainInt b)
   {
     D_ASSERT(lock_m && d.var_num < var_count_m);
     D_ASSERT(!d.isAssigned());
-	if(b!=0 && b!=1)
+    depths[d.var_num] = getMemory(stateObj).backTrack().current_depth();
+    cout << "set depth for " << d << " to " << getMemory(stateObj).backTrack().current_depth() << endl;
+    if(b!=0 && b!=1)
     {
-	  getState(stateObj).setFailed(true);
-	  return;
-	}
+      getState(stateObj).setFailed(true);
+      return;
+    }
     assign_ptr()[d.data_offset] |= d.shift_offset;
     
     trigger_list.push_assign(d.var_num, b);
@@ -313,10 +322,11 @@ struct BooleanContainer
     }
   }
   
-  void propagateAssign(const BoolVarRef_internal& d, DomainInt b)
+  void propagateAssign(BoolVarRef_internal& d, DomainInt b)
   {
-    if(!d.isAssigned()) 
+    if(!d.isAssigned()) {
       uncheckedAssign(d,b);
+    }
     else
     {
       if(d.getAssignedValue() != b)
@@ -367,6 +377,20 @@ inline BoolVarRef BooleanContainer::get_var_num(int i)
   D_ASSERT(i < (int)var_count_m);
   return BoolVarRef(BoolVarRef_internal(i, this));
 }
+
+inline unsigned BoolVarRef_internal::getDepth() const
+{ 
+  cout << "returning depth " << GET_LOCAL_CON().depths[var_num] << " using " << *this << endl;
+  return GET_LOCAL_CON().depths[var_num]; 
+}
+
+inline DynamicConstraint* BoolVarRef_internal::getAntecedent() const
+{ 
+  cout << "returning " << GET_LOCAL_CON().antecedents[var_num] << " using " << *this << endl;
+  return GET_LOCAL_CON().antecedents[var_num]; 
+}
+
+
 
 inline BoolVarRef_internal::BoolVarRef_internal(int value, BooleanContainer* b_con) : 
   data_offset(value / (sizeof(data_type)*8)), var_num(value),  

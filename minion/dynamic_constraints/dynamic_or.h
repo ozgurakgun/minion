@@ -110,19 +110,20 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
     }
     //if we get here, we couldn't find a place to put the watch, do UP
     VarRef& v = var_array[other_var];
-    if(v.getMax() - v.getMin()) { //two values remain
-      v.propagateAssign(negs[other_var]);
+    int neg = negs[other_var];
+    if(!v.isAssigned()) { //two values remain
+      v.propagateAssign(neg);
       cout << v << " has been set, it has addr " << &v << " and antecedent " << this << endl;
       getVars(stateObj).getBooleanContainer().record_prop(this);
       v.setAntecedent(this);
       v.setDepth(getMemory(stateObj).backTrack().current_depth()); //current depth
-    } else { //wiping out domain
+    } else if(!v.inDomain(neg)) { //wiping out domain
       cout << v << " has failed, it had addr " << &v << " and this time " << this << " caused the problem" << endl;
       BooleanContainer& bc = getVars(stateObj).getBooleanContainer();
       bc.conflict_var = new AnyVarRef(v);
       bc.last_clause = this;
-      v.propagateAssign(negs[other_var]); //now force a conflict
-    }
+      v.propagateAssign(neg); //now force a conflict
+    } //else already satisfied
   }
 
   virtual BOOL check_assignment(vector<DomainInt> v)
