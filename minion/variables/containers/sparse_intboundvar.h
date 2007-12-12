@@ -259,6 +259,9 @@ struct SparseBoundVarContainer {
   unsigned getDepth(SparseBoundVarRef_internal<BoundType> d) const
   { return 0; }
 
+  unsigned getSeqNo(SparseBoundVarRef_internal<BoundType> d) const
+  { return 0; }
+
   DynamicConstraint* getAntecedent(SparseBoundVarRef_internal<BoundType> d) const
   { return NULL; }
 

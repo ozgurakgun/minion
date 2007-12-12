@@ -129,6 +129,8 @@ struct BoolVarRef_internal
 
   unsigned getDepth() const;
 
+  unsigned getSeqNo() const;
+
   DynamicConstraint* getAntecedent() const;
 
   int getId() const
@@ -158,7 +160,7 @@ struct BooleanContainer
 {
   StateObj* stateObj;
   BooleanContainer(StateObj* _stateObj) : stateObj(_stateObj), var_count_m(0), lock_m(false), 
-                                          trigger_list(stateObj, false)
+       trigger_list(stateObj, false), curr_seq_no(0)
   {}
   
   static const int width = 7;
@@ -169,35 +171,14 @@ struct BooleanContainer
   /// When false, no variable can be altered. When true, no variables can be created.
   BOOL lock_m;
 
-  vector<DynamicConstraint*> props; //push pointers to constraint that
-				    //propagate
-
   AnyVarRef* conflict_var; //last conflicting variable
   DynamicConstraint* last_clause; //last clause to propagate
 
   vector<DynamicConstraint*> antecedents; //index by var no
   vector<unsigned> depths; //index by var no
-
-  void props_push() { 
-    props.push_back((DynamicConstraint*)0); 
-  }
-
-  void props_pop()
-  {
-    cout << "before: " << props << endl;
-    DynamicConstraint* last;
-    do {
-      last = props.back();
-      props.pop_back();
-    } while(last != (DynamicConstraint*)0);
-    cout << "after: " << props << endl;
-  }
-
-  void record_prop(DynamicConstraint* c) { 
-    cout << "pushing" << c << endl;
-    props.push_back(c); 
-  }
-
+  vector<unsigned> seq_nos; //lower numbers for earlier propagations
+  unsigned curr_seq_no; //current number of propagations that have happened
+  
   data_type* value_ptr()
   { return static_cast<data_type*>(values_mem.get_ptr()); }
   
@@ -227,6 +208,7 @@ struct BooleanContainer
     
     antecedents = vector<DynamicConstraint*>(bool_count, (DynamicConstraint*)0);
     depths = vector<unsigned>(bool_count, 0);
+    seq_nos = vector<unsigned>(bool_count, 0);
 
 	int required_mem = var_count_m / 8 + 1;
 	// Round up to nearest data_type block
@@ -274,6 +256,7 @@ struct BooleanContainer
   { 
     cout << "setting " << a << "using ref " << &d << " for var " << d << endl;
     antecedents[d.var_num] = a; 
+    seq_nos[d.var_num] = curr_seq_no++; //remember sequence no
   }
   
   void removeFromDomain(BoolVarRef_internal& d, DomainInt b)
@@ -296,6 +279,9 @@ struct BooleanContainer
     D_ASSERT(lock_m && d.var_num < var_count_m);
     D_ASSERT(!d.isAssigned());
     depths[d.var_num] = getMemory(stateObj).backTrack().current_depth();
+    //assume this is a search decision, the propagator can set the true
+    //antecedent
+    antecedents[d.var_num] = 0; 
     cout << "set depth for " << d << " to " << getMemory(stateObj).backTrack().current_depth() << endl;
     if(b!=0 && b!=1)
     {
@@ -382,6 +368,12 @@ inline unsigned BoolVarRef_internal::getDepth() const
 { 
   cout << "returning depth " << GET_LOCAL_CON().depths[var_num] << " using " << *this << endl;
   return GET_LOCAL_CON().depths[var_num]; 
+}
+
+inline unsigned BoolVarRef_internal::getSeqNo() const
+{ 
+  cout << "returning seqno " << GET_LOCAL_CON().seq_nos[var_num] << " using " << *this << endl;
+  return GET_LOCAL_CON().seq_nos[var_num]; 
 }
 
 inline DynamicConstraint* BoolVarRef_internal::getAntecedent() const

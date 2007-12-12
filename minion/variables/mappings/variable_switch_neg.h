@@ -81,6 +81,8 @@ struct SwitchNeg
 
   unsigned getDepth() { return 0; }
 
+  unsigned getSeqNo() { return 0; }
+
   DynamicConstraint* getAntecedent() { return NULL; }
 
   int getId() { return 0; }

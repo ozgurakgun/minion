@@ -44,7 +44,7 @@ public:
   DynamicConstraint* constraint;
   /// A small space for constraints to store trigger-specific information.
   int _trigger_info;
-  
+
   /// Wrapper function for _trigger_info.
   int& trigger_info()
   { return _trigger_info; }
@@ -53,7 +53,8 @@ public:
   DynamicTrigger* next;
 
 
-  DynamicTrigger(DynamicConstraint* c) : constraint(c), prev(NULL), next(NULL)
+  DynamicTrigger(DynamicConstraint* c) : 
+    constraint(c), prev(NULL), next(NULL)
   { D_DATA(sanity_check = 1234);}
   
   DynamicTrigger() : constraint(NULL)
@@ -149,7 +150,7 @@ public:
 class DynamicConstraint
 {
 public:
-  
+
   StateObj* stateObj;
   
   DynamicConstraint(StateObj* _stateObj) : stateObj(_stateObj)
@@ -206,7 +207,6 @@ public:
   
   virtual ~DynamicConstraint() {}
 };
-
 
 inline void DynamicTrigger::propagate()
 { 

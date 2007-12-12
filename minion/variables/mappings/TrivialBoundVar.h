@@ -75,6 +75,9 @@ struct TrivialBoundVar
   unsigned getDepth() const
   { return 0; }
 
+  unsigned getSeqNo() const
+  { return 0; }
+
   DynamicConstraint* getAntecedent() const
   { return NULL; }
 

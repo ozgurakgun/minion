@@ -6,6 +6,8 @@
    $Id: standard_search.h 778 2007-11-11 17:19:48Z azumanga $
 */
 
+#include <iostream>
+#include <iomanip>
 #include "common_search.h"
 
 namespace Controller
@@ -23,6 +25,8 @@ namespace Controller
     int id; //variable ID
     int neg; //negation, 0 iff negated
     unsigned depth; //depth set
+    DynamicConstraint* antecedent; //cause of instantiation (0 for search var)
+    unsigned ant_seq_no; //sequence number of antecedent propagation (> is later)
   };
 
   inline void print_clause(list<literal>& c)
@@ -42,9 +46,9 @@ namespace Controller
   //themselves simplified.
   inline void combine(list<literal>& c1, list<literal>& c2)
   {
-    cout << "Combining the following:" << endl;
-    print_clause(c1);
-    print_clause(c2);
+    //cout << "Combining the following:" << endl;
+    //print_clause(c1);
+    //print_clause(c2);
     list<literal>::iterator c1curr = c1.begin();
     list<literal>::iterator c1end = c1.end();
     list<literal>::iterator c2curr = c2.begin();
@@ -69,8 +73,8 @@ namespace Controller
       c1.insert(c1end, *c2curr);
       c2curr++;
     }
-    cout << "to produce" << endl;
-    print_clause(c1);
+    //cout << "to produce" << endl;
+    //print_clause(c1);
   }
 
   inline unsigned count_curr_depth(list<literal>& c, unsigned depth)
@@ -102,13 +106,11 @@ namespace Controller
       tmp.id = tmp.var->getId();
       tmp.neg = (*negs)[i];
       tmp.depth = tmp.var->getDepth();
+      tmp.antecedent = tmp.var->getAntecedent();
+      tmp.ant_seq_no = tmp.var->getSeqNo();
       clause.push_back(tmp);
     }
-    cout << "before sort:" << endl;
-    print_clause(clause);
     clause.sort(compare_literal);
-    cout << "after sort" << endl;
-    print_clause(clause);
   }
 
   //Learn a conflict and return a depth to jump back to. Clause list data
@@ -125,28 +127,33 @@ namespace Controller
 
     //Begin by resolving the other clause contributing to the
     //conflicting variable.
-    vector<DynamicConstraint*>& props = bc.props; //constraints that have fired
     list<literal> other_conflicting;
     build_clause(other_conflicting, bc.last_clause);
     combine(clause, other_conflicting);
 
-    //Now we have a cut of the implication graph (clause) but we will
-    //resolve clauses until we reach the first unique implication
-    //point.
-    size_t props_pos = props.size() - 1; //most recent clause position
-    while(count_curr_depth(clause, curr_depth) != 1) {
-      DynamicConstraint* next;
-      do { //get next clause that fired
-	next = props[props_pos];
-	props_pos--;
-      } while(next == NULL);
-      list<literal> next_clause;
-      build_clause(next_clause, next);
-      combine(clause, next_clause);
+    //Now we have a cut of the implication graph (clause) but we will resolve
+    //antecedent clauses in any order until we have only decision variables.
+    while(true) {
+      list<literal>::iterator curr = clause.begin();
+      list<literal>::iterator end = clause.end();
+      DynamicConstraint* next = 0;
+      while(curr != end && next == 0) {
+	next = (*curr).antecedent;
+	curr++;
+      }
+      if(next != 0) {
+	list<literal> next_clause;
+	build_clause(next_clause, next);
+	combine(clause, next_clause);
+      } else {
+	break; //nothing to resolve, finish now
+      }
     }
-    
     //do something with successfully created conflict clause
+    cout << "final clause: " << endl;
+    print_clause(clause);
     return getMemory(stateObj).backTrack().current_depth() - 1;
+    
   }
 
   template<typename VarOrder, typename Variables, typename Propogator>
@@ -186,7 +193,6 @@ namespace Controller
 		  cout << "depth before push:" << getMemory(stateObj).backTrack().current_depth() << endl;
 		  world_push(stateObj);
 		  cout << "depth after push:" << getMemory(stateObj).backTrack().current_depth() << endl;
-		  cout << getVars(stateObj).getBooleanContainer().props << endl;
 		  order.branch_left();
 		  cout << "depth after branch:" << getMemory(stateObj).backTrack().current_depth() << endl;
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_left();
@@ -198,24 +204,41 @@ namespace Controller
 		while(getState(stateObj).isFailed())
 		{
 		  getState(stateObj).setFailed(false);
-		  
-		  if(order.finished_search()) {
-		    cout << "finished search" << endl;
-		    return;
-		  }
-		  
+
 		  unsigned bj_depth;
+/* 		  vector<DynamicConstraint*>& antecedents = */
+/* 		    getVars(stateObj).getBooleanContainer().antecedents; */
+/* 		  vector<unsigned>& depths = */
+/* 		    getVars(stateObj).getBooleanContainer().depths; */
+/* 		  vector<unsigned>& seq_nos = */
+/* 		    getVars(stateObj).getBooleanContainer().seq_nos; */
+/* 		  size_t a_s = antecedents.size(); */
+/* 		  cout << "implication graph:" << endl; */
+/* 		  for(size_t i = 0; i < a_s; i++) */
+/* 		    cout << "var " << i */
+/* 			 << ": A(" << setw(9) << antecedents[i] */
+/* 			 << ") @ " << setw(5) << depths[i] */
+/* 			 << " at " << setw(4) << seq_nos[i] << endl; */
 		  if(!solution_found) //definitely a failure due to a conflict
 		    bj_depth = conflict_learn(stateObj);
 		  else
 		    bj_depth = getMemory(stateObj).backTrack().current_depth() - 1;
-		  
+
+		  cout << "bj depth: " << bj_depth << endl;
+		  if(bj_depth == -1)
+		    return;
+		  		  
 		  world_pop(stateObj, bj_depth);
+		  order.find_next_unassigned();
+		  
 		  maybe_print_search_action(stateObj, "bt");
 	  
 		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_right();
 		  order.branch_right();
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_right();
+
+		  if(order.finished_search())
+		    return;
 
 		  set_optimise_and_propagate_queue(stateObj);
 		}

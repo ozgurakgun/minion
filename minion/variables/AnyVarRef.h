@@ -124,6 +124,7 @@ struct AnyVarRef_Abstract
   virtual DomainInt getMax() = 0;
   virtual DomainInt getMin() = 0;
   virtual unsigned getDepth() = 0;
+  virtual unsigned getSeqNo() = 0;
   virtual DynamicConstraint* getAntecedent() = 0;
   virtual int getId() = 0;
   virtual DomainInt getInitialMax() const = 0;
@@ -189,6 +190,9 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
 
   virtual unsigned getDepth()
   { return data.getDepth(); }
+
+  virtual unsigned getSeqNo()
+  { return data.getSeqNo(); }
 
   virtual DynamicConstraint* getAntecedent()
   { return data.getAntecedent(); }
@@ -288,6 +292,9 @@ public:
 
   unsigned getDepth()
   { return data->getDepth(); }
+
+  unsigned getSeqNo()
+  { return data->getSeqNo(); }
 
   DynamicConstraint* getAntecedent()
   { return data->getAntecedent(); }

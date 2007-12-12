@@ -34,7 +34,6 @@ namespace Controller
   {
     D_INFO(0,DI_SOLVER,"World Push");
     D_ASSERT(getQueue(stateObj).isQueuesEmpty());
-    getVars(stateObj).getBooleanContainer().props_push();
     getMemory(stateObj).backTrack().world_push();
   }
   
@@ -45,7 +44,6 @@ namespace Controller
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
     getMemory(stateObj).backTrack().world_pop();
     getVars(stateObj).getBigRangevarContainer().bms_array.undo();
-    getVars(stateObj).getBooleanContainer().props_pop();
   }
 
   inline void world_pop(StateObj* stateObj, unsigned i) //jump back to depth i
@@ -57,7 +55,6 @@ namespace Controller
     cout << "times:" << times << endl;
     for(; times > 0; times--) {
       getVars(stateObj).getBigRangevarContainer().bms_array.undo();    
-      getVars(stateObj).getBooleanContainer().props_pop();
     }
   }
   

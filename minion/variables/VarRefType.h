@@ -77,6 +77,9 @@ struct VarRefType
   unsigned getDepth()
   { return GET_CONTAINER().getDepth(data); }
   
+  unsigned getSeqNo()
+  { return GET_CONTAINER().getSeqNo(data); }
+  
   DynamicConstraint* getAntecedent()
   { return GET_CONTAINER().getAntecedent(data); }
 
@@ -171,6 +174,9 @@ struct QuickVarRefType
   unsigned getDepth()
   { return data.getDepth(); }
 
+  unsigned getSeqNo()
+  { return data.getSeqNo(); }
+
   DynamicConstraint* getAntecedent()
   { return data.getAntecedent(); }
 
@@ -255,6 +261,9 @@ struct CompleteVarRefType
 
   unsigned getDepth()
   { return (data.getCon()).getDepth(data); }
+
+  unsigned getSeqNo()
+  { return (data.getCon()).getSeqNo(data); }
 
   DynamicConstraint* getAntecedent()
   { return (data.getCon()).getAntecedent(data); }

@@ -63,6 +63,9 @@ struct InfoRefType
   unsigned getDepth()
   { return data.getDepth(); }
 
+  unsigned getSeqNo()
+  { return data.getSeqNo(); }
+
   DynamicConstraint* getAntecedent()
   { return data.getAntecedent(); }
 

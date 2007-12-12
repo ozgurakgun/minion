@@ -122,6 +122,9 @@ struct BoundVarRef_internal
   unsigned getDepth() const
   { return 0; }
 
+  unsigned getSeqNo() const
+  { return 0; }
+
   DynamicConstraint* getAntecedent() const
   { return NULL; }
 
@@ -252,6 +255,9 @@ struct BoundVarContainer {
   }
   
   unsigned getDepth(const BoundVarRef_internal<BoundType>& d) const
+  { return 0; }
+  
+  unsigned getSeqNo(const BoundVarRef_internal<BoundType>& d) const
   { return 0; }
   
   DynamicConstraint* getAntecedent(const BoundVarRef_internal<BoundType>& d) const

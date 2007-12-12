@@ -114,7 +114,6 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
     if(!v.isAssigned()) { //two values remain
       v.propagateAssign(neg);
       cout << v << " has been set, it has addr " << &v << " and antecedent " << this << endl;
-      getVars(stateObj).getBooleanContainer().record_prop(this);
       v.setAntecedent(this);
       v.setDepth(getMemory(stateObj).backTrack().current_depth()); //current depth
     } else if(!v.inDomain(neg)) { //wiping out domain
