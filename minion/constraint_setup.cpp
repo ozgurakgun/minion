@@ -20,7 +20,7 @@ void lock(StateObj* stateObj)
 #ifdef DYNAMICTRIGGERS
   int dynamic_size = getState(stateObj).getDynamicConstraintList().size();
   for(int i = 0; i < dynamic_size; ++i)
-	getState(stateObj).getDynamicConstraintList()[i]->setup();
+    getState(stateObj).getDynamicConstraintList()[i]->setup();
 #endif
   getMemory(stateObj).backTrack().lock();
   getMemory(stateObj).nonBackTrack().lock();

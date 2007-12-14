@@ -14,6 +14,7 @@ namespace Controller
 {
 
 #include "VariableOrders.h"
+#include "../dynamic_constraints/dynamic_or.h"
   
   /// Variable Order objects
   // These need the following functions:
@@ -113,15 +114,15 @@ namespace Controller
     clause.sort(compare_literal);
   }
 
-  //Learn a conflict and return a depth to jump back to. Clause list data
-  //structure is sorted by var_id throughout.
-  inline unsigned conflict_learn(StateObj* stateObj)
+  //Learn a conflict and return a depth to jump back to. <clause> data structure
+  //is sorted by var_id throughout. Conflict clause is written into <clause>.
+  inline unsigned conflict_learn(StateObj* stateObj, list<literal>& clause)
   {
     BooleanContainer& bc = getVars(stateObj).getBooleanContainer();
     AnyVarRef* conflict_var = bc.conflict_var;
 
     //create initial clause based on clause that fired just before conflict
-    list<literal> clause;
+    clause.clear();
     build_clause(clause, conflict_var->getAntecedent());
     unsigned const curr_depth = getMemory(stateObj).backTrack().current_depth();
 
@@ -152,10 +153,42 @@ namespace Controller
     //do something with successfully created conflict clause
     cout << "final clause: " << endl;
     print_clause(clause);
-    return getMemory(stateObj).backTrack().current_depth() - 1;
-    
+    list<literal>::iterator curr = clause.begin();
+    list<literal>::iterator end = clause.end();
+    unsigned largest = (*curr).depth;
+    unsigned next_largest = 0; //if only 1 literal in clause jump to root
+    curr++;
+    while(curr != end) {
+      if((*curr).depth > largest) {
+	next_largest = largest;
+	largest = (*curr).depth;
+      }
+      curr++;
+    }
+    return next_largest;
   }
 
+  //the clause contains a conjunction that would cause a conflict, learn
+  //NOT the conjunction, i.e. the disjunction of the negated literals
+  inline void learn_clause(StateObj* stateObj, list<literal>& clause) 
+  {
+    vector<AnyVarRef> vars;
+    vector<int> negs;
+    list<literal>::iterator curr = clause.begin();
+    list<literal>::iterator end = clause.end();
+    while(curr != end) {
+      literal& lit = (*curr);
+      vars.push_back(*(lit.var));
+      negs.push_back(lit.neg ? 0 : 1); //negate
+      curr++;
+    }
+    BoolOrConstraintDynamic<vector<AnyVarRef> >* cc = 
+      new BoolOrConstraintDynamic<vector<AnyVarRef> >(stateObj, vars, negs);
+    getState(stateObj).addDynamicConstraint(cc);
+    cc->setup();
+    cc->full_propagate();
+  }
+  
   template<typename VarOrder, typename Variables, typename Propogator>
 	inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v, Propogator prop = PropogateGAC())
   {
@@ -206,21 +239,9 @@ namespace Controller
 		  getState(stateObj).setFailed(false);
 
 		  unsigned bj_depth;
-/* 		  vector<DynamicConstraint*>& antecedents = */
-/* 		    getVars(stateObj).getBooleanContainer().antecedents; */
-/* 		  vector<unsigned>& depths = */
-/* 		    getVars(stateObj).getBooleanContainer().depths; */
-/* 		  vector<unsigned>& seq_nos = */
-/* 		    getVars(stateObj).getBooleanContainer().seq_nos; */
-/* 		  size_t a_s = antecedents.size(); */
-/* 		  cout << "implication graph:" << endl; */
-/* 		  for(size_t i = 0; i < a_s; i++) */
-/* 		    cout << "var " << i */
-/* 			 << ": A(" << setw(9) << antecedents[i] */
-/* 			 << ") @ " << setw(5) << depths[i] */
-/* 			 << " at " << setw(4) << seq_nos[i] << endl; */
+		  list<literal> clause;
 		  if(!solution_found) //definitely a failure due to a conflict
-		    bj_depth = conflict_learn(stateObj);
+		    bj_depth = conflict_learn(stateObj, clause);
 		  else
 		    bj_depth = getMemory(stateObj).backTrack().current_depth() - 1;
 
@@ -229,13 +250,17 @@ namespace Controller
 		    return;
 		  		  
 		  world_pop(stateObj, bj_depth);
-		  order.find_next_unassigned();
+
+		  //learn clause, and do pseudo right branch since clause is asserting
+		  learn_clause(stateObj, clause); 
+		  
+		  //order.find_next_unassigned();
 		  
 		  maybe_print_search_action(stateObj, "bt");
 	  
-		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_right();
-		  order.branch_right();
-		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_right();
+		  //getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_right();
+		  //order.branch_right();
+		  //getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_right();
 
 		  if(order.finished_search())
 		    return;

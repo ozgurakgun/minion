@@ -33,6 +33,23 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
 
   virtual string constraint_name()
   { return "BoolOr"; }
+
+  DynamicTrigger* dts;
+
+  DynamicTrigger* dynamic_trigger_start() { return dts; }
+  
+  int dynamic_trigger_num(DynamicTrigger* trig) { return trig - dts; }
+
+  //Override creation of dynamic triggers, use heap memory and no movable
+  //pointers. These can be created at any time.
+  virtual void setup()
+  {
+    int trigs = dynamic_trigger_count();
+    D_ASSERT(trigs > 0);
+    dts = new DynamicTrigger[trigs];
+    for(int i = 0; i < trigs; i++) 
+      new (dts+i) DynamicTrigger(this);
+  }
   
   VarArray var_array;
   vector<int> negs; //negs[i]==0 iff var_array[i] is negated, NB. this

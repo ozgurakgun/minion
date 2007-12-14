@@ -248,13 +248,11 @@ struct BooleanContainer
 
   void setDepth(BoolVarRef_internal& bvr, unsigned d)
   { 
-    cout << "setting depth " << d << " for " << &d << " for var " << bvr << endl;
     depths[bvr.var_num] = d; 
   }
   
   void setAntecedent(BoolVarRef_internal& d, DynamicConstraint* a)
   { 
-    cout << "setting " << a << "using ref " << &d << " for var " << d << endl;
     antecedents[d.var_num] = a; 
     seq_nos[d.var_num] = curr_seq_no++; //remember sequence no
   }
@@ -282,7 +280,6 @@ struct BooleanContainer
     //assume this is a search decision, the propagator can set the true
     //antecedent
     antecedents[d.var_num] = 0; 
-    cout << "set depth for " << d << " to " << getMemory(stateObj).backTrack().current_depth() << endl;
     if(b!=0 && b!=1)
     {
       getState(stateObj).setFailed(true);
@@ -366,19 +363,16 @@ inline BoolVarRef BooleanContainer::get_var_num(int i)
 
 inline unsigned BoolVarRef_internal::getDepth() const
 { 
-  cout << "returning depth " << GET_LOCAL_CON().depths[var_num] << " using " << *this << endl;
   return GET_LOCAL_CON().depths[var_num]; 
 }
 
 inline unsigned BoolVarRef_internal::getSeqNo() const
 { 
-  cout << "returning seqno " << GET_LOCAL_CON().seq_nos[var_num] << " using " << *this << endl;
   return GET_LOCAL_CON().seq_nos[var_num]; 
 }
 
 inline DynamicConstraint* BoolVarRef_internal::getAntecedent() const
 { 
-  cout << "returning " << GET_LOCAL_CON().antecedents[var_num] << " using " << *this << endl;
   return GET_LOCAL_CON().antecedents[var_num]; 
 }
 

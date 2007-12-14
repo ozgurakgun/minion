@@ -172,7 +172,7 @@ public:
   { return trig - static_cast<DynamicTrigger*>(_DynamicTriggerCache.get_ptr()); }
   
   /// Actually creates the dynamic triggers.
-  void setup()
+  virtual void setup()
   {
     int trigs = dynamic_trigger_count();
     D_ASSERT(trigs >= 0);
