@@ -52,7 +52,6 @@ namespace Controller
     D_ASSERT(getQueue(stateObj).isQueuesEmpty());
     unsigned times = getMemory(stateObj).backTrack().current_depth() - i;
     getMemory(stateObj).backTrack().world_pop(i);
-    cout << "times:" << times << endl;
     for(; times > 0; times--) {
       getVars(stateObj).getBigRangevarContainer().bms_array.undo();    
     }

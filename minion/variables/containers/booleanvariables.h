@@ -171,7 +171,7 @@ struct BooleanContainer
   /// When false, no variable can be altered. When true, no variables can be created.
   BOOL lock_m;
 
-  AnyVarRef* conflict_var; //last conflicting variable
+  AnyVarRef conflict_var; //last conflicting variable
   DynamicConstraint* last_clause; //last clause to propagate
 
   vector<DynamicConstraint*> antecedents; //index by var no

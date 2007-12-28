@@ -22,7 +22,7 @@ namespace Controller
   // (Feel free to ignore the value ordering!)
 
   struct literal {
-    AnyVarRef* var; //variable
+    AnyVarRef var; //variable
     int id; //variable ID
     int neg; //negation, 0 iff negated
     unsigned depth; //depth set
@@ -103,12 +103,12 @@ namespace Controller
     clause.clear();
     literal tmp;
     for(size_t i = 0; i < vars_s; i++) {
-      tmp.var = &vars[i];
-      tmp.id = tmp.var->getId();
+      tmp.var = vars[i];
+      tmp.id = tmp.var.getId();
       tmp.neg = (*negs)[i];
-      tmp.depth = tmp.var->getDepth();
-      tmp.antecedent = tmp.var->getAntecedent();
-      tmp.ant_seq_no = tmp.var->getSeqNo();
+      tmp.depth = tmp.var.getDepth();
+      tmp.antecedent = tmp.var.getAntecedent();
+      tmp.ant_seq_no = tmp.var.getSeqNo();
       clause.push_back(tmp);
     }
     clause.sort(compare_literal);
@@ -119,11 +119,11 @@ namespace Controller
   inline unsigned conflict_learn(StateObj* stateObj, list<literal>& clause)
   {
     BooleanContainer& bc = getVars(stateObj).getBooleanContainer();
-    AnyVarRef* conflict_var = bc.conflict_var;
+    AnyVarRef& conflict_var = bc.conflict_var;
 
     //create initial clause based on clause that fired just before conflict
     clause.clear();
-    build_clause(clause, conflict_var->getAntecedent());
+    build_clause(clause, conflict_var.getAntecedent());
     unsigned const curr_depth = getMemory(stateObj).backTrack().current_depth();
 
     //Begin by resolving the other clause contributing to the
@@ -151,12 +151,14 @@ namespace Controller
       }
     }
     //do something with successfully created conflict clause
-    cout << "final clause: " << endl;
-    print_clause(clause);
+    //cout << "final clause: " << endl;
+    //print_clause(clause);
+    if(clause.size() == 1)
+      return 0; //jump back to root for unit clause
     list<literal>::iterator curr = clause.begin();
     list<literal>::iterator end = clause.end();
     unsigned largest = (*curr).depth;
-    unsigned next_largest = 0; //if only 1 literal in clause jump to root
+    unsigned next_largest = 0; //root is default second deepest level
     curr++;
     while(curr != end) {
       if((*curr).depth > largest) {
@@ -165,21 +167,20 @@ namespace Controller
       }
       curr++;
     }
-    return next_largest;
+    return largest == 0 ? -1 : next_largest; //if all 0, stop by bj to -1
   }
 
-  //the clause contains a conjunction that would cause a conflict, learn
-  //NOT the conjunction, i.e. the disjunction of the negated literals
-  inline void learn_clause(StateObj* stateObj, list<literal>& clause) 
+  //the clause causes a conflict, learn the clause
+  inline void learn_clause(StateObj* stateObj, const list<literal>& clause) 
   {
     vector<AnyVarRef> vars;
     vector<int> negs;
-    list<literal>::iterator curr = clause.begin();
-    list<literal>::iterator end = clause.end();
+    list<literal>::const_iterator curr = clause.begin();
+    list<literal>::const_iterator end = clause.end();
     while(curr != end) {
-      literal& lit = (*curr);
-      vars.push_back(*(lit.var));
-      negs.push_back(lit.neg ? 0 : 1); //negate
+      const literal& lit = (*curr);
+      vars.push_back(lit.var);
+      negs.push_back(lit.neg); //negate
       curr++;
     }
     BoolOrConstraintDynamic<vector<AnyVarRef> >* cc = 
@@ -245,16 +246,20 @@ namespace Controller
 		  else
 		    bj_depth = getMemory(stateObj).backTrack().current_depth() - 1;
 
-		  cout << "bj depth: " << bj_depth << endl;
+		  //int diff = getMemory(stateObj).backTrack().current_depth() - bj_depth;
+		  //cout << "bj depth: " << bj_depth << endl;
 		  if(bj_depth == -1)
 		    return;
 		  		  
 		  world_pop(stateObj, bj_depth);
-
-		  //learn clause, and do pseudo right branch since clause is asserting
-		  learn_clause(stateObj, clause); 
-		  
 		  //order.find_next_unassigned();
+		  
+		  //learn clause, and do pseudo right branch since clause is asserting
+		  if(!solution_found) {
+		    learn_clause(stateObj, clause); 
+		    print_clause(clause);
+		  } else
+		    order.branch_right(); //right branch after backtrack after solution
 		  
 		  maybe_print_search_action(stateObj, "bt");
 	  
@@ -266,12 +271,10 @@ namespace Controller
 		    return;
 
 		  set_optimise_and_propagate_queue(stateObj);
+		  
+		  solution_found = false;
 		}
 	  }
   }
   
 }
-
-
-
-

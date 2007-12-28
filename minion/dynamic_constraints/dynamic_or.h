@@ -130,13 +130,13 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
     int neg = negs[other_var];
     if(!v.isAssigned()) { //two values remain
       v.propagateAssign(neg);
-      cout << v << " has been set, it has addr " << &v << " and antecedent " << this << endl;
+      //cout << v << " has been set, it has addr " << &v << " and antecedent " << this << endl;
       v.setAntecedent(this);
       v.setDepth(getMemory(stateObj).backTrack().current_depth()); //current depth
     } else if(!v.inDomain(neg)) { //wiping out domain
-      cout << v << " has failed, it had addr " << &v << " and this time " << this << " caused the problem" << endl;
+      //cout << v << " has failed, it had addr " << &v << " and this time " << this << " caused the problem" << endl;
       BooleanContainer& bc = getVars(stateObj).getBooleanContainer();
-      bc.conflict_var = new AnyVarRef(v);
+      bc.conflict_var = AnyVarRef(v);
       bc.last_clause = this;
       v.propagateAssign(neg); //now force a conflict
     } //else already satisfied
