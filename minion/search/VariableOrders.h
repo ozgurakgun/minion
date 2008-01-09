@@ -59,56 +59,36 @@ struct VariableOrder
     // it only has to happen at most the log of the maximum search depth.
     pos = 0; 
   }
-  
-  
-  // Returns true if all variables assigned
-  bool find_next_unassigned()
+
+  bool find_next_unassigned() { return true; }
+  int get_current_pos() { return 0; }
+  bool finished_search() { return true; }
+  void force_branch_left(int) {;}
+
+  bool assigned_all()
   {
     pos = branch_method(var_order, pos);
-    return pos == var_order.size();
+    return pos == var_order.size(); //no branches left
   }
-  
-  bool finished_search()
-  {
-    //finished when run out of new values for alls vars
-    return pos == var_order.size();
-  }
-    
   
   void branch_left()
   {
     D_ASSERT(!var_order[pos].isAssigned()) ;
     DomainInt assign_val;
     if(val_order[pos]) {
-      assign_val = var_order[pos].getMin();
+      assign_val = 0;
     } else {
-      assign_val = var_order[pos].getMax();
+      assign_val = 1;
     }
     var_order[pos].uncheckedAssign(assign_val);
     maybe_print_search_assignment(stateObj, var_order[pos], assign_val, true);
     branches.push_back(pos);
   }
-  
-  int get_current_pos()
-  { return pos; }
-  
-  void force_branch_left(int new_pos) //may not work in SAT solver
-  {
-    D_ASSERT(new_pos >= 0 && new_pos < var_order.size())
-    D_ASSERT(!var_order[new_pos].isAssigned()) 
-    DomainInt assign_val;
-    if(val_order[new_pos]) {
-      assign_val = var_order[new_pos].getMin();
-    } else {
-      assign_val = var_order[new_pos].getMax();
-    }
-    var_order[new_pos].uncheckedAssign(assign_val);
-    maybe_print_search_assignment(stateObj, var_order[new_pos], assign_val, true, true);
-  }
-  
+
   void branch_right()
   {  
     int times = branches.size() - getMemory(stateObj).backTrack().current_depth();
+    cout << "times:" << times << endl;
     do {
       pos = branches.back();
       branches.pop_back();
@@ -116,23 +96,24 @@ struct VariableOrder
     } while(times != 0);
     if(val_order[pos])
     {
-      D_ASSERT(var_order[pos].getMax() >= var_order[pos].getMin() + 1);
-      maybe_print_search_assignment(stateObj, var_order[pos], var_order[pos].getMin(), false);
-      var_order[pos].setMin(var_order[pos].getMin() + 1);
+      maybe_print_search_assignment(stateObj, var_order[pos], 0, false);
+      var_order[pos].setMin(1);
     }
     else
     {
-      D_ASSERT(var_order[pos].getMax() >= var_order[pos].getMin() + 1);
-      maybe_print_search_assignment(stateObj, var_order[pos], var_order[pos].getMax(), false);
-      var_order[pos].setMax(var_order[pos].getMax() - 1);
+      maybe_print_search_assignment(stateObj, var_order[pos], 1, false);
+      var_order[pos].setMax(0);
     }
   }
 
-/*   void pop_branches(int diff) */
-/*   { */
-/*     while(diff-- != 0) */
-/*       branches.pop_back(); */
-/*   } */
+  void false_branch_right()
+  {
+    int times = branches.size() - getMemory(stateObj).backTrack().current_depth();
+    do {
+      branches.pop_back();
+      times--;
+    } while(times != 0);
+  }
 
 };
 

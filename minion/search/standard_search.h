@@ -149,10 +149,12 @@ namespace Controller
       } else {
 	break; //nothing to resolve, finish now
       }
+      if(35690 <= getState(stateObj).getNodeCount() && getState(stateObj).getNodeCount() <= 35693) {
+	print_clause(clause);
+	cout << "next: " << next << endl;
+      }
     }
     //do something with successfully created conflict clause
-    //cout << "final clause: " << endl;
-    //print_clause(clause);
     if(clause.size() == 1)
       return 0; //jump back to root for unit clause
     list<literal>::iterator curr = clause.begin();
@@ -170,7 +172,8 @@ namespace Controller
     return largest == 0 ? -1 : next_largest; //if all 0, stop by bj to -1
   }
 
-  //the clause causes a conflict, learn the clause
+  //the clause causes a conflict, learn the clause. If clause forces us into an
+  //old part of search tree, do nothing and return true.
   inline void learn_clause(StateObj* stateObj, const list<literal>& clause) 
   {
     vector<AnyVarRef> vars;
@@ -189,9 +192,24 @@ namespace Controller
     cc->setup();
     cc->full_propagate();
   }
+
+  inline bool deepest_literal(literal l1, literal l2) { return l1.depth > l2.depth; }
   
+  //return true if learning this clause right now would cause repetition of part
+  //of search tree.
+  inline bool causes_repeat(StateObj* stateObj, vector<int>& val_order, list<literal> clause)
+  {
+    clause.sort(deepest_literal);
+    const literal deepest = clause.front();
+    AnyVarRef d_var = deepest.var;
+    D_ASSERT(deepest.depth == getMemory(stateObj).backTrack().current_depth());
+    return val_order[deepest.id] 
+      ? !deepest.neg && d_var.getMin() == 1 //force 0 and repeat
+      : deepest.neg && d_var.getMax() == 0; //force 1 and repeat
+  }
+
   template<typename VarOrder, typename Variables, typename Propogator>
-	inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v, Propogator prop = PropogateGAC())
+    inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v, Propogator prop = PropogateGAC())
   {
 	  D_INFO(0, DI_SOLVER, "Non-Boolean Search");
 	  
@@ -208,7 +226,7 @@ namespace Controller
 		  return;
 		
 		// order.find_next_unassigned returns true if all variables assigned.
-		if(order.find_next_unassigned())
+		if(order.assigned_all())
 		{  		  
 		  // We have found a solution!
 		  check_sol_is_correct(stateObj);
@@ -241,35 +259,32 @@ namespace Controller
 
 		  unsigned bj_depth;
 		  list<literal> clause;
-		  if(!solution_found) //definitely a failure due to a conflict
+		  bool repeat;
+		  if(!solution_found) { //definitely a failure due to a conflict
 		    bj_depth = conflict_learn(stateObj, clause);
-		  else
+		    repeat = causes_repeat(stateObj, order.val_order, clause);
+		    cout << "repeat: " << repeat << endl;
+		  } else {
 		    bj_depth = getMemory(stateObj).backTrack().current_depth() - 1;
+		    repeat = false;
+		  }
 
-		  //int diff = getMemory(stateObj).backTrack().current_depth() - bj_depth;
-		  //cout << "bj depth: " << bj_depth << endl;
 		  if(bj_depth == -1)
 		    return;
 		  		  
+		  maybe_print_search_action(stateObj, "bt");
+		  
 		  world_pop(stateObj, bj_depth);
 		  //order.find_next_unassigned();
 		  
-		  //learn clause, and do pseudo right branch since clause is asserting
-		  if(!solution_found) {
+		  //learn clause, and do right branch
+		  if(!repeat && !solution_found) {
 		    learn_clause(stateObj, clause); 
 		    print_clause(clause);
+		    order.false_branch_right();
 		  } else
 		    order.branch_right(); //right branch after backtrack after solution
 		  
-		  maybe_print_search_action(stateObj, "bt");
-	  
-		  //getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_right();
-		  //order.branch_right();
-		  //getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_right();
-
-		  if(order.finished_search())
-		    return;
-
 		  set_optimise_and_propagate_queue(stateObj);
 		  
 		  solution_found = false;
