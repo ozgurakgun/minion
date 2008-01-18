@@ -39,28 +39,28 @@ typedef vector<shared_ptr<AbstractTriggerCreator> > triggerCollection;
   * A list of all the constraints in Minion.
   */
 
+  
+class SpecialTriggerable
+{
+    public:
+    virtual void special_check()
+  { 
+	cerr << "Serious internal error" << endl;
+	FAIL_EXIT(); 
+  }
+  
+  virtual void special_unlock()
+  { 
+	cerr << "Serious internal error" << endl;
+	FAIL_EXIT(); 
+  }
+};
+
 // \addtogroup Constraints
 // @{
 
-/** @help constraints Description
-Minion supports many constraints and these are regularly being
-improved and added to. In some cases multiple implementations of the
-same constraints are provided and we would appreciate additional
-feedback on their relative merits in your problem.
-
-Minion does not support nesting of constraints, however this can be
-achieved by auxiliary variables and reification.
-
-Variables can be replaced by constants. You can find out more on
-expressions for variables, vectors, etc. in the section on variables.
-*/
-
-/** @help constraints References 
-help variables
-*/
-
 /// Base type from which all constraints are derived.
-class Constraint
+class Constraint : public SpecialTriggerable
 {
 public:
   StateObj* stateObj;

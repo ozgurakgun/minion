@@ -3,7 +3,7 @@
    
    For Licence Information see file LICENSE.txt 
 
-   $Id: constraint_alldiff_gac_slow.h 668 2007-09-26 15:14:50Z pete_n $
+   $Id: dynamic_element.h 709 2007-10-15 18:05:03Z pete_n $
 */
 
 /* Minion
@@ -24,15 +24,20 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+/* This version of allDiff uses watched literals and maintains GAC.
+Algorithm is roughly described in a podnote.
+
+*/
+
+#define DYNAMICALLDIFF
 
 #include "alldiff_common.h"
 
 template<typename VarArray>
-Constraint*
-AlldiffGacSlowCon(StateObj* stateObj, const VarArray& var_array)
-{ return new AlldiffGacSlow<VarArray>(stateObj, var_array); }
+DynamicConstraint*
+DynamicAlldiffCon(StateObj * stateObj, VarArray va)
+{
+  return new DynamicAlldiff<VarArray>(stateObj, va);
+}
 
-BUILD_CONSTRAINT1(CT_ALLDIFF_GACSLOW, AlldiffGacSlowCon)
-
-
-
+BUILD_DYNAMIC_CONSTRAINT1(CT_WATCHED_ALLDIFF, DynamicAlldiffCon);
