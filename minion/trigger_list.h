@@ -29,11 +29,26 @@
 
 class TriggerList;
 
+struct triggerBacktrackRecord
+{
+    // The trigger pointer, and the queue to put it back into.
+    DynamicTrigger* trigger;
+    DynamicTrigger* queue;
+};
+
 class TriggerMem
 {
-  vector<TriggerList*> trigger_lists;
+  vector<TriggerList*> trigger_lists;  // indexed by what? variable?
   char* triggerlist_data;
   StateObj* stateObj;
+  
+#ifdef MIXEDTRIGGERS
+  // declare the backtrack stack and stack height.
+  int _local_depth;             // could be unsigned 
+  ReversibleInt _backtrack_depth;
+
+  vector<triggerBacktrackRecord> _backtracking_stack;
+#endif
   
 public:
   void addTriggerList(TriggerList* t) 
@@ -41,8 +56,17 @@ public:
   
   void finaliseTriggerLists();
   
+  
+  #ifdef MIXEDTRIGGERS
+  TriggerMem(StateObj* _stateObj) : triggerlist_data(NULL), stateObj(_stateObj),
+    _local_depth(0), _backtrack_depth(0)
+  {
+  _backtracking_stack.resize(10000);
+  }
+  #else
   TriggerMem(StateObj* _stateObj) : triggerlist_data(NULL), stateObj(_stateObj)
-  {}
+  { }
+  #endif
   
   void allocateTriggerListData(unsigned mem)
   {
@@ -53,6 +77,55 @@ public:
   char* getTriggerListDataPtr() { return triggerlist_data; }
   ~TriggerMem()
   { delete[] triggerlist_data; }
+  
+#ifdef MIXEDTRIGGERS
+  void undo()
+  {
+    int bt_depth = _backtrack_depth;
+    
+    //D_ASSERT( _local_depth < (_max_depth+1) && _local_depth >= bt_depth && bt_depth >=0);
+    //cout << "In the undo function. local depth:"<< _local_depth<< " _backtrack_depth:" << bt_depth <<endl;
+    while(_local_depth > bt_depth)
+    {
+      -- _local_depth;
+      // Perform undo here.
+      triggerBacktrackRecord& record= _backtracking_stack[_local_depth];
+      // Might have to check if the queue is null, and if so, do a sleep().
+      if(record.queue==NULL)
+      {
+          (record.trigger)->sleepDynamicTrigger(stateObj);  // does unneccessary check of the global next ptr.
+      }
+      else
+      {
+          (record.trigger)->add_after(record.queue, stateObj);
+      }
+      record.trigger->queue=record.queue;
+      //cout << "Backtracked a dynamic trigger: "<< (int)(record.trigger) <<endl;
+    }
+    
+    D_ASSERT(_local_depth == bt_depth);
+  }
+  
+  inline void add_bt_record(DynamicTrigger* t, DynamicTrigger* queue)
+  {
+      //cout << "In add_bt_record"<<endl;
+      if(_local_depth==_backtracking_stack.size())
+      {
+          // This faffing is to avoid the need to create an object and push_back
+          // it, because I'm not sure that the object creation will be optimized away.
+          _backtracking_stack.resize(_backtracking_stack.size()*2);
+      }
+      triggerBacktrackRecord& record=_backtracking_stack[_local_depth];
+      record.trigger=t;
+      record.queue=queue;
+      _local_depth++;
+  }
+  
+  void before_branch_left()
+  { _backtrack_depth = _local_depth; }
+  
+#endif
+  
 };
 
 class TriggerList
@@ -63,10 +136,11 @@ class TriggerList
   void operator=(const TriggerList&);
   bool only_bounds;
   
+
 public:
 	TriggerList(StateObj* _stateObj, bool _only_bounds) : stateObj(_stateObj), 
 	only_bounds(_only_bounds)
-  { 
+  {
 	  var_count_m = 0;
 	  lock_first = lock_second = 0; 
   }
@@ -74,11 +148,7 @@ public:
   vector<vector<vector<Trigger> > > triggers;
   
 #ifdef DYNAMICTRIGGERS
-#ifdef WATCHEDLITERALS
   MemOffset dynamic_triggers;
-#else
-  BackTrackOffset dynamic_triggers;
-#endif
 #endif
   
   Trigger** trigger_data_m;
@@ -135,7 +205,6 @@ public:
 	D_ASSERT(lock_first && !lock_second);
 	lock_second = true;
 
-#ifndef SLOW_TRIGGERS
 	Trigger** trigger_ranges = (Trigger**)(mem_start);
 	trigger_data_m = trigger_ranges;
 	Trigger* trigger_data = (Trigger*)(mem_start + 4 * (triggers[UpperBound].size() + 1) * sizeof(Trigger*));
@@ -159,13 +228,11 @@ public:
 	D_ASSERT(static_cast<void*>(mem_start + 4 * (var_count_m + 1) * sizeof(Trigger*)) ==
 			 static_cast<void*>(trigger_ranges));
 	
-
 	// This is a common C++ trick to completely free the memory of an object.
 	{ 
 	  vector<vector<vector<Trigger> > > t; 
 	  triggers.swap(t);
 	}
-#endif
 	
 #ifdef DYNAMICTRIGGERS
 	DynamicTrigger* trigger_ptr = static_cast<DynamicTrigger*>(dynamic_triggers.get_ptr());
@@ -179,6 +246,7 @@ public:
 #endif
   }
   
+  
   pair<Trigger*, Trigger*> get_trigger_range(int var_num, TrigType type)
   {
     Trigger** first_trig = trigger_data_m + var_num + (var_count_m + 1) * type;
@@ -186,13 +254,6 @@ public:
 	first_trig++;
 	Trigger* trig_range_end = *first_trig;
 	return pair<Trigger*,Trigger*>(trig_range_start, trig_range_end);
-  }
-  
-  void slow_trigger_push(int var_num, TrigType type, int delta)
-  {
-    if(!triggers[type][var_num].empty())
-      getQueue(stateObj).pushTriggers(TriggerRange(&triggers[type][var_num].front(),
-      (&triggers[type][var_num].front()) + triggers[type][var_num].size(), delta));
   }
   
 #ifdef DYNAMICTRIGGERS
@@ -229,14 +290,10 @@ public:
 	D_ASSERT(lock_second);
     D_ASSERT(upper_delta > 0 || getState(stateObj).isFailed());
 	
-#ifdef SLOW_TRIGGERS
-	slow_trigger_push(var_num, UpperBound, upper_delta);
-#else
     pair<Trigger*, Trigger*> range = get_trigger_range(var_num, UpperBound);
 	if (range.first != range.second)
 	  getQueue(stateObj).pushTriggers(TriggerRange(range.first, range.second, 
 											 checked_cast<int>(upper_delta)));
-#endif	
   }
   
   void push_lower(int var_num, DomainInt lower_delta)
@@ -246,14 +303,11 @@ public:
 #endif
 	D_ASSERT(lock_second);
 	D_ASSERT(lower_delta > 0 || getState(stateObj).isFailed());
-#ifdef SLOW_TRIGGERS
-	slow_trigger_push(var_num, LowerBound, lower_delta);
-#else
+    
 	pair<Trigger*, Trigger*> range = get_trigger_range(var_num, LowerBound);
 	if (range.first != range.second)
 	  getQueue(stateObj).pushTriggers(TriggerRange(range.first, range.second, 
 											 checked_cast<int>(lower_delta)));
-#endif
   }
   
   
@@ -263,14 +317,10 @@ public:
     if (getState(stateObj).isDynamicTriggersUsed()) dynamic_propagate(var_num, Assigned);
 #endif
     D_ASSERT(lock_second);
-
-#ifdef SLOW_TRIGGERS
-	slow_trigger_push(var_num, Assigned, -1);
-#else	
-	pair<Trigger*, Trigger*> range = get_trigger_range(var_num, Assigned);
+    
+    pair<Trigger*, Trigger*> range = get_trigger_range(var_num, Assigned);
 	if (range.first != range.second)
 	  getQueue(stateObj).pushTriggers(TriggerRange(range.first, range.second, -1));
-#endif
   }
   
   void push_domain(int var_num)
@@ -279,14 +329,10 @@ public:
     if (getState(stateObj).isDynamicTriggersUsed()) dynamic_propagate(var_num, DomainChanged);
 #endif
 	
-#ifdef SLOW_TRIGGERS
-	slow_trigger_push(var_num, DomainChanged, -1);
-#else
 	D_ASSERT(lock_second);
 	pair<Trigger*, Trigger*> range = get_trigger_range(var_num, DomainChanged);
 	if (range.first != range.second)	  
-	  getQueue(stateObj).pushTriggers(TriggerRange(range.first, range.second, -1)); 
-#endif
+	  getQueue(stateObj).pushTriggers(TriggerRange(range.first, range.second, -1));
   }
   
   void push_domain_removal(int var_num, DomainInt val_removed)
@@ -316,6 +362,38 @@ public:
   }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(int b, DynamicTrigger* t, TrigType type, DomainInt val)
+  {
+    D_INFO(1, DI_QUEUE, "Adding Dynamic Trigger");
+	D_ASSERT(lock_second);
+	D_ASSERT(!only_bounds || type != DomainRemoval);
+	D_ASSERT(t->constraint != NULL);
+	D_ASSERT(t->sanity_check == 1234);
+	// This variable is only use in debug mode, and will be optimised away at any optimisation level.
+	DynamicTrigger* old_list;
+	old_list = t->next;
+	DynamicTrigger* queue;
+    int offset;
+	if(type != DomainRemoval)
+	{
+	  offset= b + type*var_count_m;
+	}
+	else
+	{
+	  D_ASSERT(!only_bounds);
+	  D_ASSERT(vars_min_domain_val <= val);
+	  D_ASSERT(vars_max_domain_val >= val);
+	  offset= checked_cast<int>(b + (DomainRemoval + (val - vars_min_domain_val)) * var_count_m);
+	}
+    queue = static_cast<DynamicTrigger*>(dynamic_triggers.get_ptr())+offset;
+    
+	D_ASSERT(queue->sanity_check_list());
+    
+	t->add_after(queue, stateObj);
+	D_ASSERT(old_list == NULL || old_list->sanity_check_list(false));
+  }
+  
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(int b, DynamicTrigger* t, TrigType type, DomainInt val)
   {
     D_INFO(1, DI_QUEUE, "Adding Dynamic Trigger");
@@ -327,24 +405,66 @@ public:
 	DynamicTrigger* old_list;
 	old_list = t->next;
 	DynamicTrigger* queue;
+    int offset;
 	if(type != DomainRemoval)
 	{
-	  queue = static_cast<DynamicTrigger*>(dynamic_triggers.get_ptr())
-			  + b + type*var_count_m;
+	  offset= b + type*var_count_m;
 	}
 	else
 	{
 	  D_ASSERT(!only_bounds);
 	  D_ASSERT(vars_min_domain_val <= val);
 	  D_ASSERT(vars_max_domain_val >= val);
-	  queue = static_cast<DynamicTrigger*>(dynamic_triggers.get_ptr())
-			  + checked_cast<int>(b + (DomainRemoval + (val - vars_min_domain_val)) * var_count_m);
+	  offset= checked_cast<int>(b + (DomainRemoval + (val - vars_min_domain_val)) * var_count_m);
 	}
+    queue = static_cast<DynamicTrigger*>(dynamic_triggers.get_ptr())+offset;
+    // Store the queue.
+    t->queue=queue;
+    
 	D_ASSERT(queue->sanity_check_list());
     
-	t->add_after(queue, getQueue(stateObj).getNextQueuePtrRef());
+	t->add_after(queue, stateObj);
 	D_ASSERT(old_list == NULL || old_list->sanity_check_list(false));
   }
+  
+  void addDynamicTriggerBT(int b, DynamicTrigger* t, TrigType type, DomainInt val)
+  {
+      // b is variable number
+    D_INFO(1, DI_QUEUE, "Adding Dynamic Trigger");
+	D_ASSERT(lock_second);
+	D_ASSERT(!only_bounds || type != DomainRemoval);
+	D_ASSERT(t->constraint != NULL);
+	D_ASSERT(t->sanity_check == 1234);
+	// This variable is only use in debug mode, and will be optimised away at any optimisation level.
+	DynamicTrigger* old_list;
+	old_list = t->next;
+    // Make an offset and store that in the dynamic trigger for backtracking, each time the trigger is moved.
+	DynamicTrigger* queue;
+    
+    int offset;
+	if(type != DomainRemoval)
+	{
+	  offset= b + type*var_count_m;
+	}
+	else
+	{
+	  D_ASSERT(!only_bounds);
+	  D_ASSERT(vars_min_domain_val <= val);
+	  D_ASSERT(vars_max_domain_val >= val);
+	  offset= checked_cast<int>(b + (DomainRemoval + (val - vars_min_domain_val)) * var_count_m);
+	}
+    queue = static_cast<DynamicTrigger*>(dynamic_triggers.get_ptr())+offset;
+    
+    getTriggerMem(stateObj).add_bt_record(t, t->queue);   // Add backtrack record before changing queue.
+    
+    t->queue=queue;
+    
+	D_ASSERT(queue->sanity_check_list());
+    
+    t->add_after(queue, stateObj);
+	D_ASSERT(old_list == NULL || old_list->sanity_check_list(false));
+  }
+  #endif
 #endif
   
 };

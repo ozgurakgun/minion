@@ -120,11 +120,24 @@ struct InfoRefType
   }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  { 
+    VAR_INFO_ADDONE(VAR_TYPE, addWatchTrigger);
+    data.addWatchTrigger( t, type, pos); 
+  }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, addDynamicTrigger);
-    data.addDynamicTrigger( t, type, pos); 
+    data.addDynamicTrigger( t, type, pos);
   }
+  
+  void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  { 
+    VAR_INFO_ADDONE(VAR_TYPE, addDynamicTriggerBT);
+    data.addDynamicTriggerBT( t, type, pos); 
+  }
+  #endif
 #endif
 };
 

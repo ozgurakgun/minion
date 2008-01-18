@@ -31,11 +31,11 @@ struct BigRangeVarRef_internal_template
   { return false;}
   
   int var_num;
-
+  
 #ifdef MANY_VAR_CONTAINERS
   BigRangeVarContainer<d_type>* rangeCon;
   BigRangeVarContainer<d_type>& getCon() const { return *rangeCon; }
-
+  
   BigRangeVarRef_internal_template() : var_num(-1), rangeCon(NULL)
   {}
 
@@ -66,7 +66,7 @@ struct BigRangeVarContainer {
   StateObj* stateObj;
   
   BigRangeVarContainer(StateObj* _stateObj) : stateObj(_stateObj), var_count_m(0), lock_m(0),
-                                              trigger_list(stateObj, false), bms_array(stateObj)
+                                              trigger_list(stateObj, false), bms_array(getMemory(stateObj).monotonicSet())
   { 
     // Store where the first variable will go.
     var_offset.push_back(0);
@@ -75,9 +75,8 @@ struct BigRangeVarContainer {
   typedef DomainInt domain_bound_type;
   static const d_type one = static_cast<d_type>(1);
   MoveablePointer bound_data;
-  MonotonicSet bms_array;
+  MonotonicSet& bms_array;   // Now a reference; will this affect performance?
   TriggerList trigger_list;
-
   
   /// Initial bounds of each variable
   vector<pair<int,int> > initial_bounds;
@@ -101,7 +100,7 @@ struct BigRangeVarContainer {
     DomainInt lower = lower_bound(d); 
     DomainInt old_up_bound = upper_bound(d);
     DomainInt loopvar = old_up_bound; 
-    //DomainInt low_bound = initial_bounds[d.var_num].first; 
+    DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar < lower)
 	{
 	  getState(stateObj).setFailed(true);
@@ -128,7 +127,7 @@ struct BigRangeVarContainer {
     DomainInt upper = upper_bound(d); 
     DomainInt old_low_bound = lower_bound(d);
     DomainInt loopvar = old_low_bound; 
-    //DomainInt low_bound = initial_bounds[d.var_num].first; 
+    DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar > upper)
 	{
 	  getState(stateObj).setFailed(true);
@@ -172,7 +171,19 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
 
  
     bound_data = getMemory(stateObj).backTrack().request_bytes(var_count_m * 2 * sizeof(domain_bound_type));
-    bms_array.initialise(var_offset.back(), var_offset.back());
+    
+    // Get a block of bits in the monotonic set.
+    int storage_offset=bms_array.request_storage(var_offset.back());
+    
+    // Update var_offset according to the starting point of our block
+    for(int i=0; i<var_offset.size(); ++i)
+    {
+        var_offset[i]=var_offset[i]+storage_offset;
+    }
+    
+    // finalise the bms_array.
+    //bms_array.initialise(var_offset.back(), var_offset.back());
+    
     for(DomainInt j = 0; j < var_count_m; j++) {
 	       var_offset[j] = var_offset[j] - initial_bounds[j].first;  
     };
@@ -480,6 +491,15 @@ public:
   { D_ASSERT(lock_m); trigger_list.add_trigger(b.var_num, t, type);  }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(BigRangeVarRef_internal b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  
+    D_ASSERT(lock_m);
+	D_ASSERT(b.var_num >= 0);
+	D_ASSERT(b.var_num <= (int)var_count_m);
+	D_ASSERT(type != DomainRemoval || (pos >= getInitialMin(b) && pos <= getInitialMax(b)));
+    trigger_list.addWatchTrigger(b.var_num, t, type, pos); 
+  }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(BigRangeVarRef_internal b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {  
     D_ASSERT(lock_m);
@@ -488,6 +508,16 @@ public:
 	D_ASSERT(type != DomainRemoval || (pos >= getInitialMin(b) && pos <= getInitialMax(b)));
     trigger_list.addDynamicTrigger(b.var_num, t, type, pos); 
   }
+  
+  void addDynamicTriggerBT(BigRangeVarRef_internal b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  
+    D_ASSERT(lock_m);
+	D_ASSERT(b.var_num >= 0);
+	D_ASSERT(b.var_num <= (int)var_count_m);
+	D_ASSERT(type != DomainRemoval || (pos >= getInitialMin(b) && pos <= getInitialMax(b)));
+    trigger_list.addDynamicTriggerBT(b.var_num, t, type, pos); 
+  }
+  #endif
 #endif
 
   ~BigRangeVarContainer() { 

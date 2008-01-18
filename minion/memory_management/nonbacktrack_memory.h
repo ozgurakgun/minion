@@ -24,8 +24,6 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-typedef MoveablePointer MemOffset;
-
 // \addtogroup Memory
 // @{
 
@@ -34,9 +32,11 @@ class Memory
 {
   BackTrackMemory backtrack_memory;
   NewMemoryBlock nonbacktrack_memory;
+  MonotonicSet monotonic_set;
 public:
   BackTrackMemory& backTrack() { return backtrack_memory; }
   NewMemoryBlock& nonBackTrack() { return nonbacktrack_memory; }
+  MonotonicSet& monotonicSet() { return monotonic_set; }
 };
 
 // @}

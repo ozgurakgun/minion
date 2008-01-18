@@ -378,12 +378,28 @@ struct SparseBoundVarContainer {
   }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(SparseBoundVarRef_internal<BoundType> b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  { 
+	D_ASSERT(lock_m); 
+	D_ASSERT(type != DomainRemoval);
+	trigger_list.addWatchTrigger(b.var_num, t, type, pos); 
+  }
+  
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(SparseBoundVarRef_internal<BoundType> b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   { 
 	D_ASSERT(lock_m); 
 	D_ASSERT(type != DomainRemoval);
 	trigger_list.addDynamicTrigger(b.var_num, t, type, pos); 
   }
+  
+  void addDynamicTriggerBT(SparseBoundVarRef_internal<BoundType> b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  { 
+	D_ASSERT(lock_m); 
+	D_ASSERT(type != DomainRemoval);
+	trigger_list.addDynamicTriggerBT(b.var_num, t, type, pos); 
+  }
+  #endif
 #endif
 
   operator std::string()

@@ -40,10 +40,9 @@ user should use the variable which is the highest in the hierarchy,
 yet encompasses enough information to provide a full model for the
 problem they are attempting to solve.
 
-See the entry on vectors for information on how vectors, matrices and,
-more generally, tensors are handled in minion input. See also the
-alias entry for information on how to multiply name variables for
-convenience.
+See the entry on vectors for information on how vectors, matrices and
+tensors are handled in minion input. See also the alias entry for
+information on how to multiply name variables for convenience.
 */
 
 /** @help variables;vectors Description 
@@ -137,7 +136,11 @@ struct AnyVarRef_Abstract
   
   virtual int getDomainChange(DomainDelta d) = 0;
 #ifdef DYNAMICTRIGGERS
-  virtual void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999) = 0;
+  virtual void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999) = 0;
+  #ifdef MIXEDTRIGGERS
+    virtual void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999) = 0;
+    virtual void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999) = 0;
+  #endif
 #endif
 };
 
@@ -214,8 +217,16 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   { return data.getDomainChange(d); }
 
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data.addWatchTrigger(t, type, pos); }
+  
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
-  {  data.addDynamicTrigger(t, type, pos); }
+    {  data.addDynamicTrigger(t, type, pos); }
+  
+    void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+    {  data.addDynamicTriggerBT(t, type, pos); }
+  #endif
 #endif
 };
 
@@ -295,8 +306,14 @@ public:
   { return data->getDomainChange(d); }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data->addWatchTrigger(t, type, pos); }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {  data->addDynamicTrigger(t, type, pos); }
+  void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data->addDynamicTriggerBT(t, type, pos); }
+  #endif
 #endif
 };
 

@@ -97,8 +97,14 @@ struct ConstantVar
 
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* dt, TrigType, DomainInt = -999)
+  { dt->sleepWatchTrigger(stateObj); }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* dt, TrigType, DomainInt = -999)
-  { dt->remove(); }
+  { dt->sleepDynamicTrigger(stateObj); }
+  void addDynamicTriggerBT(DynamicTrigger* dt, TrigType, DomainInt = -999)
+  { dt->sleepDynamicTriggerBT(stateObj); }
+  #endif
 #endif
 
   int getDomainChange(DomainDelta d)

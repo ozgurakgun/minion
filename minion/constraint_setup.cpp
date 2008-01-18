@@ -22,6 +22,7 @@ void lock(StateObj* stateObj)
   for(int i = 0; i < dynamic_size; ++i)
 	getState(stateObj).getDynamicConstraintList()[i]->setup();
 #endif
+  getMemory(stateObj).monotonicSet().lock(stateObj);
   getMemory(stateObj).backTrack().lock();
   getMemory(stateObj).nonBackTrack().lock();
 //  atexit(Controller::finish);

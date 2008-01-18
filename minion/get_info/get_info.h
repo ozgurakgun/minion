@@ -18,7 +18,9 @@
   VAR_INFO_RemoveFromDomain,
   VAR_INFO_addTrigger,
   VAR_INFO_getDomainChange,
+  VAR_INFO_addWatchTrigger,
   VAR_INFO_addDynamicTrigger,
+  VAR_INFO_addDynamicTriggerBT,
   VarEvent_END
   };
 
@@ -55,6 +57,7 @@ ConEvent_END
  PROP_INFO_FullSum,
  PROP_INFO_BoolSum,
  PROP_INFO_AlldiffGacSlow,
+ PROP_INFO_WatchedAlldiff,
  PROP_INFO_LightSum,
  PROP_INFO_WeightBoolSum,
  PROP_INFO_ReifyEqual,

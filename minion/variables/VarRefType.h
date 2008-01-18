@@ -105,8 +105,14 @@ struct VarRefType
   { return d.XXX_get_domain_diff(); }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  GET_CONTAINER().addWatchTrigger(data, t, type, pos); }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {  GET_CONTAINER().addDynamicTrigger(data, t, type, pos); }
+  void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  GET_CONTAINER().addDynamicTriggerBT(data, t, type, pos); }
+  #endif
 #endif
 };
 
@@ -184,8 +190,14 @@ struct QuickVarRefType
   { return d.XXX_get_domain_diff(); }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  GET_CONTAINER().addWatchTrigger(data, t, type, pos); }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {  GET_CONTAINER().addDynamicTrigger(data, t, type, pos); }
+  void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  GET_CONTAINER().addDynamicTriggerBT(data, t, type, pos); }
+  #endif
 #endif
 };
 
@@ -254,8 +266,15 @@ struct CompleteVarRefType
   { return d.XXX_get_domain_diff(); }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  (data.getCon()).addWatchTrigger(data, t, type, pos); }
+  
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {  (data.getCon()).addDynamicTrigger(data, t, type, pos); }
+  void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  (data.getCon()).addDynamicTriggerBT(data, t, type, pos); }
+  #endif
 #endif
 };
 
