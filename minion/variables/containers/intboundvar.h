@@ -150,8 +150,15 @@ struct BoundVarRef_internal
   { return d.XXX_get_domain_diff(); }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  GET_LOCAL_CON().addWatchTrigger(*this, t, type, pos); }
+  
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {  GET_LOCAL_CON().addDynamicTrigger(*this, t, type, pos); }
+  void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  GET_LOCAL_CON().addDynamicTriggerBT(*this, t, type, pos); }
+  #endif
 #endif
 
 };
@@ -379,12 +386,27 @@ struct BoundVarContainer {
   }
 
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(BoundVarRef_internal<BoundType>& b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {
+	D_ASSERT(lock_m); 
+	D_ASSERT(type != DomainRemoval);
+	trigger_list.addWatchTrigger(b.var_num, t, type, pos); 
+  }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(BoundVarRef_internal<BoundType>& b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {
 	D_ASSERT(lock_m); 
 	D_ASSERT(type != DomainRemoval);
 	trigger_list.addDynamicTrigger(b.var_num, t, type, pos); 
   }
+  
+  void addDynamicTriggerBT(BoundVarRef_internal<BoundType>& b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {
+	D_ASSERT(lock_m); 
+	D_ASSERT(type != DomainRemoval);
+	trigger_list.addDynamicTriggerBT(b.var_num, t, type, pos); 
+  }
+  #endif
 #endif
 
   operator std::string()

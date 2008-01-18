@@ -125,8 +125,14 @@ struct VarNot
   { return data.getDomainChange(d); }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data.addWatchTrigger(t, type, swap(pos)); }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {  data.addDynamicTrigger(t, type, swap(pos)); }
+  void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data.addDynamicTriggerBT(t, type, swap(pos)); }
+  #endif
 #endif
 };
 

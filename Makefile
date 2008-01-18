@@ -24,6 +24,11 @@ ifdef INFO
   NAMEBASE := $(NAMEBASE)-info
 endif
 
+ifdef MIXEDTRIGGERS
+  FLAGS := $(FLAGS) -DMIXEDTRIGGERS
+  NAMEBASE := $(NAMEBASE)-mixedtriggers
+endif
+
 ifdef QUICK
   FLAGS := $(FLAGS) -DQUICK_COMPILE
   NAMEBASE := $(NAMEBASE)-quick
@@ -81,7 +86,7 @@ mkdirectory:
 	if [ ! -d $(OBJDIR)/build_constraints ]; then mkdir $(OBJDIR)/build_constraints; fi
 	if [ ! -d $(OBJDIR)/help ]; then mkdir $(OBJDIR)/help; fi
 
-generate: bibd golomb solitaire steelmill sports
+generate: bibd golomb solitaire steelmill sports golombtable
 
 bibd:
 	g++ generators/Bibd/MinionBIBDInstanceGenerator.cpp -O2 -o bin/bibd $(FULLFLAGS)
@@ -93,10 +98,10 @@ steelmill:
 	g++ generators/Steelmill/steelmill-solver.cpp -O2 -o  bin/steelmill $(FULLFLAGS)
 sports:
 	g++ generators/SportsSchedule/MinionSportsInstanceGenerator.cpp -O2 -o bin/sports $(FULLFLAGS)
+golombtable:
+	g++ generators/Golomb/GolombTable.cpp -O2 -o bin/golombtable $(FULLFLAGS)
 
 
-htmlhelp:
-	bash docs/genhelp/genhelp.sh minion
 
 lisp-generate: minion-helper minion-sat minion-quasigroup
 

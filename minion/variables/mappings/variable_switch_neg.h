@@ -151,8 +151,14 @@ struct SwitchNeg
  }
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data.addWatchTrigger(t, type, pos); }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
   {  data.addDynamicTrigger(t, type, pos); }
+  void addDynamicTriggerBT(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {  data.addDynamicTriggerBT(t, type, pos); }
+  #endif
 #endif
 };
 

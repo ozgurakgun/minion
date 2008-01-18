@@ -47,12 +47,7 @@
 #define FULL_DOMAIN_TRIGGERS
 #define DYNAMICTRIGGERS
 
-#ifdef WATCHEDLITERALS
-#define DYNAMICTRIGGERS
-#endif
-
-
-#define VERSION "Minion Version 0.5"
+#define VERSION "Minion Version 0.4.1"
 #define REVISION "Subversion (svn) Revision Number $Revision$"
 // above line will work but only gives revision of this file,
 //  not the current global revision 
@@ -67,17 +62,25 @@
 #define PROP_INFO_ADDONE(PropType)
 #endif
 
+class Queues;
+
 #include "solver.h"
 
 VARDEF(TableOut tableout);
 VARDEF(ofstream solsoutFile);
 
+// Memory related includes.
 #include "memory_management/backtrackable_memory.h"
-#include "memory_management/nonbacktrack_memory.h"
-#include "reversible_vals.h"
+typedef MoveablePointer MemOffset;
 #include "memory_management/trailed_monotonic_set.h"
+#include "memory_management/nonbacktrack_memory.h"
 
-typedef TrailedMonotonicSet MonotonicSet;
+#include "reversible_vals.h"
+
+#include "memory_management/trailed_monotonic_set.hpp"
+
+#include "memory_management/monotonic_set_wrapper.h"
+// End of memory.
 
 #include "tuple_container.h"
 
@@ -114,13 +117,18 @@ class DynamicTrigger;
 
 #include "constraints/constraint.h"
 
-#ifdef DYNAMICTRIGGERS
-#include "constraints/constraint_dynamic.h"
-#endif 
-
 #include "queue/standard_queue.h"
 
+#ifdef DYNAMICTRIGGERS
+#include "constraints/constraint_dynamic.h"
+#endif
+
+// Now include methods for standard_queue
+#include "queue/standard_queue.hpp"
+
 #include "trigger_list.h"
+
+#include "constraints/constraint_dynamic.hpp"
 
 #include "variables/variables.h"
 
@@ -249,4 +257,8 @@ inline SearchState::~SearchState()
 #endif
 }
 
-#endif
+
+
+
+#endif   
+// matches #ifndef MINION_H

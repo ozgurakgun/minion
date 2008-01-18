@@ -294,8 +294,31 @@ struct BooleanContainer
     
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(BoolVarRef_internal& b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {
+    D_ASSERT(pos == -999 || ( type == DomainRemoval && pos != -999 ) );
+    D_ASSERT(lock_m);
+    
+#ifdef FEW_BOOLEAN_TRIGGERS
+    TrigType new_type = type;
+    switch(type)
+    {
+      case DomainChanged:
+        new_type = Assigned; break;
+      case DomainRemoval:
+        if(pos == 0)
+          new_type = LowerBound;
+        else
+          new_type = UpperBound;
+    }
+    pos = -999;
+#endif    
+	trigger_list.addWatchTrigger(b.var_num, t, type, pos); 
+  }
+  
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(BoolVarRef_internal& b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
-  { 
+  {
     D_ASSERT(pos == -999 || ( type == DomainRemoval && pos != -999 ) );
     D_ASSERT(lock_m);
     
@@ -315,6 +338,29 @@ struct BooleanContainer
 #endif    
 	trigger_list.addDynamicTrigger(b.var_num, t, type, pos); 
   }
+  
+  void addDynamicTriggerBT(BoolVarRef_internal& b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
+  {
+    D_ASSERT(pos == -999 || ( type == DomainRemoval && pos != -999 ) );
+    D_ASSERT(lock_m);
+    
+#ifdef FEW_BOOLEAN_TRIGGERS
+    TrigType new_type = type;
+    switch(type)
+    {
+      case DomainChanged:
+        new_type = Assigned; break;
+      case DomainRemoval:
+        if(pos == 0)
+          new_type = LowerBound;
+        else
+          new_type = UpperBound;
+    }
+    pos = -999;
+#endif    
+	trigger_list.addDynamicTriggerBT(b.var_num, t, type, pos);
+  }
+  #endif
 #endif
 };
 

@@ -40,7 +40,7 @@ struct TrivialBoundVar
   
   explicit TrivialBoundVar(StateObj* _stateObj, DomainInt _lower, DomainInt _upper) :
   stateObj(_stateObj), lower(stateObj, _lower), upper(stateObj, _upper)
-  { }
+  { D_ASSERT(lower <= upper); }
 
   TrivialBoundVar(const TrivialBoundVar& b) : stateObj(b.stateObj), lower(b.lower), upper(b.upper)
   {}
@@ -89,7 +89,7 @@ struct TrivialBoundVar
   {
     lower = max((DomainInt)lower, i);
     if(lower > upper)
-      getState(stateObj).setFailed(true);
+      getState(stateObj).setFailed(true); 
   }
   
   void uncheckedAssign(DomainInt)
@@ -113,8 +113,14 @@ struct TrivialBoundVar
   
   
 #ifdef DYNAMICTRIGGERS
+  void addWatchTrigger(DynamicTrigger* dt, TrigType, DomainInt = -999)
+  { dt->sleepWatchTrigger(stateObj); }
+  #ifdef MIXEDTRIGGERS
   void addDynamicTrigger(DynamicTrigger* dt, TrigType, DomainInt = -999)
-  { dt->remove(); }
+  { dt->sleepDynamicTrigger(stateObj); }
+  void addDynamicTriggerBT(DynamicTrigger* dt, TrigType, DomainInt = -999)
+  { dt->sleepDynamicTriggerBT(stateObj); }
+  #endif
 #endif
   
   int getDomainChange(DomainDelta d)

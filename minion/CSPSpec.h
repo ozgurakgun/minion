@@ -39,6 +39,7 @@ using namespace std;
 enum ConstraintType {
   CT_ALLDIFF ,
   CT_ALLDIFF_GACSLOW ,
+  CT_WATCHED_ALLDIFF ,
   CT_DISEQ ,
   CT_INEQ ,
   CT_MAX ,
