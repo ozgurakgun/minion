@@ -32,8 +32,12 @@ class DynamicTrigger
 private:
   /// Hidden, as copying a DynamicTrigger is almost certainly an error.
   DynamicTrigger(const DynamicTrigger&);  
+  
 public:
 
+#ifdef MIXEDTRIGGERS
+  DynamicTrigger* queue;  // The queue that this DT is currently in.
+#endif
   /// In debug mode, a value set to 1234. This allows a check that a DynamicTrigger*
   /// actually points to a valid object.
   D_DATA(int sanity_check); 
@@ -54,15 +58,26 @@ public:
   { D_DATA(sanity_check = 1234);}
   
   DynamicTrigger() : constraint(NULL)
-  { 
+  {
     D_DATA(sanity_check = 1234);
-    prev = next = this; 
+    prev = next = this;
   }
   
- 
+  // Methods which may be called from constraints, to 'sleep' the trigger
+  // i.e. remove it from any lists.
+  
   /// Remove from whatever list this trigger is currently stored in.
-  void remove()
-  { 
+  inline void sleepWatchTrigger(StateObj * stateObj)
+  {
+      DynamicTrigger*& next_queue_ptr = getQueue(stateObj).getNextQueuePtrRef();
+#ifndef NO_DYN_CHECK
+	  if(this == next_queue_ptr)
+	  {
+		CON_INFO_ADDONE(DynamicMovePtr);
+	    next_queue_ptr = next;
+	  }
+#endif
+    
     D_INFO(1,DI_DYNAMICTRIG,string("Trigger ") + to_string(this) + " removed from list: "
 							+ ":" + to_string(prev) + "," + to_string(next));
 	D_ASSERT(constraint != NULL);
@@ -80,10 +95,21 @@ public:
 	prev = NULL;
   }
   
+#ifdef MIXEDTRIGGERS
+  void sleepDynamicTrigger(StateObj * stateObj)
+  {
+      sleepWatchTrigger(stateObj);
+      queue=NULL;
+  }
+  
+  void sleepDynamicTriggerBT(StateObj * stateObj);
+  
+#endif
+
   /// Add this trigger after another one in a list.
   /// This function will remove this trigger from any list it currently lives in.
   // next_queue_ptr is a '*&' as it is a pointer which we want a reference to, so we can change it!
-  void add_after(DynamicTrigger* new_prev, DynamicTrigger*& next_queue_ptr)
+  void add_after(DynamicTrigger* new_prev, StateObj * stateObj)
   {
     D_INFO(1, DI_DYNAMICTRIG, string("Trigger ") + to_string(this) + " added to list " + to_string(new_prev));
     D_ASSERT(constraint != NULL);
@@ -92,15 +118,7 @@ public:
     if(prev != NULL)
 	{
 	  D_INFO(1, DI_DYNAMICTRIG, "Must remove trigger from existing queue.");
-#ifndef NO_DYN_CHECK
-	  if(this == next_queue_ptr)
-	  {
-		CON_INFO_ADDONE(DynamicMovePtr);
-	    next_queue_ptr = next;
-	  }
-      
-#endif
-	  remove();
+	  sleepWatchTrigger(stateObj);  // remove from its list.
 	}
 	DynamicTrigger* new_next = new_prev->next;
 	prev = new_prev;
@@ -143,7 +161,7 @@ public:
 };
 
 /// Base type from which all dynamic constraints are derived.
-class DynamicConstraint
+class DynamicConstraint : public SpecialTriggerable
 {
 public:
   
