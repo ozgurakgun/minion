@@ -87,13 +87,6 @@ struct VariableOrder
 
   void branch_right()
   {  
-    int times = branches.size() - getMemory(stateObj).backTrack().current_depth();
-    cout << "times:" << times << endl;
-    do {
-      pos = branches.back();
-      branches.pop_back();
-      times--;
-    } while(times != 0);
     if(val_order[pos])
     {
       maybe_print_search_assignment(stateObj, var_order[pos], 0, false);
@@ -104,15 +97,28 @@ struct VariableOrder
       maybe_print_search_assignment(stateObj, var_order[pos], 1, false);
       var_order[pos].setMax(0);
     }
+    branches.push_back(-1);
   }
 
-  void false_branch_right()
+  void pop_branches(StateObj* stateObj, int depth)
   {
-    int times = branches.size() - getMemory(stateObj).backTrack().current_depth();
-    do {
+    int times = branches.size() - depth;
+    while(times--) {
       branches.pop_back();
-      times--;
-    } while(times != 0);
+    }
+  }
+
+  //return true iff no left branches left to reverse, i.e. finished
+  bool pop_to_left_branch_pt(StateObj* stateObj)
+  {
+    int pops_left = branches.size();
+    do {
+      pos = branches.back();
+      branches.pop_back();
+      world_pop(stateObj);
+      pops_left--;
+    } while(pos == -1 && pops_left > 0);
+    return pos == -1;
   }
 
 };

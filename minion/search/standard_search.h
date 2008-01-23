@@ -47,9 +47,6 @@ namespace Controller
   //themselves simplified.
   inline void combine(list<literal>& c1, list<literal>& c2)
   {
-    //cout << "Combining the following:" << endl;
-    //print_clause(c1);
-    //print_clause(c2);
     list<literal>::iterator c1curr = c1.begin();
     list<literal>::iterator c1end = c1.end();
     list<literal>::iterator c2curr = c2.begin();
@@ -74,27 +71,11 @@ namespace Controller
       c1.insert(c1end, *c2curr);
       c2curr++;
     }
-    //cout << "to produce" << endl;
-    //print_clause(c1);
   }
 
-  inline unsigned count_curr_depth(list<literal>& c, unsigned depth)
-  {
-    unsigned retval = 0;
-    list<literal>::iterator curr = c.begin();
-    list<literal>::iterator end = c.end();
-    for(; curr != end; curr++)
-      if((*curr).depth == depth)
-	retval++;
-    return retval;
-  }
+  inline bool compare_literal(literal l1, literal l2) { return l1.id < l2.id; }
 
-  inline bool compare_literal(literal l1, literal l2)
-  {
-    return l1.id < l2.id;
-  }
-
-  //build a clause data structure
+  //build a clause data structure, sorted by var id
   inline void build_clause(list<literal>& clause, DynamicConstraint* constr)
   {
     vector<AnyVarRef> vars = constr->get_vars();
@@ -149,10 +130,6 @@ namespace Controller
       } else {
 	break; //nothing to resolve, finish now
       }
-      if(35690 <= getState(stateObj).getNodeCount() && getState(stateObj).getNodeCount() <= 35693) {
-	print_clause(clause);
-	cout << "next: " << next << endl;
-      }
     }
     //do something with successfully created conflict clause
     if(clause.size() == 1)
@@ -199,13 +176,14 @@ namespace Controller
   //of search tree.
   inline bool causes_repeat(StateObj* stateObj, vector<int>& val_order, list<literal> clause)
   {
-    clause.sort(deepest_literal);
+    clause.sort(deepest_literal); //could also use min algorithm
     const literal deepest = clause.front();
     AnyVarRef d_var = deepest.var;
-    D_ASSERT(deepest.depth == getMemory(stateObj).backTrack().current_depth());
-    return val_order[deepest.id] 
-      ? !deepest.neg && d_var.getMin() == 1 //force 0 and repeat
-      : deepest.neg && d_var.getMax() == 0; //force 1 and repeat
+    //following assert is bollocks, because of learned clauses, it would be true
+    //of normal FC-CBJ (since if the deepest thing wasn't the current the conflict
+    //should already have happened)
+    //D_ASSERT(deepest.depth = ausegetMemory(stateObj).backTrack().current_depth());
+    return val_order[deepest.id] ? !deepest.neg : deepest.neg;
   }
 
   template<typename VarOrder, typename Variables, typename Propogator>
@@ -257,6 +235,9 @@ namespace Controller
 		{
 		  getState(stateObj).setFailed(false);
 
+		  //failure at depth 0 implies no more solutions
+		  if(getMemory(stateObj).backTrack().current_depth() == 0) return;
+
 		  unsigned bj_depth;
 		  list<literal> clause;
 		  bool repeat;
@@ -266,24 +247,30 @@ namespace Controller
 		    cout << "repeat: " << repeat << endl;
 		  } else {
 		    bj_depth = getMemory(stateObj).backTrack().current_depth() - 1;
-		    repeat = false;
+ 		    repeat = false;
 		  }
+
+		  cout << "bj_depth: " << bj_depth << endl;
 
 		  if(bj_depth == -1)
 		    return;
 		  		  
 		  maybe_print_search_action(stateObj, "bt");
 		  
-		  world_pop(stateObj, bj_depth);
-		  //order.find_next_unassigned();
-		  
 		  //learn clause, and do right branch
 		  if(!repeat && !solution_found) {
+		    world_pop(stateObj, bj_depth);
 		    learn_clause(stateObj, clause); 
 		    print_clause(clause);
-		    order.false_branch_right();
-		  } else
-		    order.branch_right(); //right branch after backtrack after solution
+		    order.pop_branches(stateObj, bj_depth);
+		  } else {
+		    if(order.pop_to_left_branch_pt(stateObj)) return;
+		    cout << "r depth before push:" << getMemory(stateObj).backTrack().current_depth() << endl;
+		    world_push(stateObj);
+		    cout << "r depth after push:" << getMemory(stateObj).backTrack().current_depth() << endl; 
+		    order.branch_right();
+		    cout << "r depth after branch:" << getMemory(stateObj).backTrack().current_depth() << endl;   
+		  }
 		  
 		  set_optimise_and_propagate_queue(stateObj);
 		  
