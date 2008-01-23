@@ -48,8 +48,7 @@ struct VariableOrder
   vector<VarType> var_order;
   vector<int> val_order;
   unsigned pos;
-  vector<int> branches;
-  
+    
   BranchType branch_method;
     
   VariableOrder(StateObj* _stateObj, vector<VarType>& _varorder, vector<int>& _valorder): 
@@ -82,45 +81,10 @@ struct VariableOrder
     }
     var_order[pos].uncheckedAssign(assign_val);
     maybe_print_search_assignment(stateObj, var_order[pos], assign_val, true);
-    branches.push_back(pos);
   }
 
-  void branch_right()
-  {  
-    if(val_order[pos])
-    {
-      maybe_print_search_assignment(stateObj, var_order[pos], 0, false);
-      var_order[pos].setMin(1);
-    }
-    else
-    {
-      maybe_print_search_assignment(stateObj, var_order[pos], 1, false);
-      var_order[pos].setMax(0);
-    }
-    branches.push_back(-1);
-  }
-
-  void pop_branches(StateObj* stateObj, int depth)
-  {
-    int times = branches.size() - depth;
-    while(times--) {
-      branches.pop_back();
-    }
-  }
-
-  //return true iff no left branches left to reverse, i.e. finished
-  bool pop_to_left_branch_pt(StateObj* stateObj)
-  {
-    int pops_left = branches.size();
-    do {
-      pos = branches.back();
-      branches.pop_back();
-      world_pop(stateObj);
-      pops_left--;
-    } while(pos == -1 && pops_left > 0);
-    return pos == -1;
-  }
-
+  //not needed, but left in for compatibility with the rest of the code
+  void branch_right() { ; }
 };
 
 #endif

@@ -170,22 +170,7 @@ namespace Controller
     cc->full_propagate();
   }
 
-  inline bool deepest_literal(literal l1, literal l2) { return l1.depth > l2.depth; }
-  
-  //return true if learning this clause right now would cause repetition of part
-  //of search tree.
-  inline bool causes_repeat(StateObj* stateObj, vector<int>& val_order, list<literal> clause)
-  {
-    clause.sort(deepest_literal); //could also use min algorithm
-    const literal deepest = clause.front();
-    AnyVarRef d_var = deepest.var;
-    //following assert is bollocks, because of learned clauses, it would be true
-    //of normal FC-CBJ (since if the deepest thing wasn't the current the conflict
-    //should already have happened)
-    //D_ASSERT(deepest.depth = ausegetMemory(stateObj).backTrack().current_depth());
-    return val_order[deepest.id] ? !deepest.neg : deepest.neg;
-  }
-
+  //NB. This search procedure finds ONE solution, not all solutions, if it finds any at all!
   template<typename VarOrder, typename Variables, typename Propogator>
     inline void solve_loop(StateObj* stateObj, VarOrder& order, Variables& v, Propogator prop = PropogateGAC())
   {
@@ -193,7 +178,6 @@ namespace Controller
 	  
 	  maybe_print_search_state(stateObj, "Node: ", v);
 	  
-	  bool solution_found; //true if we just found a solution
 	  while(true)
 	  {
 		getState(stateObj).incrementNodeCount();
@@ -212,9 +196,7 @@ namespace Controller
 		  // has been reached.
 		  deal_with_solution(stateObj);
 
-		  // fail here to force backtracking.
-		  getState(stateObj).setFailed(true);
-		  solution_found = true;
+		  return; //stop search after first solution
 		}
 		else
 		{
@@ -227,7 +209,6 @@ namespace Controller
 		  cout << "depth after branch:" << getMemory(stateObj).backTrack().current_depth() << endl;
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_left();
 		  prop(stateObj, v);
-		  solution_found = false;
      		}
 		
 		// Either search failed, or a solution was found.
@@ -240,15 +221,7 @@ namespace Controller
 
 		  unsigned bj_depth;
 		  list<literal> clause;
-		  bool repeat;
-		  if(!solution_found) { //definitely a failure due to a conflict
-		    bj_depth = conflict_learn(stateObj, clause);
-		    repeat = causes_repeat(stateObj, order.val_order, clause);
-		    cout << "repeat: " << repeat << endl;
-		  } else {
-		    bj_depth = getMemory(stateObj).backTrack().current_depth() - 1;
- 		    repeat = false;
-		  }
+		  bj_depth = conflict_learn(stateObj, clause);
 
 		  cout << "bj_depth: " << bj_depth << endl;
 
@@ -257,24 +230,12 @@ namespace Controller
 		  		  
 		  maybe_print_search_action(stateObj, "bt");
 		  
-		  //learn clause, and do right branch
-		  if(!repeat && !solution_found) {
-		    world_pop(stateObj, bj_depth);
-		    learn_clause(stateObj, clause); 
-		    print_clause(clause);
-		    order.pop_branches(stateObj, bj_depth);
-		  } else {
-		    if(order.pop_to_left_branch_pt(stateObj)) return;
-		    cout << "r depth before push:" << getMemory(stateObj).backTrack().current_depth() << endl;
-		    world_push(stateObj);
-		    cout << "r depth after push:" << getMemory(stateObj).backTrack().current_depth() << endl; 
-		    order.branch_right();
-		    cout << "r depth after branch:" << getMemory(stateObj).backTrack().current_depth() << endl;   
-		  }
-		  
+		  //learn clause, and do pseudo right branch
+		  world_pop(stateObj, bj_depth);
+		  learn_clause(stateObj, clause); 
+		  print_clause(clause);
+		  		  
 		  set_optimise_and_propagate_queue(stateObj);
-		  
-		  solution_found = false;
 		}
 	  }
   }
