@@ -38,7 +38,8 @@ namespace Controller
     for(; curr != end; curr++) {
       cout << (*curr).var << " (aka. " << (*curr).id << ") ";
       cout << ((*curr).neg == 1 ? "not" : "") << " neg@";
-      cout << (*curr).depth << " END" << endl;
+      cout << (*curr).depth << " (antecedent:" << (*curr).antecedent << ")";
+      cout << " (seqno: " << (*curr).ant_seq_no << ") END" << endl;
     }
   }
   
@@ -95,6 +96,8 @@ namespace Controller
     clause.sort(compare_literal);
   }
 
+  inline bool compare_seq_no(literal l1, literal l2) 
+  { return (l1.depth == l2.depth && l1.ant_seq_no > l2.ant_seq_no) || l1.depth > l2.depth; }
   //Learn a conflict and return a depth to jump back to. <clause> data structure
   //is sorted by var_id throughout. Conflict clause is written into <clause>.
   inline unsigned conflict_learn(StateObj* stateObj, list<literal>& clause)
@@ -113,24 +116,24 @@ namespace Controller
     build_clause(other_conflicting, bc.last_clause);
     combine(clause, other_conflicting);
 
-    //Now we have a cut of the implication graph (clause) but we will resolve
-    //antecedent clauses in any order until we have only decision variables.
-    while(true) {
-      list<literal>::iterator curr = clause.begin();
-      list<literal>::iterator end = clause.end();
-      DynamicConstraint* next = 0;
-      while(curr != end && next == 0) {
-	next = (*curr).antecedent;
-	curr++;
+    //find firstUIP cut
+    if(clause.size() != 1)
+      while(true) {
+	list<literal> sorted_clause = clause;
+	sorted_clause.sort(compare_seq_no);
+	print_clause(sorted_clause);
+	literal last = sorted_clause.front();
+	sorted_clause.pop_front();
+	literal penultimate = sorted_clause.front();
+	if(last.depth > penultimate.depth || last.antecedent == 0)
+	  break; //already at firstUIP
+	else {
+	  list<literal> next_clause;
+	  build_clause(next_clause, last.antecedent);
+	  combine(clause, next_clause);
+	}
       }
-      if(next != 0) {
-	list<literal> next_clause;
-	build_clause(next_clause, next);
-	combine(clause, next_clause);
-      } else {
-	break; //nothing to resolve, finish now
-      }
-    }
+
     //do something with successfully created conflict clause
     if(clause.size() == 1)
       return 0; //jump back to root for unit clause
