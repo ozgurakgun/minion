@@ -349,7 +349,8 @@ struct DynamicAlldiff : public DynamicConstraint
       
       // Initialize matching to satisfy the invariant
       // that the values are all different in varvalmatching.
-      #ifndef DYNAMICALLDIFF
+      // watches DS is used in alldiffgacslow and in debugging.
+      #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
       if(usewatches()) watches.resize(numvars);
       #endif
       
@@ -358,7 +359,7 @@ struct DynamicAlldiff : public DynamicConstraint
           varvalmatching[i]=i+dom_min;
           valvarmatching[i]=i;
           
-          #ifndef DYNAMICALLDIFF
+          #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
           if(usewatches()) watches[i].reserve(numvals, stateObj);
           #endif
       }
@@ -410,7 +411,7 @@ struct DynamicAlldiff : public DynamicConstraint
   
   smallset to_process;  // set of vars to process.
   
-  #ifndef DYNAMICALLDIFF
+  #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
   vector<smallset_list_bt> watches;
   #endif
   
@@ -478,6 +479,35 @@ struct DynamicAlldiff : public DynamicConstraint
   {
       // get variable number from the trigger
     int prop_var = trig->trigger_info();
+    #ifndef NO_DEBUG
+    // check that some value has been disturbed; otherwise the watches are malfunctioning.
+    if(var_array[prop_var].inDomain(varvalmatching[prop_var]))
+    {
+        smallset_list_bt& watch = watches[prop_var];
+        short * list = ((short *) watch.list.get_ptr());
+        int count=list[watch.maxsize];
+        bool valout=false;
+        
+        for(int i=0; i<count; i++)
+        {
+            D_DATA(cout << "Checking var "<< prop_var << " val " << list[i]+dom_min << endl );
+            if(!var_array[prop_var].inDomain(list[i]+dom_min))
+            {
+                valout=true;
+                break;
+            }
+        }
+        if(!valout)
+        {
+            // none of the watches were disturbed.
+            cout << "None of the watches in the DS were disturbed. BT triggers must not match with watches DS." <<endl;
+            cout << "Variable " << prop_var <<", val in matching: " << varvalmatching[prop_var] << endl;
+            D_ASSERT(false);
+        }
+    }
+    
+    
+    #endif
     
     if(!to_process.in(prop_var))
     {
@@ -488,7 +518,6 @@ struct DynamicAlldiff : public DynamicConstraint
     {
         constraint_locked = true;
         getQueue(stateObj).pushSpecialTrigger(this);
-        //do_prop();
     }
   }
   
@@ -606,6 +635,18 @@ struct DynamicAlldiff : public DynamicConstraint
                         // Restore valvarmatching because it might be messed up by Hopcroft.
                         valvarmatching[varvalmatching[j]-dom_min]=j;
                     }
+                    
+                    #ifdef DYNAMICALLDIFF
+                    // sync the watches to the matching, 
+                    // so that after backtracking they are synced.
+                    #ifndef BTMATCHING
+                    DynamicTrigger * dt = dynamic_trigger_start();
+                    for(int i=0; i<numvars; i++)
+                    {
+                        var_array[i].addWatchTrigger(dt + i, DomainRemoval, varvalmatching[i]);
+                    }
+                    #endif
+                    #endif
                     
                     //D_DATA(cout << varinlocalmatching.getlist()<<endl);
                     getState(stateObj).setFailed(true);
@@ -1085,13 +1126,14 @@ struct DynamicAlldiff : public DynamicConstraint
             #endif
             for(int i=0; i<var_indices.size(); i++)
             {
-                #ifndef DYNAMICALLDIFF
+                #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
                 watches[var_indices[i]].clear();
                 
                 // watch the value from the matching.
                 watches[var_indices[i]].insert(varvalmatching[var_indices[i]]-dom_min);
+                #endif
                 
-                #else
+                #ifdef DYNAMICALLDIFF
                 
                 // Clear all the triggers on this variable. At end now.
                 int var=var_indices[i];
@@ -1294,9 +1336,12 @@ struct DynamicAlldiff : public DynamicConstraint
                             if(usewatches())
                             {
                                 D_DATA(cout << "Adding watch for var " << newnode << " val " << curnode-numvars+dom_min << endl);
-                                #ifndef DYNAMICALLDIFF
+                                
+                                #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
                                 watches[newnode].insert(curnode-numvars);
-                                #else
+                                #endif
+                                
+                                #ifdef DYNAMICALLDIFF
                                 var_array[newnode].addDynamicTriggerBT(get_dt(newnode, triggercount[newnode]), 
                                     DomainRemoval, curnode-numvars+dom_min);
                                 triggercount[newnode]++;
@@ -1354,9 +1399,11 @@ struct DynamicAlldiff : public DynamicConstraint
             if(usewatches() && lowlinkvar!=-1)
             {
                 D_DATA(cout << "Adding watch for var " << lowlinkvar << " val " << curnode-numvars+dom_min << endl);
-                #ifndef DYNAMICALLDIFF
+                
+                #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
                 watches[lowlinkvar].insert(curnode-numvars);
-                #else
+                #endif
+                #ifdef DYNAMICALLDIFF
                 var_array[lowlinkvar].addDynamicTriggerBT(get_dt(lowlinkvar, triggercount[lowlinkvar]), 
                     DomainRemoval, curnode-numvars+dom_min);
                 triggercount[lowlinkvar]++;

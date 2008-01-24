@@ -100,7 +100,7 @@ public:
           (record.trigger)->add_after(record.queue, stateObj);
       }
       record.trigger->queue=record.queue;
-      //cout << "Backtracked a dynamic trigger: "<< (int)(record.trigger) <<endl;
+      D_DATA(cout << "Backtracked a dynamic trigger: "<< (int)(record.trigger) << "info:" << record.trigger->trigger_info() <<endl);
     }
     
     D_ASSERT(_local_depth == bt_depth);
