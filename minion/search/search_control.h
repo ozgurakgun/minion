@@ -14,6 +14,17 @@
     typedef typename VarValOrder::first_type::value_type VarType;
 	switch(order_in)
 	{
+	case ORDER_VSIDS:
+	  {
+		Controller::VariableOrder<VarType, Controller::VSIDSBranch> 
+		order(stateObj, search_order.first, search_order.second);
+		
+		try 
+		{ Controller::solve_loop(stateObj, order, search_order.first, prop); }
+		catch(...)
+		{ }
+	  }
+	  break;
 	  case ORDER_STATIC:
 	  {
 		Controller::VariableOrder<VarType, Controller::SlowStaticBranch> 

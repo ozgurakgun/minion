@@ -205,7 +205,9 @@ void parse_command_line(StateObj* stateObj, Reader& reader, MinionArguments& arg
 	  
 	  string order(argv[i]);
 	  
-	  if(order == "static")
+	  if(order ==  "vsids")
+	    args.order = ORDER_VSIDS;
+	  else if(order == "static")
 		args.order = ORDER_STATIC;
 	  else if(order == "sdf")
 		args.order = ORDER_SDF;

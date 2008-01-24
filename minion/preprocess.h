@@ -119,7 +119,8 @@ enum VarOrder
   ORDER_SDF,
   ORDER_LDF,
   ORDER_ORIGINAL,
-  ORDER_CONFLICT
+  ORDER_CONFLICT,
+  ORDER_VSIDS
 };
 
 inline PropagationLevel GetPropMethodFromString(string s)

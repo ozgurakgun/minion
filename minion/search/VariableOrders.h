@@ -28,6 +28,7 @@
 #define VARIABLEORDERS_H
 
 #include "search_methods.h"
+#include "literal.h"
 
 template<typename T>
 void inline maybe_print_search_assignment(StateObj* stateObj, T& var, DomainInt val, BOOL equal, bool force = false)
@@ -81,6 +82,11 @@ struct VariableOrder
     }
     var_order[pos].uncheckedAssign(assign_val);
     maybe_print_search_assignment(stateObj, var_order[pos], assign_val, true);
+  }
+
+  void update_order(list<literal>& clause)
+  {
+    branch_method.update(clause);
   }
 
   //not needed, but left in for compatibility with the rest of the code

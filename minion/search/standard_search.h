@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include "common_search.h"
+#include "literal.h"
 
 namespace Controller
 {
@@ -20,15 +21,6 @@ namespace Controller
   // These need the following functions:
   // Constructor that takes existing variable and value ordering
   // (Feel free to ignore the value ordering!)
-
-  struct literal {
-    AnyVarRef var; //variable
-    int id; //variable ID
-    int neg; //negation, 0 iff negated
-    unsigned depth; //depth set
-    DynamicConstraint* antecedent; //cause of instantiation (0 for search var)
-    unsigned ant_seq_no; //sequence number of antecedent propagation (> is later)
-  };
 
   inline void print_clause(list<literal>& c)
   {
@@ -98,9 +90,11 @@ namespace Controller
 
   inline bool compare_seq_no(literal l1, literal l2) 
   { return (l1.depth == l2.depth && l1.ant_seq_no > l2.ant_seq_no) || l1.depth > l2.depth; }
+
   //Learn a conflict and return a depth to jump back to. <clause> data structure
   //is sorted by var_id throughout. Conflict clause is written into <clause>.
-  inline unsigned conflict_learn(StateObj* stateObj, list<literal>& clause)
+  template<typename VarOrder>
+  inline unsigned conflict_learn(StateObj* stateObj, list<literal>& clause, VarOrder& order)
   {
     BooleanContainer& bc = getVars(stateObj).getBooleanContainer();
     AnyVarRef& conflict_var = bc.conflict_var;
@@ -108,6 +102,8 @@ namespace Controller
     //create initial clause based on clause that fired just before conflict
     clause.clear();
     build_clause(clause, conflict_var.getAntecedent());
+    order.update_order(clause);
+
     unsigned const curr_depth = getMemory(stateObj).backTrack().current_depth();
 
     //Begin by resolving the other clause contributing to the
@@ -115,6 +111,7 @@ namespace Controller
     list<literal> other_conflicting;
     build_clause(other_conflicting, bc.last_clause);
     combine(clause, other_conflicting);
+    order.update_order(other_conflicting);
 
     //find firstUIP cut
     if(clause.size() != 1)
@@ -131,6 +128,7 @@ namespace Controller
 	  list<literal> next_clause;
 	  build_clause(next_clause, last.antecedent);
 	  combine(clause, next_clause);
+	  order.update_order(next_clause);
 	}
       }
 
@@ -224,7 +222,7 @@ namespace Controller
 
 		  unsigned bj_depth;
 		  list<literal> clause;
-		  bj_depth = conflict_learn(stateObj, clause);
+		  bj_depth = conflict_learn<VarOrder>(stateObj, clause, order);
 
 		  cout << "bj_depth: " << bj_depth << endl;
 

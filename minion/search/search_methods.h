@@ -1,3 +1,53 @@
+#include <algorithm>
+#include "literal.h"
+
+float decay(float f) { return 0.95 * f; }
+
+struct VSIDSBranch
+{
+  bool already_setup;
+  vector<float> scores;
+  
+  VSIDSBranch() : already_setup(false) {}
+
+  template<typename VarType>
+  int operator()(vector<VarType>& var_order, int)
+  {
+    if(!already_setup) {
+      scores = vector<float>(var_order.size(), 0.0);
+      already_setup = true;
+    }
+    cout << scores << endl;
+    vector<float>::iterator curr = scores.begin();
+    vector<float>::iterator end = scores.end();
+    size_t it_pos = 0;
+    float max = -1.0;
+    size_t max_pos = var_order.size(); //return last_var+1 when all assigned
+    while(curr != end) {
+      if(max < *curr && !(var_order[it_pos].isAssigned())) {
+	max = *curr;
+	max_pos = it_pos;
+      } 
+      it_pos++;
+      curr++;
+    }
+    std::transform(scores.begin(), scores.end(), scores.begin(), decay);
+    return max_pos; //highest priority unassigned variable
+  }
+
+  //this function is used to update the heuristic whenever ANY clause is used in
+  //conflict analysis
+  void update(list<literal>& clause)
+  {
+    list<literal>::iterator curr = clause.begin();
+    list<literal>::iterator end = clause.end();
+    while(curr != end) {
+      scores[(*curr).id] += 1.0;
+      curr++;
+    }
+  }
+};
+
 struct StaticBranch
 {
   template<typename VarType>
@@ -8,6 +58,8 @@ struct StaticBranch
 	  ++pos;
 	return pos;
   }
+
+  void update(list<literal>& clause) {}
 };
 
 struct SlowStaticBranch
@@ -21,6 +73,8 @@ struct SlowStaticBranch
 	  ++pos;
 	return pos;
   }
+
+  void update(list<literal>& clause) {}
 };
 
 struct SDFBranch
@@ -50,6 +104,8 @@ struct SDFBranch
 	}
 	return smallest_dom;
   }
+
+  void update(list<literal>& clause) {}
 };
 
 struct LDFBranch
@@ -83,4 +139,6 @@ struct LDFBranch
 	}
 	return largest_dom;
   }
+
+  void update(list<literal>& clause) {}
 };
