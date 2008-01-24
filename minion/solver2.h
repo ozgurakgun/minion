@@ -33,12 +33,14 @@ namespace Controller
   inline void world_push(StateObj* stateObj)
   {
     D_INFO(0,DI_SOLVER,"World Push");
+    
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
     getMemory(stateObj).backTrack().world_push();
     
     #ifdef MIXEDTRIGGERS
     getTriggerMem(stateObj).before_branch_left();
     #endif
+    
   }
   
   /// Pops the state of the whole world.
