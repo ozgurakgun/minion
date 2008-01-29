@@ -1,3 +1,4 @@
+
 /* Minion Constraint Solver
    http://minion.sourceforge.net
    
@@ -22,10 +23,10 @@ namespace Controller
   // Constructor that takes existing variable and value ordering
   // (Feel free to ignore the value ordering!)
 
-  inline void print_clause(list<literal>& c)
+  inline void print_clause(const list<literal>& c)
   {
-    list<literal>::iterator curr = c.begin();
-    list<literal>::iterator end = c.end();
+    list<literal>::const_iterator curr = c.begin();
+    list<literal>::const_iterator end = c.end();
     cout << "Clause:" << endl;
     for(; curr != end; curr++) {
       cout << (*curr).var << " (aka. " << (*curr).id << ") ";
@@ -38,12 +39,12 @@ namespace Controller
   //Simplify and resolve the two supplied clauses, returning result in
   //c1. Assume that they are sorted in id order and that they are
   //themselves simplified.
-  inline void combine(list<literal>& c1, list<literal>& c2)
+  inline void combine(list<literal>& c1, const list<literal>& c2)
   {
     list<literal>::iterator c1curr = c1.begin();
     list<literal>::iterator c1end = c1.end();
-    list<literal>::iterator c2curr = c2.begin();
-    list<literal>::iterator c2end = c2.end();
+    list<literal>::const_iterator c2curr = c2.begin();
+    list<literal>::const_iterator c2end = c2.end();
     
     while(c1curr != c1end && c2curr != c2end) { //merge the c2 into c1
       if((*c1curr).id == (*c2curr).id) {
@@ -66,12 +67,10 @@ namespace Controller
     }
   }
 
-  inline bool compare_literal(literal l1, literal l2) { return l1.id < l2.id; }
-
   //build a clause data structure, sorted by var id
   inline void build_clause(list<literal>& clause, DynamicConstraint* constr)
   {
-    vector<AnyVarRef> vars = constr->get_vars();
+    vector<AnyVarRef> vars = constr->get_vars(); //sorted by var id already
     size_t vars_s = vars.size();
     vector<int>* negs = constr->get_signs();
     clause.clear();
@@ -85,12 +84,18 @@ namespace Controller
       tmp.ant_seq_no = tmp.var.getSeqNo();
       clause.push_back(tmp);
     }
-    clause.sort(compare_literal);
   }
 
-  inline bool compare_seq_no(literal l1, literal l2) 
-  { return (l1.depth == l2.depth && l1.ant_seq_no > l2.ant_seq_no) || l1.depth > l2.depth; }
-
+  //order by presence of antecedent, followed by depth, followed by sequence number
+  //of the propagation
+  inline bool lit_order(const literal& l1, const literal& l2)
+  { 
+    return (l1.antecedent && !(l2.antecedent)) ||
+      (l1.antecedent && l2.antecedent && l1.depth > l2.depth) ||
+      (l1.antecedent && l2.antecedent && l1.depth == l2.depth && 
+       l1.ant_seq_no > l2.ant_seq_no);
+  }
+  
   //Learn a conflict and return a depth to jump back to. <clause> data structure
   //is sorted by var_id throughout. Conflict clause is written into <clause>.
   template<typename VarOrder>
@@ -116,13 +121,41 @@ namespace Controller
     //find firstUIP cut
     if(clause.size() != 1)
       while(true) {
-	list<literal> sorted_clause = clause;
-	sorted_clause.sort(compare_seq_no);
-	print_clause(sorted_clause);
-	literal last = sorted_clause.front();
-	sorted_clause.pop_front();
-	literal penultimate = sorted_clause.front();
-	if(last.depth > penultimate.depth || last.antecedent == 0)
+	list<literal>::iterator curr = clause.begin();
+	list<literal>::iterator end = clause.end();
+	literal last = *curr;
+	curr++;
+	//find the literal that we most want to resolve
+	while(curr != end) {
+	  if(lit_order(*curr, last)) 
+	    last = *curr;
+	  curr++;
+	}
+	//find two greatest depths
+	curr = clause.begin();
+	bool firstrun = true;
+	firstrun = true;
+	int max_d = (*curr).depth;
+	curr++;
+	int next_d = -1; //this will always be initialised before it is used
+	while(curr != end) {
+	  if(firstrun) {
+	    if((*curr).depth > max_d) {
+	      next_d = max_d;
+	      max_d = (*curr).depth;
+	    } else
+	      next_d = (*curr).depth;
+	    firstrun = false;
+	  } else if((*curr).depth > next_d) {
+	    if((*curr).depth > max_d) {
+	      next_d = max_d;
+	      max_d = (*curr).depth;
+	    } else
+	      next_d = (*curr).depth;
+	  }
+	  curr++;
+	}
+	if(max_d > next_d || last.antecedent == 0)
 	  break; //already at firstUIP
 	else {
 	  list<literal> next_clause;
@@ -203,11 +236,8 @@ namespace Controller
 		{
 		  maybe_print_search_state(stateObj, "Node: ", v);
 		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_left();
-		  cout << "depth before push:" << getMemory(stateObj).backTrack().current_depth() << endl;
 		  world_push(stateObj);
-		  cout << "depth after push:" << getMemory(stateObj).backTrack().current_depth() << endl;
 		  order.branch_left();
-		  cout << "depth after branch:" << getMemory(stateObj).backTrack().current_depth() << endl;
 		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_left();
 		  prop(stateObj, v);
      		}
@@ -224,8 +254,6 @@ namespace Controller
 		  list<literal> clause;
 		  bj_depth = conflict_learn<VarOrder>(stateObj, clause, order);
 
-		  cout << "bj_depth: " << bj_depth << endl;
-
 		  if(bj_depth == -1)
 		    return;
 		  		  
@@ -234,7 +262,6 @@ namespace Controller
 		  //learn clause, and do pseudo right branch
 		  world_pop(stateObj, bj_depth);
 		  learn_clause(stateObj, clause); 
-		  print_clause(clause);
 		  		  
 		  set_optimise_and_propagate_queue(stateObj);
 		}

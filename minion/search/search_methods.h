@@ -1,12 +1,11 @@
 #include <algorithm>
 #include "literal.h"
 
-float decay(float f) { return 0.95 * f; }
-
 struct VSIDSBranch
 {
   bool already_setup;
   vector<float> scores;
+  size_t scores_s;
   
   VSIDSBranch() : already_setup(false) {}
 
@@ -15,23 +14,19 @@ struct VSIDSBranch
   {
     if(!already_setup) {
       scores = vector<float>(var_order.size(), 0.0);
+      scores_s = var_order.size();
       already_setup = true;
     }
-    cout << scores << endl;
-    vector<float>::iterator curr = scores.begin();
-    vector<float>::iterator end = scores.end();
-    size_t it_pos = 0;
     float max = -1.0;
     size_t max_pos = var_order.size(); //return last_var+1 when all assigned
-    while(curr != end) {
-      if(max < *curr && !(var_order[it_pos].isAssigned())) {
-	max = *curr;
-	max_pos = it_pos;
+    for(size_t i = 0; i < scores_s; i++) {
+      float& curr = scores[i];
+      if(max < curr && !(var_order[i].isAssigned())) {
+	max = curr;
+	max_pos = i;
       } 
-      it_pos++;
-      curr++;
+      curr *= 0.95; //decay
     }
-    std::transform(scores.begin(), scores.end(), scores.begin(), decay);
     return max_pos; //highest priority unassigned variable
   }
 

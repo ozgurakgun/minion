@@ -58,13 +58,31 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
   int watched[2];
   int last;
 
-  BoolOrConstraintDynamic(StateObj* _stateObj, const VarArray& _var_array,
-			       const vector<int>& _negs) :
-    DynamicConstraint(_stateObj), var_array(_var_array), negs(_negs), last(0)
+  BoolOrConstraintDynamic(StateObj* _stateObj, const VarArray& _vs,
+			  const vector<int>& _negs) :
+    DynamicConstraint(_stateObj), last(0)
   { 
     D_INFO(2, DI_OR, "Constructor for OR constraint");
     watched[0] = watched[1] = -2;
-    no_vars = _var_array.size();
+    no_vars = _vs.size();
+    VarArray sorted_vs = _vs;
+    vector<int> sorted_negs = _negs;
+    for(int i = 0; i < no_vars; i++) {
+      int min_id = sorted_vs[i].getId();
+      int min_id_idx = i;
+      for(int j = i + 1; j < no_vars; j++) {
+	int curr_id = sorted_vs[j].getId();
+	if(curr_id < min_id) {
+	  min_id = curr_id;
+	  min_id_idx = j;
+	}
+      }
+      VarRef tmp = sorted_vs[i];            int tmp_neg = sorted_negs[i];
+      sorted_vs[i] = sorted_vs[min_id_idx]; sorted_negs[i] = sorted_negs[min_id_idx];
+      sorted_vs[min_id_idx] = tmp;          sorted_negs[min_id_idx] = tmp_neg;
+    }
+    var_array = sorted_vs;
+    negs = sorted_negs;
 #ifndef WATCHEDLITERALS
     cerr << "This almost certainly isn't going to work... sorry" << endl;
 #endif
@@ -93,8 +111,10 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
 	}
       }
     }
-    if(found == 0)
+    if(found == 0) {
       getState(stateObj).setFailed(true);
+      return;
+    }
     if(found == 1) { //detect unit clause
       var_array[first_found].propagateAssign(negs[first_found]);
       return; //don't bother placing any watches on unit clause
@@ -177,7 +197,7 @@ BuildCT_WATCHED_OR(StateObj* stateObj, const light_vector<T>& vs, BOOL reify,
     cerr << "Cannot reify 'watched or' constraint." << endl;
     exit(0);
   } else {
-      return new BoolOrConstraintDynamic<light_vector<T> >(stateObj, vs, bl.negs);
+    return new BoolOrConstraintDynamic<light_vector<T> >(stateObj, vs, bl.negs);
   }
 }
 
