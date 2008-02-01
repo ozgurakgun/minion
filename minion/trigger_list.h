@@ -464,6 +464,34 @@ public:
     t->add_after(queue, stateObj);
 	D_ASSERT(old_list == NULL || old_list->sanity_check_list(false));
   }
+  
+  void findTriggerPosition(TrigType & type, DynamicTrigger* t, int & varnum, DomainInt & val)
+  {
+      // This function is mainly untested, be careful.
+      DynamicTrigger* queue=t->queue;
+      // Should really checke that the trigger is actually in the queue that 
+      // queue points to.
+      int offset=(int)(queue-static_cast<DynamicTrigger*>(dynamic_triggers.get_ptr()));
+      if(offset < 4*var_count_m)
+      {
+          type=(TrigType) (offset/var_count_m);
+          varnum=offset%var_count_m;
+      }
+      else
+      {
+          type=DomainRemoval;
+          offset=offset-DomainRemoval*var_count_m;
+          
+          // now offset is the start fo the block for DomainRemoval type.
+          
+          // offset == varnum + (val-vars_min_domain_val)*var_count_m
+          
+          varnum=offset % var_count_m;
+          
+          val=(DomainInt)(((offset-varnum)/var_count_m)+vars_min_domain_val);
+      }
+      
+  }
   #endif
 #endif
   
