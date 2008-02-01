@@ -16,7 +16,7 @@ endif
 
 ifdef PROFILE
   NAMEBASE := $(NAMEBASE)-profile
-  FLAGS := $(FLAGS) -g -fno-inline -fno-inline-functions
+  FLAGS := $(FLAGS) -pg -fno-inline -fno-inline-functions
 endif
 
 ifdef INFO

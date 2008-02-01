@@ -8,7 +8,13 @@
 // #define BTMATCHING
 
 // This one seems to break even.
+// Whether to use a TMS to track whether spare values are present in the scc
 // #define SPAREVALUESOPT
+
+// Reverse the var list.
+// exposes a bug?
+// No the bug can be seen with this switched off.
+//#define REVERSELIST
 
 #include <stdlib.h>
 #include <iostream>
@@ -72,9 +78,20 @@ struct smallset
     
     inline void clear()
     {
-        D_ASSERT(cert< 2000000000);
-        cert++;
-        list.clear();
+        if(cert>2000000000)
+        {
+            list.clear();
+            cert=1;
+            for(int i=0; i<membership.size(); i++)
+            {
+                membership[i]=0;
+            }
+        }
+        else
+        {
+            cert++;
+            list.clear();
+        }
     }
 };
 
@@ -116,8 +133,18 @@ struct smallset_nolist
     
     inline void clear()
     {
-        D_ASSERT(cert< 2000000000);
-        cert++;
+        if(cert>2000000000)
+        {
+            cert=1;
+            for(int i=0; i<membership.size(); i++)
+            {
+                membership[i]=0;
+            }
+        }
+        else
+        {
+            cert++;
+        }
     }
 };
 
@@ -234,9 +261,26 @@ struct smallset_list_bt
     {
         D_DATA(cout << "clearing list "<< (list.get_ptr()) << endl);
         D_ASSERT(cert< 2000000000);
-        cert++;
+        
+        if(cert>2000000000)
+        {
+            cert=1;
+            for(int i=0; i<membership.size(); i++)
+            {
+                membership[i]=0;
+            }
+        }
+        else
+        {
+            cert++;
+        }
         
         ((short *)list.get_ptr())[maxsize]=0;
+    }
+    
+    int size()
+    {
+        return (int) ((short *)list.get_ptr())[maxsize];
     }
     
     void sanitycheck()
@@ -303,13 +347,17 @@ struct DynamicAlldiff : public DynamicConstraint
   
   #ifndef DYNAMICALLDIFF
   AlldiffGacSlow(StateObj* _stateObj, const VarArray& _var_array) : Constraint(_stateObj),
-    var_array(_var_array), constraint_locked(false), SCCSplit(_stateObj, _var_array.size()),
-    sparevaluespresent(_stateObj, _var_array.size())
   #else
   DynamicAlldiff(StateObj* _stateObj, const VarArray& _var_array) : DynamicConstraint(_stateObj),
-    var_array(_var_array), constraint_locked(false), SCCSplit(_stateObj, _var_array.size()),
-    sparevaluespresent(_stateObj, _var_array.size())
   #endif
+  
+    #ifndef REVERSELIST
+    var_array(_var_array), 
+    #else
+    var_array(_var_array.rbegin(), _var_array.rend()),
+    #endif
+    constraint_locked(false), SCCSplit(_stateObj, _var_array.size()),
+    sparevaluespresent(_stateObj, _var_array.size())
   {
       dom_min=var_array[0].getInitialMin();
       dom_max=var_array[0].getInitialMax();
@@ -367,6 +415,7 @@ struct DynamicAlldiff : public DynamicConstraint
       D_DATA(SCCSplit2=getMemory(stateObj).backTrack().request_bytes((sizeof(char) * numvars)));
       D_DATA(for(int i=0; i<numvars; i++) ((char *)SCCSplit2.get_ptr())[i]=1);
       
+      
   }
   
   // only used in dynamic version.
@@ -381,13 +430,13 @@ struct DynamicAlldiff : public DynamicConstraint
   inline DynamicTrigger * get_dt(int var, int counter)
   {
       // index the square array of dynamic triggers from dt
-      D_ASSERT(dt == dynamic_trigger_start()+numvars);
+      D_ASSERT(bt_triggers_start == dynamic_trigger_start()+numvars);
       D_ASSERT(counter<numvals);
       D_ASSERT(var<numvars);
-      D_ASSERT((dt+(var*numvals)+counter) >= dynamic_trigger_start());
-      D_ASSERT((dt+(var*numvals)+counter) < dynamic_trigger_start() + dynamic_trigger_count());
+      D_ASSERT((bt_triggers_start+(var*numvals)+counter) >= dynamic_trigger_start());
+      D_ASSERT((bt_triggers_start+(var*numvals)+counter) < dynamic_trigger_start() + dynamic_trigger_count());
       
-      return dt+(var*numvals)+counter;
+      return bt_triggers_start+(var*numvals)+counter;
   }
   #endif
   
@@ -547,6 +596,10 @@ struct DynamicAlldiff : public DynamicConstraint
     PROP_INFO_ADDONE(WatchedAlldiff);
     #endif
     
+    #ifdef DYNAMICALLDIFF
+    bt_triggers_start=dynamic_trigger_start()+numvars;
+    #endif
+    
     #ifndef NO_DEBUG
     cout << "Entering do_prop."<<endl;
     cout << "Varvalmatching:" <<varvalmatching<<endl;
@@ -559,8 +612,9 @@ struct DynamicAlldiff : public DynamicConstraint
         for(int j=dom_min; j<=dom_max; j++)
         {
             if(var_array[i].inDomain(j))
+            {
                 cout << j <<", ";
-            
+            }
         }
         cout << endl;
     }
@@ -580,6 +634,32 @@ struct DynamicAlldiff : public DynamicConstraint
         cout << (int)SCCSplit.isMember(i) << ", " << (int) (((char*)SCCSplit2.get_ptr())[i]==1) << endl;
         // The matches correspond.
         D_ASSERT(valvarmatching[varvalmatching[i]-dom_min]==i);
+    }
+    
+    #ifdef DYNAMICALLDIFF
+    // Can't yet check all the watches are in the right place, but can check
+    // there are the right number of them on each var.
+    for(int i=0; i<var_array.size(); i++)
+    {
+        int count=0;
+        DynamicTrigger* trig=get_dt(i, 0);
+        while(trig->queue!=NULL && count<numvals)
+        {
+            count++;
+            if(count<numvals) trig=get_dt(i,count);
+        }
+        D_ASSERT(count==watches[i].size());
+    }
+    #endif
+    
+    // Check that if an element of the matching is removed, then the var is 
+    // in to_process.
+    for(int i=0; i<var_array.size(); i++)
+    {
+        if(!var_array[i].inDomain(varvalmatching[i]))
+        {
+            D_ASSERT(to_process.in(i));
+        }
     }
     #endif
     
@@ -636,18 +716,6 @@ struct DynamicAlldiff : public DynamicConstraint
                         valvarmatching[varvalmatching[j]-dom_min]=j;
                     }
                     
-                    #ifdef DYNAMICALLDIFF
-                    // sync the watches to the matching, 
-                    // so that after backtracking they are synced.
-                    #ifndef BTMATCHING
-                    DynamicTrigger * dt = dynamic_trigger_start();
-                    for(int i=0; i<numvars; i++)
-                    {
-                        var_array[i].addWatchTrigger(dt + i, DomainRemoval, varvalmatching[i]);
-                    }
-                    #endif
-                    #endif
-                    
                     //D_DATA(cout << varinlocalmatching.getlist()<<endl);
                     getState(stateObj).setFailed(true);
                     to_process.clear();
@@ -665,6 +733,18 @@ struct DynamicAlldiff : public DynamicConstraint
                         varvalmatching[valvarmatching[tempval]]=tempval+dom_min;
                     }
                 }
+                
+                #ifdef DYNAMICALLDIFF
+                // sync the watches to the matching, 
+                // since the matching has just changed.
+                #ifndef BTMATCHING
+                DynamicTrigger * trig = dynamic_trigger_start();
+                for(int j=0; j<numvars; j++)
+                {
+                    var_array[j].addWatchTrigger(trig + j, DomainRemoval, varvalmatching[j]);
+                }
+                #endif
+                #endif
             }
             
             D_DATA(cout << "Fixed varvalmatching:" << varvalmatching <<endl);
@@ -673,7 +753,6 @@ struct DynamicAlldiff : public DynamicConstraint
             // a complete matching for the SCC.
             // Also, valinlocalmatching contains the domain values
             // used in this SCC.
-            
         }
         
         if(var_array[tempvar].isAssigned())  // Optimize the case where it is assigned.
@@ -704,6 +783,7 @@ struct DynamicAlldiff : public DynamicConstraint
                 // Now remove the value from the reduced SCC
                 for(int i=sccindex_start; i<=sccindex_end; i++)
                 {
+                    D_DATA(cout << "Removing var: "<< SCCs[i] << " val:" << tempval <<endl);
                     var_array[SCCs[i]].removeFromDomain(tempval);
                 }
                 
@@ -741,18 +821,6 @@ struct DynamicAlldiff : public DynamicConstraint
         D_ASSERT(SCCSplit.isMember(i) == (((char*)SCCSplit2.get_ptr())[i]==1));
         D_ASSERT(SCCs[varToSCCIndex[i]]==i);
     }
-    #endif
-    
-    #ifdef DYNAMICALLDIFF
-    // Matching fixed so place watches
-    // If BTMATCHING is used, these watches are not needed.
-    #ifndef BTMATCHING
-    DynamicTrigger * dt = dynamic_trigger_start();
-    for(int i=0; i<numvars; i++)
-    {
-        var_array[i].addWatchTrigger(dt + i, DomainRemoval, varvalmatching[i]);
-    }
-    #endif
     #endif
     
     
@@ -819,9 +887,6 @@ struct DynamicAlldiff : public DynamicConstraint
             var_indices.push_back(SCCs[k]);
             if(!SCCSplit.isMember(k)) break;
         }
-        
-        
-        
         
         //cout << "Running tarjan's on component "<< var_indices <<endl;
         tarjan_recursive(j);
@@ -964,19 +1029,44 @@ struct DynamicAlldiff : public DynamicConstraint
       }
       
       #ifdef DYNAMICALLDIFF
+        // Clear all the BT triggers. This is so that the tests at
+        // the start of do_prop will work.
+        bt_triggers_start=dynamic_trigger_start()+numvars;
+        for(int i=0; i<var_indices.size(); i++)
+        {
+            int var=var_indices[i];
+            for(int j=triggercount[var]; j<numvals; j++)
+            {
+                if( get_dt(var, j)->queue == NULL)
+                {
+                    break;
+                }
+                get_dt(var, j)->sleepDynamicTriggerBT(stateObj);
+            }
+        }
+        
       // set the variable numbers in the watches.
-      DynamicTrigger * dt=dynamic_trigger_start();
+      DynamicTrigger * trig=dynamic_trigger_start();
       for(int i=0; i<numvars; i++)
       {
-          (dt+i)->trigger_info() = i;
+          (trig+i)->trigger_info() = i;
       }
       for(int i=0; i<numvars; i++)
       {
           for(int j=0; j<numvals; j++)
           {
-              (dt+numvars+(i*numvals)+j)->trigger_info() = i;
+              (trig+numvars+(i*numvals)+j)->trigger_info() = i;
           }
       }
+      
+      #ifndef BTMATCHING
+      // set the watches here so that they start synced to the varvalmatching.
+        trig = dynamic_trigger_start();
+        for(int j=0; j<numvars; j++)
+        {
+            var_array[j].addWatchTrigger(trig + j, DomainRemoval, varvalmatching[j]);
+        }
+      #endif
       #endif
       
       do_prop();
@@ -1075,7 +1165,7 @@ struct DynamicAlldiff : public DynamicConstraint
     
     #ifdef DYNAMICALLDIFF
     vector<int> triggercount; // number of triggers on the variable
-    DynamicTrigger * dt;   // points at dynamic_trigger_start()+numvars
+    DynamicTrigger * bt_triggers_start;   // points at dynamic_trigger_start()+numvars
     #endif
     
     // An integer represents a vertex, where 0 .. numvars-1 represent the vars,
@@ -1121,9 +1211,6 @@ struct DynamicAlldiff : public DynamicConstraint
         
         if(usewatches())
         {
-            #ifdef DYNAMICALLDIFF
-            dt=dynamic_trigger_start()+numvars;
-            #endif
             for(int i=0; i<var_indices.size(); i++)
             {
                 #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
@@ -1501,6 +1588,8 @@ struct DynamicAlldiff : public DynamicConstraint
                                     // Why doing this test? something wrong with the assigned variable optimization?
                                     if(varvalmatching[curvar]!=copynode+dom_min-numvars)
                                     {
+                                        D_DATA(cout << "Removing var: "<< curvar << " val:" << copynode+dom_min-numvars <<endl);
+                    
                                         var_array[curvar].removeFromDomain(copynode+dom_min-numvars);
                                     }
                                 }
