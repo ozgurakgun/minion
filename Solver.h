@@ -63,13 +63,15 @@ protected:
     VarOrder            order;            // Keeps track of the decision variable order.
 
     vec<vec<GClause> >  watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-    vec<char>           assigns;          // The current assignments (lbool:s stored as char:s).
-    vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
-    vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
-    vec<GClause>        reason;           // 'reason[var]' is the clause that implied the variables current value, or 'NULL' if none.
+    vec<char>           lastAssigns;      // The last assignment made to the var (lbool:s stored as char:s).
+    vec<Lit>            trail;            // Stores assigments made in at current level.
+    int                 prop_pos;         // The first assignment on the Q trail that remains to be propagated.
+    vec<int>            BMS_dval;         // Map from decision level to the value BMSs used at that depth, or 0 when we have backtracked beyond that level (0 is never used normally).
+    vec<int>            BMS_setval;       // Map from Var to BMS value used when setting it.
+    vec<GClause>        lastReason;       // 'lastReason[var]' is the clause that implied the variables most recent value, or 'NULL' if none.
     vec<int>            level;            // 'level[var]' is the decision level at which assignment was made.
+    int                 decision_level;   // Current decision level.
     int                 root_level;       // Level of first proper decision.
-    int                 qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplifyDB()'.
     int64               simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplifyDB()'.
 
@@ -116,10 +118,10 @@ protected:
     void     newClause(const vec<Lit>& ps, bool learnt = false);
     void     claBumpActivity (Clause* c) { if ( (c->activity() += cla_inc) > 1e20 ) claRescaleActivity(); }
     void     remove          (Clause* c, bool just_dealloc = false);
-    bool     locked          (const Clause* c) const { GClause r = reason[var((*c)[0])]; return !r.isLit() && r.clause() == c; }
+    bool     locked          (const Clause* c) const { GClause r = lastReason[var((*c)[0])]; return !r.isLit() && r.clause() == c; }
     bool     simplify        (Clause* c) const;
 
-    int      decisionLevel() const { return trail_lim.size(); }
+    int      decisionLevel() const { return decision_level; }
 
 public:
     Solver() : ok               (true)
@@ -128,8 +130,9 @@ public:
              , cla_decay        (1)
              , var_inc          (1)
              , var_decay        (1)
-             , order            (assigns, activity)
-             , qhead            (0)
+             , order            (level, BMS_dval, BMS_setval, activity)
+             , prop_pos         (0)
+             , decision_level   (0)
              , simpDB_assigns   (0)
              , simpDB_props     (0)
              , default_params   (SearchParams(0.95, 0.999, 0.02))
@@ -152,8 +155,8 @@ public:
 
     // Helpers: (semi-internal)
     //
-    lbool   value(Var x) const { return toLbool(assigns[x]); }
-    lbool   value(Lit p) const { return sign(p) ? ~toLbool(assigns[var(p)]) : toLbool(assigns[var(p)]); }
+    lbool   value(Var x) const { return BMS_dval[level[x]] == BMS_setval[x] ? toLbool(lastAssigns[x]) : l_Undef; }
+    lbool   value(Lit p) const { return sign(p) ? ~value(var(p)) : value(var(p)); }
 
     int     nAssigns() { return trail.size(); }
     int     nClauses() { return clauses.size() + n_bin_clauses; }   // (minor difference from MiniSat without the GClause trick: learnt binary clauses will be counted as original clauses)
@@ -172,7 +175,7 @@ public:
     // Problem specification:
     //
     Var     newVar    ();
-    int     nVars     ()                    { return assigns.size(); }
+    int     nVars     ()                    { return activity.size(); }
     void    addUnit   (Lit p)               { if (ok) ok = enqueue(p); }
     void    addBinary (Lit p, Lit q)        { addBinary_tmp [0] = p; addBinary_tmp [1] = q; addClause(addBinary_tmp); }
     void    addTernary(Lit p, Lit q, Lit r) { addTernary_tmp[0] = p; addTernary_tmp[1] = q; addTernary_tmp[2] = r; addClause(addTernary_tmp); }

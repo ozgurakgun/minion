@@ -26,23 +26,21 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 //=================================================================================================
 
-
-struct VarOrder_lt {
-    const vec<double>&  activity;
-    bool operator () (Var x, Var y) { return activity[x] > activity[y]; }
-    VarOrder_lt(const vec<double>&  act) : activity(act) { }
-};
-
 class VarOrder {
-    const vec<char>&    assigns;     // var->val. Pointer to external assignment table.
+    const vec<int>&     levels;      // var->val. Pointer to external table.
+    const vec<int>&     BMS_dval;    // depth->val. Pointer to external table.
+    const vec<int>&     BMS_setval;  // var->val. Pointer to external table.
     const vec<double>&  activity;    // var->act. Pointer to external activity table.
-    Heap<VarOrder_lt>   heap;
+    vec<int>            sorted;      // array of Var sorted by activity
+    vec<int>            Var_to_pos;  // position of index Var in <sorted>
     double              random_seed; // For the internal random number generator
 
 public:
-    VarOrder(const vec<char>& ass, const vec<double>& act) :
-        assigns(ass), activity(act), heap(VarOrder_lt(act)), random_seed(91648253)
-        { }
+    VarOrder(const vec<int>& levs, const vec<int>& _BMS_dval, 
+	     const vec<int>& _BMS_setval, const vec<double>& act) :
+        levels(levs), BMS_dval(_BMS_dval), BMS_setval(_BMS_setval), 
+      activity(act), sorted(), Var_to_pos(), random_seed(91648253)
+      { }
 
     inline void newVar(void);
     inline void update(Var x);                  // Called when variable increased in activity.
@@ -51,44 +49,39 @@ public:
 };
 
 
+void VarOrder::update(Var x) //insert updated variable to correct place in sorted vector
+{
+  int pos = Var_to_pos[x];
+  while(activity[sorted[pos - 1]] > activity[sorted[pos]]) {
+    sorted[pos] = sorted[pos - 1];
+    pos--;
+  }
+  sorted[pos] = x;
+  Var_to_pos[x] = pos;
+}
+
 void VarOrder::newVar(void)
 {
-    heap.setBounds(assigns.size());
-    heap.insert(assigns.size()-1);
+  Var nv = BMS_setval.size() - 1;
+  sorted.push(nv);
+  Var_to_pos.push(nv);
+  update(nv);
 }
-
-
-void VarOrder::update(Var x)
-{
-    if (heap.inHeap(x))
-        heap.increase(x);
-}
-
-
-void VarOrder::undo(Var x)
-{
-    if (!heap.inHeap(x))
-        heap.insert(x);
-}
-
 
 Var VarOrder::select(double random_var_freq)
 {
     // Random decision:
-    if (drand(random_seed) < random_var_freq && !heap.empty()){
-        Var next = irand(random_seed,assigns.size());
-        if (toLbool(assigns[next]) == l_Undef)
+    if (drand(random_seed) < random_var_freq){
+        Var next = irand(random_seed, sorted.size());
+        if (BMS_setval[next] != BMS_dval[levels[next]]) //make sure it's not assigned already
             return next;
     }
 
     // Activity based decision:
-    while (!heap.empty()){
-        Var next = heap.getmin();
-        if (toLbool(assigns[next]) == l_Undef)
-            return next;
-    }
-
-    return var_Undef;
+    for(int i = 0; i < sorted.size(); i++)
+      if(BMS_setval[i] != BMS_dval[levels[i]]) //not assigned
+	return i;
+    return var_Undef; //all assigned
 }
 
 
