@@ -16,6 +16,15 @@
 // No the bug can be seen with this switched off.
 //#define REVERSELIST
 
+// Do not process SCCs independently. Do the whole lot each time.
+//#define NOSCC
+
+// Warning: if this is not defined, then watchedalldiff probably won't do anything.
+#define USEWATCHES
+
+// Optimize the case where a value was assigned. Only works in the absence of NOSCC.
+#define ASSIGNOPT 
+
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
@@ -464,10 +473,17 @@ struct DynamicAlldiff : public DynamicConstraint
   vector<smallset_list_bt> watches;
   #endif
   
+  #ifdef USEWATCHES
   inline bool usewatches()
   {
       return true;
   }
+  #else
+  inline bool usewatches()
+  {
+      return false;
+  }
+  #endif
   
   bool constraint_locked;
   
@@ -583,7 +599,11 @@ struct DynamicAlldiff : public DynamicConstraint
         return;
     }
     
+    #ifndef NOSCC
     do_prop();
+    #else
+    do_prop_noscc();
+    #endif
     to_process.clear();
   }
   
@@ -755,7 +775,11 @@ struct DynamicAlldiff : public DynamicConstraint
             // used in this SCC.
         }
         
+        #ifdef ASSIGNOPT
         if(var_array[tempvar].isAssigned())  // Optimize the case where it is assigned.
+        #else
+        if(false)
+        #endif
         {
             int tempval=var_array[tempvar].getAssignedValue();
             
@@ -823,56 +847,6 @@ struct DynamicAlldiff : public DynamicConstraint
     }
     #endif
     
-    
-    /*if(valinlocalmatching.size()==0)
-    {
-        // If we don't have a partial matching left over, 
-        // Greedy matching algorithm in here.
-        for(int tempvar=0; tempvar<numvars; ++tempvar)
-        {
-            for(DomainInt j=var_array[tempvar].getMin(); j<=var_array[tempvar].getMax(); j++)
-            {
-                if(!valinlocalmatching.in(j-dom_min) && var_array[tempvar].inDomain(j))
-                {
-                    valvarmatching[j-dom_min]=tempvar;
-                    varvalmatching[tempvar]=j;
-                    valinlocalmatching.insert(j-dom_min);
-                    break;
-                }
-            }
-        }
-    }
-    //cout << "Matching size:" << valinlocalmatching.size() <<endl;
-    if(valinlocalmatching.size()!=numvars)
-    {
-      if(!hopcroft(var_indices))
-      {
-        // The constraint is unsatisfiable (no matching).
-        getState(stateObj).setFailed(true);
-        return;
-      }
-    }*/
-    
-    /*
-    {
-      vector<int>& toiterate=valinlocalmatching.getlist();
-      for(int i=0; i<toiterate.size(); ++i)
-      {
-          // copy into reversed matching
-          varvalmatching[localmatching[toiterate[i]]]=toiterate[i]+dom_min;  // store actual value in varvalmatching
-      }
-    }*/  // should not be necessary to copy the matching now.
-    
-    
-    /*cout <<"Success! Final matching:"<<endl;
-    for(mapit=matching.begin(); mapit!=matching.end(); mapit++)
-    {
-        cout<<(*mapit).first<<":"<<(*mapit).second<<endl;
-    }*/
-    
-    // Matching is OK, so it must be the following part which
-    // is underpropagating.
-    
     // Call Tarjan's for each disturbed SCC.
     {
     vector<int> & toiterate=sccs_to_process.getlist();
@@ -907,6 +881,160 @@ struct DynamicAlldiff : public DynamicConstraint
     {
         cout << ((SCCSplit.isMember(i))?"Nosplit":"Split") <<endl;
     }*/
+    
+    return;
+  }
+  
+  // Simpler version which does not maintain SCCs and simply calls hopcroft and
+  // visit for the whole set of variables.
+  void do_prop_noscc()
+  {
+    #ifndef DYNAMICALLDIFF
+    PROP_INFO_ADDONE(AlldiffGacSlow);
+    #else
+    PROP_INFO_ADDONE(WatchedAlldiff);
+    #endif
+    
+    #ifdef DYNAMICALLDIFF
+    bt_triggers_start=dynamic_trigger_start()+numvars;
+    #endif
+    
+    #ifndef NO_DEBUG
+    cout << "Entering do_prop."<<endl;
+    cout << "Varvalmatching:" <<varvalmatching<<endl;
+    cout << "SCCs:" << SCCs <<endl;
+    cout << "varToSCCIndex: "<< varToSCCIndex<<endl;
+    cout << "Domains:" <<endl;
+    for(int i=0; i<numvars; i++)
+    {
+        cout << "var:" << i << " vals:" ;
+        for(int j=dom_min; j<=dom_max; j++)
+        {
+            if(var_array[i].inDomain(j))
+            {
+                cout << j <<", ";
+            }
+        }
+        cout << endl;
+    }
+    // Check the matching is valid.
+    for(int i=0; i<numvars; i++)
+    {
+        if(!var_array[i].inDomain(varvalmatching[i]))
+        {
+            cout << "val in matching removed: " << i << ", " << varvalmatching[i] <<endl;
+        }
+        for(int j=i+1; j<numvars; j++)
+        {
+            D_ASSERT(varvalmatching[i]!=varvalmatching[j]);
+            D_ASSERT(SCCs[i]!=SCCs[j]);
+        }
+        D_ASSERT(SCCSplit.isMember(i) == (((char*)SCCSplit2.get_ptr())[i]==1));
+        cout << (int)SCCSplit.isMember(i) << ", " << (int) (((char*)SCCSplit2.get_ptr())[i]==1) << endl;
+        // The matches correspond.
+        D_ASSERT(valvarmatching[varvalmatching[i]-dom_min]==i);
+    }
+    
+    #ifdef DYNAMICALLDIFF
+    // Can't yet check all the watches are in the right place, but can check
+    // there are the right number of them on each var.
+    for(int i=0; i<var_array.size(); i++)
+    {
+        int count=0;
+        DynamicTrigger* trig=get_dt(i, 0);
+        while(trig->queue!=NULL && count<numvals)
+        {
+            count++;
+            if(count<numvals) trig=get_dt(i,count);
+        }
+        D_ASSERT(count==watches[i].size());
+    }
+    #endif
+    
+    // Check that if an element of the matching is removed, then the var is 
+    // in to_process.
+    for(int i=0; i<var_array.size(); i++)
+    {
+        if(!var_array[i].inDomain(varvalmatching[i]))
+        {
+            D_ASSERT(to_process.in(i));
+        }
+    }
+    #endif
+    
+    // Call hopcroft for the whole matching.
+    if(!hopcroft(0, numvars-1))
+    {
+        // The constraint is unsatisfiable (no matching).
+        D_DATA(cout << "About to fail. Changed varvalmatching: "<< varvalmatching <<endl);
+        
+        for(int j=0; j<numvars; j++)
+        {
+            // Restore valvarmatching because it might be messed up by Hopcroft.
+            valvarmatching[varvalmatching[j]-dom_min]=j;
+        }
+        
+        //D_DATA(cout << varinlocalmatching.getlist()<<endl);
+        getState(stateObj).setFailed(true);
+        //varvalmatching=tempmatching;  // copy back.
+        return;
+    }
+    
+    
+    // Here, copy from valvarmatching to varvalmatching.
+    // Using valinlocalmatching left over from hopcroft.
+    // This must not be done when failing, because it might mess
+    // up varvalmatching for the next invocation.
+    {vector<int>& toiterate=valinlocalmatching.getlist();
+        for(int j=0; j<toiterate.size(); j++)
+        {
+            int tempval=toiterate[j];
+            varvalmatching[valvarmatching[tempval]]=tempval+dom_min;
+        }
+    }
+    
+    #ifdef DYNAMICALLDIFF
+    // sync the watches to the matching, 
+    // since the matching has just changed.
+    #ifndef BTMATCHING
+    DynamicTrigger * trig = dynamic_trigger_start();
+    for(int j=0; j<numvars; j++)
+    {
+        var_array[j].addWatchTrigger(trig + j, DomainRemoval, varvalmatching[j]);
+    }
+    #endif
+    #endif
+    
+    
+    D_DATA(cout << "Fixed varvalmatching:" << varvalmatching <<endl);
+    
+    // now both varvalmatching and valvarmatching contain 
+    // a complete matching for the SCC.
+    // Also, valinlocalmatching contains the domain values
+    // used in this SCC.    
+
+    #ifndef NO_DEBUG
+    // Check the matching is valid.
+    for(int i=0; i<numvars; i++)
+    {
+        D_ASSERT(var_array[i].inDomain(varvalmatching[i]));
+        for(int j=i+1; j<numvars; j++)
+        {
+            D_ASSERT(varvalmatching[i]!=varvalmatching[j]);
+            D_ASSERT(SCCs[i]!=SCCs[j]);
+        }
+        D_ASSERT(SCCSplit.isMember(i) == (((char*)SCCSplit2.get_ptr())[i]==1));
+        D_ASSERT(SCCs[varToSCCIndex[i]]==i);
+    }
+    #endif
+    
+    
+    // Call Tarjan's for all vars
+    
+    var_indices.clear();
+    for(int i=0; i<numvars; i++) var_indices.push_back(i);
+    
+    tarjan_recursive(0);
     
     return;
   }
@@ -1069,7 +1197,11 @@ struct DynamicAlldiff : public DynamicConstraint
       #endif
       #endif
       
+      #ifndef NOSCC
       do_prop();
+      #else
+      do_prop_noscc();
+      #endif
   }
 	
 	virtual BOOL check_assignment(vector<DomainInt> v)
