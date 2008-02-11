@@ -25,6 +25,9 @@
 // Optimize the case where a value was assigned. Only works in the absence of NOSCC.
 #define ASSIGNOPT 
 
+// Use the special queue
+#define SPECIALQUEUE
+
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
@@ -533,8 +536,16 @@ struct DynamicAlldiff : public DynamicConstraint
     
     if(!constraint_locked)
     {
+        #ifdef SPECIALQUEUE
         constraint_locked = true;
         getQueue(stateObj).pushSpecialTrigger(this);
+        #else
+        #ifdef NOSCC
+        do_prop_noscc();
+        #else
+        do_prop();
+        #endif
+        #endif
     }
   }
   
@@ -581,8 +592,16 @@ struct DynamicAlldiff : public DynamicConstraint
     
     if(!constraint_locked)
     {
+        #ifdef SPECIALQUEUE
         constraint_locked = true;
         getQueue(stateObj).pushSpecialTrigger(this);
+        #else
+        #ifdef NOSCC
+        do_prop_noscc();
+        #else
+        do_prop();
+        #endif
+        #endif
     }
   }
   
