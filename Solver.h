@@ -70,7 +70,13 @@ protected:
     vec<int>            BMS_setval;       // Map from Var to BMS value used when setting it.
     vec<GClause>        lastReason;       // 'lastReason[var]' is the clause that implied the variables most recent value, or 'NULL' if none.
     vec<int>            level;            // 'level[var]' is the decision level at which assignment was made.
+<<<<<<< .mine
+    vec<int>            BMS_dval;         // map from decision level to BMS certificate
+    vec<int>            BMS_setval;       // map from Var to BMS certificate for last time it was assigned
+    int                 BMS_cert;         // current BMS certificate
+=======
     int                 decision_level;   // Current decision level.
+>>>>>>> .r1110
     int                 root_level;       // Level of first proper decision.
     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplifyDB()'.
     int64               simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplifyDB()'.
@@ -155,8 +161,16 @@ public:
 
     // Helpers: (semi-internal)
     //
-    lbool   value(Var x) const { return BMS_dval[level[x]] == BMS_setval[x] ? toLbool(lastAssigns[x]) : l_Undef; }
-    lbool   value(Lit p) const { return sign(p) ? ~value(var(p)) : value(var(p)); }
+    lbool   value(Var x) const { 
+      //return BMS_dval[level[x]] == BMS_setval[x] ? toLbool(assigns[x]) : l_Undef;
+      return toLbool(assigns[x]);
+    }
+    lbool   value(Lit p) const { 
+      //return BMS_dval[level[var(p)]] == BMS_setval[var(p)] 
+      //	? (sign(p) ? ~toLbool(assigns[var(p)]) : toLbool(assigns[var(p)]))
+      //	: l_Undef;
+      return sign(p) ? ~toLbool(assigns[var(p)]) : toLbool(assigns[var(p)]);
+    }
 
     int     nAssigns() { return trail.size(); }
     int     nClauses() { return clauses.size() + n_bin_clauses; }   // (minor difference from MiniSat without the GClause trick: learnt binary clauses will be counted as original clauses)

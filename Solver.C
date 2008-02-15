@@ -192,6 +192,8 @@ Var Solver::newVar() {
     BMS_setval  .push(0);
     BMS_dval    .push(-1); // This might seem silly, but there is one decision level per var
     level       .push(0);
+    BMS_setval  .push(0);
+    BMS_dval    .push(-1); //at most one decision level per var
     activity    .push(0);
     order       .newVar();
     analyze_seen.push(0);
@@ -200,16 +202,29 @@ Var Solver::newVar() {
 
 // Returns FALSE if immediate conflict.
 bool Solver::assume(Lit p) {
-  decision_level++;
-  trail.clear();
-  BMS_dval[decision_level] = stats.decisions;
-  return enqueue(p); }
+    trail_lim.push(trail.size());
+    BMS_dval[decisionLevel()] = BMS_cert = stats.decisions;
+    return enqueue(p); }
 
 // Revert to the state at given level.
 void Solver::cancelUntil(int level) {
+<<<<<<< .mine
+    if (decisionLevel() > level){
+        for (int c = trail.size()-1; c >= trail_lim[level]; c--){
+            Var     x  = var(trail[c]);
+            assigns[x] = toInt(l_Undef);
+            reason [x] = GClause_NULL;
+            order.undo(x); }
+	for(int i = trail_lim.size() - 1; i > level; i--)
+	  BMS_dval[i] = -1;
+        trail.shrink(trail.size() - trail_lim[level]);
+        trail_lim.shrink(trail_lim.size() - level);
+        qhead = trail.size(); } }
+=======
   for(; decision_level > level; decision_level--)
     BMS_dval[decision_level] = -1;
 }
+>>>>>>> .r1110
 
 //=================================================================================================
 // Major methods:
@@ -373,10 +388,16 @@ bool Solver::enqueue(Lit p, GClause from)
         return value(p) != l_False;
     else{
         lastAssigns[var(p)] = toInt(lbool(!sign(p)));
-        level  [var(p)] = decisionLevel();
+        level      [var(p)] = decisionLevel();
+<<<<<<< .mine
+        reason [var(p)] = from;
+	BMS_setval[var(p)] = BMS_cert;
+        trail.push(p);
+=======
         lastReason [var(p)] = from;
 	BMS_setval[var(p)] = stats.decisions;
 	trail.push(p);
+>>>>>>> .r1110
         return true;
     }
 }
@@ -583,6 +604,8 @@ lbool Solver::search(int nof_conflicts, int nof_learnts, const SearchParams& par
                 return l_False; }
             analyze(confl, learnt_clause, backtrack_level);
             cancelUntil(max(backtrack_level, root_level));
+	    BMS_cert = BMS_dval[decisionLevel()]; //back to what it was last time at this depth
+	    
             newClause(learnt_clause, true);
             if (learnt_clause.size() == 1) level[var(learnt_clause[0])] = 0;    // (this is ugly (but needed for 'analyzeFinal()') -- in future versions, we will backtrack past the 'root_level' and redo the assumptions)
             varDecayActivity();

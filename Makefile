@@ -29,7 +29,7 @@ r:	WAY=release
 rs:	WAY=release static
 
 s:	CFLAGS+=$(COPTIMIZE) -ggdb -D DEBUG
-p:	CFLAGS+=$(COPTIMIZE) -pg -ggdb -D DEBUG
+p:	CFLAGS+=$(COPTIMIZE) -pg -ggdb -D DEBUG -fno-inline -fno-inline-functions
 d:	CFLAGS+=-O0 -ggdb -D DEBUG -fno-inline -fno-inline-functions
 r:	CFLAGS+=$(COPTIMIZE) -D NDEBUG
 rs:	CFLAGS+=$(COPTIMIZE) -D NDEBUG
