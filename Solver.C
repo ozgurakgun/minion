@@ -187,11 +187,9 @@ Var Solver::newVar() {
     index = nVars();
     watches     .push();          // (list for positive literal)
     watches     .push();          // (list for negative literal)
-    lastReason  .push(GClause_NULL);
-    lastAssigns .push(toInt(l_False));
-    BMS_setval  .push(0);
-    BMS_dval    .push(-1); // This might seem silly, but there is one decision level per var
-    level       .push(0);
+    reason      .push(GClause_NULL);
+    assigns     .push(toInt(l_Undef));
+    level       .push(-1);
     BMS_setval  .push(0);
     BMS_dval    .push(-1); //at most one decision level per var
     activity    .push(0);
@@ -206,25 +204,20 @@ bool Solver::assume(Lit p) {
     BMS_dval[decisionLevel()] = BMS_cert = stats.decisions;
     return enqueue(p); }
 
+
 // Revert to the state at given level.
 void Solver::cancelUntil(int level) {
-<<<<<<< .mine
     if (decisionLevel() > level){
         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
             Var     x  = var(trail[c]);
             assigns[x] = toInt(l_Undef);
-            reason [x] = GClause_NULL;
-            order.undo(x); }
+            reason [x] = GClause_NULL; }
 	for(int i = trail_lim.size() - 1; i > level; i--)
 	  BMS_dval[i] = -1;
         trail.shrink(trail.size() - trail_lim[level]);
         trail_lim.shrink(trail_lim.size() - level);
         qhead = trail.size(); } }
-=======
-  for(; decision_level > level; decision_level--)
-    BMS_dval[decision_level] = -1;
-}
->>>>>>> .r1110
+
 
 //=================================================================================================
 // Major methods:
@@ -284,7 +277,7 @@ void Solver::analyze(Clause* _confl, vec<Lit>& out_learnt, int& out_btlevel)
         // Select next clause to look at:
         while (!seen[var(trail[index--])]);
         p     = trail[index+1];
-        confl = lastReason[var(p)];
+        confl = reason[var(p)];
         seen[var(p)] = 0;
         pathC--;
 
@@ -301,14 +294,14 @@ void Solver::analyze(Clause* _confl, vec<Lit>& out_learnt, int& out_btlevel)
 
         out_learnt.copyTo(analyze_toclear);
         for (i = j = 1; i < out_learnt.size(); i++)
-            if (lastReason[var(out_learnt[i])] == GClause_NULL || !analyze_removable(out_learnt[i], min_level))
+            if (reason[var(out_learnt[i])] == GClause_NULL || !analyze_removable(out_learnt[i], min_level))
                 out_learnt[j++] = out_learnt[i];
     }else{
         // Simplify conflict clause (a little):
         //
         out_learnt.copyTo(analyze_toclear);
         for (i = j = 1; i < out_learnt.size(); i++){
-            GClause r = lastReason[var(out_learnt[i])];
+            GClause r = reason[var(out_learnt[i])];
             if (r == GClause_NULL)
                 out_learnt[j++] = out_learnt[i];
             else if (r.isLit()){
@@ -337,18 +330,18 @@ void Solver::analyze(Clause* _confl, vec<Lit>& out_learnt, int& out_btlevel)
 //
 bool Solver::analyze_removable(Lit p, uint min_level)
 {
-    assert(lastReason[var(p)] != GClause_NULL);
+    assert(reason[var(p)] != GClause_NULL);
     analyze_stack.clear(); analyze_stack.push(p);
     int top = analyze_toclear.size();
     while (analyze_stack.size() > 0){
-        assert(lastReason[var(analyze_stack.last())] != GClause_NULL);
-        GClause r = lastReason[var(analyze_stack.last())]; analyze_stack.pop();
+        assert(reason[var(analyze_stack.last())] != GClause_NULL);
+        GClause r = reason[var(analyze_stack.last())]; analyze_stack.pop();
         Clause& c = r.isLit() ? ((*analyze_tmpbin)[1] = r.lit(), *analyze_tmpbin)
                               : *r.clause();
         for (int i = 1; i < c.size(); i++){
             Lit p = c[i];
             if (!analyze_seen[var(p)] && level[var(p)] != 0){
-                if (lastReason[var(p)] != GClause_NULL && ((1 << (level[var(p)] & 31)) & min_level) != 0){
+                if (reason[var(p)] != GClause_NULL && ((1 << (level[var(p)] & 31)) & min_level) != 0){
                     analyze_seen[var(p)] = 1;
                     analyze_stack.push(p);
                     analyze_toclear.push(p);
@@ -368,6 +361,55 @@ bool Solver::analyze_removable(Lit p, uint min_level)
 
 /*_________________________________________________________________________________________________
 |
+|  analyzeFinal : (confl : Clause*) (skip_first : bool)  ->  [void]
+|  
+|  Description:
+|    Specialized analysis procedure to express the final conflict in terms of assumptions.
+|    'root_level' is allowed to point beyond end of trace (useful if called after conflict while
+|    making assumptions). If 'skip_first' is TRUE, the first literal of 'confl' is  ignored (needed
+|    if conflict arose before search even started).
+|________________________________________________________________________________________________@*/
+void Solver::analyzeFinal(Clause* confl, bool skip_first)
+{
+    // -- NOTE! This code is relatively untested. Please report bugs!
+    conflict.clear();
+    if (root_level == 0) return;
+
+    vec<char>&     seen  = analyze_seen;
+    for (int i = skip_first ? 1 : 0; i < confl->size(); i++){
+        Var     x = var((*confl)[i]);
+        if (level[x] > 0)
+            seen[x] = 1;
+    }
+
+    int     start = (root_level >= trail_lim.size()) ? trail.size()-1 : trail_lim[root_level];
+    for (int i = start; i >= trail_lim[0]; i--){
+        Var     x = var(trail[i]);
+        if (seen[x]){
+            GClause r = reason[x];
+            if (r == GClause_NULL){
+                assert(level[x] > 0);
+                conflict.push(~trail[i]);
+            }else{
+                if (r.isLit()){
+                    Lit p = r.lit();
+                    if (level[var(p)] > 0)
+                        seen[var(p)] = 1;
+                }else{
+                    Clause& c = *r.clause();
+                    for (int j = 1; j < c.size(); j++)
+                        if (level[var(c[j])] > 0)
+                            seen[var(c[j])] = 1;
+                }
+            }
+            seen[x] = 0;
+        }
+    }
+}
+
+
+/*_________________________________________________________________________________________________
+|
 |  enqueue : (p : Lit) (from : Clause*)  ->  [bool]
 |  
 |  Description:
@@ -376,7 +418,7 @@ bool Solver::analyze_removable(Lit p, uint min_level)
 |  
 |  Input:
 |    p    - The fact to enqueue
-|    from - [Optional] Fact propagated from this (currently) unit clause. Stored in 'lastReason[]'.
+|    from - [Optional] Fact propagated from this (currently) unit clause. Stored in 'reason[]'.
 |           Default value is NULL (no reason).
 |  
 |  Output:
@@ -387,17 +429,11 @@ bool Solver::enqueue(Lit p, GClause from)
     if (value(p) != l_Undef)
         return value(p) != l_False;
     else{
-        lastAssigns[var(p)] = toInt(lbool(!sign(p)));
+        assigns[var(p)] = toInt(lbool(!sign(p)));
         level      [var(p)] = decisionLevel();
-<<<<<<< .mine
         reason [var(p)] = from;
 	BMS_setval[var(p)] = BMS_cert;
         trail.push(p);
-=======
-        lastReason [var(p)] = from;
-	BMS_setval[var(p)] = stats.decisions;
-	trail.push(p);
->>>>>>> .r1110
         return true;
     }
 }
@@ -417,11 +453,11 @@ bool Solver::enqueue(Lit p, GClause from)
 Clause* Solver::propagate()
 {
     Clause* confl = NULL;
-    while (prop_pos < trail.size()) {
+    while (qhead < trail.size()){
         stats.propagations++;
         simpDB_props--;
 
-        Lit            p   = trail[prop_pos++];     // 'p' is enqueued fact to propagate.
+        Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
         vec<GClause>&  ws  = watches[index(p)];
         GClause*       i,* j, *end;
 
@@ -434,7 +470,7 @@ Clause* Solver::propagate()
                     (*confl)[1] = ~p;
                     (*confl)[0] = i->lit();
 
-                    prop_pos = trail.size();
+                    qhead = trail.size();
                     // Copy the remaining watches:
                     while (i < end)
                         *j++ = *i++;
@@ -469,7 +505,7 @@ Clause* Solver::propagate()
                         if (decisionLevel() == 0)
                             ok = false;
                         confl = &c;
-                        prop_pos = trail.size();
+                        qhead = trail.size();
                         // Copy the remaining watches:
                         while (i < end)
                             *j++ = *i++;
@@ -601,6 +637,7 @@ lbool Solver::search(int nof_conflicts, int nof_learnts, const SearchParams& par
             int         backtrack_level;
             if (decisionLevel() == root_level){
                 // Contradiction found:
+                analyzeFinal(confl);
                 return l_False; }
             analyze(confl, learnt_clause, backtrack_level);
             cancelUntil(max(backtrack_level, root_level));
@@ -704,7 +741,7 @@ bool Solver::solve(const vec<Lit>& assumps)
         Lit p = assumps[i];
         assert(var(p) < nVars());
         if (!assume(p)){
-            GClause r = lastReason[var(p)];
+            GClause r = reason[var(p)];
             if (r != GClause_NULL){
                 Clause* confl;
                 if (r.isLit()){
@@ -713,6 +750,7 @@ bool Solver::solve(const vec<Lit>& assumps)
                     (*confl)[0] = r.lit();
                 }else
                     confl = r.clause();
+                analyzeFinal(confl, true);
                 conflict.push(~p);
             }else
                 conflict.clear(),
@@ -721,6 +759,7 @@ bool Solver::solve(const vec<Lit>& assumps)
             return false; }
         Clause* confl = propagate();
         if (confl != NULL){
+            analyzeFinal(confl), assert(conflict.size() > 0);
             cancelUntil(0);
             return false; }
     }
