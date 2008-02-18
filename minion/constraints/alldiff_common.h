@@ -16,6 +16,9 @@
 // No the bug can be seen with this switched off.
 //#define REVERSELIST
 
+// Check domain size -- if it is greater than numvars, then no need to wake the constraint.
+//#define CHECKDOMSIZE
+
 // Do not process SCCs independently. Do the whole lot each time.
 //#define NOSCC
 
@@ -27,6 +30,9 @@
 
 // Use the special queue
 #define SPECIALQUEUE
+
+// store matching from one run to the next.
+#define INCREMENTALMATCH
 
 #include <stdlib.h>
 #include <iostream>
@@ -528,6 +534,20 @@ struct DynamicAlldiff : public DynamicConstraint
             return;
         }
     }
+    #ifdef CHECKDOMAINSIZE
+    // If the domain size is >= numvars, then return.
+    
+    int count=0;
+    for(int i=var_array[prop_var].getMin(); i<=var_array[prop_var].getMax(); i++)
+    {
+        if(var_array[prop_var].inDomain(i))
+        {
+            count++;
+        }
+    }
+    if(count>=numvars)
+        return;
+    #endif
     
     if(!to_process.in(prop_var))
     {
@@ -581,8 +601,21 @@ struct DynamicAlldiff : public DynamicConstraint
             D_ASSERT(false);
         }
     }
+    #endif
     
+    #ifdef CHECKDOMAINSIZE
+    // If the domain size is >= numvars, then return.
     
+    int count=0;
+    for(int i=var_array[prop_var].getMin(); i<=var_array[prop_var].getMax(); i++)
+    {
+        if(var_array[prop_var].inDomain(i))
+        {
+            count++;
+        }
+    }
+    if(count>=numvars)
+        return;
     #endif
     
     if(!to_process.in(prop_var))
@@ -699,6 +732,16 @@ struct DynamicAlldiff : public DynamicConstraint
         {
             D_ASSERT(to_process.in(i));
         }
+    }
+    #endif
+    // end of debug.
+    
+    #ifndef INCREMENTALMATCH
+    // clear the matching.
+    for(int i=0; i<numvars && i<numvals; i++)
+    {
+      varvalmatching[i]=i+dom_min;
+      valvarmatching[i]=i;
     }
     #endif
     
@@ -916,6 +959,15 @@ struct DynamicAlldiff : public DynamicConstraint
     
     #ifdef DYNAMICALLDIFF
     bt_triggers_start=dynamic_trigger_start()+numvars;
+    #endif
+    
+    #ifndef INCREMENTALMATCH
+    // clear the matching.
+    for(int i=0; i<numvars && i<numvals; i++)
+    {
+      varvalmatching[i]=i+dom_min;
+      valvarmatching[i]=i;
+    }
     #endif
     
     #ifndef NO_DEBUG

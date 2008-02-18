@@ -92,6 +92,7 @@ string PropEventNames[] = {
  "FullSum",
  "BoolSum",
  "AllDiffGacSlow",
+ "WatchedAlldiff",
  "LightSum",
  "WeightBoolSum",
  "ReifyEqual",
