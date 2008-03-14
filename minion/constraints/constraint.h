@@ -43,6 +43,12 @@ typedef vector<shared_ptr<AbstractTriggerCreator> > triggerCollection;
 class SpecialTriggerable
 {
     public:
+    BOOL full_propagate_done;
+    
+    SpecialTriggerable() : full_propagate_done(false)
+    {
+    }
+    
     virtual void special_check()
   { 
 	cerr << "Serious internal error" << endl;

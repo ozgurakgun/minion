@@ -3,7 +3,6 @@
 
 
 // whether to backtrack the matching.
-
 // This one is a slowdown.
 // #define BTMATCHING
 
@@ -534,19 +533,24 @@ struct DynamicAlldiff : public DynamicConstraint
             return;
         }
     }
-    #ifdef CHECKDOMAINSIZE
+    #ifdef CHECKDOMSIZE
     // If the domain size is >= numvars, then return.
-    
-    int count=0;
-    for(int i=var_array[prop_var].getMin(); i<=var_array[prop_var].getMax(); i++)
+    if(!constraint_locked)
     {
-        if(var_array[prop_var].inDomain(i))
+        int count=0;
+        for(int i=var_array[prop_var].getMin(); i<=var_array[prop_var].getMax(); i++)
         {
-            count++;
+            if(var_array[prop_var].inDomain(i))
+            {
+                count++;
+            }
         }
+        if(count>=numvars)
+            return;
     }
-    if(count>=numvars)
-        return;
+    // could improve domain counting by also applying it when
+    // the constraint is already queued, since it might avoid calls to Tarjan's.
+    // i.e. some vars may not need to be queued in to_process.
     #endif
     
     if(!to_process.in(prop_var))
@@ -603,9 +607,9 @@ struct DynamicAlldiff : public DynamicConstraint
     }
     #endif
     
-    #ifdef CHECKDOMAINSIZE
+    #ifdef CHECKDOMSIZE
     // If the domain size is >= numvars, then return.
-    
+    // WHY IS THIS HERE WHEN checkdomsize and dynamic triggers don't work together??
     int count=0;
     for(int i=var_array[prop_var].getMin(); i<=var_array[prop_var].getMax(); i++)
     {
@@ -843,8 +847,6 @@ struct DynamicAlldiff : public DynamicConstraint
         if(false)
         #endif
         {
-            int tempval=var_array[tempvar].getAssignedValue();
-            
             // Split tempvar off from the rest of the SCC
             if(SCCSplit.isMember(sccindex_start))
             {
@@ -865,6 +867,7 @@ struct DynamicAlldiff : public DynamicConstraint
                 D_DATA(((char*)SCCSplit2.get_ptr())[sccindex_start]=0);
                 
                 sccindex_start++;
+                int tempval=var_array[tempvar].getAssignedValue();
                 
                 // Now remove the value from the reduced SCC
                 for(int i=sccindex_start; i<=sccindex_end; i++)
@@ -1082,8 +1085,8 @@ struct DynamicAlldiff : public DynamicConstraint
     // now both varvalmatching and valvarmatching contain 
     // a complete matching for the SCC.
     // Also, valinlocalmatching contains the domain values
-    // used in this SCC.    
-
+    // used in this SCC.
+    
     #ifndef NO_DEBUG
     // Check the matching is valid.
     for(int i=0; i<numvars; i++)
@@ -1212,6 +1215,16 @@ struct DynamicAlldiff : public DynamicConstraint
   
   virtual void full_propagate()
   { 
+      #if defined(USEWATCHES) && defined(CHECKDOMSIZE)
+      cout << "Watches and Quimper&Walsh's criterion do not safely co-exist." <<endl;
+      FAIL_EXIT();
+      #endif
+      
+      #if defined(DYNAMICALLDIFF) && !defined(USEWATCHES)
+      cout << "watchedalldiff does not work if USEWATCHES is not defined." << endl;
+      FAIL_EXIT();
+      #endif
+      
       // Is this guaranteed to be called before do_prop is ever called??
       // I hope so, because the following test has to be done first.
       if(numvars>numvals)
@@ -1222,6 +1235,7 @@ struct DynamicAlldiff : public DynamicConstraint
       
       // process all variables.
       to_process.clear();    // It seems like this is called twice at the top of the tree, so the clear is necessary.
+      
       for(int i=0; i<numvars; i++)
       {
           to_process.insert(i);
@@ -1338,8 +1352,6 @@ struct DynamicAlldiff : public DynamicConstraint
     
     //vector<int> iterationstack;
     vector<int> curnodestack;
-    
-    vector<vector<int> > components; // should not be used.
     
     #ifndef BTMATCHING
     vector<int> varvalmatching; // For each var, give the matching value.
@@ -1489,7 +1501,6 @@ struct DynamicAlldiff : public DynamicConstraint
         visited.clear();
         max_dfs=1;
         
-        components.clear();
         scc_split=false;
         sccindex=sccindex_start;
         
@@ -1607,10 +1618,6 @@ struct DynamicAlldiff : public DynamicConstraint
             D_ASSERT(found);
             #endif
             
-            // Strictly, this should not link back to the variable we just came from, but
-            // it doesn't do any harm, it just means that a unit variable and its
-            // value end up in the same SCC. 
-            // Later, opt. so that a var and its matching val are the same vertex.
             int lowlinkvar=-1;
             for(int i=0; i<var_indices.size(); i++)
             {

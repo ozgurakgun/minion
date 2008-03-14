@@ -68,6 +68,12 @@ public:
   bool propagateStaticTriggerLists();
   
   inline void propagateQueue();
+  
+  bool propagateDynamicTriggerListsRoot();
+  
+  bool propagateStaticTriggerListsRoot();
+  
+  inline void propagateQueueRoot();
 };  
 
 // This just allows SAC (which wants a list of vars)
