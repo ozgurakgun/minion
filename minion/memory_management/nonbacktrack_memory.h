@@ -39,4 +39,3 @@ public:
   MonotonicSet& monotonicSet() { return monotonic_set; }
 };
 
-// @}
