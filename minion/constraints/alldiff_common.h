@@ -11,12 +11,10 @@
 // #define SPAREVALUESOPT
 
 // Reverse the var list.
-// exposes a bug?
-// No the bug can be seen with this switched off.
-//#define REVERSELIST
+#define REVERSELIST
 
 // Check domain size -- if it is greater than numvars, then no need to wake the constraint.
-#define CHECKDOMSIZE
+//#define CHECKDOMSIZE
 
 // Do not process SCCs independently. Do the whole lot each time.
 //#define NOSCC
@@ -799,6 +797,7 @@ struct DynamicAlldiff : public DynamicConstraint
             for(int j=0; j<numvars; j++)
             {
                 var_array[j].addWatchTrigger(trig + j, DomainRemoval, varvalmatching[j]);
+                D_DATA(cout << "Adding watch for var " << j << " val " << varvalmatching[j] << endl);
             }
             #endif
             #endif
@@ -1234,6 +1233,7 @@ struct DynamicAlldiff : public DynamicConstraint
         for(int j=0; j<numvars; j++)
         {
             var_array[j].addWatchTrigger(trig + j, DomainRemoval, varvalmatching[j]);
+            D_DATA(cout << "Adding watch for var " << j << " val " << varvalmatching[j] << endl);
         }
       #endif
       #endif
@@ -1387,19 +1387,19 @@ struct DynamicAlldiff : public DynamicConstraint
             {
                 #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
                 watches[var_indices[i]].clear();
-                
+                D_DATA(cout << "Adding DT for var " << var_indices[i] << " val " << varvalmatching[var_indices[i]] << endl);
                 // watch the value from the matching.
                 watches[var_indices[i]].insert(varvalmatching[var_indices[i]]-dom_min);
                 #endif
                 
                 #ifdef DYNAMICALLDIFF
-                
                 // Clear all the triggers on this variable. At end now.
                 int var=var_indices[i];
                 triggercount[var]=1;
                 
                 var_array[var].addDynamicTriggerBT(get_dt(var, 0), 
                     DomainRemoval, varvalmatching[var]);
+                D_DATA(cout << "Adding DT for var " << var_indices[i] << " val " << varvalmatching[var_indices[i]] << endl);
                 #endif
             }
         }
@@ -1589,7 +1589,7 @@ struct DynamicAlldiff : public DynamicConstraint
                             // set a watch
                             if(usewatches())
                             {
-                                D_DATA(cout << "Adding watch for var " << newnode << " val " << curnode-numvars+dom_min << endl);
+                                D_DATA(cout << "Adding DT for var " << newnode << " val " << curnode-numvars+dom_min << endl);
                                 
                                 #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
                                 watches[newnode].insert(curnode-numvars);
@@ -1652,7 +1652,7 @@ struct DynamicAlldiff : public DynamicConstraint
             // Where did the low link value come from? insert that edge into watches.
             if(usewatches() && lowlinkvar!=-1)
             {
-                D_DATA(cout << "Adding watch for var " << lowlinkvar << " val " << curnode-numvars+dom_min << endl);
+                D_DATA(cout << "Adding DT for var " << lowlinkvar << " val " << curnode-numvars+dom_min << endl);
                 
                 #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
                 watches[lowlinkvar].insert(curnode-numvars);
