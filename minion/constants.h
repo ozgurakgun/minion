@@ -44,7 +44,8 @@ enum BoundType
   Bound_Maybe
 };
 
-
+struct EndOfSearch
+{};
 
 #ifndef CONTAINER_TYPE
 typedef unsigned int BitContainerType;
