@@ -180,7 +180,7 @@ void inline maybe_print_search_action(StateObj* stateObj, const char* action)
 	}
     // Note that sollimit = -1 if all solutions should be found.
 	if(getState(stateObj).getSolutionCount() == getOptions(stateObj).sollimit)
-	  throw 0;
+	  throw EndOfSearch();
   }
 
   void inline set_optimise_and_propagate_queue(StateObj* stateObj)

@@ -10,6 +10,7 @@
 #include "search/standard_search.h"
 #include "search/recursive_search.h"
 #include "search/conflict_search.h"
+#include "search/group_search.h"
 
 #include "search/search_control.h"
 
@@ -89,13 +90,13 @@ void SolveCSP(StateObj* stateObj, CSPInstance& instance, MinionArguments args)
       switch(args.prop_method)
       {
         case PropLevel_GAC:
-          solve(stateObj, args.order, var_val_order, PropagateGAC());   // add a getState(stateObj).getTimer().maybePrintTimestepStore to search..
+          solve(stateObj, args.order, var_val_order, instance, PropagateGAC());   // add a getState(stateObj).getTimer().maybePrintTimestepStore to search..
           break;
         case PropLevel_SAC:
-          solve(stateObj, args.order, var_val_order, PropagateSAC());
+          solve(stateObj, args.order, var_val_order, instance, PropagateSAC());
           break;
         case PropLevel_SSAC:
-          solve(stateObj, args.order, var_val_order, PropagateSSAC());
+          solve(stateObj, args.order, var_val_order, instance, PropagateSSAC());
           break;
         default:
           abort();

@@ -46,6 +46,16 @@ namespace Controller
     getVars(stateObj).getBigRangevarContainer().bms_array.undo();
   }
   
+  inline int get_world_depth(StateObj* stateObj)
+  { return getMemory(stateObj).backTrack().current_depth(); }
+  
+  inline void world_pop_to_depth(StateObj* stateObj, int depth)
+  {
+    D_ASSERT(depth <= get_world_depth(stateObj)); 
+    while(depth < get_world_depth(stateObj))
+      world_pop(stateObj);
+  }
+  
   inline void world_pop_all(StateObj* stateObj)
   {
 	int depth = getMemory(stateObj).backTrack().current_depth();
