@@ -10,7 +10,7 @@
 // Whether to use a TMS to track whether spare values are present in the scc
 // #define SPAREVALUESOPT
 
-// Reverse the var list.
+// Reverse the var list. Leave this switched on.
 #define REVERSELIST
 
 // Check domain size -- if it is greater than numvars, then no need to wake the constraint.
