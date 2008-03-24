@@ -26,7 +26,6 @@ namespace Controller
       {
         for(int j = i + 2; j <= perm.size(); ++j)
         {
-          printf("!!%d,%d\n",i, j);
           int world_depth = get_world_depth(stateObj);
           world_push(stateObj);
           for(int k = 0; k < i; ++k)
