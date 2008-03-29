@@ -11,7 +11,7 @@ namespace Controller
    template<typename VarOrder, typename Variables, typename Permutation, typename Propogator>
   	inline void group_solve_loop(StateObj* stateObj, VarOrder& original_order, Variables& v, Permutation& perm, Propogator prop = PropagateGAC())
     {
-      printf("Start group loop : %d\n", perm.size());
+      int sol_count = 0;
       for(int i = 0; i < perm.size(); ++i)
       {
         perm[i].setMin(1);
@@ -42,6 +42,7 @@ namespace Controller
             }
             catch(EndOfSearch)
             { 
+              sol_count += getState(stateObj).getSolutionCount();
               getState(stateObj).setSolutionCount(0);
               getQueue(stateObj).clearQueues();
             }
@@ -52,6 +53,8 @@ namespace Controller
           world_pop_to_depth(stateObj, world_depth);          
         }        
       }
+      
+      printf("Generators: %d\n", sol_count);
     }  	  
 }
 
