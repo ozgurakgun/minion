@@ -119,6 +119,18 @@ struct ShiftVar
   void addConstraint(AbstractConstraint* c)
   { data.addConstraint(c); }
 
+  void setDepth(DomainInt v, unsigned d)
+  { data.setDepth(v, d); }
+
+  unsigned getDepth(DomainInt v)
+  { return data.getDepth(v); }
+
+  void setLabel(DomainInt v, label l)
+  { data.setLabel(v, l); }
+
+  label getLabel(DomainInt v)
+  { return data.getLabel(v); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return data.getBaseWdeg(); }

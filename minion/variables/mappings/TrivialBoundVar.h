@@ -41,12 +41,17 @@ struct TrivialBoundVar
   Reversible<DomainInt> upper;
 
   vector<AbstractConstraint*> constraints;
+  
+  vector<unsigned> depths;
+  vector<label> labels;
+
 #ifdef WDEG
   unsigned int wdeg;
 #endif
   
   explicit TrivialBoundVar(StateObj* _stateObj, DomainInt _lower, DomainInt _upper) :
-  stateObj(_stateObj), lower(stateObj, _lower), upper(stateObj, _upper)
+    stateObj(_stateObj), lower(stateObj, _lower), upper(stateObj, _upper),
+       depths(_upper - _lower + 1), labels(_upper - _lower + 1)
   { }
 
   TrivialBoundVar(const TrivialBoundVar& b) : stateObj(b.stateObj), lower(b.lower), upper(b.upper)
@@ -128,6 +133,18 @@ struct TrivialBoundVar
     if(getOptions(stateObj).wdeg_on) wdeg += c->getWdeg();
 #endif
   }
+
+  void setDepth(DomainInt v, unsigned d)
+  { depths[v - lower] = d; }
+
+  unsigned getDepth(DomainInt v)
+  { return depths[v - lower]; }
+
+  void setLabel(DomainInt v, label l)
+  { labels[v - lower] = l; }
+
+  label getLabel(DomainInt v)
+  { return labels[v - lower]; }
 
 #ifdef WDEG
   int getBaseWdeg()

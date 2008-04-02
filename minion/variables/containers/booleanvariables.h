@@ -160,6 +160,8 @@ struct BooleanContainer
   MoveablePointer assign_offset;
   MemOffset values_mem;
   vector<vector<AbstractConstraint*> > constraints;
+  vector<vector<unsigned> > depths;
+  vector<vector<label> > labels;
 #ifdef WDEG
   vector<unsigned int> wdegs;
 #endif
@@ -201,6 +203,8 @@ struct BooleanContainer
     assign_offset = getMemory(stateObj).backTrack().request_bytes(required_mem);
     values_mem = getMemory(stateObj).nonBackTrack().request_bytes(required_mem);
     constraints.resize(bool_count);
+    depths.resize(bool_count, vector<unsigned>(2)); //two values, two depths
+    labels.resize(bool_count, vector<label>(2)); //two values, two labels
 #ifdef WDEG
     if(getOptions(stateObj).wdeg_on) wdegs.resize(bool_count);
 #endif
@@ -337,6 +341,18 @@ struct BooleanContainer
     if(getOptions(stateObj).wdeg_on) wdegs[b.var_num] += c->getWdeg(); //add constraint score to base var wdeg
 #endif
   }
+
+  void setDepth(const BoolVarRef_internal& b, DomainInt v, unsigned d)
+  { depths[b.var_num][v] = d; }
+
+  unsigned getDepth(const BoolVarRef_internal& b, DomainInt v)
+  { return depths[b.var_num][v]; }
+
+  void setLabel(const BoolVarRef_internal& b, DomainInt v, label l)
+  { labels[b.var_num][v] = l; }
+
+  label getLabel(const BoolVarRef_internal& b, DomainInt v)
+  { return labels[b.var_num][v]; }
 
 #ifdef WDEG
   int getBaseWdeg(const BoolVarRef_internal& b)

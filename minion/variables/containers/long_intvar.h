@@ -102,6 +102,9 @@ struct BigRangeVarContainer {
   vector<int> var_offset;
   /// Constraints variable participates in
   vector<vector<AbstractConstraint*> > constraints;
+
+  vector<vector<unsigned> > depths;
+  vector<vector<label> > labels;
 #ifdef WDEG
   vector<unsigned int> wdegs;
 #endif
@@ -186,6 +189,8 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
       initial_bounds.push_back(make_pair(new_domains[i].second.lower_bound, new_domains[i].second.upper_bound));
       int domain_size;
       domain_size = new_domains[i].second.upper_bound - new_domains[i].second.lower_bound + 1;
+      depths.push_back(vector<unsigned>(domain_size)); //one per val
+      labels.push_back(vector<label>(domain_size));
       var_offset.push_back( var_offset.back() + domain_size);
       var_count_m++;
       D_INFO(0,DI_LONGINTCON,"Adding var of domain: (" + to_string(new_domains[i].second.lower_bound) + "," +
@@ -527,6 +532,18 @@ public:
     if(getOptions(stateObj).wdeg_on) wdegs[b.var_num] += c->getWdeg(); //add constraint score to base var wdeg
 #endif
   }
+
+  void setDepth(const BigRangeVarRef_internal& b, DomainInt v, unsigned d)
+  { depths[b.var_num][v - getInitialMin(b)] = d; }
+
+  unsigned getDepth(const BigRangeVarRef_internal& b, DomainInt v)
+  { return depths[b.var_num][v - getInitialMin(b)]; }
+
+  void setLabel(const BigRangeVarRef_internal& b, DomainInt v, label  l)
+  { labels[b.var_num][v - getInitialMin(b)] = l; }
+
+  label getLabel(const BigRangeVarRef_internal& b, DomainInt v)
+  { return labels[b.var_num][v - getInitialMin(b)]; }
 
 #ifdef WDEG
   int getBaseWdeg(const BigRangeVarRef_internal& b)
