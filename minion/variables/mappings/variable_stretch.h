@@ -242,6 +242,9 @@ struct MultiplyVar
   label getLabel(DomainInt v)
   { return data.getLabel(v); }
 
+  VarIdent getIdent()
+  { return VarIdent(stretchT, Multiply, data.getIdent()); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return data.getBaseWdeg(); }

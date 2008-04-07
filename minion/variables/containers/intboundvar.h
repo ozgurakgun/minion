@@ -163,6 +163,9 @@ struct BoundVarRef_internal
   label getLabel(DomainInt c)
   { return GET_LOCAL_CON().getLabel(*this, c); }
 
+  VarIdent getIdent()
+  { return GET_LOCAL_CON().getIdent(*this); }
+  
 #ifdef WDEG
   int getBaseWdeg()
   { return GET_LOCAL_CON().getBaseWdeg(*this); }
@@ -441,6 +444,11 @@ struct BoundVarContainer {
 
   label getLabel(const BoundVarRef_internal<BoundType>& b, DomainInt v)
   { return labels[b.var_num][v - getInitialMin(b)]; }
+
+  VarIdent getIdent(const BoundVarRef_internal<BoundType>& b)
+  { 
+    return VarIdent(boundsT, noneT, b.var_num, 0); 
+  }
 
 #ifdef WDEG
   int getBaseWdeg(const BoundVarRef_internal<BoundType>& b)

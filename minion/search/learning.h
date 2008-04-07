@@ -12,13 +12,12 @@
 
 //data structure to represent an assignment or non assignment
 struct literal {
-  BOOL asgn; //true iff it's an assignment
-  AnyVarRef var;
+  BOOL asgn; //true iff it's an assignment. false iff it's a pruning
+  VarIdent var;
   DomainInt val;
 };
 
 //data structure to represent a label for pruning/nogood
-//it's really a vector<literal> but I couldn't make that code compile
-typedef void* label;
+typedef vector<literal> label;
 
 #endif

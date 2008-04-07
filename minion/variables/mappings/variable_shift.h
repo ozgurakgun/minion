@@ -131,6 +131,9 @@ struct ShiftVar
   label getLabel(DomainInt v)
   { return data.getLabel(v); }
 
+  VarIdent getIdent()
+  { return VarIdent(shiftT, shift, data.getIdent()); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return data.getBaseWdeg(); }

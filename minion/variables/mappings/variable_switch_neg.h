@@ -175,6 +175,9 @@ struct SwitchNeg
   label getLabel(DomainInt v)
   { return data.getLabel(v); }
 
+  VarIdent getIdent()
+  { return VarIdent(switch_negT, multiplier, data.getIdent()); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return data.getBaseWdeg(); }

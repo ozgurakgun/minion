@@ -136,6 +136,9 @@ struct VarNeg
   label getLabel(DomainInt v)
   { return data.getLabel(v); }
 
+  VarIdent getIdent()
+  { return VarIdent(negT, 0, data.getIdent()); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return data.getBaseWdeg(); }
