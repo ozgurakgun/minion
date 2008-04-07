@@ -24,7 +24,6 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-
 // Some advanced definitions, we don't actually need to know anything about these
 // types for SearchState, simply that they exist.
 class Constraint;
@@ -102,6 +101,18 @@ public:
 #endif
     failed = f; 
   }
+
+  VarIdent failure;
+  //variables should use this function to fail when they wipe out,
+  //providing their own identity when they do
+  void setFailed(bool f, VarIdent vi) {
+    failure = vi;
+    setFailed(f);
+  }
+  
+  //var that most recently failed
+  VarIdent getFailedVar() { return failure; }
+
   // This function is here because a number of pieces of code want a raw reference to the 'failed' variable.
   // Long term, this may get removed, but it is added for now to minimise changes while removing global
   // variables.

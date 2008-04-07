@@ -67,6 +67,9 @@
 #define PROP_INFO_ADDONE(PropType)
 #endif
 
+#include "variables/ident.h"
+#include "search/learning.h"
+
 #include "solver.h"
 
 VARDEF(TableOut tableout);
@@ -111,8 +114,6 @@ class DynamicTrigger;
 #include "constraints/triggers.h"
 
 #include "variables/AnyVarRef.h"
-
-#include "search/learning.h"
 
 #include "constraints/constraint.h"
 

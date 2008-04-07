@@ -9,7 +9,9 @@
 #ifndef IDENTITIES
 #define IDENTITIES
 
-enum varType {boolVarT, boundsT, sparseT, discreteT, constT, trivialBoundT};
+//nothingT is a sentinel type that shouldn't be used in real data, I include it only
+//for use by default constructor that is not really a variable identity
+enum varType {boolVarT, boundsT, sparseT, discreteT, constT, trivialBoundT, nothingT};
 
 enum mapType {noneT, negT, notVarT, shiftT, stretchT, switch_negT, constantT};
 
@@ -36,6 +38,8 @@ struct VarIdent {
     mapInfo_v.push_back(_mapInfo);
     mapInfo_v.insert(mapInfo_v.end(), nestedVi.mapInfo_v.begin(), nestedVi.mapInfo_v.end());
   }
+
+  VarIdent() : vt(nothingT) {}
   
   DomainInt underlyingVal(DomainInt v) const
   { 

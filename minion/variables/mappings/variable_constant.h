@@ -80,19 +80,19 @@ struct ConstantVar
   { return val; }
   
   void setMax(DomainInt i)
-  { if(i<val) getState(stateObj).setFailed(true); }
+  { if(i<val) getState(stateObj).setFailed(true, getIdent()); }
   
   void setMin(DomainInt i)
-  { if(i>val) getState(stateObj).setFailed(true); }
+  { if(i>val) getState(stateObj).setFailed(true, getIdent()); }
   
   void uncheckedAssign(DomainInt)
   { FAIL_EXIT(); }
   
   void propagateAssign(DomainInt b)
-  {if(b != val) getState(stateObj).setFailed(true); }
+  {if(b != val) getState(stateObj).setFailed(true, getIdent()); }
   
   void removeFromDomain(DomainInt b)
-  { if(b==val) getState(stateObj).setFailed(true); }
+  { if(b==val) getState(stateObj).setFailed(true, getIdent()); }
  
   void addTrigger(Trigger, TrigType)
   { }
