@@ -130,7 +130,7 @@ struct BigRangeVarContainer {
     //DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar < lower)
 	{
-	  getState(stateObj).setFailed(true);
+	  getState(stateObj).setFailed(true, getIdent(d));
 	  /// Here just remove the value which should lead to the least work.
 	  return upper_bound(d);
 	}
@@ -142,7 +142,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
-    getState(stateObj).setFailed(true);
+    getState(stateObj).setFailed(true, getIdent(d));
     return old_up_bound;
   }
   
@@ -157,7 +157,7 @@ struct BigRangeVarContainer {
     //DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar > upper)
 	{
-	  getState(stateObj).setFailed(true);
+	  getState(stateObj).setFailed(true, getIdent(d));
 	  /// Here just remove the value which should lead to the least work.
 	  return lower_bound(d);
 	}
@@ -169,7 +169,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
-    getState(stateObj).setFailed(true);
+    getState(stateObj).setFailed(true, getIdent(d));
     return old_low_bound;
   }
   
@@ -340,7 +340,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
   {
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     if(!inDomain(d,offset))
-	  {getState(stateObj).setFailed(true); return;}
+	  {getState(stateObj).setFailed(true, getIdent(d)); return;}
 	DomainInt lower = lower_bound(d);
 	DomainInt upper = upper_bound(d);
     if(offset == upper && offset == lower)
@@ -348,7 +348,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
 	
 	if(offset > upper || offset < lower)
 	{
-	  getState(stateObj).setFailed(true);
+	  getState(stateObj).setFailed(true, getIdent(d));
 	  return;
 	}
     commonAssign(d, offset, lower, upper);
@@ -412,7 +412,7 @@ public:
 	
 	if(offset < low_bound)
 	{
-	  getState(stateObj).setFailed(true);
+	  getState(stateObj).setFailed(true, getIdent(d));
 	  return;
     }
 	
@@ -466,7 +466,7 @@ public:
     
 	if(offset > up_bound)
 	{
-	  getState(stateObj).setFailed(true);
+	  getState(stateObj).setFailed(true, getIdent(d));
 	  return;
 	}
 	

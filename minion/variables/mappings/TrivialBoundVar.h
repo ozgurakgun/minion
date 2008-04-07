@@ -94,14 +94,14 @@ struct TrivialBoundVar
   { 
     upper = min((DomainInt)upper, i);
     if(lower > upper)
-      getState(stateObj).setFailed(true); 
+      getState(stateObj).setFailed(true, getIdent()); 
   }
   
   void setMin(DomainInt i)
   {
     lower = max((DomainInt)lower, i);
     if(lower > upper)
-      getState(stateObj).setFailed(true);
+      getState(stateObj).setFailed(true, getIdent());
   }
   
   void uncheckedAssign(DomainInt)
@@ -111,7 +111,7 @@ struct TrivialBoundVar
   { 
     if(!inDomain(b))
     {
-      getState(stateObj).setFailed(true); 
+      getState(stateObj).setFailed(true, getIdent()); 
       return;
     }
     lower = b; upper = b;
