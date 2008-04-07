@@ -148,6 +148,9 @@ struct VarNot
   label getLabel(DomainInt v)
   { return data.getLabel(v); }
 
+  VarIdent getIdent()
+  { return VarIdent(notVarT, 0, data.getIdent()); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return data.getBaseWdeg(); }

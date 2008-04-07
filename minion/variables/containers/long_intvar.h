@@ -545,6 +545,9 @@ public:
   label getLabel(const BigRangeVarRef_internal& b, DomainInt v)
   { return labels[b.var_num][v - getInitialMin(b)]; }
 
+  VarIdent getIdent(const BigRangeVarRef_internal& b)
+  { return VarIdent(discreteT, noneT, b.var_num, 0); }
+
 #ifdef WDEG
   int getBaseWdeg(const BigRangeVarRef_internal& b)
   { return wdegs[b.var_num]; }

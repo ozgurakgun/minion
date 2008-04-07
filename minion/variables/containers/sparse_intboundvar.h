@@ -403,7 +403,10 @@ struct SparseBoundVarContainer {
     if(getOptions(stateObj).wdeg_on) wdegs[b.var_num] += c->getWdeg(); //add constraint score to base var wdeg
 #endif
   }
-  
+
+  VarIdent getIdent(const SparseBoundVarRef_internal<BoundType>& b)
+  { return VarIdent(sparseT, noneT, b.var_num, 0); }
+
   //sequence number of value in variable
   size_t getPos(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v)
   {

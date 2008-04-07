@@ -112,7 +112,9 @@ ALIAS c[2,2] = [[myvar,b[2]],[b[1],anothervar]]
 
 #include "../constraints/constraint_abstract.h"
 
-typedef void* label; //actually a vector of literals, need unsafe casts to use
+#include "ident.h"
+
+#include "../search/learning.h"
 
 /// Internal type used by AnyVarRef.
 struct AnyVarRef_Abstract
@@ -139,6 +141,7 @@ struct AnyVarRef_Abstract
   virtual unsigned getDepth(DomainInt v) = 0;
   virtual void setLabel(DomainInt c, label l) = 0;
   virtual label getLabel(DomainInt c) = 0;
+  virtual VarIdent getIdent() = 0;
 #ifdef WDEG
   virtual int getBaseWdeg() = 0;
   virtual void incWdeg() = 0;
@@ -236,6 +239,9 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual label getLabel(DomainInt c)
   { return data.getLabel(c); }
   
+  virtual VarIdent getIdent()
+  { return data.getIdent(); }
+
 #ifdef WDEG
   virtual int getBaseWdeg() 
   { return data.getBaseWdeg(); }
@@ -345,6 +351,9 @@ public:
   label getLabel(DomainInt c)
   { return data->getLabel(c); }
 
+  VarIdent getIdent()
+  { return data->getIdent(); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return data->getBaseWdeg(); }
@@ -364,5 +373,6 @@ public:
   {  data->addDynamicTrigger(t, type, pos); }
 #endif
 };
+
 
 

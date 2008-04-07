@@ -115,6 +115,9 @@ struct ConstantVar
 
   label getLabel(DomainInt v) { return label(); }
 
+  VarIdent getIdent()
+  { return VarIdent(constT, constantT, val, val); }
+
 #ifdef WDEG
   int getBaseWdeg() { return 0; } //wdeg is irrelevant for non-search var
 

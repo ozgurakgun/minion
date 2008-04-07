@@ -469,6 +469,10 @@ BOOL MinionThreeInputReader<FileReader>::readConstraint(FileReader* infile, BOOL
 #endif
   }
 
+  if(constraint.type != CT_WATCHED_TABLE) {
+    cout << "This version of minion is designed to work with" << endl;
+    cout << "positive table constraints only." << endl;
+  }
   switch(constraint.type)
   {
     case CT_ELEMENT:

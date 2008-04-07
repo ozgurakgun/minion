@@ -146,6 +146,9 @@ struct TrivialBoundVar
   label getLabel(DomainInt v)
   { return labels[v - lower]; }
 
+  VarIdent getIdent()
+  { return VarIdent(trivialBoundT, noneT, (int)this, 0); } //use pointer as unique var num
+
 #ifdef WDEG
   int getBaseWdeg()
   { return wdeg; }

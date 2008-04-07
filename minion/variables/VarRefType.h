@@ -105,6 +105,9 @@ struct VarRefType
 
   void addConstraint(AbstractConstraint* c)
   { GET_CONTAINER().addConstraint(data, c); }
+  
+  VarIdent getIdent()
+  { return GET_CONTAINER().getIdent(data); }
 
   void setDepth(DomainInt v, unsigned d)
   { GET_CONTAINER().setDepth(data, v, d); }
@@ -223,6 +226,9 @@ struct QuickVarRefType
   label getLabel(DomainInt c)
   { return GET_CONTAINER().getLabel(data, c); }
 
+  VarIdent getIdent()
+  { return GET_CONTAINER().getIdent(data); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return GET_CONTAINER().getBaseWdeg(data); }
@@ -318,6 +324,9 @@ struct CompleteVarRefType
 
   label getLabel(DomainInt c)
   { return (data.getCon()).getLabel(data, c); }
+
+  VarIdent getIdent()
+  { return (data.getCon()).getIdent(data); }
 
 #ifdef WDEG
   int getBaseWdeg()
