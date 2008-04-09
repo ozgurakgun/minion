@@ -355,25 +355,25 @@ struct TupleTrie
   {
 	VarArray& vars = const_cast<VarArray&>(_vars);
 	  
-    if(obj_list[0] == NULL)
-	{
-	  TrieObj* first_ptr = get_next_ptr(trie_data, domain_val);
-	  if(first_ptr == NULL)
-	    return -1;
-	
-	  obj_list[0] = first_ptr;
-      if(search_trie(vars, obj_list, 1))
-	    return obj_list[arity-1] - obj_list[0];  
-	  else
-	    return -1;
-	}
+	if(obj_list[0] == NULL)
+	  {
+	    TrieObj* first_ptr = get_next_ptr(trie_data, domain_val);
+	    if(first_ptr == NULL)
+	      return -1;
+	    
+	    obj_list[0] = first_ptr;
+	    if(search_trie(vars, obj_list, 1))
+	      return obj_list[arity-1] - obj_list[0];  
+	    else
+	      return -1;
+	  }
 	else
-	{
+	  {
 	  if(loop_search_trie(vars, obj_list, 1))
 	    return obj_list[arity-1] - obj_list[0];  
 	  else
 	    return -1;
-/*	  D_ASSERT(obj_list[0] == get_next_ptr(trie_data, domain_val));
+	  /*	  D_ASSERT(obj_list[0] == get_next_ptr(trie_data, domain_val));
 	  int OK_depth = 1;
 	  while(OK_depth < arity && vars[map_depth(OK_depth)].inDomain(obj_list[OK_depth]->val))
 		OK_depth++;
@@ -425,8 +425,51 @@ public:
   int arity; 
   TupleTrie* tupleTries;
   
-  TupleTrie & getTrie(int varIndex) 
+  TupleTrie & getTrie(int varIndex)
   { return tupleTries[varIndex]; };
+
+  //given depth in trie, and the variable index that is at the first depth,
+  //returns the index of the variable at that depth
+  static size_t map_depth(size_t depth, size_t markedVar) {
+    return depth == 0 ? markedVar : (depth <= markedVar ? depth - 1 : depth);
+  }   
+  
+  //traverses <trie> in order to add a pruned value per support to <label>
+  template<typename VarArray>
+  static void getLabel(VarArray& vars, TrieObj* trie, size_t depth, 
+		size_t varIndex, vector<literal>& label)
+  {
+    //algorithm: Carry out traversal of trie, but backtrack when a pruned edge
+    //is found. This means we have a pruned value for every tuple, i.e., a
+    //pruning to cover each lost support.
+    while(trie->val != MAXINT) {
+      if(!vars[map_depth(depth, varIndex)].inDomain(trie->val)) {
+	literal l;
+	l.asgn = false;
+	l.var = vars[map_depth(depth, varIndex)].getIdent();
+	l.val = trie->val;
+	label.push_back(l);
+      } else {
+	getLabel(vars, trie->offset_ptr, depth + 1, varIndex, label);
+      }
+      trie++;
+    }
+  }
+
+  template<typename VarArray>
+  label getLabel(VarArray& vars, int varIndex, DomainInt val)
+  {
+    //pseudocode: Carry out traversal of subtrie involving (varIndex,val).
+    vector<literal> label;
+    TupleTrie tt = getTrie(varIndex); //get trie with correct variable at depth 0
+    TrieObj* to_a = tt.trie_data;
+    while(to_a->val != val) to_a++; //find the node with the correct val
+    getLabel(vars, to_a->offset_ptr, 1, varIndex, label); //traverse its subtrie
+    std::sort(label.begin(), label.end());  //sort label
+    vector<literal>::iterator real_end = std::unique(label.begin(), label.end());
+    label.resize(label.size() - (label.end() - real_end)); //trim excess
+    return label;
+  }
   
   /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	Constructor

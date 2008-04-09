@@ -349,7 +349,10 @@ struct BooleanContainer
   { return depths[b.var_num][v]; }
 
   void setLabel(const BoolVarRef_internal& b, DomainInt v, label l)
-  { labels[b.var_num][v] = l; }
+  { 
+    labels[b.var_num][v] = l; 
+    cout << "set label for " << b.var_num << endl;
+  }
 
   label getLabel(const BoolVarRef_internal& b, DomainInt v)
   { return labels[b.var_num][v]; }

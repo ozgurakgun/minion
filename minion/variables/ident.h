@@ -83,4 +83,15 @@ inline ostream& operator<<(ostream& output, const VarIdent& p) {
   return output;
 }
 
+inline bool operator<(const VarIdent& a, const VarIdent& b) {
+  return a.vt < b.vt ||
+    (a.vt == b.vt && a.varNo < b.varNo) ||
+    (a.vt == b.vt && a.varNo == b.varNo && a.mt_v < b.mt_v) ||
+    (a.vt == b.vt && a.varNo == b.varNo && a.mt_v == b.mt_v && a.mapInfo_v < b.mapInfo_v);
+}
+
+inline bool operator==(const VarIdent& a, const VarIdent& b) {
+  return a.same_var(b);
+}
+
 #endif

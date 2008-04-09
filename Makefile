@@ -1,6 +1,6 @@
 # To make a universal mac build add: -arch ppc -arch i686 to flags
 
-FLAGS = -DWATCHEDLITERALS
+FLAGS = -DWATCHEDLITERALS -DNAIVENOGOOD
 NAMEBASE = minion
 
 ifdef DEBUG
