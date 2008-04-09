@@ -17,6 +17,21 @@ struct literal {
   DomainInt val;
 };
 
+inline bool operator<(const literal& a, const literal& b) {
+  return a.asgn < b.asgn ||
+    (a.asgn == b.asgn && a.var < b.var) ||
+    (a.asgn == b.asgn && a.var == b.var && a.val < b.val);
+}
+
+inline bool operator==(const literal& a, const literal& b) {
+  return a.asgn == b.asgn && a.var == b.var && a.val == b.val;
+}
+
+inline ostream& operator<<(ostream& output, const literal& l) {
+  output << "(asgn=" << l.asgn << ",var=" << l.var << ",val=" << l.val << ")";
+  return output;
+}
+
 //data structure to represent a label for pruning/nogood
 typedef vector<literal> label;
 
