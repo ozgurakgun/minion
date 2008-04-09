@@ -20,7 +20,7 @@
 //#define NOSCC
 
 // Warning: if this is not defined, then watchedalldiff probably won't do anything.
-//#define USEWATCHES
+#define USEWATCHES
 
 // Optimize the case where a value was assigned. Only works in the absence of NOSCC.
 #define ASSIGNOPT 
@@ -31,9 +31,13 @@
 // store matching from one run to the next.
 #define INCREMENTALMATCH
 
+// Use BFS instead of HK
+#define BFSMATCHING
+
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <algorithm>
 #include <utility>
 
@@ -709,7 +713,9 @@ struct DynamicAlldiff : public DynamicConstraint
         D_ASSERT(SCCSplit.isMember(i) == (((char*)SCCSplit2.get_ptr())[i]==1));
         cout << (int)SCCSplit.isMember(i) << ", " << (int) (((char*)SCCSplit2.get_ptr())[i]==1) << endl;
         // The matches correspond.
+        #ifndef BFSMATCHING
         D_ASSERT(valvarmatching[varvalmatching[i]-dom_min]==i);
+        #endif
     }
     
     #ifdef DYNAMICALLDIFF
@@ -786,7 +792,7 @@ struct DynamicAlldiff : public DynamicConstraint
             
             D_DATA(cout << "start:" << sccindex_start << " end:"<< sccindex_end<<endl);
             
-            if(!hopcroft_wrapper(sccindex_start, sccindex_end))
+            if(!matching_wrapper(sccindex_start, sccindex_end))
                 return;
             
             #ifdef DYNAMICALLDIFF
@@ -900,7 +906,7 @@ struct DynamicAlldiff : public DynamicConstraint
             if(!var_array[SCCs[k]].inDomain(varvalmatching[SCCs[k]]))
             {
                 int l=j; while(SCCSplit.isMember(l) && l<(numvars-1)) l++;
-                if(!hopcroft_wrapper(j, l))
+                if(!matching_wrapper(j, l))
                     return;
             }
             #endif
@@ -1019,7 +1025,7 @@ struct DynamicAlldiff : public DynamicConstraint
     #endif
     
     // Call hopcroft for the whole matching.
-    if(!hopcroft_wrapper(0, numvars-1))
+    if(!matching_wrapper(0, numvars-1))
         return;
     
     #ifdef DYNAMICALLDIFF
@@ -1827,12 +1833,24 @@ struct DynamicAlldiff : public DynamicConstraint
           newlayer[i].reserve(numvars);
       }
       innewlayer.reserve(numvals);
+      
+      // for BFS algorithm
+      prev.resize(numvars+numvals, -1);
   }
   
   
     
 // ------------------------- Hopcroft which takes start and end indices.
     
+    inline bool matching_wrapper(int sccstart, int sccend)
+    {
+        #ifdef BFSMATCHING
+        return hopcroft_wrapper2(sccstart,sccend);
+        #else
+        return hopcroft_wrapper(sccstart,sccend); // change here.
+        #endif
+    }
+
     inline bool hopcroft_wrapper(int sccstart, int sccend)
     {
         // Call hopcroft for the whole matching.
@@ -2148,4 +2166,170 @@ struct DynamicAlldiff : public DynamicConstraint
         return false;
     }
     
+    // BFS alternative to hopcroft. --------------------------------------------
+    
+    inline bool hopcroft_wrapper2(int sccstart, int sccend)
+    {
+        // Call hopcroft for the whole matching.
+        if(!bfsmatching(sccstart, sccend))
+        {
+            // The constraint is unsatisfiable (no matching).
+            D_DATA(cout << "About to fail. Changed varvalmatching: "<< varvalmatching <<endl);
+            
+            //D_DATA(cout << varinlocalmatching.getlist()<<endl);
+            getState(stateObj).setFailed(true);
+            //varvalmatching=tempmatching;  // copy back.
+            return false;
+        }
+        
+        return true;
+    }
+    
+    deque<int> fifo;
+    vector<int> prev;
+    // use push_back to push, front() and pop_front() to pop.
+    
+    //Also use invprevious to record which values are matched.
+    // (recording val-dom_min)
+    
+    inline bool bfsmatching(int sccstart, int sccend)
+    {
+        // construct the set of matched values.
+        invprevious.clear();
+        for(int sccindex=sccstart; sccindex<=sccend; sccindex++)
+        {
+            int var=SCCs[sccindex];
+            if(var_array[var].inDomain(varvalmatching[var]))
+            {
+                invprevious.insert(varvalmatching[var]-dom_min);
+            }
+        }
+        
+        // back up the matching to cover failure
+        valvarmatching=varvalmatching;
+        
+        // iterate through the SCC looking for broken matches
+        for(int sccindex=sccstart; sccindex<=sccend; sccindex++)
+        {
+            int startvar=SCCs[sccindex];
+            if(!var_array[startvar].inDomain(varvalmatching[startvar]))
+            {
+                D_DATA(cout << "Searching for augmenting path for var: " << startvar <<endl );
+                // Matching edge lost; BFS search for augmenting path to fix it.
+                fifo.clear();  // this should be constant time but probably is not.
+                fifo.push_back(startvar);
+                visited.clear();
+                visited.insert(startvar);
+                bool finished=false;
+                while(!fifo.empty() && !finished)
+                {
+                    // pop a vertex and expand it.
+                    int curnode=fifo.front();
+                    fifo.pop_front();
+                    D_DATA(cout << "Popped vertex " << (curnode<numvars? "(var)":"(val)") << (curnode<numvars? curnode : curnode+dom_min-numvars ) <<endl);
+                    if(curnode<numvars)
+                    { // it's a variable
+                        // put all corresponding values in the fifo. 
+                        // Need to check if we are completing an even alternating path.
+                        for(int val=var_array[curnode].getMin(); val<=var_array[curnode].getMax(); val++)
+                        {
+                            if(var_array[curnode].inDomain(val) 
+                                && val!=varvalmatching[curnode])
+                            {
+                                if(!invprevious.in(val-dom_min))
+                                {
+                                    // This vertex completes an even alternating path. 
+                                    // Unwind and apply the path here
+                                    D_DATA(cout << "Found augmenting path:" <<endl);
+                                    int unwindvar=curnode;
+                                    int unwindval=val;
+                                    while(true)
+                                    {
+                                        //invprevious.remove(varvalmatching[unwindvar]-dom_min);
+                                        D_ASSERT(var_array[unwindvar].inDomain(unwindval));
+                                        D_ASSERT(varvalmatching[unwindvar]!=unwindval);
+                                        
+                                        varvalmatching[unwindvar]=unwindval;
+                                        D_DATA(cout << "Setting var "<< unwindvar << " to "<< unwindval <<endl);
+                                        
+                                        //invprevious.insert(unwindval-dom_min);
+                                        
+                                        if(unwindvar==startvar)
+                                        {
+                                            break;
+                                        }
+                                        
+                                        unwindval=prev[unwindvar];
+                                        unwindvar=prev[unwindval-dom_min+numvars];
+                                    }
+                                    
+                                    #ifndef NO_DEBUG
+                                    cout << "varvalmatching:";
+                                    for(int sccindex=sccstart; sccindex<=sccend; sccindex++)
+                                    {
+                                        if(var_array[SCCs[sccindex]].inDomain(varvalmatching[SCCs[sccindex]]))
+                                            cout << SCCs[sccindex] << "->" << varvalmatching[SCCs[sccindex]] << ", ";
+                                    }
+                                    cout << endl;
+                                    #endif
+                                    cout << "varvalmatching: " << varvalmatching <<endl;
+                                    invprevious.clear();
+                                    for(int sccindex=sccstart; sccindex<=sccend; sccindex++)
+                                    {
+                                        int var=SCCs[sccindex];
+                                        if(var_array[var].inDomain(varvalmatching[var]))
+                                        {
+                                            invprevious.insert(varvalmatching[var]-dom_min);
+                                        }
+                                    }
+                                    
+                                    finished=true;
+                                    break;  // get out of for loop
+                                }
+                                else
+                                {
+                                    if(!visited.in(val-dom_min+numvars))
+                                    {
+                                        visited.insert(val-dom_min+numvars);
+                                        prev[val-dom_min+numvars]=curnode;
+                                        fifo.push_back(val-dom_min+numvars);
+                                    }
+                                }
+                            }
+                        } // end for
+                    }
+                    else
+                    { // popped a value from the stack.
+                        D_ASSERT(curnode>=numvars && curnode < numvars+numvals);
+                        int stackval=curnode+dom_min-numvars;
+                        int vartoqueue=-1;
+                        for(int scci=sccstart; scci<=sccend; scci++)
+                        {
+                            if(varvalmatching[SCCs[scci]]==stackval && var_array[SCCs[scci]].inDomain(stackval))
+                            {
+                                vartoqueue=SCCs[scci];
+                                break;
+                            }
+                        }
+                        D_ASSERT(vartoqueue>=0);  // if this assertion fails, then invprevious must be wrong.
+                        if(!visited.in(vartoqueue)) // I think it's impossible for this test to be false.
+                        {
+                            visited.insert(vartoqueue);
+                            prev[vartoqueue]=stackval;
+                            fifo.push_back(vartoqueue);
+                        }
+                    }
+                }
+                if(!finished)
+                {   // no augmenting path found
+                    D_DATA(cout << "No augmenting path found."<<endl);
+                    // restore the matching to its state before the algo was called.
+                    varvalmatching=valvarmatching;
+                    return false;
+                }
+                
+            }
+        }
+        return true;
+    }
 };  // end of AlldiffGacSlow
