@@ -2272,7 +2272,7 @@ struct DynamicAlldiff : public DynamicConstraint
                                     }
                                     cout << endl;
                                     #endif
-                                    cout << "varvalmatching: " << varvalmatching <<endl;
+                                    
                                     invprevious.clear();
                                     for(int sccindex=sccstart; sccindex<=sccend; sccindex++)
                                     {
