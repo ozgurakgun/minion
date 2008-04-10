@@ -131,13 +131,9 @@ struct GACTableConstraint : public DynamicConstraint
 	{
 	  D_INFO(1, DI_TABLECON, "Failed to find new support");
 	  vars[varIndex].removeFromDomain(val);
-#ifdef NAIVENOGOOD
 	  vars[varIndex].setLabel(val, tupleTrieArrayptr->getLabel(vars, varIndex, val));
 	  cout << "label for removing " << val << " from " << vars[varIndex].getIdent() << endl;
 	  cout << "is " << vars[varIndex].getLabel(val) << endl;
-#else
-	  //tweedledee
-#endif
 	}
   }
   
