@@ -417,152 +417,11 @@ struct TupleTrie
   }
 };
 
-size_t map_depth(size_t depth, size_t markedVar) {
+//given depth in trie, and the variable index that is at the first depth,
+//returns the index of the variable at that depth
+inline size_t map_depth(size_t depth, size_t markedVar) {
   return depth == 0 ? markedVar : (depth <= markedVar ? depth - 1 : depth);
 }   
-
-#ifndef NAIVENOGOOD
-
-struct varval { //variable index and value
-  unsigned var;
-  DomainInt val;
-  varval(unsigned _var, DomainInt _val) : var(_var), val(_val) {}
-  bool operator==(const varval& b) const
-  { return var == b.var && val == b.val; }
-  bool operator<(const varval& b) const
-  { return var < b.var || (var == b.var && val < b.val); }
-  };
-
-
-struct varvalData {
-  unsigned occurences; //number of remaining occurences in uncovered tuples
-  unsigned position; //position in heap <occurences>
-  vector<varval> neighbours; //all pruned varvals that share a support with the varval
-  varvalData() : occurences(0), position(0) {}
-};
-
-map<varval, varvalData> varvalInfo; //mapping from varval to data
-vector<varval> occurencesHeap;      //heap ordered by varval's data's occurences count
-
-#define parent(i) (i / 2) //macros to make it easier to do heap manipulation
-#define left(i) (2 * i + 1)
-#define right(i) (2 * i + 2)
-
-void repairHeapInc(size_t loc) //entry may be too low in heap, correct it and update varvalInfo
-{
-  varval loc_varval = occurencesHeap[loc];
-  unsigned loc_occurences = varvalInfo.find(loc_varval)->second.occurences;
-  while(true)
-    if(loc != 0 //no parent for root element
-       && loc_occurences > varvalInfo.find(occurencesHeap[parent(loc)])->second.occurences) {
-      occurencesHeap[loc] = occurencesHeap[parent(loc)];
-      loc = parent(loc);
-    } else
-      break; //right position already
-  occurencesHeap[loc] = loc_varval; //put varval in final heap location
-  varvalInfo.find(loc_varval)->second.position = loc;
-}
-
-void repairHeapDec(size_t loc) //entry may be too high in heap, repair
-{
-  varval loc_varval = occurencesHeap[loc];
-  int loc_occurences = varvalInfo.find(loc_varval)->second.occurences;
-  while(true) {
-    int left_occ = 
-      left(loc) > occurencesHeap.size() - 1 
-      ? -1 //not present, so don't be tempted to move it!
-      : varvalInfo.find(occurencesHeap[left(loc)])->second.occurences;
-    int right_occ = 
-      right(loc) > occurencesHeap.size() - 1
-      ? -1
-      : varvalInfo.find(occurencesHeap[right(loc)])->second.occurences;
-    if(loc_occurences < left_occ || loc_occurences < right_occ)
-      if(left_occ > right_occ) {
-	occurencesHeap[loc] = occurencesHeap[left(loc)];
-	loc = left(loc);
-      } else {
-	occurencesHeap[loc] = occurencesHeap[right(loc)];
-	loc = right(loc);
-      }
-    else 
-      break; //right position already
-  }
-  occurencesHeap[loc] = loc_varval;
-  varvalInfo.find(loc_varval)->second.position = loc;
-}
-
-void build_heap() //make a heap of varvals, ordered by occurences
-{
-  //first, add all the varvals to the heap, once each
-  occurencesHeap.clear();
-  map<varval,varvalData>::iterator curr = varvalInfo.begin();
-  map<varval,varvalData>::iterator end = varvalInfo.end();
-  while(curr != end)
-    occurencesHeap.push_back(curr->first);
-  //next heapify it in linear time
-  const size_t oh_s = occurencesHeap.size();
-  for(size_t i = 1; i < oh_s; i++)
-    repairHeapInc(i);
-}
-
-template<typename VarArray>
-label buildLabel(VarArray& vars)
-{
-  vector<literal> label;
-  while(true) {
-    varval commonest = occurencesHeap[0];
-    varvalData& vvd = varvalInfo.find(commonest)->second;
-    if(vvd.occurences == 0) break; //all supports already covered
-    label.push_back(literal(false, vars[commonest.var].getIdent(), commonest.val)); //get commonest
-    vvd.occurences = 0; //now commonest is covered
-    repairHeapDec(0); //repair the heap
-    vector<varval> neighbours = vvd.neighbours;
-    const size_t neighbours_s = neighbours.size();
-    for(size_t i = 0; i < neighbours_s; i++) { //reduce occurence count of all neighbours
-      varvalData& nd = varvalInfo.find(neighbours[i])->second;
-      nd.occurences--;
-      repairHeapDec(nd.position);
-    }
-  }
-  return label;
-}
-
-//setup varvalInfo and occurencesHeap by traversing trie
-//prunings is the set of pruned values on the current path in the trie, trie is the
-//current point in the trie, vars are just the vars the trie represents, depth is the
-//depth of the supplied node, varIndex is the index in <vars> of the variable at depth 0
-template<typename VarArray>
-void setupLabels(VarArray& vars, vector<varval>& prunings, TrieObj* trie, unsigned depth,
-		 unsigned varIndex)
-{
-  if(trie == NULL) { //reached end of a support in trie
-    const size_t prunings_s = prunings.size();
-    D_ASSERT(prunings_s != 0); //any tuple must have a pruning in it, else contradiction
-    for(size_t i = 0; i < prunings_s; i++) {
-      //make sure there is data in varvalInfo for each varval, for safety
-      varvalInfo.insert(map<varval,varvalData>::value_type(varval(map_depth(depth, varIndex), trie->val),
-							   varvalData()));
-      //now update it
-      varvalData& pruning_d = varvalInfo.find(prunings[i])->second;
-      pruning_d.occurences++;
-      pruning_d.neighbours.insert(pruning_d.neighbours.end(), prunings.begin(), prunings.end());
-    }
-  } else {
-    while(trie->val != MAXINT) {
-      if(!vars[map_depth(depth, varIndex)].inDomain(trie->val)) {
-	prunings.push_back(varval(map_depth(depth, varIndex), trie->val));
-	setupLabels(vars, prunings, trie->offset_ptr, depth + 1, varIndex);
-	prunings.pop_back();
-      } else {
-	setupLabels(vars, prunings, trie->offset_ptr, depth + 1, varIndex);
-      }
-      trie++;
-    }
-  }
-  build_heap();
-}
-
-#endif
 
 //template<typename VarArray>
 class TupleTrieArray {
@@ -575,14 +434,12 @@ public:
   TupleTrie & getTrie(int varIndex)
   { return tupleTries[varIndex]; };
 
-  //given depth in trie, and the variable index that is at the first depth,
-  //returns the index of the variable at that depth
 #ifdef NAIVENOGOOD
 
   //traverses <trie> in order to add a pruned value per support to <label>
   template<typename VarArray>
     static void getLabel(VarArray& vars, TrieObj* trie, size_t depth, 
-		size_t varIndex, vector<literal>& label)
+			 size_t varIndex, vector<literal>& label)
   {
     //algorithm: Carry out traversal of trie, but backtrack when a pruned edge
     //is found. This means we have a pruned value for every tuple, i.e., a
@@ -615,6 +472,145 @@ public:
 
 #else
 
+  struct varval { //variable index and value
+    unsigned var;
+    DomainInt val;
+    varval(unsigned _var, DomainInt _val) : var(_var), val(_val) {}
+    bool operator==(const varval& b) const
+    { return var == b.var && val == b.val; }
+    bool operator<(const varval& b) const
+    { return var < b.var || (var == b.var && val < b.val); }
+  };
+
+  struct varvalData {
+    unsigned occurences; //number of remaining occurences in uncovered tuples
+    unsigned position; //position in heap <occurences>
+    vector<varval> neighbours; //all pruned varvals that share a support with the varval
+    varvalData() : occurences(0), position(0) {}
+  };
+  
+  map<varval, varvalData> varvalInfo; //mapping from varval to data
+  vector<varval> occurencesHeap;      //heap ordered by varval's data's occurences count
+
+#define parent(i) (i / 2) //macros to make it easier to do heap manipulation
+#define left(i) (2 * i + 1)
+#define right(i) (2 * i + 2)
+
+  void repairHeapInc(size_t loc) //entry may be too low in heap, correct it and update varvalInfo
+    {
+      varval loc_varval = occurencesHeap[loc];
+      unsigned loc_occurences = varvalInfo.find(loc_varval)->second.occurences;
+      while(true)
+	if(loc != 0 //no parent for root element
+	   && loc_occurences > varvalInfo.find(occurencesHeap[parent(loc)])->second.occurences) {
+	  occurencesHeap[loc] = occurencesHeap[parent(loc)];
+	  loc = parent(loc);
+	} else
+	  break; //right position already
+      occurencesHeap[loc] = loc_varval; //put varval in final heap location
+      varvalInfo.find(loc_varval)->second.position = loc;
+    }
+
+  void repairHeapDec(size_t loc) //entry may be too high in heap, repair
+    {
+      varval loc_varval = occurencesHeap[loc];
+      int loc_occurences = varvalInfo.find(loc_varval)->second.occurences;
+      while(true) {
+	int left_occ = 
+	  left(loc) > occurencesHeap.size() - 1 
+	  ? -1 //not present, so don't be tempted to move it!
+	  : varvalInfo.find(occurencesHeap[left(loc)])->second.occurences;
+	int right_occ = 
+	  right(loc) > occurencesHeap.size() - 1
+	  ? -1
+	  : varvalInfo.find(occurencesHeap[right(loc)])->second.occurences;
+	if(loc_occurences < left_occ || loc_occurences < right_occ)
+	  if(left_occ > right_occ) {
+	    occurencesHeap[loc] = occurencesHeap[left(loc)];
+	    loc = left(loc);
+	  } else {
+	    occurencesHeap[loc] = occurencesHeap[right(loc)];
+	    loc = right(loc);
+	  }
+	else 
+	  break; //right position already
+      }
+      occurencesHeap[loc] = loc_varval;
+      varvalInfo.find(loc_varval)->second.position = loc;
+    }
+
+  void build_heap() //make a heap of varvals, ordered by occurences
+    {
+      //first, add all the varvals to the heap, once each
+      occurencesHeap.clear();
+      map<varval,varvalData>::iterator curr = varvalInfo.begin();
+      map<varval,varvalData>::iterator end = varvalInfo.end();
+      while(curr != end) {
+	occurencesHeap.push_back(curr->first);
+	curr++;
+      }
+      //next heapify it in linear time
+      const size_t oh_s = occurencesHeap.size();
+      for(size_t i = 1; i < oh_s; i++)
+	repairHeapInc(i);
+    }
+  
+  template<typename VarArray>
+    label buildLabel(VarArray& vars)
+    {
+      vector<literal> label;
+      while(true) {
+	varval commonest = occurencesHeap[0];
+	varvalData& vvd = varvalInfo.find(commonest)->second;
+	if(vvd.occurences == 0) break; //all supports already covered
+	label.push_back(literal(false, vars[commonest.var].getIdent(), commonest.val)); //get commonest
+	repairHeapDec(0); //repair the heap
+	vector<varval> neighbours = vvd.neighbours;
+	const size_t neighbours_s = neighbours.size();
+	for(size_t i = 0; i < neighbours_s; i++) { //reduce occurence count of all neighbours
+	  varvalData& nd = varvalInfo.find(neighbours[i])->second;
+	  nd.occurences--;
+	  repairHeapDec(nd.position);
+	}
+	vvd.occurences = 0; //now commonest is covered
+      }
+      return label;
+    }
+
+  //setup varvalInfo and occurencesHeap by traversing trie
+  //prunings is the set of pruned values on the current path in the trie, trie is the
+  //current point in the trie, vars are just the vars the trie represents, depth is the
+  //depth of the supplied node, varIndex is the index in <vars> of the variable at depth 0
+  template<typename VarArray>
+    void setupLabels(VarArray& vars, vector<varval>& prunings, TrieObj* trie, unsigned depth,
+		     unsigned varIndex)
+    {
+      if(depth == vars.size()) { //reached end of a support in trie
+	const size_t prunings_s = prunings.size();
+	D_ASSERT(prunings_s != 0); //any tuple must have a pruning in it, else contradiction
+	for(size_t i = 0; i < prunings_s; i++) {
+	  //make sure there is data in varvalInfo for each varval, for safety
+	  varvalInfo.insert(map<varval,varvalData>::value_type(prunings[i],
+							       varvalData()));
+	  //now update it
+	  varvalData& pruning_d = varvalInfo.find(prunings[i])->second;
+	  pruning_d.occurences++;
+	  pruning_d.neighbours.insert(pruning_d.neighbours.end(), prunings.begin(), prunings.end());
+	}
+      } else {
+	while(trie->val != MAXINT) {
+	  if(!vars[map_depth(depth, varIndex)].inDomain(trie->val)) {
+	    prunings.push_back(varval(map_depth(depth, varIndex), trie->val));
+	    setupLabels(vars, prunings, trie->offset_ptr, depth + 1, varIndex);
+	    prunings.pop_back();
+	  } else {
+	    setupLabels(vars, prunings, trie->offset_ptr, depth + 1, varIndex);
+	  }
+	  trie++;
+	}
+      }
+    }
+
   template<typename VarArray>
     label getLabel(VarArray& vars, unsigned varIndex, DomainInt val)
     {
@@ -623,10 +619,12 @@ public:
       TupleTrie tt = getTrie(varIndex);
       TrieObj* to_a = tt.trie_data;
       while(to_a->val != val) to_a++;
-      setupLabels(vars, vector<varval>(), to_a->offset_ptr, 1, varIndex);
+      vector<varval> v;
+      setupLabels(vars, v, to_a->offset_ptr, 1, varIndex);
+      build_heap();
       return buildLabel(vars);
     }
-
+  
 #endif
   
   /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

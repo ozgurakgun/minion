@@ -143,8 +143,8 @@ struct InfoRefType
   label getLabel(DomainInt v)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, getLabel);
-    return data.getLabel(v); 
-  }}
+    return data.getLabel(v);
+  }
 
   VarIdent getIdent()
   { 
