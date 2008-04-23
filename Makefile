@@ -16,7 +16,7 @@ endif
 
 ifdef PROFILE
   NAMEBASE := $(NAMEBASE)-profile
-  FLAGS := $(FLAGS) -g -fno-inline -fno-inline-functions
+  FLAGS := $(FLAGS) -g3
 endif
 
 ifdef INFO
@@ -56,7 +56,7 @@ CPU=
 
 
 
-FULLFLAGS=-Wextra -Wno-sign-compare $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
+FULLFLAGS= $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
 
 OBJFILES=$(patsubst minion/%.cpp,$(OBJDIR)/%.o,$(SRC))
 

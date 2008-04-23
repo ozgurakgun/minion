@@ -411,7 +411,7 @@ struct SparseBoundVarContainer {
   size_t getPos(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v)
   {
     const vector<BoundType>& dom = get_domain(b);
-    D_ASSERT(vector<BoundType>::iterator it = std::find(dom.begin(), dom.end(), v) != dom.end());
+    D_ASSERT(std::find(dom.begin(), dom.end(), v) != dom.end());
     return std::find(dom.begin(), dom.end(), v) - dom.begin();
   }
 
@@ -473,4 +473,3 @@ SparseBoundVarContainer<T>::get_var_num(int i)
   D_ASSERT(i < var_count_m);
   return SparseBoundVarRef(SparseBoundVarRef_internal<T>(this, i));
 }
-
