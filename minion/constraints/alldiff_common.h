@@ -1160,7 +1160,8 @@ struct DynamicAlldiff : public DynamicConstraint
   virtual BOOL check_unsat(int i, DomainDelta)
   {
     int v_size = var_array.size();
-	D_ASSERT(var_array[i].isAssigned());
+	if(!var_array[i].isAssigned()) return false;
+    
 	DomainInt assign_val = var_array[i].getAssignedValue();
     for(int loop = 0; loop < v_size; ++loop)
 	{
@@ -1845,9 +1846,9 @@ struct DynamicAlldiff : public DynamicConstraint
     inline bool matching_wrapper(int sccstart, int sccend)
     {
         #ifdef BFSMATCHING
-        return hopcroft_wrapper2(sccstart,sccend);
+        return bfs_wrapper(sccstart,sccend);
         #else
-        return hopcroft_wrapper(sccstart,sccend); // change here.
+        return hopcroft_wrapper(sccstart,sccend);
         #endif
     }
 
@@ -1858,6 +1859,37 @@ struct DynamicAlldiff : public DynamicConstraint
         {
             // The constraint is unsatisfiable (no matching).
             D_DATA(cout << "About to fail. Changed varvalmatching: "<< varvalmatching <<endl);
+            
+            // temporary mess to see if hopcroft is failing prematurely.
+            /*vector<int> t=varvalmatching;
+            vector<int> t2=valvarmatching;
+            if(bfs_wrapper(sccstart, sccend))
+            {
+                cout << "BFS fixed matching, but hopcroft did not!" <<endl;
+                cout << "hopcroft varvalmatching:"<< t<<endl;
+                cout << "hopcroft valvarmatching:"<< t2<<endl;
+                cout << "BFS varvalmatching:" << varvalmatching <<endl;
+                
+                {vector<int>& toiterate=valinlocalmatching.getlist();
+                    for(int j=0; j<toiterate.size(); j++)
+                    {
+                        int tempval=toiterate[j];
+                        t[t2[tempval]]=tempval+dom_min;
+                    }
+                }
+                cout << "copied back hopcroft varvalmatching:" << t <<endl;
+                
+                BOOL bfsflag=true, hopflag=true;
+                for(int scci=sccstart; scci<=sccend; scci++)
+                {
+                    if(!var_array[SCCs[scci]].inDomain(t[SCCs[scci]]))
+                        hopflag=false;
+                    if(!var_array[SCCs[scci]].inDomain(t[SCCs[scci]]))
+                        bfsflag=false;
+                }
+                cout << "hopcroft matching valid: "<< hopflag <<endl;
+                cout << "bfs matching valid: "<< bfsflag <<endl;
+            }*/
             
             for(int j=0; j<numvars; j++)
             {
@@ -2168,7 +2200,7 @@ struct DynamicAlldiff : public DynamicConstraint
     
     // BFS alternative to hopcroft. --------------------------------------------
     
-    inline bool hopcroft_wrapper2(int sccstart, int sccend)
+    inline bool bfs_wrapper(int sccstart, int sccend)
     {
         // Call hopcroft for the whole matching.
         if(!bfsmatching(sccstart, sccend))
@@ -2187,6 +2219,7 @@ struct DynamicAlldiff : public DynamicConstraint
     
     deque<int> fifo;
     vector<int> prev;
+    vector<int> matchbac;
     // use push_back to push, front() and pop_front() to pop.
     
     //Also use invprevious to record which values are matched.
@@ -2206,7 +2239,7 @@ struct DynamicAlldiff : public DynamicConstraint
         }
         
         // back up the matching to cover failure
-        valvarmatching=varvalmatching;
+        matchbac=varvalmatching;
         
         // iterate through the SCC looking for broken matches
         for(int sccindex=sccstart; sccindex<=sccend; sccindex++)
@@ -2324,7 +2357,7 @@ struct DynamicAlldiff : public DynamicConstraint
                 {   // no augmenting path found
                     D_DATA(cout << "No augmenting path found."<<endl);
                     // restore the matching to its state before the algo was called.
-                    varvalmatching=valvarmatching;
+                    varvalmatching=matchbac;
                     return false;
                 }
                 
