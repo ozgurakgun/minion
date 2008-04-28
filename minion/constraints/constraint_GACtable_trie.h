@@ -87,7 +87,7 @@ struct GACTableConstraint : public DynamicConstraint
      {
          int new_support = 
            tupleTrieArrayptr->getTrie(varIndex).
-                                nextSupportingTuple(val, vars, trie_current_support[literal]);
+                                nextSupportingTuple(val ,vars, trie_current_support[literal]);
          if (new_support < 0)
          { // cout << "find_new_support failed literal: " << literal << " var: " << varIndex << " val: " << get_val_from_literal(literal) << endl ;
              return false;
@@ -117,8 +117,8 @@ struct GACTableConstraint : public DynamicConstraint
 	int propagated_literal = trigger_pos / (vars.size() - 1);
 	
 	BOOL is_new_support = find_new_support(propagated_literal);
-
-    pair<int,int> varval = tuples->get_varval_from_literal(propagated_literal);
+	
+	pair<int,int> varval = tuples->get_varval_from_literal(propagated_literal);
 	int varIndex = varval.first;
 	int val = varval.second;
 	
@@ -131,6 +131,7 @@ struct GACTableConstraint : public DynamicConstraint
 	{
 	  D_INFO(1, DI_TABLECON, "Failed to find new support");
 	  vars[varIndex].removeFromDomain(val);
+	  vars[varIndex].setLabel(val, tupleTrieArrayptr->getLabel(vars, varIndex, val));
 	}
   }
   

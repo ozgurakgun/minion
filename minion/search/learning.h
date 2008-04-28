@@ -13,10 +13,26 @@
 
 //data structure to represent an assignment or non assignment
 struct literal {
-  BOOL asgn; //true iff it's an assignment
+  literal(bool _asgn, Var _var, DomainInt _val) : asgn(_asgn), var(_var), val(_val) {}
+  BOOL asgn; //true iff it's an assignment, false iff it's a pruning
   Var var;
   DomainInt val;
 };
+
+inline bool operator<(const literal& a, const literal& b) {
+  return a.asgn < b.asgn ||
+    (a.asgn == b.asgn && a.var < b.var) ||
+    (a.asgn == b.asgn && a.var == b.var && a.val < b.val);
+}
+
+inline bool operator==(const literal& a, const literal& b) {
+  return a.asgn == b.asgn && a.var == b.var && a.val == b.val;
+}
+
+inline ostream& operator<<(ostream& output, const literal& l) {
+  output << "(asgn=" << l.asgn << ",var=" << l.var << ",val=" << l.val << ")";
+  return output;
+}
 
 //data structure to represent a label for pruning/nogood
 //it's really a vector<literal> but I couldn't make that code compile
