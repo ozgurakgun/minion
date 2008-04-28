@@ -117,6 +117,14 @@ struct ConstantVar
 
   Var getBaseVar() const { return Var(VAR_CONSTANT, val); }
 
+  void setDepth(DomainInt v, unsigned d) { ; }
+
+  unsigned getDepth(DomainInt v) { return 0; }
+
+  void setLabel(DomainInt v, label l) { ; }
+
+  label getLabel(DomainInt v) { return label(); }
+
 #ifdef WDEG
   int getBaseWdeg() { return 0; } //wdeg is irrelevant for non-search var
 

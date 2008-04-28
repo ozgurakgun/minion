@@ -161,6 +161,18 @@ struct BoundVarRef_internal
 
   Var getBaseVar() const { return Var(VAR_BOUND, var_num); }
   
+  void setDepth(DomainInt v, unsigned d)
+  { GET_LOCAL_CON().setDepth(*this, v, d); }
+
+  unsigned getDepth(DomainInt v)
+  { return GET_LOCAL_CON().getDepth(*this, v); }
+
+  void setLabel(DomainInt c, label l)
+  { GET_LOCAL_CON().setLabel(*this, c, l); }
+
+  label getLabel(DomainInt c)
+  { return GET_LOCAL_CON().getLabel(*this, c); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return GET_LOCAL_CON().getBaseWdeg(*this); }
@@ -199,6 +211,8 @@ struct BoundVarContainer {
   TriggerList trigger_list;
   vector<pair<BoundType, BoundType> > initial_bounds;
   vector<vector<AbstractConstraint*> > constraints;
+  vector<vector<unsigned> > depths;
+  vector<vector<label> > labels;
 #ifdef WDEG
   vector<unsigned int> wdegs;
 #endif
@@ -371,6 +385,8 @@ struct BoundVarContainer {
       {
         var_count_m++;
         initial_bounds.push_back(make_pair(vars[i].second.lower_bound, vars[i].second.upper_bound));
+	depths.push_back(vector<unsigned>(vars[i].second.upper_bound - vars[i].second.lower_bound + 1));
+	labels.push_back(vector<label>(vars[i].second.upper_bound - vars[i].second.lower_bound + 1));
         D_INFO(0,DI_BOUNDCONTAINER,"Adding var of domain: (" + to_string(vars[i].second.lower_bound) + "," +
                                                                to_string(vars[i].second.upper_bound) + ")");
       }
@@ -423,6 +439,18 @@ struct BoundVarContainer {
     if(getOptions(stateObj).wdeg_on) wdegs[b.var_num] += c->getWdeg(); //add constraint score to base var wdeg
 #endif
   }
+
+  void setDepth(const BoundVarRef_internal<BoundType>& b, DomainInt v, unsigned d)
+  { depths[b.var_num][v - getInitialMin(b)] = d; }
+
+  unsigned getDepth(const BoundVarRef_internal<BoundType>& b, DomainInt v)
+  { return depths[b.var_num][v - getInitialMin(b)]; }
+
+  void setLabel(const BoundVarRef_internal<BoundType>& b, DomainInt v, label l)
+  { labels[b.var_num][v - getInitialMin(b)] = l; }
+
+  label getLabel(const BoundVarRef_internal<BoundType>& b, DomainInt v)
+  { return labels[b.var_num][v - getInitialMin(b)]; }
 
 #ifdef WDEG
   int getBaseWdeg(const BoundVarRef_internal<BoundType>& b)
