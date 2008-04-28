@@ -55,7 +55,8 @@ namespace Controller
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
     getMemory(stateObj).backTrack().world_pop();
     getVars(stateObj).getBigRangevarContainer().bms_array.undo();
-    getMemory(stateObj).monotonicSet().undo(); // This is the new TMS for general use.
+    //getMemory(stateObj).monotonicSet().undo(); // This is the new TMS for general use. 
+    //No need to BT it because it's actually the same TMS as on the line above.
   }
   
   inline void world_pop_all(StateObj* stateObj)
