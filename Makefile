@@ -4,6 +4,8 @@
 # For now, you can try adding it to the end, it seems having multiple 
 # directories does not hurt.
 
+# NAIVENOGOOD = use cheap but not so good g-nogoods for table constraint
+
 BOOSTINCLUDE = -I/usr/local/include/boost-1_35/ 
 FLAGS = -DWATCHEDLITERALS
 LINKFLAGS = 
@@ -22,7 +24,7 @@ endif
 
 ifdef PROFILE
   NAMEBASE := $(NAMEBASE)-profile
-  FLAGS := $(FLAGS) -g -fno-inline -fno-inline-functions
+  FLAGS := $(FLAGS) -g3
 endif
 
 ifdef INFO
@@ -73,7 +75,7 @@ CPU=
 
 
 
-FULLFLAGS=-Wextra -Wno-sign-compare $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
+FULLFLAGS= $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
 
 OBJFILES=$(patsubst minion/%.cpp,$(OBJDIR)/%.o,$(SRC))
 
