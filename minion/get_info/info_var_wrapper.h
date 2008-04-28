@@ -134,6 +134,30 @@ struct InfoRefType
     return data.getBaseVar(); 
   }
 
+  void setDepth(DomainInt v, unsigned d)
+  { 
+    VAR_INFO_ADDONE(VAR_TYPE, setDepth);
+    data.setDepth(v, d); 
+  }
+
+  unsigned getDepth(DomainInt v)
+  { 
+    VAR_INFO_ADDONE(VAR_TYPE, getDepth);
+    return data.getDepth(v); 
+  }
+
+  void setLabel(DomainInt v, label l)
+  { 
+    VAR_INFO_ADDONE(VAR_TYPE, setLabel);
+    data.setLabel(v, l); 
+  }
+
+  label getLabel(DomainInt v)
+  { 
+    VAR_INFO_ADDONE(VAR_TYPE, getLabel);
+    return data.getLabel(v); 
+  }
+
 #ifdef WDEG
   int getBaseWdeg()
   { 

@@ -73,6 +73,8 @@ typedef MoveablePointer MemOffset;
 
 typedef TrailedMonotonicSet MonotonicSet;
 
+#include "search/learning.h"
+
 #include "constraints/constraint.h"
 
 #ifdef DYNAMICTRIGGERS

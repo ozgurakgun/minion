@@ -122,6 +122,7 @@ ALIAS c[2,2] = [[myvar,b[2]],[b[1],anothervar]]
 class AbstractConstraint;
 class DynamicTrigger;
 
+
 /// Internal type used by AnyVarRef.
 struct AnyVarRef_Abstract
 {
@@ -145,6 +146,10 @@ struct AnyVarRef_Abstract
   virtual void addConstraint(AbstractConstraint* c) = 0;
   virtual DomainInt getBaseVal(DomainInt) const = 0;
   virtual Var getBaseVar() const = 0;
+  virtual void setDepth(DomainInt v, unsigned d) = 0;
+  virtual unsigned getDepth(DomainInt v) = 0;
+  virtual void setLabel(DomainInt c, label l) = 0;
+  virtual label getLabel(DomainInt c) = 0;
 #ifdef WDEG
   virtual int getBaseWdeg() = 0;
   virtual void incWdeg() = 0;
@@ -236,6 +241,18 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual Var getBaseVar() const
   { return data.getBaseVar(); }
 
+  virtual void setDepth(DomainInt v, unsigned d)
+  { data.setDepth(v, d); }
+
+  virtual unsigned getDepth(DomainInt v)
+  { return data.getDepth(v); }
+
+  virtual void setLabel(DomainInt c, label l)
+  { data.setLabel(c, l); }
+  
+  virtual label getLabel(DomainInt c)
+  { return data.getLabel(c); }
+  
 #ifdef WDEG
   virtual int getBaseWdeg() 
   { return data.getBaseWdeg(); }
@@ -338,6 +355,18 @@ public:
 
   Var getBaseVar() const
   { return data->getBaseVar(); }
+
+  void setDepth(DomainInt v, unsigned d)
+  { data->setDepth(v, d); }
+
+  unsigned getDepth(DomainInt v)
+  { return data->getDepth(v); }
+
+  void setLabel(DomainInt c, label l)
+  { data->setLabel(c, l); }
+  
+  label getLabel(DomainInt c)
+  { return data->getLabel(c); }
 
 #ifdef WDEG
   int getBaseWdeg()

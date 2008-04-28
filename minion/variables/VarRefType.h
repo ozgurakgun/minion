@@ -114,6 +114,18 @@ struct VarRefType
   Var getBaseVar() const
   { return GET_CONTAINER().getBaseVar(data); }
 
+  void setDepth(DomainInt v, unsigned d)
+  { GET_CONTAINER().setDepth(data, v, d); }
+
+  unsigned getDepth(DomainInt v)
+  { return GET_CONTAINER().getDepth(data, v); }
+
+  void setLabel(DomainInt c, label l)
+  { GET_CONTAINER().setLabel(data, c, l); }
+
+  label getLabel(DomainInt c)
+  { return GET_CONTAINER().getLabel(data, c); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return GET_CONTAINER().getBaseWdeg(data); }
@@ -213,6 +225,18 @@ struct QuickVarRefType
   Var getBaseVar() const
   { return data.getBaseVar(); }
 
+  void setDepth(DomainInt v, unsigned d)
+  { GET_CONTAINER().setDepth(data, v, d); }
+
+  unsigned getDepth(DomainInt v)
+  { return GET_CONTAINER().getDepth(data, v); }
+
+  void setLabel(DomainInt c, label l)
+  { GET_CONTAINER().setLabel(data, c, l); }
+
+  label getLabel(DomainInt c)
+  { return GET_CONTAINER().getLabel(data, c); }
+
 #ifdef WDEG
   int getBaseWdeg()
   { return GET_CONTAINER().getBaseWdeg(data); }
@@ -302,6 +326,18 @@ struct CompleteVarRefType
 
   Var getBaseVar() const
   { return (data.getCon()).getBaseVar(); }
+
+  void setDepth(DomainInt v, unsigned d)
+  { (data.getCon()).setDepth(data, v, d); }
+
+  unsigned getDepth(DomainInt v)
+  { return (data.getCon()).getDepth(data, v); }
+
+  void setLabel(DomainInt c, label l)
+  { (data.getCon()).setLabel(data, c, l); }
+
+  label getLabel(DomainInt c)
+  { return (data.getCon()).getLabel(data, c); }
 
 #ifdef WDEG
   int getBaseWdeg()
