@@ -57,6 +57,8 @@
 
 #include "get_info/get_info.h"
 
+#include "search/learning.h"
+
 #include "solver.h"
 
 VARDEF(TableOut tableout);
@@ -72,8 +74,6 @@ typedef MoveablePointer MemOffset;
 #include "reversible_vals.h"
 
 typedef TrailedMonotonicSet MonotonicSet;
-
-#include "search/learning.h"
 
 #include "constraints/constraint.h"
 

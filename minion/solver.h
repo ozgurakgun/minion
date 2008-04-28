@@ -107,6 +107,18 @@ public:
 #endif
     failed = f; 
   }
+
+  Var failure;
+  //variables should use this function to fail when they wipe out,
+  //providing their own identity when they do
+  void setFailed(bool f, Var v) {
+    failure = v;
+    setFailed(f);
+  }
+  
+  //var that most recently failed
+  Var getFailedVar() { return failure; }
+
   // This function is here because a number of pieces of code want a raw reference to the 'failed' variable.
   // Long term, this may get removed, but it is added for now to minimise changes while removing global
   // variables.
