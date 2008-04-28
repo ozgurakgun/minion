@@ -236,7 +236,7 @@ struct BooleanContainer
   {
     if(i < 0)
 	{
-	  getState(stateObj).setFailed(true);
+	  getState(stateObj).setFailed(true, d.getBaseVar());
 	  return;
 	}
 
@@ -249,7 +249,7 @@ struct BooleanContainer
   {
     if(i > 1)
 	{
-	  getState(stateObj).setFailed(true);
+	  getState(stateObj).setFailed(true, d.getBaseVar());
 	  return;
 	}
     D_ASSERT(i <= 1);
@@ -266,7 +266,7 @@ struct BooleanContainer
     if(d.isAssigned())
     {
       if(b == d.getAssignedValue()) 
-	    getState(stateObj).setFailed(true);
+	    getState(stateObj).setFailed(true, d.getBaseVar());
     }
     else
       uncheckedAssign(d,1-b);
@@ -278,7 +278,7 @@ struct BooleanContainer
     D_ASSERT(!d.isAssigned());
 	if(b!=0 && b!=1)
     {
-	  getState(stateObj).setFailed(true);
+	  getState(stateObj).setFailed(true, d.getBaseVar());
 	  return;
 	}
     assign_ptr()[d.data_offset] |= d.shift_offset;
@@ -308,7 +308,7 @@ struct BooleanContainer
     else
     {
       if(d.getAssignedValue() != b)
-	getState(stateObj).setFailed(true);
+	getState(stateObj).setFailed(true, d.getBaseVar());
     }
   }
 
