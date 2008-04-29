@@ -93,6 +93,9 @@ struct ConstantVar
   void propagateAssign(DomainInt b)
   {if(b != val) getState(stateObj).setFailed(true, getBaseVar()); }
   
+  void decisionAssign(DomainInt b)
+  { propagateAssign(b); }
+  
   void removeFromDomain(DomainInt b)
   { if(b==val) getState(stateObj).setFailed(true, getBaseVar()); }
  
