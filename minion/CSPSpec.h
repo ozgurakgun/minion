@@ -70,7 +70,8 @@ enum ConstraintType {
   CT_MODULO,
   CT_REIFY,
   CT_REIFYIMPLY,
-  CT_GADGET
+  CT_GADGET,
+  CT_GCC
 };
 
 enum ReadTypes
