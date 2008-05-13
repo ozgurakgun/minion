@@ -20,10 +20,10 @@
 //#define NOSCC
 
 // Warning: if this is not defined, then watchedalldiff probably won't do anything.
-#define USEWATCHES
+//#define USEWATCHES
 
 // Optimize the case where a value was assigned. Only works in the absence of NOSCC.
-#define ASSIGNOPT 
+//#define ASSIGNOPT 
 
 // Use the special queue
 #define SPECIALQUEUE
@@ -2365,4 +2365,5 @@ struct DynamicAlldiff : public DynamicConstraint
         }
         return true;
     }
+    
 };  // end of AlldiffGacSlow
