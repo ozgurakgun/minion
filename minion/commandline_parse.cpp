@@ -7,6 +7,8 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
     const string command(argv[i]);
 	if(command == string("-findallsols"))
 	{ getOptions(stateObj).findAllSolutions(); }
+	else if(command == string("-findgenerators"))
+  { getOptions(stateObj).find_generators = true; }
 	else if(command == string("-crash"))
   { debug_crash = true; }
 	else if(command == string("-quiet"))
@@ -36,12 +38,12 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
     }
 	else if(command == string("-fullprop"))
 	{
-#ifdef NO_DEBUG
+#ifndef NO_DEBUG
 	  cout << "# WARNING: -fullprop is not supported in this version of minion" << endl;
 	  getOptions(stateObj).fullpropagate = true; 
 #else
 	  cout << "This version of minion was not built to support the '-fullprop' command. Sorry" << endl;
-	  FAIL_EXIT();
+	  exit(1);
 #endif
 	}
 	else if(command == string("-nocheck"))
@@ -61,7 +63,7 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	  if(getOptions(stateObj).nodelimit == 0)
 	  {
 		cout << "Did not understand parameter to nodelimit:" << argv[i] << endl;
-		FAIL_EXIT();
+		exit(1);
 	  }
 	}
 	else if(command == string("-sollimit"))
@@ -71,7 +73,7 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	  if(getOptions(stateObj).sollimit == 0)
 	  {
 	    cout << "Did not understand the parameter to sollimit:" << argv[i] << endl;
-		FAIL_EXIT();
+		  exit(1);
 	  }
 	}
 	else if(command == string("-timelimit"))
@@ -81,7 +83,7 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	  if(getOptions(stateObj).time_limit == 0)
 	  {
 	    cout << "Did not understand the parameter to timelimit:" << argv[i] << endl;
-		FAIL_EXIT();
+      exit(1);
 	  }
 	}// TODO : Should remove -varorder for beta orderings.
 	else if(command == string("-varorder") || command == string("-X-varorder") )
@@ -120,7 +122,7 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	  else
 	  {
 		cerr << "I do not understand the order:" << order << endl;
-		FAIL_EXIT();
+    exit(1);
 	  }
 	}
 	else if(command == string("-randomiseorder"))
@@ -136,7 +138,7 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
     {
         getOptions(stateObj).tableout=true;
         ++i;
-        tableout.set_filename(argv[i]);
+        oldtableout.set_filename(argv[i]);
     }
     else if(command == string("-solsout") || command == string("-solsout0"))
     {
@@ -146,8 +148,13 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
       if(!solsoutFile)
       {
         cerr << "Cannot open '" << argv[i] << "' for writing." << endl;
-        exit(0);
+        exit(1);
       }
+    }
+    else if(command[0] == '-' && command != string("--"))
+    {
+      cout << "I don't understand '" << command << "'. Sorry. " << endl;
+      exit(1);
     }
 	else
 	{ 
@@ -155,9 +162,9 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
       getOptions(stateObj).instance_name = command;
     else
     {
-	    cout << "I don't understand '" << command << "'. Sorry." << endl;
-      cout << "You can only give one instance file when running minion." << endl;
-	    FAIL_EXIT();
+	    cout << "I was confused by '" << command << "'. Sorry." << endl;
+      cout << "You can only give one instance file." << endl;
+      exit(1);
     }
 	}
   }
@@ -170,5 +177,5 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
       else
           s=s+argv[i];
   }
-  tableout.set("CommandLineArguments", s);
+  oldtableout.set("CommandLineArguments", s);
 }
