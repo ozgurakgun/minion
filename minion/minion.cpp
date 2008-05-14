@@ -27,28 +27,15 @@
 using namespace ProbSpec;
 
 #include "BuildConstraint.h"
-#include "MinionInputReader.h"
+//#include "MinionInputReader.h"
 
 #include "inputfile_parse.h"
+#include "commandline_parse.h"
 
 #include "svn_header.h"
 
 #include "system/defined_macros.h"
 
-#include "commandline_parse.h"
-
-#ifdef USE_BOOST
-#include <fstream>
-#include <iostream>
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
-
-using namespace boost;
-using namespace iostreams;
-#endif
 
 /** @help switches Description 
 Minion supports a number of switches to augment default behaviour.  To
@@ -289,10 +276,6 @@ specifies as ordering it will randomly permute this. If no ordering is
 specified a random permutation of all the variables is used.
 */
 
-
-
-
-
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //Entrance:
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,6 +304,7 @@ void print_default_help(char** argv)
   print_macros(); 
 }
 
+
 int main(int argc, char** argv) {
 // Wrap main in a try/catch just to stop exceptions leaving main,
 // as windows gets really annoyed when that happens.
@@ -328,7 +312,7 @@ int main(int argc, char** argv) {
 try {
   StateObj* stateObj = new StateObj();
 
-  getState(stateObj).getTimer().startClock();
+  getState(stateObj).getOldTimer().startClock();
   
   cout << "# " << VERSION << endl ;
   cout << "# Svn version: " << SVN_VER << endl; 
@@ -373,62 +357,13 @@ try {
     cout << endl;
   }
   
-  if( getOptions(stateObj).instance_name != "--" )
-  {
-    // Why do I have to put this filename into a variable before I feed it into the ConcreteFileReader?
-    // I'm not completely sure, but it works this way.
-    string fname = getOptions(stateObj).instance_name;
-    const char* filename = getOptions(stateObj).instance_name.c_str();
-    string extension;
-    if(fname.find_last_of(".") < fname.size())
-      extension = fname.substr(fname.find_last_of("."), fname.size());
-     
-#ifdef USE_BOOST
-    ifstream file(filename, ios_base::in | ios_base::binary);
-    
-     if (!file) {
-        INPUT_ERROR("Can't open given input file '" + getOptions(stateObj).instance_name + "'.");
-      }
-    filtering_istream in;
-    
-    if(extension == ".gz" || extension == ".gzip" || extension == ".z" || extension == ".gzp")
-    {
-      cout << "# Using gzip uncompression" << endl;
-      in.push(gzip_decompressor());
-    }    
-    
-    if(extension == ".bz2" || extension == ".bz" || extension == ".bzip2" || extension == ".bzip")
-    {
-      cout << "# Using bzip2 uncompression" << endl;
-      in.push(bzip2_decompressor());
-    }
-        
-    in.push(file);
-    
-    ConcreteFileReader<filtering_istream> infile(in, filename);
-#else
-     if(extension == ".gz" || extension == ".gzip" || extension == ".z" || extension == ".gzp" ||
-        extension == ".bz2" || extension == ".bz" || extension == ".bzip2" || extension == ".bzip")
-     { INPUT_ERROR("This copy of Minion was built without gzip and bzip2 support!"); }
-
-    ifstream ifm(filename);
-    ConcreteFileReader<ifstream> infile(ifm, filename);
-#endif 
-    if (infile.failed_open() || infile.eof()) {
-      INPUT_ERROR("Can't open given input file '" + getOptions(stateObj).instance_name + "'.");
-    }   
-    instance = readInput(&infile, getOptions(stateObj).parser_verbose);
-  }
-  else
-  {
-    ConcreteFileReader<std::basic_istream<char, std::char_traits<char> > > infile(cin, "Standard Input");
-    instance = readInput(&infile, getOptions(stateObj).parser_verbose);
-  }
+  instance = readInputFromFile(getOptions(stateObj).instance_name, getOptions(stateObj).parser_verbose);
+  
 
   getState(stateObj).setTupleListContainer(instance.tupleListContainer);
   
   // Copy args into tableout
-  tableout.set("RandomSeed", to_string(args.random_seed));
+  oldtableout.set("RandomSeed", to_string(args.random_seed));
   {   const char * b = "";
     switch (args.preprocess) {
       case PropLevel_None:
@@ -442,12 +377,12 @@ try {
       case PropLevel_SSACBounds:
         b = "SSACBounds"; break;
     }
-    tableout.set("Preprocess", string(b));
+    oldtableout.set("Preprocess", string(b));
   }
   // should be one for varorder as well.
-  tableout.set("MinionVersion", SVN_VER);
-  tableout.set("TimeOut", 0); // will be set to 1 if a timeout occurs.
-  getState(stateObj).getTimer().maybePrintTimestepStore("Parsing Time: ", "ParsingTime", tableout, !getOptions(stateObj).print_only_solution);
+  oldtableout.set("MinionVersion", SVN_VER);
+  oldtableout.set("TimeOut", 0); // will be set to 1 if a timeout occurs.
+  getState(stateObj).getOldTimer().maybePrintTimestepStore("Parsing Time: ", "ParsingTime", oldtableout, !getOptions(stateObj).print_only_solution);
   
   BuildCSP(stateObj, instance);
   SolveCSP(stateObj, instance, args);
