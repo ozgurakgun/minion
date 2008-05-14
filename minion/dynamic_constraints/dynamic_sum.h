@@ -184,9 +184,9 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
             {
               D_INFO(1, DI_DYSUMCON, to_string(i) + " watched, so pruning.");
               if(VarToCount)
-                    var_array[i].setMax(0);
+                    var_array[i].setMax(0, label());
                   else
-                    var_array[i].setMin(1);          
+                    var_array[i].setMin(1, label());          
             }
           }
         }
@@ -290,9 +290,9 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
 	  if(dt != dt2)       // that one has just been set the other way
 	  {
 	    if(VarToCount)
-		  var_array[dt2->trigger_info()].setMax(0);
+		  var_array[dt2->trigger_info()].setMax(0, label());
 		else
-		  var_array[dt2->trigger_info()].setMin(1);
+		  var_array[dt2->trigger_info()].setMin(1, label());
 	  }
 	  dt2++;
 	}

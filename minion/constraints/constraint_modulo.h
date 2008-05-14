@@ -91,7 +91,7 @@ struct ModConstraint : public Constraint
     while(!testsupport_var1(var1val))
     {
         // While no support for upperbound, reduce upperbound
-        var1.setMax(var1val-1);
+        var1.setMax(var1val-1, label());
         var1val=var1.getMax();
         if(getState(stateObj).isFailed()) return;
     }
@@ -99,7 +99,7 @@ struct ModConstraint : public Constraint
     var1val=var1.getMin();
     while(!testsupport_var1(var1val))
     {
-        var1.setMin(var1val+1);
+        var1.setMin(var1val+1, label());
         var1val=var1.getMin();
         if(getState(stateObj).isFailed()) return;
     }
@@ -108,7 +108,7 @@ struct ModConstraint : public Constraint
     while(!testsupport_var2(var2val))
     {
         // While no support for upperbound, reduce upperbound
-        var2.setMax(var2val-1);  // Is this the right function for pruning the upperbound?
+        var2.setMax(var2val-1, label());  // Is this the right function for pruning the upperbound?
         var2val=var2.getMax();
         if(getState(stateObj).isFailed()) return;
     }
@@ -116,7 +116,7 @@ struct ModConstraint : public Constraint
     var2val=var2.getMin();
     while(!testsupport_var2(var2val))
     {
-        var2.setMin(var2val+1);
+        var2.setMin(var2val+1, label());
         var2val=var2.getMin();
         if(getState(stateObj).isFailed()) return;
     }
@@ -125,7 +125,7 @@ struct ModConstraint : public Constraint
     while(!testsupport_var3(var3val))
     {
         // While no support for upperbound, reduce upperbound
-        var3.setMax(var3val-1);  // Is this the right function for pruning the upperbound?
+        var3.setMax(var3val-1, label());  // Is this the right function for pruning the upperbound?
         var3val=var3.getMax();
         if(getState(stateObj).isFailed()) return;
     }
@@ -133,7 +133,7 @@ struct ModConstraint : public Constraint
     var3val=var3.getMin();
     while(!testsupport_var3(var3val))
     {
-        var3.setMin(var3val+1);
+        var3.setMin(var3val+1, label());
         var3val=var3.getMin();
         if(getState(stateObj).isFailed()) return;
     }

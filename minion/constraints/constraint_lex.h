@@ -199,16 +199,16 @@ struct LexLeqConstraint : public Constraint
     { if (i >= b) return ; }
     
     if (i == a && i+1 == b) {
-      x[i].setMax(y[i].getMax()-1) ;
-      y[i].setMin(x[i].getMin()+1) ;
+      x[i].setMax(y[i].getMax()-1, label()) ;
+      y[i].setMin(x[i].getMin()+1, label()) ;
       if (checkLex(i)) {
         F = true ;
         return ;
       }
     }
     else if (i == a && i+1 < b) {
-      x[i].setMax(y[i].getMax()) ;
-      y[i].setMin(x[i].getMin()) ;
+      x[i].setMax(y[i].getMax(), label()) ;
+      y[i].setMin(x[i].getMin(), label()) ;
       if (checkLex(i)) {
         F = true ;
         return ;

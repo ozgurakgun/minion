@@ -74,28 +74,28 @@ struct InfoRefType
     return data.getInitialMin(); 
   }
   
-  void setMax(DomainInt i)
+  void setMax(DomainInt i, label l)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, setMax);
-    data.setMax(i); 
+    data.setMax(i, l); 
   }
   
-  void setMin(DomainInt i)
+  void setMin(DomainInt i, label l)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, setMin);
-    data.setMin(i); 
+    data.setMin(i, l); 
   }
   
-  void uncheckedAssign(DomainInt b)
+  void uncheckedAssign(DomainInt b, label l)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, uncheckedAssign);
-    data.uncheckedAssign( b); 
+    data.uncheckedAssign(b, l); 
   }
   
-  void propagateAssign(DomainInt b)
+  void propagateAssign(DomainInt b, label l)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, propagateAssign);
-    data.propagateAssign( b); 
+    data.propagateAssign(b, l); 
   }
   
   void decisionAssign(DomainInt b)
@@ -104,10 +104,10 @@ struct InfoRefType
     data.decisionAssign(b); 
   }
   
-  void removeFromDomain(DomainInt b)
+  void removeFromDomain(DomainInt b, label l)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, RemoveFromDomain);
-    data.removeFromDomain( b); 
+    data.removeFromDomain(b, l); 
   }
   
   void addTrigger(Trigger t, TrigType type)

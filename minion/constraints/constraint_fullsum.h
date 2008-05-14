@@ -113,7 +113,7 @@ struct LessEqualSumConstraint : public Constraint
       var_array_min_sum = sum;
     }
 	
-	var_sum.setMin(sum);
+	var_sum.setMin(sum, label());
 	if(getState(stateObj).isFailed())
         return;
 	D_ASSERT(sum <= get_real_min_sum());
@@ -129,7 +129,7 @@ struct LessEqualSumConstraint : public Constraint
 	{
 	  // max_looseness.set(looseness);
 	  for(typename VarArray::iterator it = var_array.begin(); it != var_array.end(); ++it)
-	    it->setMax(it->getMin() + looseness);
+	    it->setMax(it->getMin() + looseness, label());
 	}
   }
   

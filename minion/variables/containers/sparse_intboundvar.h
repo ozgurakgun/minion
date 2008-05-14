@@ -200,6 +200,10 @@ struct SparseBoundVarContainer {
 
     depths.push_back(vector<unsigned>(t_dom.size())); //one per val
     labels.push_back(vector<label>(t_dom.size()));
+#ifdef DECISIONASSIGN
+    decisionVar.push_back(ReversibleMonotonicBoolean());
+    decisionLabel.push_back(label());
+#endif
 
     min_domain_val = mymin(t_dom.front(), min_domain_val);
     max_domain_val = mymax(t_dom.back(), max_domain_val);
@@ -281,7 +285,7 @@ struct SparseBoundVarContainer {
   { return get_domain_from_int(d.var_num).back(); }
   
   /// This function is provided for convience. It should never be called.
-  void removeFromDomain(SparseBoundVarRef_internal<BoundType>, DomainInt)
+  void removeFromDomain(SparseBoundVarRef_internal<BoundType>, DomainInt, label)
   {
     D_FATAL_ERROR("Cannot Remove Value from domain of a bound var");
     FAIL_EXIT();
@@ -319,22 +323,78 @@ struct SparseBoundVarContainer {
     
     if(max_val != i)
       trigger_list.push_upper(d.var_num, max_val - i);    
-    
+
     upper_bound(d) = i;
     lower_bound(d) = i;
   }    
   
-  void propagateAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
-  { internalAssign(d, i); }
+  void propagateAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i, label l)
+  { 
+    //record label for all prunings and for assignment
+    vector<BoundType>& bounds = get_domain(d);
+    typename vector<BoundType>::iterator curr = std::find(bounds.begin(), bounds.end(), lower_bound(d));
+    typename vector<BoundType>::iterator end = std::find(bounds.begin(), bounds.end(), upper_bound(d));
+    D_ASSERT(curr != bounds.end() && end != bounds.end());
+    while(curr <= end) {
+      D_ASSERT(inDomain(d, *curr));
+      setLabel(d, *curr, l);
+      curr++;
+    }
+    internalAssign(d, i); 
+  }
   
   // TODO : Optimise
-  void uncheckedAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
-  { internalAssign(d, i); }
+  void uncheckedAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i, label l)
+  { propagateAssign(d, i, l); }
+
+#ifdef DECISIONASSIGN
+  //isMember()==T iff var is currently set as decision
+  vector<ReversibleMonotonicBoolean> decisionVar; 
+  vector<label> decisionLabel; //label for current decision
+#endif
+
 
   void decisionAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
-  { internalAssign(d, i); }
+  {
+#ifdef DECISIONASSIGN
+    decisionVar[d.var_num].remove();
+    decisionLabel[d.var_num].clear();
+    decisionLabel[d.var_num].push_back(literal(true, d.getBaseVar(), i));
+#else
+    //set labels for prunings to the assignment, and for the assignment to empty
+    label l(1, literal(true, getBaseVar(d), i));
+    vector<BoundType>& bounds = get_domain(d);
+    typename vector<BoundType>::iterator curr = std::find(bounds.begin(), bounds.end(), lower_bound(d));
+    typename vector<BoundType>::iterator end = std::find(bounds.begin(), bounds.end(), upper_bound(d));
+    D_ASSERT(curr != bounds.end() && end != bounds.end());
+    while(curr <= end) {
+      D_ASSERT(inDomain(d, *curr));
+      if(*curr == i)
+	setLabel(d, *curr, label());
+      else
+	setLabel(d, *curr, l);
+      curr++;
+    }
+#endif
+    internalAssign(d, i); 
+  }
+
+  //d is being assigned b, return label explaining that it's because
+  //all other values have been ruled out
+  label mhavLabel(const SparseBoundVarRef_internal<BoundType> d, DomainInt b)
+  { 
+    label l;
+    Var baseVar = getBaseVar(d);
+    vector<BoundType>& bounds = get_domain(d);
+    typename vector<BoundType>::iterator curr = bounds.begin();
+    typename vector<BoundType>::iterator end = bounds.end();
+    while(curr <= end)
+      if(*curr != b)
+        l.push_back(literal(false, baseVar, *curr));
+    return l;
+  }
   
-  void setMax(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
+  void setMax(SparseBoundVarRef_internal<BoundType> d, DomainInt i, label l)
   {
     // Note, this just finds a new upper bound, it doesn't set it.
     i = find_upper_bound(d, i);
@@ -357,13 +417,28 @@ struct SparseBoundVarContainer {
   // Can't attach triggers to bound vars!  
 #endif
 
+      //now label pruned values
+      vector<BoundType>& bounds = get_domain(d);
+      typename vector<BoundType>::iterator start = std::find(bounds.begin(), bounds.end(), i);
+      start++; //start at one past new upper bound
+      typename vector<BoundType>::iterator end = std::find(bounds.begin(), bounds.end(), upper_bound(d));
+      D_ASSERT(start != bounds.end() && end != bounds.end());
+      while(start <= end) { //stop at old upper bound
+	D_ASSERT(inDomain(d, *start));
+	setLabel(d, *start, l);
+	start++;
+      }
+
       upper_bound(d) = i;
-      if(low_bound == i)
+      
+      if(low_bound == i) {
+	setLabel(d, i, mhavLabel(d, i));
         trigger_list.push_assign(d.var_num, i);
+      }
     }
   }
   
-  void setMin(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
+  void setMin(SparseBoundVarRef_internal<BoundType> d, DomainInt i, label l)
   {
     i = find_lower_bound(d,i);
     
@@ -384,9 +459,23 @@ struct SparseBoundVarContainer {
 #ifdef FULL_DOMAIN_TRIGGERS
 	  // Can't attach triggers to bound vars!  
 #endif
+
+      //now label pruned values
+      vector<BoundType>& bounds = get_domain(d);
+      typename vector<BoundType>::iterator curr = std::find(bounds.begin(), bounds.end(), lower_bound(d));
+      typename vector<BoundType>::iterator end = std::find(bounds.begin(), bounds.end(), i);
+      D_ASSERT(curr != bounds.end() && end != bounds.end());
+      while(curr < end) { //stop before new lower bound
+	D_ASSERT(inDomain(d, *curr));
+	setLabel(d, *curr, l);
+	curr++;
+      }
+
       lower_bound(d) = i;
-      if(up_bound == i)
-       trigger_list.push_assign(d.var_num, i);
+      if(up_bound == i) {
+	setLabel(d, i, mhavLabel(d, i));
+	trigger_list.push_assign(d.var_num, i);
+      }
     }
   }
   
@@ -439,7 +528,18 @@ struct SparseBoundVarContainer {
   { labels[b.var_num][getPos(b, v)] = l; }
 
   label getLabel(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v)
-  { return labels[b.var_num][getPos(b, v)]; }
+  { 
+#ifdef DECISIONASSIGN
+    if(decisionVar[d.var_num].isMember())
+      return labels[b.var_num][getPos(b, v)]; 
+    else
+      //when var is a decision var, return empty for assignment label and
+      //assignment as label for all prunings
+      return v == getAssignedValue(d) ? label() : decisionLabel[d.var_num];   
+#else
+    return labels[b.var_num][getPos(b, v)]; 
+#endif
+  }
 
 #ifdef WDEG
   int getBaseWdeg(const SparseBoundVarRef_internal<BoundType>& b)

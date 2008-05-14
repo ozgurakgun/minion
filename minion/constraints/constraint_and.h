@@ -65,42 +65,42 @@ struct AndConstraint : public Constraint
     {
       case 1:
         if(var2.isAssignedValue(true))
-          var3.propagateAssign(true);
+          var3.propagateAssign(true, label());
         else
         {
           if(var3.isAssignedValue(false))
-            var2.propagateAssign(false);
+            var2.propagateAssign(false, label());
         }
           break;
         
       case 2:
         if(var1.isAssignedValue(true))
-          var3.propagateAssign(true);
+          var3.propagateAssign(true, label());
         else
         {
           if(var3.isAssignedValue(false))
-            var1.propagateAssign(false);
+            var1.propagateAssign(false, label());
         }
           break;
         
       case 3:
-        var1.propagateAssign(true);
-        var2.propagateAssign(true);
+        var1.propagateAssign(true, label());
+        var2.propagateAssign(true, label());
         break;
         
         
       case -1:
       case -2:
-        var3.propagateAssign(false);
+        var3.propagateAssign(false, label());
         break;
         
       case -3:
         if(var1.isAssignedValue(true))
-          var2.propagateAssign(false);
+          var2.propagateAssign(false, label());
         else
         {
           if(var2.isAssignedValue(true))
-            var1.propagateAssign(false);
+            var1.propagateAssign(false, label());
         }
           break;
     }
@@ -110,23 +110,23 @@ struct AndConstraint : public Constraint
   virtual void full_propagate()
   {
     if(var1.isAssignedValue(false) || var2.isAssignedValue(false))
-      var3.propagateAssign(false);
+      var3.propagateAssign(false, label());
     
     if(var1.isAssignedValue(true) && var2.isAssignedValue(true))
-      var3.propagateAssign(true);
+      var3.propagateAssign(true, label());
     
     if(var3.isAssignedValue(false))
     {
       if(var1.isAssignedValue(true))
-		var2.propagateAssign(false);
+		var2.propagateAssign(false, label());
       if(var2.isAssignedValue(true))
-		var1.propagateAssign(false);
+		var1.propagateAssign(false, label());
     }
     
     if(var3.isAssignedValue(true))
     {
-      var1.propagateAssign(true);
-      var2.propagateAssign(true);
+      var1.propagateAssign(true, label());
+      var2.propagateAssign(true, label());
     }
     
   }

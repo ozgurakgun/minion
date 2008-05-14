@@ -21,7 +21,7 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	{ getOptions(stateObj).parser_verbose = true; }
     else if(command == string("-X-prop-node"))
     {
-      cout << "# WARNING: -X-prop-node is experimental. Do not use for benchmarking!" << endl;
+      cout << "# WARNING: -X-prop-node is not supported in this version of minion" << endl;
       ++i;
       string prop_mode(argv[i]);
       args.prop_method = GetPropMethodFromString(prop_mode);
@@ -37,6 +37,7 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	else if(command == string("-fullprop"))
 	{
 #ifdef NO_DEBUG
+	  cout << "# WARNING: -fullprop is not supported in this version of minion" << endl;
 	  getOptions(stateObj).fullpropagate = true; 
 #else
 	  cout << "This version of minion was not built to support the '-fullprop' command. Sorry" << endl;

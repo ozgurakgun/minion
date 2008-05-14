@@ -231,8 +231,12 @@ struct BooleanContainer
   /// Returns a reference to the ith Boolean variable which was previously created.
   BoolVarRef get_var_num(int i);
   
-  
-  void setMax(const BoolVarRef_internal& d, DomainInt i) 
+  //d is being assigned b, return label explaining that it's because
+  //all other values have been ruled out
+  label mhavLabel(const BoolVarRef_internal& d, DomainInt b)
+  { return label(1, literal(false, d.getBaseVar(), 1 - b)); }
+    
+  void setMax(const BoolVarRef_internal& d, DomainInt i, label l) 
   {
     if(i < 0)
 	{
@@ -241,11 +245,14 @@ struct BooleanContainer
 	}
 
     D_ASSERT(i >= 0);
-	if(i==0)
-      propagateAssign(d,0);
+    if(i==0) {
+      internalAssign(d,0);
+      setLabel(d, i, mhavLabel(d, i));
+      setLabel(d, 1 - i, l);
+    }
   }
   
-  void setMin(const BoolVarRef_internal& d, DomainInt i) 
+  void setMin(const BoolVarRef_internal& d, DomainInt i, label l) 
   {
     if(i > 1)
 	{
@@ -253,23 +260,27 @@ struct BooleanContainer
 	  return;
 	}
     D_ASSERT(i <= 1);
-    if(i==1)
-      propagateAssign(d,1);
+    if(i==1) {
+      internalAssign(d,1);
+      setLabel(d, i, mhavLabel(d, i));
+      setLabel(d, 1 - i, l);
+    }
   }
   
-  void removeFromDomain(const BoolVarRef_internal& d, DomainInt b)
+  void removeFromDomain(const BoolVarRef_internal& d, DomainInt b, label l)
   {
     D_ASSERT(lock_m && d.var_num < var_count_m);
     if(b != 0 && b != 1)
       return;
       
-    if(d.isAssigned())
-    {
+    if(d.isAssigned()) {
       if(b == d.getAssignedValue()) 
 	    getState(stateObj).setFailed(true, d.getBaseVar());
+    } else {
+      internalAssign(d, 1 - b);
+      setLabel(d, 1 - b, mhavLabel(d, b));
+      setLabel(d, b, l);
     }
-    else
-      uncheckedAssign(d,1-b);
   }
 
   void internalAssign(const BoolVarRef_internal& d, DomainInt b)
@@ -300,23 +311,32 @@ struct BooleanContainer
       value_ptr()[d.data_offset] &= ~d.shift_offset;
     }
   }
+
+  void uncheckedAssign(const BoolVarRef_internal& d, DomainInt b, label l)
+  { 
+    internalAssign(d, b); 
+    setLabel(d, b, l);
+    setLabel(d, 1 - b, l);
+  }
   
-  void uncheckedAssign(const BoolVarRef_internal& d, DomainInt b)
-  { internalAssign(d, b); }
-  
-  void propagateAssign(const BoolVarRef_internal& d, DomainInt b)
+  void propagateAssign(const BoolVarRef_internal& d, DomainInt b, label l)
   {
-    if(!d.isAssigned()) 
+    if(!d.isAssigned()) {
       internalAssign(d,b);
-    else
-    {
+      setLabel(d, b, l);
+      setLabel(d, 1 - b, l);
+    } else {
       if(d.getAssignedValue() != b)
 	getState(stateObj).setFailed(true, d.getBaseVar());
     }
   }
 
   void decisionAssign(const BoolVarRef_internal& d, DomainInt b)
-  { internalAssign(d, b); }
+  { 
+    internalAssign(d, b); 
+    setLabel(d, b, label()); //label for assignment is empty
+    setLabel(d, 1 - b, label(1, literal(true, d.getBaseVar(), b))); //label consisting of the assgmt
+  }
 
   void addTrigger(BoolVarRef_internal& b, Trigger t, TrigType type)
   { 
@@ -373,7 +393,7 @@ struct BooleanContainer
   { return depths[b.var_num][v]; }
 
   void setLabel(const BoolVarRef_internal& b, DomainInt v, label l)
-  { labels[b.var_num][v] = l; cout << l << endl; }
+  { labels[b.var_num][v] = l; }
 
   label getLabel(const BoolVarRef_internal& b, DomainInt v)
   { return labels[b.var_num][v]; }

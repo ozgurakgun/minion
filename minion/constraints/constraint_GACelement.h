@@ -82,8 +82,8 @@ struct GACElementConstraint : public Constraint
 	  return;
 	}
 	
-	var_array[index].setMin(resultvar.getMin());
-	var_array[index].setMax(resultvar.getMax());
+	var_array[index].setMin(resultvar.getMin(), label());
+	var_array[index].setMax(resultvar.getMax(), label());
 	
 	DomainInt min_val = max(var_array[index].getMin(), resultvar.getMin());
 	DomainInt max_val = min(var_array[index].getMax(), resultvar.getMax());
@@ -91,7 +91,7 @@ struct GACElementConstraint : public Constraint
 	for(DomainInt i = min_val; i <= max_val; ++i)
 	{
 	  if(!resultvar.inDomain(i))
-	    var_array[index].removeFromDomain(i);
+	    var_array[index].removeFromDomain(i, label());
 	}
   }
   
@@ -133,7 +133,7 @@ struct GACElementConstraint : public Constraint
 	  if(indexvar.inDomain(prop_val) && !support_for_val_in_index(prop_val))
 	  {
 	    D_INFO(2, DI_GACELEMENT, "No support for var in index");
-		indexvar.removeFromDomain(prop_val);
+		indexvar.removeFromDomain(prop_val, label());
 	  }
 	  
 	  VarRef& var = var_array[prop_val];
@@ -146,7 +146,7 @@ struct GACElementConstraint : public Constraint
 		   !support_for_val_in_result(val))
 	    {
 	      D_INFO(2, DI_GACELEMENT, "No support for val in result var");
-	      resultvar.removeFromDomain(val);
+	      resultvar.removeFromDomain(val, label());
 	    }
 	  }
 	  return;
@@ -158,7 +158,7 @@ struct GACElementConstraint : public Constraint
 	  for(DomainInt i = var_array_min_val; i <= var_array_max_val; ++i)
 	  {
 		if(resultvar.inDomain(i) && !support_for_val_in_result(i))
-		  resultvar.removeFromDomain(i);
+		  resultvar.removeFromDomain(i, label());
 	  }
 	  return;
 	}
@@ -170,7 +170,7 @@ struct GACElementConstraint : public Constraint
 	  if(indexvar.inDomain(var) && !support_for_val_in_index(var))
 	  {
 		D_INFO(2, DI_GACELEMENT, "No support for var in index");
-		indexvar.removeFromDomain(var);
+		indexvar.removeFromDomain(var, label());
 	  }
 	}
   }
@@ -182,10 +182,10 @@ struct GACElementConstraint : public Constraint
             cerr << "Warning: GACElement is not designed to be used on bound variables and may cause crashes." << endl;
     if(indexvar.isBound() || resultvar.isBound())
         cerr << "Warning: GACElement is not designed to be used on bound variables and may cause crashes." << endl;
-    indexvar.setMin(0);
-	indexvar.setMax(var_array.size() - 1);
-	resultvar.setMin(var_array_min_val);
-	resultvar.setMax(var_array_max_val);
+    indexvar.setMin(0, label());
+	indexvar.setMax(var_array.size() - 1, label());
+	resultvar.setMin(var_array_min_val, label());
+	resultvar.setMax(var_array_max_val, label());
 	for(unsigned i = 0; i < var_array.size() + 2; ++i)
 	  propagate(i,0);
   }

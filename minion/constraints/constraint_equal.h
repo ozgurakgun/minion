@@ -111,13 +111,13 @@ struct ReifiedEqualConstraint : public Constraint
       case 1:
         D_ASSERT(var1.isAssigned());
 		if(var2.isAssigned())
-		{ var3.propagateAssign(var1.getAssignedValue() == var2.getAssignedValue()); }
+		{ var3.propagateAssign(var1.getAssignedValue() == var2.getAssignedValue(), label()); }
 		else
 		{
 		  if(var3.isAssigned())
 		  {
 			if(var3.getAssignedValue() == 1)
-			{ var2.propagateAssign(var1.getAssignedValue()); }
+			{ var2.propagateAssign(var1.getAssignedValue(), label()); }
 		  }
 		}
 		break;
@@ -125,13 +125,13 @@ struct ReifiedEqualConstraint : public Constraint
       case 2:
         D_ASSERT(var2.isAssigned());
         if(var1.isAssigned())
-		{ var3.propagateAssign(var1.getAssignedValue() == var2.getAssignedValue()); }
+		{ var3.propagateAssign(var1.getAssignedValue() == var2.getAssignedValue(), label()); }
 		else
 		{
 		  if(var3.isAssigned())
 		  {
 			if(var3.getAssignedValue() == 1)
-			{ var1.propagateAssign(var2.getAssignedValue()); }
+			{ var1.propagateAssign(var2.getAssignedValue(), label()); }
 		  }
 		}
 		break;        
@@ -140,11 +140,11 @@ struct ReifiedEqualConstraint : public Constraint
         D_ASSERT(var3.isAssigned() && var3.getAssignedValue()==1);
         // reifyvar==1
 		if(var1.isAssigned())
-		{ var2.propagateAssign(var1.getAssignedValue()); }
+		{ var2.propagateAssign(var1.getAssignedValue(), label()); }
 		else
 		{
 		  if(var2.isAssigned())
-		  { var1.propagateAssign(var2.getAssignedValue()); }
+		  { var1.propagateAssign(var2.getAssignedValue(), label()); }
 		}
 		break;
 		
@@ -154,12 +154,12 @@ struct ReifiedEqualConstraint : public Constraint
         
         if(var1.isAssigned() && !var2.isBound())
         {
-            var2.removeFromDomain(var1.getAssignedValue());
+            var2.removeFromDomain(var1.getAssignedValue(), label());
         }
         
         if(var2.isAssigned() && !var1.isBound())
         {
-            var1.removeFromDomain(var2.getAssignedValue());
+            var1.removeFromDomain(var2.getAssignedValue(), label());
         }
         
         if(var1.isAssigned() && var2.isAssigned())
@@ -226,16 +226,16 @@ struct EqualConstraint : public Constraint
     switch(i)
 	{
 	  case 1:
-		var2.setMax(var1.getMax());
+		var2.setMax(var1.getMax(), label());
 		return;
 	  case 2:
-		var2.setMin(var1.getMin());
+		var2.setMin(var1.getMin(), label());
 		return;
 	  case 3:
-		var1.setMax(var2.getMax());
+		var1.setMax(var2.getMax(), label());
 		return;
 	  case 4:
-		var1.setMin(var2.getMin());
+		var1.setMin(var2.getMin(), label());
 		return;
 	}
   }

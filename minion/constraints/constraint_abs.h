@@ -51,7 +51,7 @@ struct AbsConstraint : public Constraint
 
   virtual void full_propagate()
   {
-    var1.setMin(0);
+    var1.setMin(0, label());
     propagate(1,0);
     propagate(2,0);
     propagate(3,0);
@@ -96,19 +96,19 @@ struct AbsConstraint : public Constraint
     switch(i)
     {
       case 1:
-      var2.setMax(var1.getMax());
-      var2.setMin(-var1.getMax());
+      var2.setMax(var1.getMax(), label());
+      var2.setMin(-var1.getMax(), label());
       return;
       case 2:
       if(var2.getMin() > 0)
-        var2.setMin(var1.getMin());
+        var2.setMin(var1.getMin(), label());
       else
-        var2.setMin(-var1.getMax());
+        var2.setMin(-var1.getMax(), label());
       return;
       case 3: 
       case 4: 
-      var1.setMax(absmax(var2.getMin(), var2.getMax()));
-      var1.setMin(absmin(var2.getMin(), var2.getMax()));
+      var1.setMax(absmax(var2.getMin(), var2.getMax()), label());
+      var1.setMin(absmin(var2.getMin(), var2.getMax()), label());
       return;
 
     }

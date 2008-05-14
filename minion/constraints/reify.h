@@ -208,7 +208,7 @@ struct reify : public Constraint
       if(poscon->check_unsat(i/2, domain)) 
       { 
         D_INFO(1,DI_REIFY,"Constraint False");
-        rar_var.propagateAssign(false);
+        rar_var.propagateAssign(false, label());
       }
     }
     else
@@ -216,7 +216,7 @@ struct reify : public Constraint
       if(negcon->check_unsat((i-1)/2,domain)) 
       {
         D_INFO(1,DI_REIFY,"Constraint True");
-        rar_var.propagateAssign(true);
+        rar_var.propagateAssign(true, label());
       }
     }
   }
@@ -226,13 +226,13 @@ struct reify : public Constraint
     if(poscon->full_check_unsat())
     {
       D_INFO(1,DI_REIFY,"Pos full_check_unsat true!");
-      rar_var.propagateAssign(false);
+      rar_var.propagateAssign(false, label());
     }
 
     if(negcon->full_check_unsat())
     {
       D_INFO(1,DI_REIFY,"False full_check_unsat true!");
-      rar_var.propagateAssign(true);
+      rar_var.propagateAssign(true, label());
     }
 
     if(rar_var.isAssigned())

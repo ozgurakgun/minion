@@ -85,7 +85,7 @@ struct ConstantOccurrenceEqualConstraint : public Constraint
       }
       else
       { 
-        it->removeFromDomain(value);
+        it->removeFromDomain(value, label());
       }
     }
     if(val_count_max < occs) 
@@ -106,7 +106,7 @@ struct ConstantOccurrenceEqualConstraint : public Constraint
         ++occs; 
       }
       else
-      { it->propagateAssign(value); }
+      { it->propagateAssign(value, label()); }
     }
     if(val_count_min > static_cast<int>(var_array.size()) - occs)
       getState(stateObj).setFailed(true);
@@ -241,10 +241,10 @@ struct OccurrenceEqualConstraint : public Constraint
       }
       else
       { 
-        it->removeFromDomain(value);
+        it->removeFromDomain(value, label());
       }
     }
-    val_count.setMin(occs);
+    val_count.setMin(occs, label());
   }
   
   void not_occurrence_limit_reached()
@@ -261,9 +261,9 @@ struct OccurrenceEqualConstraint : public Constraint
         ++occs; 
       }
       else
-      { it->propagateAssign(value); }
+      { it->propagateAssign(value, label()); }
     }
-    val_count.setMax(static_cast<int>(var_array.size()) - occs);
+    val_count.setMax(static_cast<int>(var_array.size()) - occs, label());
   }
   
   PROPAGATE_FUNCTION(int i, DomainDelta)
@@ -281,14 +281,14 @@ struct OccurrenceEqualConstraint : public Constraint
     if( var_array[i].getAssignedValue() == value )
     {
       ++occurrences_count;
-      val_count.setMin(occurrences_count);
+      val_count.setMin(occurrences_count, label());
       if(occurrences_count == val_count.getMax())
         occurrence_limit_reached();
     }
     else
     {
       ++not_occurrences_count;
-      val_count.setMax(static_cast<int>(var_array.size()) - not_occurrences_count);
+      val_count.setMax(static_cast<int>(var_array.size()) - not_occurrences_count, label());
       if(not_occurrences_count == static_cast<int>(var_array.size()) - val_count.getMin() )
         not_occurrence_limit_reached();
     }
@@ -315,12 +315,12 @@ struct OccurrenceEqualConstraint : public Constraint
   
   virtual void full_propagate()
   {
-    val_count.setMin(0);
-    val_count.setMax(var_array.size());
+    val_count.setMin(0, label());
+    val_count.setMax(var_array.size(), label());
     setup_counters();
     D_INFO(1,DI_SUMCON,to_string("Full Propagate, count", occurrences_count));
-    val_count.setMin(occurrences_count);
-    val_count.setMax(static_cast<int>(var_array.size()) - not_occurrences_count);
+    val_count.setMin(occurrences_count, label());
+    val_count.setMax(static_cast<int>(var_array.size()) - not_occurrences_count, label());
     
     if(occurrences_count == val_count.getMax())
       occurrence_limit_reached();

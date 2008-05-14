@@ -108,11 +108,16 @@ struct BigRangeVarContainer {
 
   vector<vector<unsigned> > depths;
   vector<vector<label> > labels;
+#ifdef DECISIONASSIGN
+  //isMember()==T iff var is currently set as decision
+  vector<ReversibleMonotonicBoolean> decisionVar; 
+  vector<label> decisionLabel; //label for current decision
+#endif
+
 #ifdef WDEG
   vector<unsigned int> wdegs;
 #endif
   
- 
   unsigned var_count_m;
   BOOL lock_m;
   
@@ -195,6 +200,10 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
       domain_size = new_domains[i].second.upper_bound - new_domains[i].second.lower_bound + 1;
       depths.push_back(vector<unsigned>(domain_size)); //one per val
       labels.push_back(vector<label>(domain_size));
+#ifdef DECISIONASSIGN
+      decisionVar.push_back(ReversibleMonotonicBoolean());
+      decisionLabel.push_back(label());
+#endif
       var_offset.push_back( var_offset.back() + domain_size);
       var_count_m++;
       D_INFO(0,DI_LONGINTCON,"Adding var of domain: (" + to_string(new_domains[i].second.lower_bound) + "," +
@@ -290,7 +299,20 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
   DomainInt getInitialMax(BigRangeVarRef_internal d) const
   { return initial_bounds[d.var_num].second; }
    
-  void removeFromDomain(BigRangeVarRef_internal d, DomainInt i)
+  //d is being assigned b, return label explaining that it's because
+  //all other values have been ruled out
+  label mhavLabel(const BigRangeVarRef_internal d, DomainInt b)
+  { 
+    label l;
+    const DomainInt initialMax = getInitialMax(d);
+    const Var baseVar = getBaseVar(d);
+    for(DomainInt i = getInitialMin(d); i <= initialMax; i++)
+      if(i != b)
+        l.push_back(literal(false, baseVar, i));
+    return l;
+  }
+
+  void removeFromDomain(BigRangeVarRef_internal d, DomainInt i, label l)
   {
 #ifdef DEBUG
     cout << "Calling removeFromDomain: " << d.var_num << " " << i << " [" 
@@ -302,40 +324,45 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
 #endif
     D_ASSERT(lock_m);
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
-if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(var_offset[d.var_num] + i) ))
-    {
+    if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(var_offset[d.var_num] + i) ))
+      {
 #ifdef DEBUG
-      cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
+	cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
 #endif
-      return;
-    }
+	return;
+      }
 #ifdef FULL_DOMAIN_TRIGGERS
-	trigger_list.push_domain_removal(d.var_num, i);
+    trigger_list.push_domain_removal(d.var_num, i);
 #endif
 #ifndef NO_DOMAIN_TRIGGERS
-	trigger_list.push_domain(d.var_num);
+    trigger_list.push_domain(d.var_num);
 #endif
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + i));
     
     domain_bound_type up_bound = upper_bound(d);
     if(i == up_bound)
-    {
-      upper_bound(d) = find_new_upper_bound(d);
-      trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
-    }
+      {
+	upper_bound(d) = find_new_upper_bound(d);
+	trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
+      }
     
     domain_bound_type low_bound = lower_bound(d);
     if(i == low_bound)
-    {
-      lower_bound(d) = find_new_lower_bound(d);
-      trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
+      {
+	lower_bound(d) = find_new_lower_bound(d);
+	trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
+      }
+    
+    setLabel(d, i, l); //label removal
+
+    const DomainInt lb = lower_bound(d);
+    if(upper_bound(d) == lb) {
+      setLabel(d, lb, mhavLabel(d, lb)); //label the assignment
+      trigger_list.push_assign(d.var_num, getAssignedValue(d));
     }
     
-    if(upper_bound(d) == lower_bound(d))
-      trigger_list.push_assign(d.var_num, getAssignedValue(d));
-
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
-
+    
 #ifdef DEBUG
     cout << "Exiting removeFromDomain: " << d.var_num << " " << i << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["
@@ -364,26 +391,49 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
     return true;
   }    
   
-  void propagateAssign(BigRangeVarRef_internal d, DomainInt offset)
+  void propagateAssign(BigRangeVarRef_internal d, DomainInt offset, label l)
   {
     DomainInt lower = lower_bound(d);
     DomainInt upper = upper_bound(d);
     if(!validAssignment(d, offset, lower, upper)) return;
+    for(DomainInt i = lower; i <= upper; i++)
+      if(inDomain(d, i))
+	setLabel(d, i, l); //label all unpruned values plus the assignment
     commonAssign(d, offset, lower, upper);
   }
 
-  void uncheckedAssign(BigRangeVarRef_internal d, DomainInt i)
+  void uncheckedAssign(BigRangeVarRef_internal d, DomainInt b, label l)
   { 
-    D_ASSERT(inDomain(d,i));
+    D_ASSERT(inDomain(d,b));
     D_ASSERT(!isAssigned(d));
-    commonAssign(d,i, lower_bound(d), upper_bound(d)); 
+    const DomainInt lower = lower_bound(d);
+    const DomainInt upper = upper_bound(d);
+    for(DomainInt i = lower; i <= upper; i++)
+      if(inDomain(d, i))
+	setLabel(d, i, l); //label all unpruned values plus the assignment
+    commonAssign(d, b, lower, upper); 
   }
 
-  void decisionAssign(BigRangeVarRef_internal d, DomainInt i)
+  void decisionAssign(BigRangeVarRef_internal d, DomainInt b)
   {
-    D_ASSERT(inDomain(d,i));
+    D_ASSERT(inDomain(d,b));
     D_ASSERT(!isAssigned(d));
-    commonAssign(d,i, lower_bound(d), upper_bound(d)); 
+#ifdef DECISIONASSIGN
+    decisionVar[b.var_num].remove();
+    decisionLabel[b.var_num].clear();
+    decisionLabel[b.var_num].push_back(literal(true, d.getBaseVar(), i));
+#else
+    label l(1, literal(true, getBaseVar(d), b));
+    const DomainInt max = getMax(d);
+    for(int i = getMin(d); i < b; i++)
+      if(inDomain(d, i))
+	setLabel(d, i, l); //label newly removed vals
+    setLabel(d, b, label()); //label assignment
+    for(int i = b + 1; i <= max; i++)
+      if(inDomain(d, i))
+	setLabel(d, i, l);
+#endif
+    commonAssign(d, b, lower_bound(d), upper_bound(d)); 
   }
     
 private:
@@ -421,7 +471,7 @@ private:
 public:
 
   
-  void setMax(BigRangeVarRef_internal d, DomainInt offset)
+  void setMax(BigRangeVarRef_internal d, DomainInt offset, label l)
   {
 #ifdef DEBUG
     cout << "Calling setMax: " << d.var_num << " " << offset << " [" 
@@ -453,17 +503,22 @@ public:
 	      trigger_list.push_domain_removal(d.var_num, loop);
 	  }
 #endif	 
-      upper_bound(d) = offset;      
-	  DomainInt new_upper = find_new_upper_bound(d);
-	  upper_bound(d) = new_upper;
-      
+    for(DomainInt i = up_bound; i > offset; i--)
+      if(inDomain(d, i))
+	setLabel(d, i, l); //label all unpruned values plus the assignment
+    upper_bound(d) = offset;      
+    DomainInt new_upper = find_new_upper_bound(d);
+    upper_bound(d) = new_upper;
+	  
 #ifndef NO_DOMAIN_TRIGGERS
 	trigger_list.push_domain(d.var_num);
 #endif
        trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
 	  
-      if(lower_bound(d) == upper_bound(d)) 
-        trigger_list.push_assign(d.var_num, getAssignedValue(d));
+       if(lower_bound(d) == upper_bound(d)) {
+	 setLabel(d, new_upper, mhavLabel(d, new_upper)); //label assignment with MHAV
+	 trigger_list.push_assign(d.var_num, getAssignedValue(d));
+       }
     }
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 #ifdef DEBUG
@@ -475,7 +530,7 @@ public:
 #endif
   }
   
-  void setMin(BigRangeVarRef_internal d, DomainInt offset)
+  void setMin(BigRangeVarRef_internal d, DomainInt offset, label l)
   {
 #ifdef DEBUG
     cout << "Calling setMin: " << d.var_num << " " << offset << " [" 
@@ -485,41 +540,47 @@ public:
     bms_array.print_state();
 #endif
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
-
-	DomainInt up_bound = upper_bound(d);
+    
+    DomainInt up_bound = upper_bound(d);
     DomainInt low_bound = lower_bound(d);
     
-	if(offset > up_bound)
-	{
-	  getState(stateObj).setFailed(true, getBaseVar(d));
-	  return;
-	}
-	
+    if(offset > up_bound)
+      {
+	getState(stateObj).setFailed(true, getBaseVar(d));
+	return;
+      }
+    
     if(offset > low_bound)
-    {
+      {
 #ifdef FULL_DOMAIN_TRIGGERS
-	  // TODO : Optimise this function to only check values in domain.
-      int domainOffset = var_offset[d.var_num] /*- initial_bounds[d.var_num].first*/;
-	  for(DomainInt loop = low_bound; loop < offset; ++loop)
+	// TODO : Optimise this function to only check values in domain.
+	int domainOffset = var_offset[d.var_num] /*- initial_bounds[d.var_num].first*/;
+	for(DomainInt loop = low_bound; loop < offset; ++loop)
 	  {
-        // def of inDomain: bms_array.isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
+	    // def of inDomain: bms_array.isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
 	    if(bms_array.isMember(loop + domainOffset))
 	      trigger_list.push_domain_removal(d.var_num, loop);
 	  }
 #endif
-    D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
-
-    lower_bound(d) = offset;
-    DomainInt new_lower = find_new_lower_bound(d);    
-    lower_bound(d) = new_lower; 
-    
+	D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
+	
+	for(DomainInt i = low_bound; i < offset; i--)
+	  if(inDomain(d, i))
+	    setLabel(d, i, l); //label all unpruned values plus the assignment
+	
+	lower_bound(d) = offset;
+	DomainInt new_lower = find_new_lower_bound(d);    
+	lower_bound(d) = new_lower; 
+	
 #ifndef NO_DOMAIN_TRIGGERS
 	trigger_list.push_domain(d.var_num);
 #endif
-    trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
-    if(lower_bound(d) == upper_bound(d)) 
-      trigger_list.push_assign(d.var_num, getAssignedValue(d)); 
-    }
+	trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
+	if(new_lower == upper_bound(d)) {
+	  setLabel(d, new_lower, mhavLabel(d, new_lower));
+	  trigger_list.push_assign(d.var_num, getAssignedValue(d)); 
+	}
+      }
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 #ifdef DEBUG
     cout << "Exiting setMin: " << d.var_num << " " << lower_bound(d) << " [" 
@@ -577,7 +638,18 @@ public:
   { labels[b.var_num][v - getInitialMin(b)] = l; }
 
   label getLabel(const BigRangeVarRef_internal& b, DomainInt v)
-  { return labels[b.var_num][v - getInitialMin(b)]; }
+  { 
+#ifdef DECISIONASSIGN
+    if(decisionVar[b.var_num].isMember())
+      return labels[b.var_num][v - getInitialMin(b)]; 
+    else
+      //when var is a decision var, return empty for assignment label and
+      //assignment as label for all prunings
+      return v == getAssignedValue(d) ? label() : decisionLabel[b.var_num];   
+#else
+      return labels[b.var_num][v - getInitialMin(b)]; 
+#endif
+  }
 
 #ifdef WDEG
   int getBaseWdeg(const BigRangeVarRef_internal& b)

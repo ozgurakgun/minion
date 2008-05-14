@@ -136,12 +136,12 @@ struct AnyVarRef_Abstract
   virtual DomainInt getMin() = 0;
   virtual DomainInt getInitialMax() const = 0;
   virtual DomainInt getInitialMin() const = 0;
-  virtual void setMax(DomainInt i) = 0;
-  virtual void setMin(DomainInt i) = 0;
-  virtual void uncheckedAssign(DomainInt b) = 0;
-  virtual void propagateAssign(DomainInt b) = 0;
+  virtual void setMax(DomainInt i, label l) = 0;
+  virtual void setMin(DomainInt i, label l) = 0;
+  virtual void uncheckedAssign(DomainInt b, label l) = 0;
+  virtual void propagateAssign(DomainInt b, label l) = 0;
   virtual void decisionAssign(DomainInt b) = 0;
-  virtual void removeFromDomain(DomainInt b) = 0;
+  virtual void removeFromDomain(DomainInt b, label l) = 0;
   virtual void addTrigger(Trigger t, TrigType type) = 0;
   virtual vector<AbstractConstraint*>* getConstraints() = 0;
   virtual void addConstraint(AbstractConstraint* c) = 0;
@@ -212,23 +212,23 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual DomainInt getInitialMin() const
   { return data.getInitialMin(); }
   
-  virtual void setMax(DomainInt i)
-  { data.setMax(i); }
+  virtual void setMax(DomainInt i, label l)
+  { data.setMax(i, l); }
   
-  virtual void setMin(DomainInt i)
-  { data.setMin(i); }
+  virtual void setMin(DomainInt i, label l)
+  { data.setMin(i, l); }
   
-  virtual void uncheckedAssign(DomainInt b)
-  { data.uncheckedAssign(b); }
+  virtual void uncheckedAssign(DomainInt b, label l)
+  { data.uncheckedAssign(b, l); }
   
-  virtual void propagateAssign(DomainInt b)
-  { data.propagateAssign(b); }
+  virtual void propagateAssign(DomainInt b, label l)
+  { data.propagateAssign(b, l); }
 
   virtual void decisionAssign(DomainInt b)
   { data.decisionAssign(b); }
 
-  virtual void removeFromDomain(DomainInt b)
-  { data.removeFromDomain(b); }
+  virtual void removeFromDomain(DomainInt b, label l)
+  { data.removeFromDomain(b, l); }
   
   virtual void addTrigger(Trigger t, TrigType type)
   { data.addTrigger(t, type); }
@@ -330,23 +330,23 @@ public:
   DomainInt getInitialMin() const
   { return data->getInitialMin(); }
   
-  void setMax(DomainInt i)
-  { data->setMax(i); }
+  void setMax(DomainInt i, label l)
+  { data->setMax(i, l); }
   
-  void setMin(DomainInt i)
-  { data->setMin(i); }
+  void setMin(DomainInt i, label l)
+  { data->setMin(i, l); }
   
-  void uncheckedAssign(DomainInt b)
-  { data->uncheckedAssign(b); }
+  void uncheckedAssign(DomainInt b, label l)
+  { data->uncheckedAssign(b, l); }
   
-  void propagateAssign(DomainInt b)
-  { data->propagateAssign(b); }
+  void propagateAssign(DomainInt b, label l)
+  { data->propagateAssign(b, l); }
   
   void decisionAssign(DomainInt b)
   { data->decisionAssign(b); }
   
-  void removeFromDomain(DomainInt b)
-  { data->removeFromDomain(b); }
+  void removeFromDomain(DomainInt b, label l)
+  { data->removeFromDomain(b, l); }
 
   void addTrigger(Trigger t, TrigType type)
   { data->addTrigger(t, type); }

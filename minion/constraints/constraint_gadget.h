@@ -129,12 +129,12 @@ struct GadgetConstraint : public Constraint
     {
       DomainInt min_val = var_array[i].getMin();
       DomainInt max_val = var_array[i].getMax();
-      construction_vars[i].setMin(min_val);
-      construction_vars[i].setMax(max_val);
+      construction_vars[i].setMin(min_val, label());
+      construction_vars[i].setMax(max_val, label());
       
       for(int j = min_val + 1; j < max_val; ++j)
         if(!var_array[i].inDomain(j))
-          construction_vars[i].removeFromDomain(j);
+          construction_vars[i].removeFromDomain(j, label());
     }
     
     PropogateCSP(gadget_stateObj, gadget_prop_type, construction_vars);
@@ -151,15 +151,15 @@ struct GadgetConstraint : public Constraint
     {
       DomainInt min_val = construction_vars[i].getMin();
       DomainInt max_val = construction_vars[i].getMax();
-      var_array[i].setMin(min_val);
-      var_array[i].setMax(max_val);
+      var_array[i].setMin(min_val, label());
+      var_array[i].setMax(max_val, label());
       
       for(int j = min_val + 1; j < max_val; ++j)
       {
         if(!construction_vars[i].inDomain(j))
         { 
           D_INFO(0, DI_GADGET, "Remove " + to_string(j) + " from var " + to_string(i));
-          var_array[i].removeFromDomain(j);
+          var_array[i].removeFromDomain(j, label());
         }
         else
           D_INFO(0, DI_GADGET, "Leave " + to_string(j) + " in var " + to_string(i));

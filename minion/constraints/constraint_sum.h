@@ -87,7 +87,7 @@ struct BoolLessSumConstraint : public Constraint
       if(it->isAssigned())
       { if(it->getAssignedValue() == VarToCount) ++one_vars; }
       else
-      { it->uncheckedAssign(1 - VarToCount); }
+      { it->uncheckedAssign(1 - VarToCount, label()); }
     }
     //D_ASSERT(one_vars >= occ_count());
     if(one_vars > occ_count())

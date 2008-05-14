@@ -202,7 +202,7 @@ void inline maybe_print_search_action(StateObj* stateObj, const char* action)
 	  // a new setjmp point here.
 	  if(getState(stateObj).getOptimiseVar()->getMax() >= getState(stateObj).getOptimiseValue())
 	  { 
-		getState(stateObj).getOptimiseVar()->setMin(getState(stateObj).getOptimiseValue());
+		getState(stateObj).getOptimiseVar()->setMin(getState(stateObj).getOptimiseValue(), label());
 		getQueue(stateObj).propagateQueue();
 	  }
 	  else
@@ -212,7 +212,7 @@ void inline maybe_print_search_action(StateObj* stateObj, const char* action)
 	{ getQueue(stateObj).propagateQueue();}
   #else
 	if(getState(stateObj).isOptimisationProblem())
-	  getState(stateObj).getOptimiseVar()->setMin(getState(stateObj).getOptimiseValue());
+	  getState(stateObj).getOptimiseVar()->setMin(getState(stateObj).getOptimiseValue(), label());
 	getQueue(stateObj).propagateQueue();
   #endif	
   }

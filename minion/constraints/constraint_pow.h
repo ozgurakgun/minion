@@ -129,46 +129,46 @@ struct PowConstraint : public Constraint
 	  case -1:
 	  {
         // var3 >= min(var1) ^ min(var2)
-		var3.setMin(LRINT(my_pow(var1.getMin(),var2.getMin())));
+		var3.setMin(LRINT(my_pow(var1.getMin(),var2.getMin())), label());
 		DomainInt var1_min = var1.getMin();
 		if(var1_min > 1)
           // var2 <= log base max(var3) of min(var1)
-		  var2.setMax(LRINT(my_y(var1_min, var3.getMax())));
+		  var2.setMax(LRINT(my_y(var1_min, var3.getMax())), label());
 		break;
 	  }
 	  case -2:
         // var3>= min(var1) ^ min(var2) 
-	    var3.setMin(LRINT(my_pow(var1.getMin(), var2.getMin())));
-		var1.setMax(LRINT(my_x(var2.getMin(), var3.getMax())));
+	    var3.setMin(LRINT(my_pow(var1.getMin(), var2.getMin())), label());
+		var1.setMax(LRINT(my_x(var2.getMin(), var3.getMax())), label());
 		break;
 		
 	  case -3:
 	  {
-		var1.setMin(LRINT(my_x(var2.getMax(), var3.getMin())));
+		var1.setMin(LRINT(my_x(var2.getMax(), var3.getMin())), label());
 		DomainInt var1_max = var1.getMax();
 		if(var1_max > 1)
-		  var2.setMin(LRINT(my_y(var1_max, var3.getMin())));
+		  var2.setMin(LRINT(my_y(var1_max, var3.getMin())), label());
 		break;
 	  }
 	  case 1:
 	  {
-		var3.setMax(rounddown(my_pow(var1.getMax(),var2.getMax())));  // wraparound was occurring here, so use rounddown
+		var3.setMax(rounddown(my_pow(var1.getMax(),var2.getMax())), label());  // wraparound was occurring here, so use rounddown
 		DomainInt var1_max = var1.getMax();
 		if(var1_max > 1)
-		  var2.setMin(LRINT(my_y(var1_max, var3.getMin())));
+		  var2.setMin(LRINT(my_y(var1_max, var3.getMin())), label());
 		break;
 	  }
 	  case 2:
-	    var3.setMax(rounddown(my_pow(var1.getMax(), var2.getMax())));  // wraparound here.
-		var1.setMin(LRINT(my_x(var2.getMax(), var3.getMin())));
+	    var3.setMax(rounddown(my_pow(var1.getMax(), var2.getMax())), label());  // wraparound here.
+		var1.setMin(LRINT(my_x(var2.getMax(), var3.getMin())), label());
 		break;
 		
 	  case 3:
 	  {
-		var1.setMax(LRINT(my_x(var2.getMin(), var3.getMax())));
+		var1.setMax(LRINT(my_x(var2.getMin(), var3.getMax())), label());
 		DomainInt var1_min = var1.getMin();
 		if(var1_min > 1)
-		  var2.setMax(LRINT(my_y(var1_min, var3.getMax())));
+		  var2.setMax(LRINT(my_y(var1_min, var3.getMax())), label());
 		break;
 	  }
 	}
