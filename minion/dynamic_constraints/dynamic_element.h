@@ -135,7 +135,7 @@ struct ElementConstraintDynamic : public DynamicConstraint
       if (support == max_check) 
       {
         D_INFO(2, DI_DYELEMENT, "No support for " + to_string(realj) + " in result");
-        resultvar.removeFromDomain(realj); 
+        resultvar.removeFromDomain(realj, label()); 
         return;
       }
     }
@@ -157,7 +157,7 @@ struct ElementConstraintDynamic : public DynamicConstraint
 	if(resultvarmin == resultvarmax)
 	{
 	  if(!var_array[i].inDomain(resultvarmin))
-	    indexvar.removeFromDomain(i);
+	    indexvar.removeFromDomain(i, label());
 	  else
 	  {
 	  	var_array[i].addDynamicTrigger(dt + 2*i, DomainRemoval, resultvarmin);
@@ -188,7 +188,7 @@ struct ElementConstraintDynamic : public DynamicConstraint
 	  if( support >= max_check )      
 	  {                                     
 	    D_INFO(2, DI_DYELEMENT, "No support for " + to_string(i) + " in index");
-	    indexvar.removeFromDomain(i); 
+	    indexvar.removeFromDomain(i, label()); 
 		return;
 	  }
 	}
@@ -207,21 +207,21 @@ struct ElementConstraintDynamic : public DynamicConstraint
     DomainInt lower = resultvar.getMin(); 
     if( lower > var.getMin() ) 
     {
-      var.setMin(lower);
+      var.setMin(lower, label());
       ++lower;                      // do not need to check lower bound, we know it's in resultvar
     }
 	
     DomainInt upper = resultvar.getMax(); 
     if( upper < var.getMax() ) 
     {
-      var.setMax(upper);
+      var.setMax(upper, label());
       --upper;                      // do not need to check upper bound, we know it's in resultvar
     }
     
     for(DomainInt i = lower; i <= upper; ++i)
     {
       if(!(resultvar.inDomain(i)))
-        var.removeFromDomain(i); 
+        var.removeFromDomain(i, label()); 
     }
   }
   
@@ -243,8 +243,8 @@ struct ElementConstraintDynamic : public DynamicConstraint
 	
 	// Couple of quick sanity-propagations.
 	// We define UNDEF = false ;)
-	indexvar.setMin(0);
-	indexvar.setMax(array_size - 1);
+	indexvar.setMin(0, label());
+	indexvar.setMax(array_size - 1, label());
 	
     if(getState(stateObj).isFailed()) return;
 	

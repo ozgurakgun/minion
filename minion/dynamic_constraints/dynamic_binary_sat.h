@@ -53,13 +53,13 @@ struct BoolBinarySATConstraintDynamic : public DynamicConstraint
 
 	if(var1.isAssignedValue(false))
 	{
-	  var2.propagateAssign(true);
+	  var2.propagateAssign(true, label());
 	  return;
 	}
 	
 	if(var2.isAssignedValue(false))
 	{
-	  var1.propagateAssign(true);
+	  var1.propagateAssign(true, label());
 	  return;
 	}
 	
@@ -80,9 +80,9 @@ struct BoolBinarySATConstraintDynamic : public DynamicConstraint
 	int propval = dt->trigger_info();
 	
 	if(propval)
-	  var1.propagateAssign(true);
+	  var1.propagateAssign(true, label());
 	else
-	  var2.propagateAssign(true);
+	  var2.propagateAssign(true, label());
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

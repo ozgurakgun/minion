@@ -129,10 +129,10 @@ struct ElementConstraint : public Constraint
 	  }
 	  DomainInt val_min = max(result_var.getMin(), var_array[index].getMin());
 	  DomainInt val_max = min(result_var.getMax(), var_array[index].getMax());
-	  result_var.setMin(val_min);
-	  var_array[index].setMin(val_min);
-	  result_var.setMax(val_max);
-	  var_array[index].setMax(val_max);
+	  result_var.setMin(val_min, label());
+	  var_array[index].setMin(val_min, label());
+	  result_var.setMax(val_max, label());
+	  var_array[index].setMax(val_max, label());
     }
     else
     {
@@ -143,12 +143,12 @@ struct ElementConstraint : public Constraint
         {
             if(index_ref.isBound())
             {
-                if(prop_val==index_ref.getMax()) index_ref.setMax(prop_val-1);
-                if(prop_val==index_ref.getMin()) index_ref.setMin(prop_val+1);
+                if(prop_val==index_ref.getMax()) index_ref.setMax(prop_val-1, label());
+                if(prop_val==index_ref.getMin()) index_ref.setMin(prop_val+1, label());
             }
             else
             {
-                index_ref.removeFromDomain(prop_val);
+                index_ref.removeFromDomain(prop_val, label());
             }
         }
         
@@ -164,12 +164,12 @@ struct ElementConstraint : public Constraint
           {
               if(index_ref.isBound())
                 {
-                    if(i==index_ref.getMax()) index_ref.setMax(i-1);
-                    if(i==index_ref.getMin()) index_ref.setMin(i+1);
+                    if(i==index_ref.getMax()) index_ref.setMax(i-1, label());
+                    if(i==index_ref.getMin()) index_ref.setMin(i+1, label());
                 }
                 else
                 {
-                    index_ref.removeFromDomain(i);
+                    index_ref.removeFromDomain(i, label());
                 }
           }
 		}
@@ -189,21 +189,21 @@ struct ElementConstraint : public Constraint
 	  }
       DomainInt val_min = max(result_var.getMin(), var_array[index].getMin());
       DomainInt val_max = min(result_var.getMax(), var_array[index].getMax());
-      result_var.setMin(val_min);
-      var_array[index].setMin(val_min);
-      result_var.setMax(val_max);
-      var_array[index].setMax(val_max);
+      result_var.setMin(val_min, label());
+      var_array[index].setMin(val_min, label());
+      result_var.setMax(val_max, label());
+      var_array[index].setMax(val_max, label());
     }
     
     int array_size = var_array.size();
 	// Constrain the index variable to have only indices in range.
     if(index_ref.getMin()<0)
     {
-        index_ref.setMin(0);
+        index_ref.setMin(0, label());
     }
     if(index_ref.getMax()>=array_size)
     {
-        index_ref.setMax(array_size-1);
+        index_ref.setMax(array_size-1, label());
     }
     if(getState(stateObj).isFailed()) return;
     
@@ -227,7 +227,7 @@ struct ElementConstraint : public Constraint
                 }
                 if(!supported)
                 {
-                    result_var.removeFromDomain(i);
+                    result_var.removeFromDomain(i, label());
                 }
             }
         }
@@ -249,7 +249,7 @@ struct ElementConstraint : public Constraint
             }
             if(!supported)
             {
-                result_var.setMin(i+1);
+                result_var.setMin(i+1, label());
             }
             else
                 break;
@@ -269,7 +269,7 @@ struct ElementConstraint : public Constraint
             }
             if(!supported)
             {
-                result_var.setMax(i-1);
+                result_var.setMax(i-1, label());
             }
             else
                 break;
@@ -287,13 +287,13 @@ struct ElementConstraint : public Constraint
         {
             if(index_ref.isBound())
             {
-                if(i==index_ref.getMax()) index_ref.setMax(i-1);
-                if(i==index_ref.getMin()) index_ref.setMin(i+1);
+                if(i==index_ref.getMax()) index_ref.setMax(i-1, label());
+                if(i==index_ref.getMin()) index_ref.setMin(i+1, label());
             }
             else
             {
                 
-                index_ref.removeFromDomain(i);
+                index_ref.removeFromDomain(i, label());
             }
         }
       }
@@ -308,12 +308,12 @@ struct ElementConstraint : public Constraint
         {
             if(index_ref.isBound())
             {
-                if(i==index_ref.getMax()) index_ref.setMax(i-1);
-                if(i==index_ref.getMin()) index_ref.setMin(i+1);
+                if(i==index_ref.getMax()) index_ref.setMax(i-1, label());
+                if(i==index_ref.getMin()) index_ref.setMin(i+1, label());
             }
             else
             {
-                index_ref.removeFromDomain(i);
+                index_ref.removeFromDomain(i, label());
             }
         }
       }

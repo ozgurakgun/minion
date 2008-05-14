@@ -81,7 +81,7 @@ struct BoolThreeSATConstraintDynamic : public DynamicConstraint
 	
 	if(index >= array_size)
 	{ // Only one valid variable.
-	  var_array[trig1].propagateAssign(1);
+	  var_array[trig1].propagateAssign(1, label());
 	  return;
 	}
 	
@@ -134,7 +134,7 @@ struct BoolThreeSATConstraintDynamic : public DynamicConstraint
 	  var_array[unchecked_val].addDynamicTrigger(dt, UpperBound);
 	}
 	else
-	{ var_array[other_propval].propagateAssign(1); }
+	{ var_array[other_propval].propagateAssign(1, label()); }
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

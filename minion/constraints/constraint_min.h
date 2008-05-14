@@ -95,7 +95,7 @@ struct MinConstraint : public Constraint
 		DomainInt new_min = min_var.getMin();
 		typename VarArray::iterator end = var_array.end();
 		for(typename VarArray::iterator it = var_array.begin(); it < end; ++it)
-		  (*it).setMin(new_min);
+		  (*it).setMin(new_min, label());
 	  }
 	  else
 	  {
@@ -109,7 +109,7 @@ struct MinConstraint : public Constraint
 		  if(it_min < min)
 			min = it_min;
 		}
-		min_var.setMin(min);
+		min_var.setMin(min, label());
 	  }
 	}
 	else
@@ -138,11 +138,11 @@ struct MinConstraint : public Constraint
 		  return;
 		}
 		
-		it_copy->setMax(minvar_max);
+		it_copy->setMax(minvar_max, label());
 	  }
 	  else
 	  {
-		min_var.setMax(var_array[prop_val].getMax());
+		min_var.setMax(var_array[prop_val].getMax(), label());
 	  }
 	}
 	

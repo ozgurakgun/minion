@@ -129,23 +129,23 @@ struct BoundVarRef_internal
   DomainInt getInitialMin() const
   { return GET_LOCAL_CON().getInitialMin(*this); }
   
-  void setMax(DomainInt i)
-  { GET_LOCAL_CON().setMax(*this,i); }
+  void setMax(DomainInt i, label l)
+  { GET_LOCAL_CON().setMax(*this,i,l); }
   
-  void setMin(DomainInt i)
-  { GET_LOCAL_CON().setMin(*this,i); }
+  void setMin(DomainInt i, label l)
+  { GET_LOCAL_CON().setMin(*this,i,l); }
   
-  void uncheckedAssign(DomainInt b)
-  { GET_LOCAL_CON().uncheckedAssign(*this, b); }
+  void uncheckedAssign(DomainInt b, label l)
+  { GET_LOCAL_CON().uncheckedAssign(*this, b, l); }
   
-  void propagateAssign(DomainInt b)
-  { GET_LOCAL_CON().propagateAssign(*this, b); }
+  void propagateAssign(DomainInt b, label l)
+  { GET_LOCAL_CON().propagateAssign(*this, b, l); }
 
   void decisionAssign(DomainInt b)
   { GET_LOCAL_CON().decisionAssign(*this, b); }
 
-  void removeFromDomain(DomainInt b)
-  { GET_LOCAL_CON().removeFromDomain(*this, b); }
+  void removeFromDomain(DomainInt b, label l)
+  { GET_LOCAL_CON().removeFromDomain(*this, b, l); }
   
   void addTrigger(Trigger t, TrigType type)
   { GET_LOCAL_CON().addTrigger(*this, t, type); }
@@ -291,7 +291,7 @@ struct BoundVarContainer {
   DomainInt getInitialMax(const BoundVarRef_internal<BoundType>& d) const
   { return initial_bounds[d.var_num].second; }
    
-  void removeFromDomain(const BoundVarRef_internal<BoundType>&, DomainInt )
+  void removeFromDomain(const BoundVarRef_internal<BoundType>&, DomainInt, label)
   {
     D_FATAL_ERROR( "Cannot Remove Value from domain of a bound var");
     FAIL_EXIT();
@@ -322,21 +322,64 @@ struct BoundVarContainer {
     upper_bound(d) = i;
     lower_bound(d) = i;
   }
-  
-  void propagateAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
-  { internalAssign(d, i); }
-  
-  // TODO : Optimise
-  void uncheckedAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+
+  //d is being assigned b, return label explaining that it's because
+  //all other values have been ruled out
+  label mhavLabel(const BoundVarRef_internal<BoundType>& d, DomainInt b)
   { 
-    D_ASSERT(inDomain(d,i));
-    internalAssign(d, i);
+    label l;
+    const DomainInt initialMax = getInitialMax(d);
+    const Var baseVar = d.getBaseVar();
+    for(DomainInt i = getInitialMin(d); i <= initialMax; i++)
+      if(i != b)
+        l.push_back(literal(false, baseVar, i));
+    return l;
   }
 
-  void decisionAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
-  { internalAssign(d, i); }
+  void propagateAssign(const BoundVarRef_internal<BoundType>& d, DomainInt b, label l)
+  { 
+    const DomainInt max = getMax(d);
+    for(DomainInt i = getMin(d); i <= max; i++) {
+      D_ASSERT(inDomain(d, i));
+      setLabel(d, i, l);
+    }
+    internalAssign(d, b); 
+    //now assignment and newly pruned values are all labelled by l
+  }
   
-  void setMax(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+  // TODO : Optimise
+  void uncheckedAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i, label l)
+  { 
+    D_ASSERT(inDomain(d,i));
+    propagateAssign(d, i, l);
+  }
+
+#ifdef DECISIONASSIGN
+  //isMember()==T iff var is currently set as decision
+  vector<ReversibleMonotonicBoolean> decisionVar;
+  vector<label> decisionLabel; //label for current decision
+#endif
+    
+  void decisionAssign(const BoundVarRef_internal<BoundType>& d, DomainInt b)
+  { 
+#ifdef DECISIONASSIGN
+    decisionVar[d.var_num].remove();
+    decisionLabel[d.var_num].clear();
+    decisionLabel[d.var_num].push_back(literal(true, d.getBaseVar(), b));
+#else
+    //set labels for prunings to the assignment, and for the assignment to empty
+    label l(1, literal(true, d.getBaseVar(), b));
+    const DomainInt max = getMax(d);
+    for(int i = getMin(d); i < b; i++)
+      setLabel(d, i, l);
+    setLabel(d, b, label());
+    for(int i = b + 1; i <= max; i++)
+      setLabel(d, i, l);
+#endif
+    internalAssign(d, b);
+  }
+  
+  void setMax(const BoundVarRef_internal<BoundType>& d, DomainInt i, label l)
   {
     DomainInt low_bound = lower_bound(d);
     DomainInt up_bound = upper_bound(d);
@@ -352,13 +395,17 @@ struct BoundVarContainer {
     {
       trigger_list.push_upper(d.var_num, up_bound - i);
       trigger_list.push_domain(d.var_num);
+      for(int idx = up_bound; idx > i; idx--)
+        setLabel(d, idx, l); //label all removed values
       upper_bound(d) = i;
-      if(low_bound == i)
+      if(low_bound == i) {
+        setLabel(d, i, mhavLabel(d, i)); //var assigned, use MHAV
 	trigger_list.push_assign(d.var_num, i);
+      }
     }
   }
   
-  void setMin(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+  void setMin(const BoundVarRef_internal<BoundType>& d, DomainInt i, label l)
   {
     DomainInt low_bound = lower_bound(d);
     DomainInt up_bound = upper_bound(d);
@@ -373,9 +420,13 @@ struct BoundVarContainer {
     {
       trigger_list.push_lower(d.var_num, i - low_bound);
       trigger_list.push_domain(d.var_num);
+      for(int idx = low_bound; idx < i; idx++)
+        setLabel(d, idx, l); //label all removed values
       lower_bound(d) = i;
-      if(up_bound == i)
-	    trigger_list.push_assign(d.var_num, i);
+      if(up_bound == i) {
+	setLabel(d, i, mhavLabel(d, i)); //var has become assigned, label with MHAV
+	trigger_list.push_assign(d.var_num, i);
+      }
     }
   }
   
@@ -396,6 +447,10 @@ struct BoundVarContainer {
         initial_bounds.push_back(make_pair(vars[i].second.lower_bound, vars[i].second.upper_bound));
 	depths.push_back(vector<unsigned>(vars[i].second.upper_bound - vars[i].second.lower_bound + 1));
 	labels.push_back(vector<label>(vars[i].second.upper_bound - vars[i].second.lower_bound + 1));
+#ifdef DECISIONASSIGN
+	decisionVar.push_back(ReversibleMonotonicBoolean());
+	decisionLabel.push_back(label());
+#endif
         D_INFO(0,DI_BOUNDCONTAINER,"Adding var of domain: (" + to_string(vars[i].second.lower_bound) + "," +
                                                                to_string(vars[i].second.upper_bound) + ")");
       }
@@ -459,7 +514,18 @@ struct BoundVarContainer {
   { labels[b.var_num][v - getInitialMin(b)] = l; }
 
   label getLabel(const BoundVarRef_internal<BoundType>& b, DomainInt v)
-  { return labels[b.var_num][v - getInitialMin(b)]; }
+  { 
+#ifdef DECISIONASSIGN
+    if(decisionVar[b.var_num].isMember())
+      return labels[b.var_num][v - getInitialMin(b)]; 
+    else
+      //when var is a decision var, return empty for assignment label and
+      //assignment as label for all prunings
+      return v == getAssignedValue(d) ? label() : decisionLabel[b.var_num];
+#else
+    return labels[b.var_num][v - getInitialMin(b)]; 
+#endif
+  }
 
 #ifdef WDEG
   int getBaseWdeg(const BoundVarRef_internal<BoundType>& b)

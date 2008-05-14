@@ -134,29 +134,29 @@ struct ProductConstraint : public Constraint
 	  var2_min = max(var2_min, round_up_div(var3_min, var1_max));
 	  var2_max = min(var2_max, round_down_div(var3_max, var1_min));
 	  
-	  var1.setMin(var1_min);
-	  var1.setMax(var1_max);
-	  var2.setMin(var2_min);
-	  var2.setMax(var2_max);
-	  var3.setMin(var3_min);
-	  var3.setMax(var3_max);
+	  var1.setMin(var1_min, label());
+	  var1.setMax(var1_max, label());
+	  var2.setMin(var2_min, label());
+	  var2.setMax(var2_max, label());
+	  var3.setMin(var3_min, label());
+	  var3.setMax(var3_max, label());
 	}
     else
 	{
-	  var3.setMax(mult_max(var1_min, var1_max, var2_min, var2_max));
-	  var3.setMin(mult_min(var1_min, var1_max, var2_min, var2_max));
+	  var3.setMax(mult_max(var1_min, var1_max, var2_min, var2_max), label());
+	  var3.setMin(mult_min(var1_min, var1_max, var2_min, var2_max), label());
 	  if(var1.isAssigned())
   	  {
 	    DomainInt val1 = var1.getAssignedValue();
 	    if(val1 > 0)
 	    { 
-		  var3.setMin(var2.getMin() * val1);
-		  var3.setMax(var2.getMax() * val1);
+		  var3.setMin(var2.getMin() * val1, label());
+		  var3.setMax(var2.getMax() * val1, label());
 		}
 		else
 		{
-		  var3.setMin(var2.getMax() * val1);
-		  var3.setMax(var2.getMin() * val1);
+		  var3.setMin(var2.getMax() * val1, label());
+		  var3.setMax(var2.getMin() * val1, label());
 		}
 	  }
 	  
@@ -165,13 +165,13 @@ struct ProductConstraint : public Constraint
 		DomainInt val2 = var2.getAssignedValue();
 		if(val2 > 0)
 		{ 
-		  var3.setMin(var1.getMin() * val2);
-		  var3.setMax(var1.getMax() * val2);
+		  var3.setMin(var1.getMin() * val2, label());
+		  var3.setMax(var1.getMax() * val2, label());
 		}
 		else
 		{
-		  var3.setMin(var1.getMax() * val2);
-		  var3.setMax(var1.getMin() * val2);
+		  var3.setMin(var1.getMax() * val2, label());
+		  var3.setMax(var1.getMin() * val2, label());
 		}
 	  }
 	}

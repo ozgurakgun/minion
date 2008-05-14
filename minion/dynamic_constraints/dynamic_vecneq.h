@@ -108,13 +108,13 @@ struct NeqIterated
     if(var.isBound())
     {
       if(var.getMin() == val)
-        var.setMin(val + 1);
+        var.setMin(val + 1, label());
       else
         if(var.getMax() == val)
-        var.setMax(val - 1);
+        var.setMax(val - 1, label());
     }
     else
-      { var.removeFromDomain(val); }
+      { var.removeFromDomain(val, label()); }
   }
 };
 
@@ -135,13 +135,13 @@ struct LessIterated
   template<typename VarType1, typename VarType2>  
   static void propagate_from_var1(VarType1& var1, VarType2& var2)
   {
-    var2.setMin(var1.getMin() + 1);
+    var2.setMin(var1.getMin() + 1, label());
   }
   
   template<typename VarType1, typename VarType2>
   static void propagate_from_var2(VarType1& var1, VarType2& var2)
   {
-    var1.setMax(var2.getMax() - 1);
+    var1.setMax(var2.getMax() - 1, label());
   }
   
   template<typename VarType1, typename VarType2>
@@ -169,13 +169,13 @@ struct BothNonZeroIterated
   template<typename VarType1, typename VarType2>  
   static void propagate_from_var1(VarType1& var1, VarType2& var2)
   {
-    var2.setMin(1);
+    var2.setMin(1, label());
   }
   
   template<typename VarType1, typename VarType2>
   static void propagate_from_var2(VarType1& var1, VarType2& var2)
   {
-    var1.setMin(1);
+    var1.setMin(1, label());
   }
   
   template<typename VarType1, typename VarType2>

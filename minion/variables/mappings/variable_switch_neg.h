@@ -97,33 +97,33 @@ struct SwitchNeg
 	  return -data.getInitialMax(); 
   }
   
-  void setMax(DomainInt i)
+  void setMax(DomainInt i, label l)
   { 
 	if(multiplier == 1)
-	  data.setMax(i);
+	  data.setMax(i, l);
 	else
-	  data.setMin(-i); 
+	  data.setMin(-i, l); 
   }
   
-  void setMin(DomainInt i)
+  void setMin(DomainInt i, label l)
   { 
 	if(multiplier == 1)
-	  data.setMin(i);
+	  data.setMin(i, l);
 	else
-	  data.setMax(-i); 
+	  data.setMax(-i, l); 
   }
   
-  void uncheckedAssign(DomainInt b)
-  { data.uncheckedAssign(b * multiplier); }
+  void uncheckedAssign(DomainInt b, label l)
+  { data.uncheckedAssign(b * multiplier, l); }
   
-  void propagateAssign(DomainInt b)
-  { data.propagateAssign(b * multiplier); }
+  void propagateAssign(DomainInt b, label l)
+  { data.propagateAssign(b * multiplier, l); }
   
   void decisionAssign(DomainInt b)
   { data.decisionAssign(b * multiplier); }
   
-  void removeFromDomain(DomainInt b)
-  { data.removeFromDomain(b * multiplier); }
+  void removeFromDomain(DomainInt b, label l)
+  { data.removeFromDomain(b * multiplier, l); }
   
   /// There isn't a minus sign here as domain changes from both the top and bottom of the domain are positive numbers.
   int getDomainChange(DomainDelta d)

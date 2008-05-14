@@ -130,7 +130,7 @@ struct GACTableConstraint : public DynamicConstraint
 	else
 	{
 	  D_INFO(1, DI_TABLECON, "Failed to find new support");
-	  vars[varIndex].removeFromDomain(val);
+	  vars[varIndex].removeFromDomain(val, label());
 	  vars[varIndex].setLabel(val, tupleTrieArrayptr->getLabel(vars, varIndex, val));
 	}
   }
@@ -174,8 +174,8 @@ struct GACTableConstraint : public DynamicConstraint
       {
 	    if(negative==0)
         {
-            vars[varIndex].setMin((tuples->dom_smallest)[varIndex]);
-            vars[varIndex].setMax((tuples->dom_smallest)[varIndex] + (tuples->dom_size)[varIndex]);
+            vars[varIndex].setMin((tuples->dom_smallest)[varIndex], label());
+            vars[varIndex].setMax((tuples->dom_smallest)[varIndex] + (tuples->dom_size)[varIndex], label());
 		}
         
 		if(getState(stateObj).isFailed()) return;
@@ -208,7 +208,7 @@ struct GACTableConstraint : public DynamicConstraint
                   //cout <<"No valid support for " + to_string(i) + " in var " + to_string(varIndex) << endl;
                   //volatile int * myptr=NULL;
                   //int crashit=*(myptr);
-                  vars[varIndex].removeFromDomain(i);
+                  vars[varIndex].removeFromDomain(i, label());
                 }
                 else
                 {

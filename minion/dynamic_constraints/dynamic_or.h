@@ -81,7 +81,7 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
       return;
     }
     if(found == 1) { //detect unit clause
-      var_array[first_found].propagateAssign(negs[first_found]);
+      var_array[first_found].propagateAssign(negs[first_found], label());
       return; //don't bother placing any watches on unit clause
     }
     //not failed or unit, place watches
@@ -111,7 +111,7 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
       } 
     }
     //if we get here, we couldn't find a place to put the watch, do UP
-    var_array[other_var].propagateAssign(negs[other_var]);
+    var_array[other_var].propagateAssign(negs[other_var], label());
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

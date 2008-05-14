@@ -81,27 +81,26 @@ struct ConstantVar
   DomainInt getInitialMin() const
   { return val; }
   
-  void setMax(DomainInt i)
+  void setMax(DomainInt i, label)
   { if(i<val) getState(stateObj).setFailed(true, getBaseVar()); }
   
-  void setMin(DomainInt i)
+  void setMin(DomainInt i, label)
   { if(i>val) getState(stateObj).setFailed(true, getBaseVar()); }
   
-  void uncheckedAssign(DomainInt)
+  void uncheckedAssign(DomainInt, label)
   { FAIL_EXIT(); }
   
-  void propagateAssign(DomainInt b)
+  void propagateAssign(DomainInt b, label)
   {if(b != val) getState(stateObj).setFailed(true, getBaseVar()); }
   
   void decisionAssign(DomainInt b)
-  { propagateAssign(b); }
+  { propagateAssign(b, label()); }
   
-  void removeFromDomain(DomainInt b)
+  void removeFromDomain(DomainInt b, label)
   { if(b==val) getState(stateObj).setFailed(true, getBaseVar()); }
  
   void addTrigger(Trigger, TrigType)
   { }
-
   
 #ifdef DYNAMICTRIGGERS
   void addDynamicTrigger(DynamicTrigger* dt, TrigType, DomainInt = -999)

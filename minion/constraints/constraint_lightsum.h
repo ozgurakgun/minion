@@ -61,11 +61,11 @@ struct LightLessEqualSumConstraint : public Constraint
       min_sum += var_array[i].getMin();
     
     if(prop_val >= 0)
-    { var_sum.setMin(min_sum); }
+    { var_sum.setMin(min_sum, label()); }
     
     DomainInt slack = var_sum.getMax() - min_sum;
     for(unsigned i = 0; i < size; ++i)
-      var_array[i].setMax(var_array[i].getMin() + slack);
+      var_array[i].setMax(var_array[i].getMin() + slack, label());
   }
   
   virtual BOOL full_check_unsat()

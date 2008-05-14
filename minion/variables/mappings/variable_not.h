@@ -90,23 +90,23 @@ struct VarNot
   DomainInt getInitialMin() const
   { return swap(data.getInitialMax()); }
   
-  void setMax(DomainInt i)
-  { data.setMin(swap(i)); }
+  void setMax(DomainInt i, label l)
+  { data.setMin(swap(i), l); }
   
-  void setMin(DomainInt i)
-  { data.setMax(swap(i)); }
+  void setMin(DomainInt i, label l)
+  { data.setMax(swap(i), l); }
   
-  void uncheckedAssign(DomainInt b)
-  { data.uncheckedAssign(swap(b)); }
+  void uncheckedAssign(DomainInt b, label l)
+  { data.uncheckedAssign(swap(b), l); }
   
-  void propagateAssign(DomainInt b)
-  { data.propagateAssign(swap(b)); }
+  void propagateAssign(DomainInt b, label l)
+  { data.propagateAssign(swap(b), l); }
   
   void decisionAssign(DomainInt b)
   { data.decisionAssign(swap(b)); }
   
-  void removeFromDomain(DomainInt b)
-  { data.removeFromDomain(swap(b)); }
+  void removeFromDomain(DomainInt b, label l)
+  { data.removeFromDomain(swap(b), l); }
  
   void addTrigger(Trigger t, TrigType type)
   { 

@@ -341,35 +341,35 @@ struct MultiplyVar
 	  return data.getInitialMax() * Multiply;  
   }
   
-  void setMax(DomainInt i)
+  void setMax(DomainInt i, label l)
   { 
     if(Multiply >= 0)
-      data.setMax(MultiplyHelp<VarRef>::round_down(i, Multiply)); 
+      data.setMax(MultiplyHelp<VarRef>::round_down(i, Multiply), l); 
 	else
-	  data.setMin(MultiplyHelp<VarRef>::round_up(-i, -Multiply));  
+	  data.setMin(MultiplyHelp<VarRef>::round_up(-i, -Multiply), l);  
   }
   
-  void setMin(DomainInt i)
+  void setMin(DomainInt i, label l)
   { 
     if(Multiply >= 0)
-	  data.setMin(MultiplyHelp<VarRef>::round_up(i, Multiply));
+	  data.setMin(MultiplyHelp<VarRef>::round_up(i, Multiply), l);
 	else
-	  data.setMax(MultiplyHelp<VarRef>::round_down(-i, -Multiply));  
+	  data.setMax(MultiplyHelp<VarRef>::round_down(-i, -Multiply), l);  
   }
   
-  void uncheckedAssign(DomainInt b)
+  void uncheckedAssign(DomainInt b, label l)
   { 
     D_ASSERT(b % Multiply == 0);
-    data.uncheckedAssign(MultiplyHelp<VarRef>::divide_exact(b, Multiply)); 
+    data.uncheckedAssign(MultiplyHelp<VarRef>::divide_exact(b, Multiply), l); 
   }
   
-  void propagateAssign(DomainInt b)
-  { data.propagateAssign(MultiplyHelp<VarRef>::divide_exact(b, Multiply)); }
+  void propagateAssign(DomainInt b, label l)
+  { data.propagateAssign(MultiplyHelp<VarRef>::divide_exact(b, Multiply), l); }
   
   void decisionAssign(DomainInt b)
   { data.decisionAssign(MultiplyHelp<VarRef>::divide_exact(b, Multiply)); }
   
-  void removeFromDomain(DomainInt)
+  void removeFromDomain(DomainInt, label)
   { FAIL_EXIT(); }
 
   void addTrigger(Trigger t, TrigType type)

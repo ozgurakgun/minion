@@ -15,7 +15,7 @@ bool inline check_fail(StateObj* stateObj, Var& var, DomainInt val, Vars& vars, 
 {
   getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_left();
   Controller::world_push(stateObj);
-  var.propagateAssign(val);
+  var.propagateAssign(val, label()); //TODO: learning for SAC
   prop(stateObj, vars);
   
   bool check_failed = getState(stateObj).isFailed();
@@ -44,7 +44,7 @@ void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop,
         while(check_fail(stateObj, var, var.getMax(), vararray, prop))
         {
           reduced = true;
-          var.setMax(var.getMax() - 1);
+          var.setMax(var.getMax() - 1, label()); //TODO: implement learning for SAC
           prop(stateObj, vararray);
           if(getState(stateObj).isFailed())
             return;
@@ -53,7 +53,7 @@ void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop,
         while(check_fail(stateObj, var, var.getMin(), vararray, prop))
         {
           reduced = true;
-          var.setMin(var.getMin() + 1);
+          var.setMin(var.getMin() + 1, label()); //TODO: learning for SAC
           prop(stateObj, vararray);
           if(getState(stateObj).isFailed())
             return;
@@ -66,7 +66,7 @@ void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop,
           if(var.inDomain(val) && check_fail(stateObj, var, val, vararray, prop))
           {
             reduced = true;
-            var.removeFromDomain(val);
+            var.removeFromDomain(val, label()); //TODO: learning for SAC
             prop(stateObj, vararray);
             if(getState(stateObj).isFailed())
               return;          

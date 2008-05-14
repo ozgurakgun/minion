@@ -137,7 +137,7 @@ struct LiteralSumConstraintDynamic : public DynamicConstraint
 		if(var_array[i].inDomain(value_array[i]))
 		{
 		  D_INFO(1, DI_DYSUMCON, to_string(i) + " watched, so pruning.");
-		  var_array[i].propagateAssign(value_array[i]);
+		  var_array[i].propagateAssign(value_array[i], label());
 		}
 	  }
 	}
@@ -239,7 +239,7 @@ struct LiteralSumConstraintDynamic : public DynamicConstraint
 	{
 	  if(dt != dt2)       // that one has just been set the other way
 	  {
-		var_array[dt2->trigger_info()].propagateAssign(value_array[dt2->trigger_info()]);
+		var_array[dt2->trigger_info()].propagateAssign(value_array[dt2->trigger_info()], label());
 	  }
 	  dt2++;
 	}

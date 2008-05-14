@@ -113,12 +113,12 @@ struct NeqConstraint : public Constraint
 		if(var_array[i].isBound())
 	    {
 		  if(var_array[i].getMin() == remove_val)
-		    var_array[i].setMin(remove_val + 1);
+		    var_array[i].setMin(remove_val + 1, label());
 		  if(var_array[i].getMax() == remove_val)
-		    var_array[i].setMax(remove_val - 1);
+		    var_array[i].setMax(remove_val - 1, label());
 	    }
 		else
-		  var_array[i].removeFromDomain(remove_val);
+		  var_array[i].removeFromDomain(remove_val, label());
 	  }
     }
 	
@@ -179,12 +179,12 @@ struct NeqConstraint : public Constraint
 			if(var_array[j].isBound())
 			{
 			  if(var_array[j].getMin() == remove_val)
-				var_array[j].setMin(remove_val + 1);
+				var_array[j].setMin(remove_val + 1, label());
 			  if(var_array[j].getMax() == remove_val)
-				var_array[j].setMax(remove_val - 1);
+				var_array[j].setMax(remove_val - 1, label());
 			}
 			else
-			  var_array[j].removeFromDomain(remove_val);
+			  var_array[j].removeFromDomain(remove_val, label());
 		  }
 		}
       }
@@ -243,12 +243,12 @@ struct NeqConstraintBinary : public Constraint
 	  if(var2.isBound())
 	  {
 		if(var2.getMin() == remove_val)
-		  var2.setMin(remove_val + 1);
+		  var2.setMin(remove_val + 1, label());
 		if(var2.getMax() == remove_val)
-		  var2.setMax(remove_val - 1);
+		  var2.setMax(remove_val - 1, label());
 	  }
 	  else
-        var2.removeFromDomain(remove_val);
+        var2.removeFromDomain(remove_val, label());
 	}
     else
     {
@@ -257,12 +257,12 @@ struct NeqConstraintBinary : public Constraint
 	  if(var1.isBound())
 	  {
 		if(var1.getMin() == remove_val)
-		  var1.setMin(remove_val + 1);
+		  var1.setMin(remove_val + 1, label());
 		if(var1.getMax() == remove_val)
-		  var1.setMax(remove_val - 1);
+		  var1.setMax(remove_val - 1, label());
 	  }
 	  else
-        var1.removeFromDomain(remove_val);
+        var1.removeFromDomain(remove_val, label());
     }
   }
   
@@ -277,12 +277,12 @@ struct NeqConstraintBinary : public Constraint
 	  if(var2.isBound())
 	  {
 		if(var2.getMin() == remove_val)
-		  var2.setMin(remove_val + 1);
+		  var2.setMin(remove_val + 1, label());
 		if(var2.getMax() == remove_val)
-		  var2.setMax(remove_val - 1);
+		  var2.setMax(remove_val - 1, label());
 	  }
 	  else
-        var2.removeFromDomain(remove_val);
+        var2.removeFromDomain(remove_val, label());
     }
     if(var2.isAssigned())
     { 
@@ -290,12 +290,12 @@ struct NeqConstraintBinary : public Constraint
 	  if(var1.isBound())
 	  {
 		if(var1.getMin() == remove_val)
-		  var1.setMin(remove_val + 1);
+		  var1.setMin(remove_val + 1, label());
 		if(var1.getMax() == remove_val)
-		  var1.setMax(remove_val - 1);
+		  var1.setMax(remove_val - 1, label());
 	  }
 	  else
-        var1.removeFromDomain(remove_val);
+        var1.removeFromDomain(remove_val, label());
     }
   }
 	

@@ -81,11 +81,11 @@ struct LeqConstraint : public Constraint
 	PROP_INFO_ADDONE(BinaryLeq);
     if(prop_val)
     {// y changed
-      x.setMax(y.getMax() + offset);
+      x.setMax(y.getMax() + offset, label());
     }
     else
     {// x changed
-      y.setMin(x.getMin() - offset);
+      y.setMin(x.getMin() - offset, label());
     }
   }
   

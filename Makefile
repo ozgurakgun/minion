@@ -5,6 +5,7 @@
 # directories does not hurt.
 
 # NAIVENOGOOD = use cheap but not so good g-nogoods for table constraint
+# DECISIONREPLACE = replace explns for already pruned values after decision assignment
 
 BOOSTINCLUDE = -I/usr/local/include/boost-1_35/ 
 FLAGS = -DWATCHEDLITERALS

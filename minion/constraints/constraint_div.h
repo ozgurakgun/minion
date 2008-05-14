@@ -91,14 +91,14 @@ struct DivConstraint : public Constraint
 	  {
 	    if(var2.getAssignedValue() == 0)
 	      getState(stateObj).setFailed(true);
-      var3.propagateAssign(var1.getAssignedValue() / var2.getAssignedValue() );
+      var3.propagateAssign(var1.getAssignedValue() / var2.getAssignedValue(), label());
     }
   }
   
   virtual void full_propagate()
   { 
     if(!var2.isBound())
-      var2.removeFromDomain(0);
+      var2.removeFromDomain(0, label());
       
     propagate(1,0); 
     propagate(2,0);

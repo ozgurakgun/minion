@@ -508,6 +508,8 @@ BOOL MinionThreeInputReader<FileReader>::readConstraint(FileReader* infile, BOOL
     default:
     readGeneralConstraint(infile, constraint);
   }
+  if(constraint.type != CT_WATCHED_TABLE)
+    cout << "WARNING: table constraints are the only supported constraints" << endl;
 
   instance.bounds_check_last_constraint();
   return true ;

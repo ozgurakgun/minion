@@ -84,23 +84,23 @@ struct VarRefType
   DomainInt getInitialMin() const
   { return GET_CONTAINER().getInitialMin(data); }
   
-  void setMax(DomainInt i)
-  { GET_CONTAINER().setMax(data,i); }
+  void setMax(DomainInt i, label l)
+  { GET_CONTAINER().setMax(data,i,l); }
   
-  void setMin(DomainInt i)
-  { GET_CONTAINER().setMin(data,i); }
+  void setMin(DomainInt i, label l)
+  { GET_CONTAINER().setMin(data,i,l); }
   
-  void uncheckedAssign(DomainInt b)
-  { GET_CONTAINER().uncheckedAssign(data, b); }
+  void uncheckedAssign(DomainInt b, label l)
+  { GET_CONTAINER().uncheckedAssign(data, b, l); }
   
-  void propagateAssign(DomainInt b)
-  { GET_CONTAINER().propagateAssign(data, b); }
+  void propagateAssign(DomainInt b, label l)
+  { GET_CONTAINER().propagateAssign(data, b, l); }
   
   void decisionAssign(DomainInt b)
   { GET_CONTAINER().decisionAssign(data, b); }
   
-  void removeFromDomain(DomainInt b)
-  { GET_CONTAINER().removeFromDomain(data, b); }
+  void removeFromDomain(DomainInt b, label l)
+  { GET_CONTAINER().removeFromDomain(data, b, l); }
   
   void addTrigger(Trigger t, TrigType type)
   { GET_CONTAINER().addTrigger(data, t, type); }
@@ -198,23 +198,23 @@ struct QuickVarRefType
   DomainInt getInitialMin() const
   { return data.getInitialMin(); }
   
-  void setMax(DomainInt i)
-  { GET_CONTAINER().setMax(data,i); }
+  void setMax(DomainInt i, label l)
+  { GET_CONTAINER().setMax(data,i,l); }
   
-  void setMin(DomainInt i)
-  { GET_CONTAINER().setMin(data,i); }
+  void setMin(DomainInt i, label l)
+  { GET_CONTAINER().setMin(data,i,l); }
   
-  void uncheckedAssign(DomainInt b)
-  { GET_CONTAINER().uncheckedAssign(data, b); }
+  void uncheckedAssign(DomainInt b, label l)
+  { GET_CONTAINER().uncheckedAssign(data, b, l); }
   
-  void propagateAssign(DomainInt b)
-  { GET_CONTAINER().propagateAssign(data, b); }
+  void propagateAssign(DomainInt b, label l)
+  { GET_CONTAINER().propagateAssign(data, b, l); }
   
   void decisionAssign(DomainInt b)
   { GET_CONTAINER().decisionAssign(data, b); }
   
-  void removeFromDomain(DomainInt b)
-  { GET_CONTAINER().removeFromDomain(data, b); }
+  void removeFromDomain(DomainInt b, label l)
+  { GET_CONTAINER().removeFromDomain(data, b, l); }
   
   void addTrigger(Trigger t, TrigType type)
   { GET_CONTAINER().addTrigger(data, t, type); }
@@ -303,23 +303,23 @@ struct CompleteVarRefType
   DomainInt getInitialMin() const
   { return (data.getCon()).getInitialMin(data); }
   
-  void setMax(DomainInt i)
-  { (data.getCon()).setMax(data,i); }
+  void setMax(DomainInt i, label l)
+  { (data.getCon()).setMax(data,i,l); }
   
-  void setMin(DomainInt i)
-  { (data.getCon()).setMin(data,i); }
+  void setMin(DomainInt i, label l)
+  { (data.getCon()).setMin(data,i,l); }
   
-  void uncheckedAssign(DomainInt b)
-  { (data.getCon()).uncheckedAssign(data, b); }
+  void uncheckedAssign(DomainInt b, label l)
+  { (data.getCon()).uncheckedAssign(data, b, l); }
   
-  void propagateAssign(DomainInt b)
-  { (data.getCon()).propagateAssign(data, b); }
+  void propagateAssign(DomainInt b, label l)
+  { (data.getCon()).propagateAssign(data, b, l); }
   
   void decisionAssign(DomainInt b)
   { (data.getCon()).decisionAssign(data, b); }
   
-  void removeFromDomain(DomainInt b)
-  { (data.getCon()).removeFromDomain(data, b); }
+  void removeFromDomain(DomainInt b, label l)
+  { (data.getCon()).removeFromDomain(data, b, l); }
   
   void addTrigger(Trigger t, TrigType type)
   { (data.getCon()).addTrigger(data, t, type); }
