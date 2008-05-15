@@ -446,7 +446,10 @@ public:
     //pruning to cover each lost support.
     while(trie->val != MAXINT) {
       if(!vars[map_depth(depth, varIndex)].inDomain(trie->val)) {
-	l.push_back(literal(false, vars[map_depth(depth, varIndex)].getBaseVar(), trie->val));
+	const int md = map_depth(depth, varIndex);
+	l.push_back(literal(false, 
+			    vars[md].getBaseVar(), 
+			    vars[md].getBaseVal(trie->val)));
       } else {
 	getLabel(vars, trie->offset_ptr, depth + 1, varIndex, l);
       }
@@ -463,9 +466,6 @@ public:
     TrieObj* to_a = tt.trie_data;
     while(to_a->val != val) to_a++; //find the node with the correct val
     getLabel(vars, to_a->offset_ptr, 1, varIndex, l); //traverse its subtrie
-    vector<literal>::iterator real_end = std::unique(l.begin(), l.end());
-    for(unsigned i = l.end() - real_end; i > 0; i--) //trim excess
-      l.pop_back(); //resize() cannot be used for type safety
     return l;
   }
 
@@ -562,9 +562,10 @@ public:
 	varval commonest = occurencesHeap[0];
 	varvalData& vvd = varvalInfo.find(commonest)->second;
 	if(vvd.occurences == 0) break; //all supports already covered
-	l.push_back(literal(false, vars[commonest.var].getBaseVar(), commonest.val)); //get commonest
-	repairHeapDec(0); //repair the heap
-	vector<varval> neighbours = vvd.neighbours;
+	l.push_back(literal(false, 
+			    vars[commonest.var].getBaseVar(), 
+			    vars[commonest.var].getBaseVal(commonest.val))); //get commonest
+	vector<varval>& neighbours = vvd.neighbours;
 	const size_t neighbours_s = neighbours.size();
 	for(size_t i = 0; i < neighbours_s; i++) { //reduce occurence count of all neighbours
 	  varvalData& nd = varvalInfo.find(neighbours[i])->second;
@@ -572,6 +573,7 @@ public:
 	  repairHeapDec(nd.position);
 	}
 	vvd.occurences = 0; //now commonest is covered
+	repairHeapDec(0); //repair the heap
       }
       return l;
     }
