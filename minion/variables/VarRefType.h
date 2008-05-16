@@ -117,10 +117,10 @@ struct VarRefType
   Var getBaseVar() const
   { return GET_CONTAINER().getBaseVar(data); }
 
-  void setDepth(DomainInt v, unsigned d)
+  void setDepth(DomainInt v, depth d)
   { GET_CONTAINER().setDepth(data, v, d); }
 
-  unsigned getDepth(DomainInt v)
+  depth getDepth(DomainInt v)
   { return GET_CONTAINER().getDepth(data, v); }
 
   void setLabel(DomainInt c, label l)
@@ -231,10 +231,10 @@ struct QuickVarRefType
   Var getBaseVar() const
   { return data.getBaseVar(); }
 
-  void setDepth(DomainInt v, unsigned d)
+  void setDepth(DomainInt v, depth d)
   { GET_CONTAINER().setDepth(data, v, d); }
 
-  unsigned getDepth(DomainInt v)
+  depth getDepth(DomainInt v)
   { return GET_CONTAINER().getDepth(data, v); }
 
   void setLabel(DomainInt c, label l)
@@ -336,10 +336,10 @@ struct CompleteVarRefType
   Var getBaseVar() const
   { return (data.getCon()).getBaseVar(); }
 
-  void setDepth(DomainInt v, unsigned d)
+  void setDepth(DomainInt v, depth d)
   { (data.getCon()).setDepth(data, v, d); }
 
-  unsigned getDepth(DomainInt v)
+  depth getDepth(DomainInt v)
   { return (data.getCon()).getDepth(data, v); }
 
   void setLabel(DomainInt c, label l)

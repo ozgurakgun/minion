@@ -38,4 +38,19 @@ inline ostream& operator<<(ostream& output, const literal& l) {
 //it's really a vector<literal> but I couldn't make that code compile
 typedef vector<literal> label;
 
+struct depth {
+  depth() : d(-1), seq(-1) {} //default constructor
+  depth(unsigned _d, unsigned _s) : d(_d), seq(_s) {}
+  
+  unsigned d; //depth set
+  unsigned seq; //sequence number of action at depth d
+};
+
+inline bool operator==(const depth& d1, const depth& d2) {
+  return d1.d == d2.d && d1.seq == d2.seq;
+}
+inline bool operator<(const depth& d1, const depth& d2) {
+  return d1.d < d2.d || (d1.d == d2.d && d1.seq < d2.seq);
+}
+
 #endif

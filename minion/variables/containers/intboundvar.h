@@ -164,10 +164,10 @@ struct BoundVarRef_internal
 
   Var getBaseVar() const { return Var(VAR_BOUND, var_num); }
   
-  void setDepth(DomainInt v, unsigned d)
+  void setDepth(DomainInt v, depth d)
   { GET_LOCAL_CON().setDepth(*this, v, d); }
 
-  unsigned getDepth(DomainInt v)
+  depth getDepth(DomainInt v)
   { return GET_LOCAL_CON().getDepth(*this, v); }
 
   void setLabel(DomainInt c, label l)
@@ -214,7 +214,7 @@ struct BoundVarContainer {
   TriggerList trigger_list;
   vector<pair<BoundType, BoundType> > initial_bounds;
   vector<vector<AbstractConstraint*> > constraints;
-  vector<vector<unsigned> > depths;
+  vector<vector<depth> > depths;
   vector<vector<label> > labels;
 #ifdef WDEG
   vector<unsigned int> wdegs;
@@ -445,7 +445,7 @@ struct BoundVarContainer {
       {
         var_count_m++;
         initial_bounds.push_back(make_pair(vars[i].second.lower_bound, vars[i].second.upper_bound));
-	depths.push_back(vector<unsigned>(vars[i].second.upper_bound - vars[i].second.lower_bound + 1));
+	depths.push_back(vector<depth>(vars[i].second.upper_bound - vars[i].second.lower_bound + 1));
 	labels.push_back(vector<label>(vars[i].second.upper_bound - vars[i].second.lower_bound + 1));
 #ifdef DECISIONASSIGN
 	decisionVar.push_back(ReversibleMonotonicBoolean());
@@ -504,14 +504,18 @@ struct BoundVarContainer {
 #endif
   }
 
-  void setDepth(const BoundVarRef_internal<BoundType>& b, DomainInt v, unsigned d)
+  void setDepth(const BoundVarRef_internal<BoundType>& b, DomainInt v, depth d)
   { depths[b.var_num][v - getInitialMin(b)] = d; }
 
-  unsigned getDepth(const BoundVarRef_internal<BoundType>& b, DomainInt v)
+  depth getDepth(const BoundVarRef_internal<BoundType>& b, DomainInt v)
   { return depths[b.var_num][v - getInitialMin(b)]; }
 
   void setLabel(const BoundVarRef_internal<BoundType>& b, DomainInt v, label l)
-  { labels[b.var_num][v - getInitialMin(b)] = l; }
+  {
+    setDepth(b, v, depth(getMemory(stateObj).backTrack().current_depth(),
+			 getMemory(stateObj).backTrack().get_inc_seq()));
+    labels[b.var_num][v - getInitialMin(b)] = l; 
+  }
 
   label getLabel(const BoundVarRef_internal<BoundType>& b, DomainInt v)
   { 

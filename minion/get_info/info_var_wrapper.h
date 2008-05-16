@@ -140,13 +140,13 @@ struct InfoRefType
     return data.getBaseVar(); 
   }
 
-  void setDepth(DomainInt v, unsigned d)
+  void setDepth(DomainInt v, depth d)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, setDepth);
     data.setDepth(v, d); 
   }
 
-  unsigned getDepth(DomainInt v)
+  depth getDepth(DomainInt v)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, getDepth);
     return data.getDepth(v); 

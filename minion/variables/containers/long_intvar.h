@@ -106,7 +106,7 @@ struct BigRangeVarContainer {
   /// Constraints variable participates in
   vector<vector<AbstractConstraint*> > constraints;
 
-  vector<vector<unsigned> > depths;
+  vector<vector<depth> > depths;
   vector<vector<label> > labels;
 #ifdef DECISIONASSIGN
   //isMember()==T iff var is currently set as decision
@@ -198,7 +198,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
       initial_bounds.push_back(make_pair(new_domains[i].second.lower_bound, new_domains[i].second.upper_bound));
       int domain_size;
       domain_size = new_domains[i].second.upper_bound - new_domains[i].second.lower_bound + 1;
-      depths.push_back(vector<unsigned>(domain_size)); //one per val
+      depths.push_back(vector<depth>(domain_size)); //one per val
       labels.push_back(vector<label>(domain_size));
 #ifdef DECISIONASSIGN
       decisionVar.push_back(ReversibleMonotonicBoolean());
@@ -628,14 +628,18 @@ public:
   Var getBaseVar(const BigRangeVarRef_internal& b) const
   { return Var(VAR_DISCRETE, b.var_num); }
 
-  void setDepth(const BigRangeVarRef_internal& b, DomainInt v, unsigned d)
+  void setDepth(const BigRangeVarRef_internal& b, DomainInt v, depth d)
   { depths[b.var_num][v - getInitialMin(b)] = d; }
 
-  unsigned getDepth(const BigRangeVarRef_internal& b, DomainInt v)
+  depth getDepth(const BigRangeVarRef_internal& b, DomainInt v)
   { return depths[b.var_num][v - getInitialMin(b)]; }
 
   void setLabel(const BigRangeVarRef_internal& b, DomainInt v, label  l)
-  { labels[b.var_num][v - getInitialMin(b)] = l; }
+  { 
+    setDepth(b, v, depth(getMemory(stateObj).backTrack().current_depth(),
+			 getMemory(stateObj).backTrack().get_inc_seq()));
+    labels[b.var_num][v - getInitialMin(b)] = l; 
+  }
 
   label getLabel(const BigRangeVarRef_internal& b, DomainInt v)
   { 
