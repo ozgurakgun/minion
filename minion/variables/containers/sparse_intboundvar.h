@@ -97,7 +97,7 @@ struct SparseBoundVarContainer {
   vector<vector<BoundType> > domains;
   vector<int> domain_reference;
   vector<vector<AbstractConstraint*> > constraints;
-  vector<vector<unsigned> > depths;
+  vector<vector<depth> > depths;
   vector<vector<label> > labels;
 #ifdef WDEG
   vector<unsigned int> wdegs;
@@ -198,7 +198,7 @@ struct SparseBoundVarContainer {
     for(int j = 0; j < new_domains[i].first; ++j)
       domain_reference.push_back(i);
 
-    depths.push_back(vector<unsigned>(t_dom.size())); //one per val
+    depths.push_back(vector<depth>(t_dom.size())); //one per val
     labels.push_back(vector<label>(t_dom.size()));
 #ifdef DECISIONASSIGN
     decisionVar.push_back(ReversibleMonotonicBoolean());
@@ -518,14 +518,18 @@ struct SparseBoundVarContainer {
     return std::find(dom.begin(), dom.end(), v) - dom.begin();
   }
 
-  void setDepth(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v, unsigned d)
+  void setDepth(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v, depth d)
   { depths[b.var_num][getPos(b, v)] = d; }
 
-  unsigned getDepth(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v)
+  depth getDepth(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v)
   { return depths[b.var_num][getPos(b, v)]; }
 
   void setLabel(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v, label l)
-  { labels[b.var_num][getPos(b, v)] = l; }
+  { 
+    setDepth(b, v, depth(getMemory(stateObj).backTrack().current_depth(),
+			 getMemory(stateObj).backTrack().get_inc_seq()));
+    labels[b.var_num][getPos(b, v)] = l;
+  }
 
   label getLabel(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v)
   { 

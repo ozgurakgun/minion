@@ -146,10 +146,10 @@ struct VarNot
 
   Var getBaseVar() const { return data.getBaseVar(); }
 
-  void setDepth(DomainInt v, unsigned d)
+  void setDepth(DomainInt v, depth d)
   { data.setDepth(v, d); }
 
-  unsigned getDepth(DomainInt v)
+  depth getDepth(DomainInt v)
   { return data.getDepth(v); }
 
   void setLabel(DomainInt v, label l)

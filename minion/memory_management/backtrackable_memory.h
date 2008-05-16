@@ -42,6 +42,8 @@ class BackTrackMemory
   
   char* backtrack_data; 
   int current_depth_m;
+  unsigned current_seq;
+  vector<unsigned> seqs;
   int max_depth;
   bool locked;
 public:
@@ -62,7 +64,8 @@ public:
     return new_memory_block.requestArray<T>(size);
   }
   
-  BackTrackMemory() : backtrack_data(NULL), current_depth_m(0), max_depth(0), locked(false)
+  BackTrackMemory() : backtrack_data(NULL), current_depth_m(0), max_depth(0), locked(false),
+    current_seq(0)
   {
       
   }
@@ -98,7 +101,10 @@ public:
       extend(max_depth * 2);
     unsigned data_size = new_memory_block.getDataSize();
     memcpy(backtrack_data + current_depth_m * data_size, new_memory_block.getDataPtr(), data_size);
+    D_ASSERT(seqs.size() == current_depth_m);
     current_depth_m++;
+    seqs.push_back(current_seq);
+    current_seq = 0;
   }
   
   /// Restores the state of backtrackable memory to the last stored state.
@@ -106,6 +112,9 @@ public:
   {
     D_ASSERT(locked);
     D_ASSERT(current_depth_m > 0);
+    D_ASSERT(seqs.size() == current_depth_m);
+    current_seq = seqs.back();
+    seqs.pop_back();
     current_depth_m--;
     
     unsigned data_size = new_memory_block.getDataSize();
@@ -115,6 +124,9 @@ public:
   /// Returns the current number of stored copies of the state.
   int current_depth()
   { return current_depth_m; }
+  
+  unsigned get_inc_seq()
+  { return ++current_seq; }
 };
 
 #endif

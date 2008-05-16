@@ -147,8 +147,8 @@ struct AnyVarRef_Abstract
   virtual void addConstraint(AbstractConstraint* c) = 0;
   virtual DomainInt getBaseVal(DomainInt) const = 0;
   virtual Var getBaseVar() const = 0;
-  virtual void setDepth(DomainInt v, unsigned d) = 0;
-  virtual unsigned getDepth(DomainInt v) = 0;
+  virtual void setDepth(DomainInt v, depth d) = 0;
+  virtual depth getDepth(DomainInt v) = 0;
   virtual void setLabel(DomainInt c, label l) = 0;
   virtual label getLabel(DomainInt c) = 0;
 #ifdef WDEG
@@ -245,10 +245,10 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual Var getBaseVar() const
   { return data.getBaseVar(); }
 
-  virtual void setDepth(DomainInt v, unsigned d)
+  virtual void setDepth(DomainInt v, depth d)
   { data.setDepth(v, d); }
 
-  virtual unsigned getDepth(DomainInt v)
+  virtual depth getDepth(DomainInt v)
   { return data.getDepth(v); }
 
   virtual void setLabel(DomainInt c, label l)
@@ -363,10 +363,10 @@ public:
   Var getBaseVar() const
   { return data->getBaseVar(); }
 
-  void setDepth(DomainInt v, unsigned d)
+  void setDepth(DomainInt v, depth d)
   { data->setDepth(v, d); }
 
-  unsigned getDepth(DomainInt v)
+  depth getDepth(DomainInt v)
   { return data->getDepth(v); }
 
   void setLabel(DomainInt c, label l)
