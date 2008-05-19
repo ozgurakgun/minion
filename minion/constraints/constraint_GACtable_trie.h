@@ -130,8 +130,7 @@ struct GACTableConstraint : public DynamicConstraint
 	else
 	{
 	  D_INFO(1, DI_TABLECON, "Failed to find new support");
-	  vars[varIndex].removeFromDomain(val, label());
-	  vars[varIndex].setLabel(val, tupleTrieArrayptr->getLabel(vars, varIndex, val));
+	  vars[varIndex].removeFromDomain(val, tupleTrieArrayptr->getLabel(vars, varIndex, val));
 	}
   }
   
@@ -162,6 +161,7 @@ struct GACTableConstraint : public DynamicConstraint
 	}
   }
   
+  //for the moment I am re-defining this function to be AT ROOT NODE only, i.e., -fullprop is broken!
   virtual void full_propagate()
   {
       D_INFO(2, DI_TABLECON, "Full prop");
@@ -256,8 +256,6 @@ struct GACTableConstraint : public DynamicConstraint
 	  anyvars.push_back(vars[i]);
 	return anyvars;
   }
-  
-  
 };
 
 

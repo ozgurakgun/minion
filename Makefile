@@ -20,12 +20,12 @@ ifdef DEBUG
    DEBUG_FLAGS = -D_GLIBCXX_DEBUG -DNO_PRINT -g -DMORE_SEARCH_INFO
  endif
 else
-  FLAGS := $(FLAGS) -O3 -DNO_DEBUG
+  FLAGS := $(FLAGS) -O2 -DNO_DEBUG
 endif
 
 ifdef PROFILE
   NAMEBASE := $(NAMEBASE)-profile
-  FLAGS := $(FLAGS) -g3
+  FLAGS := $(FLAGS) -g
 endif
 
 ifdef INFO
