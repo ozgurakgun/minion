@@ -7,6 +7,8 @@
 */
 
 #include "common_search.h"
+#include "learning.h"
+#include "learning.hpp"
 
 namespace Controller
 {
@@ -24,6 +26,8 @@ namespace Controller
 	  D_INFO(0, DI_SOLVER, "Non-Boolean Search");
 	  
 	  maybe_print_search_state(stateObj, "Node: ", v);
+	  
+	  bool found_sol = false;
 	  
 	  while(true)
 	  {
@@ -45,6 +49,7 @@ namespace Controller
 
 		  // fail here to force backtracking.
 		  getState(stateObj).setFailed(true);
+		  found_sol = true;
 		}
 		else
 		{
@@ -60,6 +65,11 @@ namespace Controller
 		while(getState(stateObj).isFailed())
 		{
 		  getState(stateObj).setFailed(false);
+
+		  if(!found_sol) {
+		    computeFirstUip(stateObj, getState(stateObj).getFailedVar());
+		    found_sol = false;
+		  }
 		  
 		  if(order.finished_search())
 			return;

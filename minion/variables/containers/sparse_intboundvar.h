@@ -400,14 +400,16 @@ struct SparseBoundVarContainer {
     i = find_upper_bound(d, i);
     
     DomainInt low_bound = lower_bound(d);
+    DomainInt up_bound = upper_bound(d);
+    
     
     if(i < low_bound)
     {
+      for(DomainInt curr = low_bound; curr <= up_bound; curr++)
+	setLabel(d, curr, l);
       getState(stateObj).setFailed(true, getBaseVar(d));
       return;
     }
-    
-    DomainInt up_bound = upper_bound(d);
     
     if(i < up_bound)
     {
@@ -443,14 +445,16 @@ struct SparseBoundVarContainer {
     i = find_lower_bound(d,i);
     
     DomainInt up_bound = upper_bound(d);
+    DomainInt low_bound = lower_bound(d);
+    
     
     if(i > up_bound)
     {
+      for(DomainInt curr = low_bound; curr <= up_bound; curr++)
+	setLabel(d, curr, l);
       getState(stateObj).setFailed(true, getBaseVar(d));
       return;
     }
-    
-    DomainInt low_bound = lower_bound(d);
     
     if(i > low_bound)
     {
@@ -502,8 +506,11 @@ struct SparseBoundVarContainer {
   }
   
   DomainInt getBaseVal(const SparseBoundVarRef_internal<BoundType>& b, DomainInt v) const 
-  { 
-    D_ASSERT(inDomain(b, v));
+  {
+#ifndef NO_DEBUG
+    const vector<BoundType>& dom = domains[domain_reference[b.var_num]];
+#endif
+    D_ASSERT(std::find(dom.begin(), dom.end(), v) != dom.end());
     return v; 
   }
 

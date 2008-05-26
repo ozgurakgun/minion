@@ -339,6 +339,8 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
 #endif
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + i));
     
+    setLabel(d, i, l); //label removal
+
     domain_bound_type up_bound = upper_bound(d);
     if(i == up_bound)
       {
@@ -353,8 +355,6 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
 	trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
       }
     
-    setLabel(d, i, l); //label removal
-
     const DomainInt lb = lower_bound(d);
     if(upper_bound(d) == lb) {
       setLabel(d, lb, mhavLabel(d, lb)); //label the assignment
@@ -487,6 +487,8 @@ public:
 	
 	if(offset < low_bound)
 	{
+	  for(DomainInt curr = low_bound; curr <= up_bound; curr++)
+	    setLabel(d, curr, l);
 	  getState(stateObj).setFailed(true, getBaseVar(d));
 	  return;
     }
@@ -515,9 +517,9 @@ public:
 #endif
        trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
 	  
-       if(lower_bound(d) == upper_bound(d)) {
+       if(lower_bound(d) == new_upper) {
 	 setLabel(d, new_upper, mhavLabel(d, new_upper)); //label assignment with MHAV
-	 trigger_list.push_assign(d.var_num, getAssignedValue(d));
+	 trigger_list.push_assign(d.var_num, new_upper);
        }
     }
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
@@ -546,6 +548,8 @@ public:
     
     if(offset > up_bound)
       {
+	for(DomainInt curr = low_bound; curr <= up_bound; curr++)
+	  setLabel(d, curr, l);
 	getState(stateObj).setFailed(true, getBaseVar(d));
 	return;
       }
@@ -621,7 +625,7 @@ public:
 
   DomainInt getBaseVal(const BigRangeVarRef_internal& b, DomainInt v) const 
   {
-    D_ASSERT(inDomain(b, v));
+    D_ASSERT(getInitialMin(b) <= v && v <= getInitialMax(b));
     return v; 
   }
 

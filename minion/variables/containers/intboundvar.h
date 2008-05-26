@@ -158,7 +158,7 @@ struct BoundVarRef_internal
 
   DomainInt getBaseVal(DomainInt v) const 
   {
-    D_ASSERT(inDomain(v));
+    D_ASSERT(getInitialMin() <= v && v <= getInitialMax());
     return v; 
   }
 
@@ -386,8 +386,10 @@ struct BoundVarContainer {
     
     if(i < low_bound)
     {
-       getState(stateObj).setFailed(true, d.getBaseVar());
-       return;
+      for(DomainInt curr = up_bound; curr >= low_bound; curr--)
+	setLabel(d, curr, l);
+      getState(stateObj).setFailed(true, d.getBaseVar());
+      return;
     }
     
     
@@ -412,6 +414,8 @@ struct BoundVarContainer {
     
     if(i > up_bound)
     {
+      for(DomainInt curr = low_bound; curr <= up_bound; curr++)
+	setLabel(d, curr, l);
       getState(stateObj).setFailed(true, d.getBaseVar());
       return;
     }
