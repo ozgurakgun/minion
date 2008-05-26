@@ -52,5 +52,24 @@ inline bool operator==(const depth& d1, const depth& d2) {
 inline bool operator<(const depth& d1, const depth& d2) {
   return d1.d < d2.d || (d1.d == d2.d && d1.seq < d2.seq);
 }
+inline bool operator>(const depth& d1, const depth& d2) {
+  return d2 < d1;
+}
+inline bool operator>=(const depth& d1, const depth& d2) {
+  return d1 > d2 || d1 == d2;
+}
+inline ostream& operator<<(ostream& output, const depth& l) {
+  output << "(d=" << l.d << ",seq=" << l.seq << ")";
+  return output;
+}
+template<typename T, typename U>
+inline ostream& operator<<(ostream& output, const pair<T,U> p) {
+  output << "<" << p.first << "," << p.second << ">";
+  return output;
+}
+template<typename T, typename U>
+inline bool operator==(const pair<T,U>& p1, const pair<T,U>& p2) {
+  return p1.first == p2.first && p1.second == p2.second;
+}
 
 #endif

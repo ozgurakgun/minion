@@ -147,7 +147,7 @@ struct BoolVarRef_internal
 
   DomainInt getBaseVal(DomainInt v) const 
   {
-    D_ASSERT(inDomain(v));
+    D_ASSERT(v == 0 || v == 1);
     return v; 
   }
 
@@ -240,6 +240,9 @@ struct BooleanContainer
   {
     if(i < 0)
 	{
+	  setLabel(d, 0, l);
+	  if(d.inDomain_noBoundCheck(1))
+	    setLabel(d, 1, l);
 	  getState(stateObj).setFailed(true, d.getBaseVar());
 	  return;
 	}
@@ -247,8 +250,8 @@ struct BooleanContainer
     D_ASSERT(i >= 0);
     if(i==0) {
       internalAssign(d,0);
-      setLabel(d, i, mhavLabel(d, i));
-      setLabel(d, 1 - i, l);
+      setLabel(d, 0, mhavLabel(d, 0));
+      setLabel(d, 1, l);
     }
   }
   
@@ -256,14 +259,17 @@ struct BooleanContainer
   {
     if(i > 1)
 	{
+	  if(d.inDomain_noBoundCheck(0))
+	    setLabel(d, 0, l);
+	  setLabel(d, 1, l);
 	  getState(stateObj).setFailed(true, d.getBaseVar());
 	  return;
 	}
     D_ASSERT(i <= 1);
     if(i==1) {
       internalAssign(d,1);
-      setLabel(d, i, mhavLabel(d, i));
-      setLabel(d, 1 - i, l);
+      setLabel(d, 1, mhavLabel(d, 1));
+      setLabel(d, 0, l);
     }
   }
   
@@ -274,12 +280,14 @@ struct BooleanContainer
       return;
       
     if(d.isAssigned()) {
-      if(b == d.getAssignedValue()) 
-	    getState(stateObj).setFailed(true, d.getBaseVar());
+      if(b == d.getAssignedValue()) {
+	getState(stateObj).setFailed(true, d.getBaseVar());
+	setLabel(d, b, l);
+      }
     } else {
       internalAssign(d, 1 - b);
-      setLabel(d, 1 - b, mhavLabel(d, b));
-      setLabel(d, b, l);
+      setLabel(d, 1 - b, mhavLabel(d, 1 - b)); //label for assignment
+      setLabel(d, b, l);                       //label for pruning
     }
   }
 
@@ -315,16 +323,16 @@ struct BooleanContainer
   void uncheckedAssign(const BoolVarRef_internal& d, DomainInt b, label l)
   { 
     internalAssign(d, b); 
-    setLabel(d, b, l);
-    setLabel(d, 1 - b, l);
+    setLabel(d, 0, l);
+    setLabel(d, 1, l);
   }
   
   void propagateAssign(const BoolVarRef_internal& d, DomainInt b, label l)
   {
     if(!d.isAssigned()) {
       internalAssign(d,b);
-      setLabel(d, b, l);
-      setLabel(d, 1 - b, l);
+      setLabel(d, 0, l);
+      setLabel(d, 1, l);
     } else {
       if(d.getAssignedValue() != b)
 	getState(stateObj).setFailed(true, d.getBaseVar());
@@ -387,13 +395,17 @@ struct BooleanContainer
   }
 
   void setDepth(const BoolVarRef_internal& b, DomainInt v, depth d)
-  { depths[b.var_num][v] = d; }
+  { 
+    cout << "depth for v" << b.var_num << " val " << v << " is " << d << endl;
+    depths[b.var_num][v] = d; 
+  }
 
   depth getDepth(const BoolVarRef_internal& b, DomainInt v)
   { return depths[b.var_num][v]; }
 
   void setLabel(const BoolVarRef_internal& b, DomainInt v, label l)
   { 
+    cout << "label for v" << b.var_num << " val " << v << " is " << l << endl;
     labels[b.var_num][v] = l; 
     setDepth(b, v, depth(getMemory(stateObj).backTrack().current_depth(),
 			 getMemory(stateObj).backTrack().get_inc_seq()));
