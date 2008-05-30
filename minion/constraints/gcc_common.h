@@ -13,7 +13,7 @@ template<typename VarArray1, typename VarArray2>
 struct GCC : public Constraint
 {
     GCC(StateObj* _stateObj, const VarArray1& _var_array, const VarArray2& _capacity_array) : Constraint(_stateObj),
-    stateObj(_stateObj), var_array(_var_array), capacity_array(_capacity_array)
+    stateObj(_stateObj), var_array(_var_array), capacity_array(_capacity_array), constraint_locked(false)
     {
         dom_min=var_array[0].getInitialMin();
         dom_max=var_array[0].getInitialMax();
@@ -41,11 +41,13 @@ struct GCC : public Constraint
         upper.resize(numvals);
         
         prev.resize(numvars+numvals);
-        visited.reserve(numvars+numvals+1);
+        initialize_tarjan();
     }
     
     VarArray1 var_array;
     VarArray2 capacity_array;
+    
+    bool constraint_locked;
     
     virtual void full_propagate()
     {
@@ -60,8 +62,26 @@ struct GCC : public Constraint
     
     PROPAGATE_FUNCTION(int prop_var, DomainDelta)
     {
-        do_gcc_prop();
+        if(!constraint_locked)
+        {
+            constraint_locked = true;
+            getQueue(stateObj).pushSpecialTrigger(this);
+        }
     }
+    
+    virtual void special_unlock() { constraint_locked = false;  } // to_process.clear();
+  virtual void special_check()
+  {
+    constraint_locked = false;  // should be above the if.
+    
+    if(getState(stateObj).isFailed())
+    {
+        //to_process.clear();
+        return;
+    }
+    
+    do_gcc_prop();
+  }
     
     void do_gcc_prop()
     {
@@ -88,7 +108,34 @@ struct GCC : public Constraint
             return;
         }
         
-        // rest of algorihtm.
+        var_indices.clear();
+        for(int i=0; i<numvars; i++)
+        {
+            var_indices.push_back(i);
+        }
+        
+        tarjan_recursive(0);
+        
+        // now do basic prop from main vars to cap variables. equiv to occurrence constraints I think.
+        // untested
+        for(int i=0; i<numvals; i++)
+        {
+            int val=i+dom_min;
+            int mincap=0;
+            int maxcap=0;
+            for(int j=0; j<numvars; j++)
+            {
+                if(var_array[j].inDomain(val))
+                {
+                    maxcap++;
+                    if(var_array[j].isAssigned())
+                        mincap++;
+                }
+            }
+            capacity_array[i].setMin(mincap);
+            capacity_array[i].setMax(maxcap);
+        }
+        
     }
     
     StateObj * stateObj;
@@ -105,7 +152,7 @@ struct GCC : public Constraint
     vector<int> usagebac;
     vector<int> varvalmatching;
     
-    smallset_nolist visited;
+    
     
     
     inline bool bfsmatching_gcc()
@@ -465,7 +512,8 @@ struct GCC : public Constraint
           t.push_back(make_trigger(var_array[i], Trigger(this, i), DomainChanged));
         for(int i=0; i< capacity_size; ++i)
         {
-            t.push_back(make_trigger(capacity_array[i], Trigger(this, i), DomainChanged));   // should be bounds only.
+            t.push_back(make_trigger(capacity_array[i], Trigger(this, i), UpperBound));
+            t.push_back(make_trigger(capacity_array[i], Trigger(this, i), LowerBound));
         }
         return t;
     }
@@ -481,7 +529,6 @@ struct GCC : public Constraint
 	  return vars;
 	}
     
-    // Does not work!!!
     virtual BOOL check_assignment(vector<DomainInt> v)
 	{
 	  D_ASSERT(v.size() == var_array.size()+capacity_array.size());
@@ -498,4 +545,375 @@ struct GCC : public Constraint
       }
 	  return true;
 	}
+    
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Tarjan's algorithm 
+    
+    
+    vector<int> tstack;
+    smallset_nolist in_tstack;
+    smallset_nolist visited;
+    vector<int> dfsnum;
+    vector<int> lowlink;
+    
+    vector<int> curnodestack;
+    
+    bool scc_split;
+    
+    int sccindex;
+    
+    int max_dfs;
+    
+    vector<int> spare_values;
+    bool include_sink;
+    vector<int> var_indices;  // Should be a pointer so it can be changed.
+    
+    //smallset sccs_to_process;   // Indices to the first var in the SCC to process.
+    smallset valinlocalmatching;
+    smallset varinlocalmatching;
+    
+    int varcount;
+    int localmin,localmax;
+    
+    void initialize_tarjan()
+    {
+        int numnodes=numvars+numvals+1;  // One sink node.
+        tstack.reserve(numnodes);
+        in_tstack.reserve(numnodes);
+        visited.reserve(numnodes);
+        max_dfs=1;
+        scc_split=false;
+        dfsnum.resize(numnodes);
+        lowlink.resize(numnodes);
+        
+        //iterationstack.resize(numnodes);
+        curnodestack.reserve(numnodes);
+        
+        //valinlocalmatching.reserve(numvals);
+        varinlocalmatching.reserve(numvars);
+    }
+    
+    void tarjan_recursive(int sccindex_start)
+    {
+        //valinlocalmatching.clear();
+        
+        localmax=var_array[var_indices[0]].getMax();
+        localmin=var_array[var_indices[0]].getMin();
+        //valinlocalmatching.insert(varvalmatching[var_indices[0]]-dom_min);
+        
+        for(int i=1; i<var_indices.size(); i++)
+        {
+            int tempvar=var_indices[i];
+            int tempmax=var_array[tempvar].getMax();
+            int tempmin=var_array[tempvar].getMin();
+            if(tempmax>localmax) localmax=tempmax;
+            if(tempmin<localmin) localmin=tempmin;
+            //valinlocalmatching.insert(varvalmatching[var_indices[i]]-dom_min);
+        }
+        
+        include_sink=true;
+        
+        tstack.clear();
+        in_tstack.clear();
+        
+        visited.clear();
+        max_dfs=1;
+        
+        scc_split=false;
+        sccindex=sccindex_start;
+        
+        for(int i=0; i<var_indices.size(); ++i)
+        {
+            int curnode=var_indices[i];
+            if(!visited.in(curnode))
+            {
+                D_DATA(cout << "(Re)starting tarjan's algorithm, value:"<< curnode <<endl);
+                varcount=0;
+                visit(curnode);
+                D_DATA(cout << "Returned from tarjan's algorithm." << endl);
+            }
+        }
+        
+    }
+    
+    void visit(int curnode)
+    {
+        tstack.push_back(curnode);
+        in_tstack.insert(curnode);
+        dfsnum[curnode]=max_dfs;
+        lowlink[curnode]=max_dfs;
+        max_dfs++;
+        visited.insert(curnode);
+        //cout << "Visiting node: " <<curnode<<endl;
+        
+        if(curnode==numvars+numvals)
+        {
+            //cout << "Visiting sink node." <<endl;
+            D_ASSERT(include_sink);
+            // It's the sink so it links to all spare values.
+            /*
+            for(int i=0; i<spare_values.size(); ++i)
+            {
+                int newnode=spare_values[i];
+                //cout << "About to visit spare value: " << newnode-numvars+dom_min <<endl;
+                if(!visited.in(newnode))
+                {
+                    visit(newnode);
+                    if(lowlink[newnode]<lowlink[curnode])
+                    {
+                        lowlink[curnode]=lowlink[newnode];
+                    }
+                }
+                else
+                {
+                    // Already visited newnode
+                    if(in_tstack.in(newnode) && dfsnum[newnode]<lowlink[curnode])
+                    {
+                        lowlink[curnode]=dfsnum[newnode];
+                    }
+                }
+            }*/
+            
+            // GCC mod:
+            // link to any value which is below its upper cap.
+            for(int i=localmin; i<=localmax; i++)
+            {
+                int newnode=i+numvars-dom_min;
+                if(usage[i-dom_min]<upper[i-dom_min])
+                {
+                    if(!visited.in(newnode))
+                    {
+                        visit(newnode);
+                        if(lowlink[newnode]<lowlink[curnode])
+                        {
+                            lowlink[curnode]=lowlink[newnode];
+                        }
+                    }
+                    else
+                    {
+                        // Already visited newnode
+                        if(in_tstack.in(newnode) && dfsnum[newnode]<lowlink[curnode])
+                        {
+                            lowlink[curnode]=dfsnum[newnode];
+                        }
+                    }
+                }
+            }
+        }
+        else if(curnode<numvars)  // This case should never occur with merge nodes.
+        {
+            D_ASSERT(find(var_indices.begin(), var_indices.end(), curnode)!=var_indices.end());
+            varcount++;
+            //cout << "Visiting node variable: "<< curnode<<endl;
+            int newnode=varvalmatching[curnode]-dom_min+numvars;
+            D_ASSERT(var_array[curnode].inDomain(newnode+dom_min-numvars));
+            
+            if(!visited.in(newnode))
+            {
+                visit(newnode);
+                if(lowlink[newnode]<lowlink[curnode])
+                {
+                    lowlink[curnode]=lowlink[newnode];
+                }
+            }
+            else
+            {
+                // Already visited newnode
+                if(in_tstack.in(newnode) && dfsnum[newnode]<lowlink[curnode])
+                {
+                    lowlink[curnode]=dfsnum[newnode];  // Why dfsnum not lowlink?
+                }
+            }
+        }
+        else
+        {
+            // curnode is a value
+            // This is the only case where watches are set.
+            //cout << "Visiting node val: "<< curnode+dom_min-numvars <<endl;
+            
+            D_ASSERT(curnode>=numvars && curnode<(numvars+numvals));
+            #ifndef NO_DEBUG
+            bool found=false;
+            for(int i=0; i<var_indices.size(); i++)
+            {
+                if(var_array[var_indices[i]].inDomain(curnode+dom_min-numvars))
+                {
+                    found=true;
+                }
+            }
+            // D_ASSERT(found);  // it is safe to take out this test. But how did we get to this value?
+            #endif
+            
+            int lowlinkvar=-1;
+            for(int i=0; i<var_indices.size(); i++)
+            {
+                int newnode=var_indices[i];
+                if(varvalmatching[newnode]!=curnode-numvars+dom_min)   // if the value is not in the matching.
+                {
+                    if(var_array[newnode].inDomain(curnode+dom_min-numvars))
+                    {
+                        //newnode=varvalmatching[newnode]-dom_min+numvars;  // Changed here for merge nodes
+                        if(!visited.in(newnode))
+                        {
+                            
+                            visit(newnode);
+                            if(lowlink[newnode]<lowlink[curnode])
+                            {
+                                lowlink[curnode]=lowlink[newnode];
+                                lowlinkvar=-1;   // Would be placing a watch where there already is one.
+                            }
+                        }
+                        else
+                        {
+                            // Already visited newnode
+                            if(in_tstack.in(newnode) && dfsnum[newnode]<lowlink[curnode])
+                            {
+                                lowlink[curnode]=dfsnum[newnode];
+                                lowlinkvar=newnode;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            
+            
+            // Why the find? Can we not use some DS which is already lying around?
+            // And why does it include the whole matching in the find??
+            if(include_sink 
+                && usage[curnode-numvars]>lower[curnode-numvars])  // adaptation for GCC instead of the following comment.
+            //valinlocalmatching.in(curnode-numvars))
+            //    find(varvalmatching.begin(), varvalmatching.end(), curnode+dom_min-numvars)!=varvalmatching.end())
+            {
+                int newnode=numvars+numvals;
+                if(!visited.in(newnode))
+                {
+                    visit(newnode);
+                    if(lowlink[newnode]<lowlink[curnode])
+                    {
+                        lowlink[curnode]=lowlink[newnode];
+                        lowlinkvar=-1;
+                    }
+                }
+                else
+                {
+                    // Already visited newnode
+                    if(in_tstack.in(newnode) && dfsnum[newnode]<lowlink[curnode])
+                    {
+                        lowlink[curnode]=dfsnum[newnode];
+                        lowlinkvar=-1;
+                    }
+                }
+            }
+            
+        }
+        
+        //cout << "On way back up, curnode:" << curnode<< ", lowlink:"<<lowlink[curnode]<< ", dfsnum:"<<dfsnum[curnode]<<endl;
+        if(lowlink[curnode]==dfsnum[curnode])
+        {
+            // Did the SCC split?
+            // Perhaps we traversed all vars but didn't unroll the recursion right to the top.
+            // Then lowlink[curnode]!=1. Or perhaps we didn't traverse all the variables.
+            // I think these two cases cover everything.
+            if(lowlink[curnode]!=1 || varcount<var_indices.size())
+            {
+                scc_split=true;  // The SCC has split and there is some work to do later.
+            }
+            
+            // Doing something with the components should not be necessary unless the scc has split.
+            // The first SCC found is deep in the tree, so the flag will be set to its final value
+            // the first time we are here.
+            // so it is OK to assume that scc_split has been
+            // set correctly before we do the following.
+            if(scc_split)
+            {
+                // For each variable, write it to the scc array.
+                // If its the last one, flip the bit.
+                
+                varinlocalmatching.clear();  // Borrow this datastructure for a minute.
+                
+                //vector<int> tempset;  // pretend this is SCCs for the time being.
+                //tempset.reserve(numvars);
+                D_DATA(cout <<"Writing new SCC:"<<endl );
+                bool containsvars=false;
+                for(vector<int>::iterator tstackit=(--tstack.end());  ; --tstackit)
+                {
+                    int copynode=(*tstackit);
+                    //cout << "SCC element: "<< copynode<<endl;
+                    if(copynode<numvars)
+                    {
+                        containsvars=true;
+                        //SCCs[sccindex]=copynode;
+                        //varToSCCIndex[copynode]=sccindex;
+                        sccindex++;
+                        //tempset.push_back(copynode);  // need to write into sccs instead.
+                        varinlocalmatching.insert(copynode);
+                        D_DATA(cout << "Stored SCC element "<< copynode<<endl);
+                    }
+                    
+                    if(copynode==curnode)
+                    {
+                        // Beware it might be an SCC containing just one value.
+                        
+                        if(containsvars)
+                        {
+                            D_DATA(cout << "Inserting split point." <<endl);
+                            //SCCSplit.remove(sccindex-1);
+                            //D_DATA(((char*)SCCSplit2.get_ptr())[sccindex-1]=0);
+                        }
+                        // The one written last was the last one in the SCC.
+                        break;
+                    }
+                    
+                    // Should be no split points in the middle of writing an SCC.
+                    //D_ASSERT(copynode==curnode || copynode>=numvars || SCCSplit.isMember(sccindex-1));
+                }
+                // Just print more stuff here.
+                
+                
+                // For each value, iterate through the current
+                // SCC and remove it from any other variable other
+                // than the one in this SCC.
+                //cout << "Starting loop"<<endl;
+                //if(containsvars) // why is this OK? because of bug above, in case where numnode is a variable.
+                {
+                    while(true)
+                    {
+                        int copynode=(*(--tstack.end()));
+                        
+                        tstack.pop_back();
+                        in_tstack.remove(copynode);
+                        
+                        if(copynode>=numvars && copynode!=(numvars+numvals))
+                        {
+                            // It's a value. Iterate through old SCC and remove it from
+                            // any variables not in tempset.
+                            //cout << "Trashing value "<< copynode+dom_min-numvars << endl;
+                            for(int i=0; i<var_indices.size(); i++)
+                            {
+                                int curvar=var_indices[i];
+                                if(!varinlocalmatching.in(curvar))
+                                {
+                                    // var not in tempset so might have to do some test against matching.
+                                    // Why doing this test? something wrong with the assigned variable optimization?
+                                    if(varvalmatching[curvar]!=copynode+dom_min-numvars)
+                                    {
+                                        D_DATA(cout << "Removing var: "<< curvar << " val:" << copynode+dom_min-numvars <<endl);
+                    
+                                        var_array[curvar].removeFromDomain(copynode+dom_min-numvars);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if(copynode==curnode)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 };
