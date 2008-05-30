@@ -1,0 +1,23 @@
+Instructions to build this source to replicate the experiments in CPPOD-?????.
+
+set MIXEDTRIGGERS=1 in the shell.
+
+
+In the file minion/constraints/alldiff_common.h set up the defines to give the
+required version of the constraint.
+
+REVERSELIST is always defined.
+BTMATCHING, SPAREVALUESOPT are always not defined.
+
+From the variants in the paper:
+PriorityQ = SPECIALQUEUE
+IncMatch = INCREMENTALMATCH
+BFS = BFSMATCHING
+SCC = do not define NOSCC
+AssignOpt = ASSIGNOPT
+DynamicTrigger = define USEWATCHES and use the constraint alldiffgacslow in Minion input.
+DynamicTriggerInternal = define USEWATCHES and use watchedalldiff
+DomainCount = CHECKDOMSIZE
+
+use 'make minion' to build it. Should create the file bin/minion-mixedtriggers
+
