@@ -475,6 +475,7 @@ public:
     unsigned var;
     DomainInt val;
     varval(unsigned _var, DomainInt _val) : var(_var), val(_val) {}
+    varval() : var(0), val(0) {}
     bool operator==(const varval& b) const
     { return var == b.var && val == b.val; }
     bool operator<(const varval& b) const
@@ -489,53 +490,107 @@ public:
   };
   
   map<varval, varvalData> varvalInfo; //mapping from varval to data
-  vector<varval> occurencesHeap;      //heap ordered by varval's data's occurences count
+  vector<varval> occurencesHeap;      //heap ordered by varval's data's
+				      //occurences count, allowing ties
 
-#define parent(i) (i / 2) //macros to make it easier to do heap manipulation
+#define parent(i) ((i - 1) / 2) //macros to make it easier to do heap manipulation
 #define left(i) (2 * i + 1)
 #define right(i) (2 * i + 2)
 
+  void printHeap(size_t loc)
+    {
+      for(int i = 0; i < occurencesHeap.size(); i++)
+	cout << "[" << occurencesHeap[i].var << "." << occurencesHeap[i].val << "= " << varvalInfo.find(occurencesHeap[i])->second.occurences << "]";
+      cout << endl;
+    }
+
+  bool checkHeap(size_t loc, size_t size)
+    {
+      if(loc >= size) return true;
+      int loc_occ = varvalInfo.find(occurencesHeap[loc])->second.occurences;
+      D_ASSERT(loc_occ >= 0);
+      bool left_present = left(loc) < size;
+      bool right_present = right(loc) < size;
+      if(!left_present)
+	return true;
+      else {
+	unsigned left_occ = varvalInfo.find(occurencesHeap[left(loc)])->second.occurences;
+	if(!right_present)
+	  return loc_occ >= left_occ && checkHeap(left(loc));
+	else {
+	  unsigned right_occ = varvalInfo.find(occurencesHeap[right(loc)])->second.occurences;
+	  return loc_occ >= left_occ && loc_occ >= right_occ && checkHeap(left(loc)) && checkHeap(right(loc));
+	}
+      }
+    }
+
+  bool checkHeap() { return checkHeap(0, occurencesHeap.size()); }
+
+  bool checkHeap(size_t size) { return checkHeap(0, size); }
+  
   void repairHeapInc(size_t loc) //entry may be too low in heap, correct it and update varvalInfo
     {
       varval loc_varval = occurencesHeap[loc];
-      unsigned loc_occurences = varvalInfo.find(loc_varval)->second.occurences;
-      while(true)
-	if(loc != 0 //no parent for root element
-	   && loc_occurences > varvalInfo.find(occurencesHeap[parent(loc)])->second.occurences) {
-	  occurencesHeap[loc] = occurencesHeap[parent(loc)];
-	  loc = parent(loc);
-	} else
-	  break; //right position already
+      varvalData& loc_vvd = varvalInfo.find(loc_varval)->second;
+      while(true) {
+	if(loc == 0) 
+	  break;
+	else {
+	  varvalData& parent_vvd = varvalInfo.find(occurencesHeap[parent(loc)])->second;
+	  if(loc_vvd.occurences > parent_vvd.occurences) {
+	    occurencesHeap[loc] = occurencesHeap[parent(loc)];
+	    parent_vvd.position = loc;
+	    loc = parent(loc);
+	  } else
+	    break; //right position already
+	}
+      }
       occurencesHeap[loc] = loc_varval; //put varval in final heap location
-      varvalInfo.find(loc_varval)->second.position = loc;
+      loc_vvd.position = loc;
     }
 
   void repairHeapDec(size_t loc) //entry may be too high in heap, repair
     {
       varval loc_varval = occurencesHeap[loc];
-      int loc_occurences = varvalInfo.find(loc_varval)->second.occurences;
+      varvalData& loc_vvd = varvalInfo.find(loc_varval)->second;
+      unsigned loc_occurences = loc_vvd.occurences;
       while(true) {
-	int left_occ = 
-	  left(loc) > occurencesHeap.size() - 1 
-	  ? -1 //not present, so don't be tempted to move it!
-	  : varvalInfo.find(occurencesHeap[left(loc)])->second.occurences;
-	int right_occ = 
-	  right(loc) > occurencesHeap.size() - 1
-	  ? -1
-	  : varvalInfo.find(occurencesHeap[right(loc)])->second.occurences;
-	if(loc_occurences < left_occ || loc_occurences < right_occ)
+	unsigned left = left(loc);  unsigned right = right(loc);
+	varval left_vv;	            varval right_vv;
+	varvalData* left_vvd;       varvalData* right_vvd;
+	int left_occ;               int right_occ;
+	if(left >= occurencesHeap.size())
+	  left_occ = -1;
+	else {
+	  left_vv = occurencesHeap[left];
+	  left_vvd = &varvalInfo.find(left_vv)->second;
+	  left_occ = left_vvd->occurences;
+	  D_ASSERT(left_occ >= 0);
+	}
+	if(right >= occurencesHeap.size())
+	  right_occ = -1;
+	else {
+	  right_vv = occurencesHeap[right];
+	  right_vvd = &varvalInfo.find(right_vv)->second;
+	  right_occ = right_vvd->occurences;
+	  D_ASSERT(right_occ >= 0);
+	}
+	if(left_occ != -1 && 
+	   (loc_occurences < left_occ || loc_occurences < right_occ))
 	  if(left_occ > right_occ) {
-	    occurencesHeap[loc] = occurencesHeap[left(loc)];
-	    loc = left(loc);
+	    occurencesHeap[loc] = left_vv;
+	    left_vvd->position = loc;
+	    loc = left;
 	  } else {
-	    occurencesHeap[loc] = occurencesHeap[right(loc)];
-	    loc = right(loc);
-	  }
+	    occurencesHeap[loc] = right_vv;
+	    right_vvd->position = loc;
+	    loc = right;
+ 	  }
 	else 
 	  break; //right position already
       }
       occurencesHeap[loc] = loc_varval;
-      varvalInfo.find(loc_varval)->second.position = loc;
+      loc_vvd.position = loc;
     }
 
   void build_heap() //make a heap of varvals, ordered by occurences
@@ -549,9 +604,13 @@ public:
 	curr++;
       }
       //next heapify it in linear time
+      printHeap(0);
       const size_t oh_s = occurencesHeap.size();
-      for(size_t i = 1; i < oh_s; i++)
+      for(size_t i = 1; i < oh_s; i++) {
 	repairHeapInc(i);
+	D_ASSERT(checkHeap(i + 1));
+      }
+      D_ASSERT(checkHeap());
     }
   
   template<typename VarArray>
@@ -569,11 +628,14 @@ public:
 	const size_t neighbours_s = neighbours.size();
 	for(size_t i = 0; i < neighbours_s; i++) { //reduce occurence count of all neighbours
 	  varvalData& nd = varvalInfo.find(neighbours[i])->second;
+	  D_ASSERT(nd.occurences != 0);
 	  nd.occurences--;
 	  repairHeapDec(nd.position);
+	  D_ASSERT(checkHeap());
 	}
 	vvd.occurences = 0; //now commonest is covered
 	repairHeapDec(0); //repair the heap
+	D_ASSERT(checkHeap());
       }
       return l;
     }
@@ -595,7 +657,7 @@ public:
 							       varvalData()));
 	  //now update it
 	  varvalData& pruning_d = varvalInfo.find(prunings[i])->second;
-	  pruning_d.occurences++;
+	  pruning_d.occurences += 1;
 	  pruning_d.neighbours.insert(pruning_d.neighbours.end(), prunings.begin(), prunings.end());
 	}
       } else {

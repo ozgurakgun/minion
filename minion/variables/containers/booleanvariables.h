@@ -396,7 +396,6 @@ struct BooleanContainer
 
   void setDepth(const BoolVarRef_internal& b, DomainInt v, depth d)
   { 
-    cout << "depth for v" << b.var_num << " val " << v << " is " << d << endl;
     depths[b.var_num][v] = d; 
   }
 
@@ -405,7 +404,6 @@ struct BooleanContainer
 
   void setLabel(const BoolVarRef_internal& b, DomainInt v, label l)
   { 
-    cout << "label for v" << b.var_num << " val " << v << " is " << l << endl;
     labels[b.var_num][v] = l; 
     setDepth(b, v, depth(getMemory(stateObj).backTrack().current_depth(),
 			 getMemory(stateObj).backTrack().get_inc_seq()));
