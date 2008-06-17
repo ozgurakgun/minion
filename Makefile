@@ -20,12 +20,12 @@ ifdef DEBUG
    DEBUG_FLAGS = -D_GLIBCXX_DEBUG -DNO_PRINT -g -DMORE_SEARCH_INFO
  endif
 else
-  FLAGS := $(FLAGS) -O2 -DNO_DEBUG
+  FLAGS := $(FLAGS) -O3 -DNO_DEBUG
 endif
 
 ifdef PROFILE
   NAMEBASE := $(NAMEBASE)-profile
-  FLAGS := $(FLAGS) -g
+  FLAGS := $(FLAGS) -g -fno-inline -fno-inline-functions
 endif
 
 ifdef INFO
@@ -76,7 +76,7 @@ CPU=
 
 
 
-FULLFLAGS= $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
+FULLFLAGS=-Wextra -Wno-sign-compare $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
 
 OBJFILES=$(patsubst minion/%.cpp,$(OBJDIR)/%.o,$(SRC))
 
