@@ -28,7 +28,7 @@
 
 
 template<typename VarArray>
-struct BoolSATConstraintDynamic : public DynamicConstraint
+struct BoolSATConstraintDynamic : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "BoolSATDynamic"; }
@@ -40,19 +40,18 @@ struct BoolSATConstraintDynamic : public DynamicConstraint
   int last;
   
   BoolSATConstraintDynamic(StateObj* _stateObj, const VarArray& _var_array) :
-	DynamicConstraint(_stateObj), var_array(_var_array)
+	AbstractConstraint(_stateObj), var_array(_var_array)
   { 
 #ifndef DYNAMICTRIGGERS
     cerr << "This almost certainly isn't going to work... sorry" << endl;
 #endif
+    last = 0;
   }
   
   int dynamic_trigger_count()
   {
-	last = 0;
-	
-	D_INFO(2,DI_DYSUMCON,"Setting up Dynamic Trigger Constraint for BOOLSATConstraintDynamic");
-	return 2;
+	  D_INFO(2,DI_DYSUMCON,"Setting up Dynamic Trigger Constraint for BOOLSATConstraintDynamic");
+ 	  return 2;
   }
     
   virtual void full_propagate()
@@ -173,9 +172,21 @@ struct BoolSATConstraintDynamic : public DynamicConstraint
 	  vars.push_back(AnyVarRef(var_array[i]));
 	return vars;  
   }
+  
+  virtual void get_satisfying_assignment(box<pair<int,int> >& assignment)
+  {
+    for(int i = 0; i < var_array.size(); ++i)
+    {
+      if(var_array[i].inDomain(1))
+      {
+        assignment.push_back(make_pair(i, 1));
+        return;
+      }
+    }
+  }
 };
 
 template<typename VarArray>
-DynamicConstraint*
+AbstractConstraint*
 BoolSATConDynamic(StateObj* stateObj, const VarArray& _var_array)
 { return new BoolSATConstraintDynamic<VarArray>(stateObj, _var_array); }

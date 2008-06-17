@@ -65,7 +65,7 @@ help input tuplelist
 */
 
 template<typename VarArray>
-struct GACTableConstraint : public DynamicConstraint
+struct GACTableConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "TableDynamic"; }
@@ -145,8 +145,7 @@ struct GACTableConstraint : public DynamicConstraint
   {
     if((int)_vars.size() != lists->tuples->tuple_size())
     {
-        cerr << "In table constraint, number of variables is not equal to length of tuples." <<endl; 
-        exit(1);
+      FAIL_EXIT("In table constraint, number of variables is not equal to length of tuples.");
     }
 	_current_support.request_bytes(lists->tuples->literal_num * sizeof(int));
   }
@@ -315,7 +314,7 @@ struct GACTableConstraint : public DynamicConstraint
 
 
 template<typename VarArray>
-DynamicConstraint*
+AbstractConstraint*
 GACTableCon(const VarArray& vars, TupleList* tuples)
 { return new GACTableConstraint<VarArray>(vars, tuples); }
 

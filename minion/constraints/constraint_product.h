@@ -51,7 +51,7 @@ This constraint is not reifiable.
 
 /// var1 * var2 = var3
 template<typename VarRef1, typename VarRef2, typename VarRef3>
-struct ProductConstraint : public Constraint
+struct ProductConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "Product"; }
@@ -60,17 +60,14 @@ struct ProductConstraint : public Constraint
   VarRef2 var2;
   VarRef3 var3;
   ProductConstraint(StateObj* _stateObj, VarRef1 _var1, VarRef2 _var2, VarRef3 _var3) :
-	Constraint(_stateObj), var1(_var1), var2(_var2), var3(_var3)
+	AbstractConstraint(_stateObj), var1(_var1), var2(_var2), var3(_var3)
   {
 	  BigInt max1 = checked_cast<BigInt>(max(abs(var1.getInitialMin()),abs(var1.getInitialMax())));
 	  BigInt max2 = checked_cast<BigInt>(max(abs(var2.getInitialMin()),abs(var2.getInitialMax())));
 	  BigInt bound = DomainInt_Max;
 	  if(max1 * max2 >= bound)
 	  {
-	    cerr << "Fatal error." << endl;
-	    cerr << "Product([a,b],c) must satisfy the condition:" << endl;
-	    cerr << "For all assigments to a and b, |a*b| < 2^31" << endl;
-      exit(1);
+	    FAIL_EXIT("Product([a,b],c) must satisfy the condition: For all assigments to a and b, |a*b| < 2^31");
 	  }
   }
   
@@ -198,7 +195,7 @@ struct ProductConstraint : public Constraint
 
 
 
-inline Constraint*
+inline AbstractConstraint*
 ProductCon(StateObj* stateObj,const light_vector<BoolVarRef>& vars, const light_vector<BoolVarRef>& var2)
 {
   D_ASSERT(vars.size() == 2);
@@ -207,7 +204,7 @@ ProductCon(StateObj* stateObj,const light_vector<BoolVarRef>& vars, const light_
 }
 
 template<typename VarRef1, typename VarRef2>
-Constraint*
+AbstractConstraint*
 ProductCon(StateObj* stateObj,const light_vector<VarRef1>& vars, const light_vector<VarRef2>& var2)
 { 
   D_ASSERT(vars.size() == 2);

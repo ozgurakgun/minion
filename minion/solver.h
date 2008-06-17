@@ -32,8 +32,7 @@
 #include "tuple_container.h"
 // Some advanced definitions, we don't actually need to know anything about these
 // types for SearchState, simply that they exist.
-class Constraint;
-class DynamicConstraint;
+class AbstractConstraint;
 class AnyVarRef;
 
 
@@ -44,9 +43,9 @@ class SearchState
   DomainInt current_optimise_position;
   bool optimise;
   
-  vector<Constraint*> constraints;
+  vector<AbstractConstraint*> constraints;
 #ifdef DYNAMICTRIGGERS
-  vector<DynamicConstraint*> dynamic_constraints;
+  vector<AbstractConstraint*> dynamic_constraints;
 #endif
   
   long long int solutions;
@@ -82,12 +81,8 @@ public:
   bool isOptimisationProblem() { return optimise; }
   void setOptimisationProblem(bool _optimise) { optimise = _optimise; }
   
-  void addConstraint(Constraint* c);
-  vector<Constraint*>& getConstraintList() { return constraints; }
-#ifdef DYNAMICTRIGGERS
-  void addDynamicConstraint(DynamicConstraint* c);
-  vector<DynamicConstraint*>& getDynamicConstraintList() { return dynamic_constraints; }
-#endif
+  void addConstraint(AbstractConstraint* c);
+  vector<AbstractConstraint*>& getConstraintList() { return constraints; }
   
   long long int getSolutionCount() { return solutions; }
   void setSolutionCount(long long int _sol) { solutions = _sol; }
@@ -182,6 +177,9 @@ public:
 
   /// Denotes if only solutions should be printed.
   bool print_only_solution;
+  /// Denotes if we should output in a compatable way to the solver competition.
+  bool cspcomp;
+  
   /// Denotes if the search tree should be printed.
   bool dumptree;
   /// Gives the solutions which should be found. 
@@ -195,7 +193,7 @@ public:
   bool nocheck;
   /// Denotes to nodelimit, 0 if none given.
   unsigned long long nodelimit;
-  /// Dentoes if information about search should be printed to a file.
+  /// Denotes if information about search should be printed to a file.
   bool tableout;
   
   /// Denotes if solutions should be printed to a seperate file.
@@ -204,7 +202,7 @@ public:
   /// Denotes if solutions should be printed.
   /// Initialised to true.
   bool print_solution;
-  
+    
   /// Stores the timelimit, 0 if none given.
   clock_t time_limit;
   
@@ -219,23 +217,37 @@ public:
   string instance_name;
   
 
+  bool redump;
+
   SearchOptions() : 
 #ifdef WDEG
     wdeg_on(false),
 #endif
-     find_generators(false), print_only_solution(false), dumptree(false), sollimit(1), fullpropagate(false), 
+     find_generators(false), print_only_solution(false), cspcomp(false), dumptree(false), sollimit(1), fullpropagate(false), 
 #ifdef NO_DEBUG
     nocheck(true),
 #else
     nocheck(false),
 #endif
-    nodelimit(0), tableout(false), solsoutWrite(false), randomise_valvarorder(false), 
-    print_solution(true), time_limit(0), parser_verbose(false)
+    nodelimit(0), tableout(false), solsoutWrite(false), 
+    print_solution(true), time_limit(0), randomise_valvarorder(false), parser_verbose(false), redump(false)
   {}
   
   /// Denotes all solutions should be found, by setting sollimit to -1.
   void findAllSolutions()
   { sollimit = -1; }
+  
+  void print(string s)
+  {
+    if(!cspcomp)
+     cout << s; 
+  }
+  
+  void printLine(string s)
+  { 
+    if(!cspcomp)
+    cout << s << endl; 
+  }
 };
 
 

@@ -96,7 +96,15 @@ namespace Controller
     
 	if(getOptions(stateObj).print_solution)
 	{
-	  if(!print_matrix.empty())
+	  if(getOptions(stateObj).cspcomp)
+	  {
+      cout << "v ";
+      for(unsigned i = 0; i < print_matrix.size(); ++i)
+        for(unsigned j = 0; j < print_matrix[i].size(); ++j)
+          cout << print_matrix[i][j].getAssignedValue() << " ";
+      cout << endl;
+    }
+	  else if(!print_matrix.empty())
 	  {
 		for(unsigned i = 0; i < print_matrix.size(); ++i)
 		{
@@ -115,19 +123,16 @@ namespace Controller
 	  }
   
 	  // TODO : Make this more easily changable.
-          if (!getOptions(stateObj).print_only_solution) 
-          {
+    if (!getOptions(stateObj).print_only_solution) 
+    {
 	    cout << "Solution Number: " << getState(stateObj).getSolutionCount() << endl;
 	    getState(stateObj).getOldTimer().printTimestepWithoutReset("Time:");
 	    cout << "Nodes: " << getState(stateObj).getNodeCount() << endl << endl;
-          }
+    }
     }
 
   if(!getOptions(stateObj).nocheck)
   {
-    for(unsigned i = 0; i < getState(stateObj).getDynamicConstraintList().size(); ++i)
-      check_constraint(stateObj, getState(stateObj).getDynamicConstraintList()[i]);
-  
     for(unsigned i = 0 ; i < getState(stateObj).getConstraintList().size();i++)
       check_constraint(stateObj, getState(stateObj).getConstraintList()[i]);
   }
@@ -147,9 +152,14 @@ namespace Controller
   	  {
   	    if(getState(stateObj).getOldTimer().checkTimeout(getOptions(stateObj).time_limit))
   	    {
-  		  cout << "Time out." << endl;
-            oldtableout.set("TimeOut", 1);
-  		  return true;
+          if(getOptions(stateObj).cspcomp)
+          {
+            FAIL_EXIT("Time out");
+          }
+          
+          getOptions(stateObj).printLine("Time out.");
+          oldtableout.set("TimeOut", 1);
+  		    return true;
   	    }
   	  }
   	}
@@ -225,7 +235,8 @@ void inline maybe_print_search_action(StateObj* stateObj, const char* action)
   getState(stateObj).setupAlarm();
   install_ctrlc_trigger(stateObj);
 	lock(stateObj);
-	getState(stateObj).getOldTimer().printTimestepWithoutReset("First Node Time: ");
+	if (!getOptions(stateObj).print_only_solution) 
+	  getState(stateObj).getOldTimer().printTimestepWithoutReset("First Node Time: ");
 	/// Failed initially propagating constraints!
 	if(getState(stateObj).isFailed())
 	  return;

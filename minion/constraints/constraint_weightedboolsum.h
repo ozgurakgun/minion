@@ -57,7 +57,7 @@ help constraints sumgeq
 #include "constraint_fullsum.h"
 
 template<typename VarArray, typename WeightArray, typename VarSum>
-struct LeqWeightBoolSumConstraint : public Constraint
+struct LeqWeightBoolSumConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "LeqWeightBoolSum"; }
@@ -81,7 +81,7 @@ struct LeqWeightBoolSumConstraint : public Constraint
   };
   
   LeqWeightBoolSumConstraint(StateObj* _stateObj,const VarArray& _var_array, const WeightArray& _weight_array, const VarSum& _var_sum) :
-    Constraint(_stateObj), var_sum(_var_sum), var_array(_var_array.size()), weight_array(_weight_array.size()),
+    AbstractConstraint(_stateObj), var_sum(_var_sum), var_array(_var_array.size()), weight_array(_weight_array.size()),
       var_array_min_sum(stateObj), min_vals_weight_pos(stateObj)
   { 
       D_ASSERT(_var_array.size() == _weight_array.size());
@@ -89,7 +89,7 @@ struct LeqWeightBoolSumConstraint : public Constraint
       vector<pair_val> sort_array;
       for(int i = 0; i < array_size; ++i)
 	sort_array.push_back(make_pair(&_weight_array[i], &_var_array[i]));
-      std::sort(sort_array.begin(), sort_array.end(), compare_object());
+      std::stable_sort(sort_array.begin(), sort_array.end(), compare_object());
       for(int i = 0; i < array_size; ++i)
       {
 	var_array[i] = *(sort_array[i].second);
@@ -179,13 +179,13 @@ struct LeqWeightBoolSumConstraint : public Constraint
 };
 
 template<typename VarArray, typename WeightArray, typename VarSum>
-Constraint*
+AbstractConstraint*
 LeqWeightBoolSumCon(StateObj* stateObj,const VarArray& _var_array, const WeightArray& w_array, const VarSum& _var_sum)
 { return new LeqWeightBoolSumConstraint<VarArray, WeightArray, VarSum>(stateObj, _var_array, w_array, _var_sum); }
 
 
 template<typename VarArray, typename WeightArray, typename VarSum>
-Constraint*
+AbstractConstraint*
 GeqWeightBoolSumCon(StateObj* stateObj,const VarArray& _var_array, const WeightArray& w_array, const VarSum& _var_sum)
 { 
   WeightArray rev_w_array(w_array.size());
@@ -197,7 +197,7 @@ GeqWeightBoolSumCon(StateObj* stateObj,const VarArray& _var_array, const WeightA
 }
  
 template<typename T1, typename T2>
-Constraint*
+AbstractConstraint*
 LeqWeightedSum(StateObj* stateObj, light_vector<T1> vec, const light_vector<T2>& t2, const ConstraintBlob& b)
 {
   vector<int> scale = b.constants[0];
@@ -205,8 +205,7 @@ LeqWeightedSum(StateObj* stateObj, light_vector<T1> vec, const light_vector<T2>&
   // and correctness
   if(scale.size() != vec.size())
   {
-      cerr << "In a weighted sum constraint, the vector of weights has different length to the vector of variables." << endl;
-      exit(1);
+    FAIL_EXIT("In a weighted sum constraint, the vector of weights must have the same length to the vector of variables.");
   }
   for(unsigned i = 0; i < scale.size(); ++i)
   {
@@ -246,7 +245,7 @@ LeqWeightedSum(StateObj* stateObj, light_vector<T1> vec, const light_vector<T2>&
 
 // Don't pass in the vectors by reference, as we might need to copy them.
 template<typename T1, typename T2>
-Constraint*
+AbstractConstraint*
 GeqWeightedSum(StateObj* stateObj, light_vector<T1> vec, const light_vector<T2>& t2, const ConstraintBlob& b)
 {
   vector<int> scale = b.constants[0];
@@ -254,8 +253,7 @@ GeqWeightedSum(StateObj* stateObj, light_vector<T1> vec, const light_vector<T2>&
   // and correctness
   if(scale.size() != vec.size())
   {
-      cerr << "In a weighted sum constraint, the vector of weights has different length to the vector of variables." << endl;
-      exit(1);
+      FAIL_EXIT("In a weighted sum constraint, the vector of weights must have the same length as the vector of variables.");
   }
   for(unsigned i = 0; i < scale.size(); ++i)
   {
@@ -296,12 +294,12 @@ GeqWeightedSum(StateObj* stateObj, light_vector<T1> vec, const light_vector<T2>&
 // XXX : This doesn't work at present. Just use general case.
 /*
 template<typename T1>
-Constraint*
+AbstractConstraint*
 LeqWeightedSum(const vector<int>& scale, const vector<BoolVarRef>& vec, const vector<T1>& t2)
 { return LeqWeightBoolSumCon(vec, scale, t2[0]); }
 
 template<typename T1>
-Constraint*
+AbstractConstraint*
 GeqWeightedSum(const vector<int>& scale, const vector<BoolVarRef>& vec, const vector<T1>& t2)
 { return GeqWeightBoolSumCon(vec, scale, t2[0]); }
 */

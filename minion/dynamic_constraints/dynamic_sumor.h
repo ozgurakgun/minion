@@ -45,7 +45,7 @@ This constraint is not reifiable.
   *  \ingroup Constraints
 */
 template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated>
-  struct VecCountDynamic : public DynamicConstraint
+  struct VecCountDynamic : public AbstractConstraint
 {
   virtual string constraint_name()
     { return "VecCountDynamic"; }
@@ -63,10 +63,10 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
   int index_to_not_propagate; 
 
   VecCountDynamic(StateObj* _stateObj, const VarArray1& _array1, const VarArray2& _array2, int _num_of_vals) :
-  DynamicConstraint(_stateObj), var_array1(_array1), var_array2(_array2), num_to_watch(_num_of_vals + 1), 
+  AbstractConstraint(_stateObj), var_array1(_array1), var_array2(_array2), num_to_watch(_num_of_vals + 1), 
     propagate_mode(_stateObj, false)
     {
-       if(num_to_watch <= 0)
+       if(num_to_watch <= 1)
          num_to_watch = 0;
        D_ASSERT(var_array1.size() == var_array2.size()); 
     }
@@ -256,17 +256,47 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
       vars.push_back(AnyVarRef(var_array2[i]));
     return vars;  
   }
+  
+  virtual void get_satisfying_assignment(box<pair<int,int> >& assignment)
+  {
+    if(num_to_watch <= 1)
+    {
+      // This constraint is always true. But we can't return an empty allowed assignment unfortunatly.
+      assignment.push_back(make_pair(0, var_array1[0].getMin()));
+      return;
+    }
+    
+    pair<int, int> assign;
+    int found_satisfying = 0;
+    for(int i = 0; i < var_array1.size(); ++i)
+    {
+      if(Operator::get_satisfying_assignment(var_array1[i], var_array2[i], assign))
+      {
+        found_satisfying++;
+        D_ASSERT(var_array1[i].inDomain(assign.first));
+        D_ASSERT(var_array2[i].inDomain(assign.second));
+        D_ASSERT(Operator::check_assignment(assign.first, assign.second));
+        assignment.push_back(make_pair(i, assign.first));
+        assignment.push_back(make_pair(i + var_array1.size(), assign.second));
+        if(found_satisfying == num_to_watch - 1)
+          return;
+      }
+    }
+    // If we didn't get enough, then empty the box again.
+    assignment.clear();
+  }
+  
 };
 
 template<typename VarArray1,  typename VarArray2>
-DynamicConstraint*
+AbstractConstraint*
   VecOrCountConDynamic(StateObj* stateObj,const VarArray1& varray1, const VarArray2& varray2, int i)
   { return new VecCountDynamic<VarArray1,VarArray2>(stateObj, varray1, varray2, i); }
 
 //BUILD_DYNAMIC_CONSTRAINT2(CT_WATCHED_HAMMING, VecOrCountConDynamic)
 
 template<typename T1, typename T2>
-DynamicConstraint*
+AbstractConstraint*
 BuildCT_WATCHED_HAMMING(StateObj* stateObj, const T1& t1, const T2& t2, BOOL reify, const BoolVarRef& reifyVar, ConstraintBlob& b) 
 {
   if(reify)
@@ -277,14 +307,14 @@ BuildCT_WATCHED_HAMMING(StateObj* stateObj, const T1& t1, const T2& t2, BOOL rei
 
 /*
 template<typename VarArray1,  typename VarArray2>
-DynamicConstraint*
+AbstractConstraint*
   VecOrLessConDynamic(StateObj* stateObj,const VarArray1& varray1, const VarArray2& varray2)
   { return new VecNeqDynamic<VarArray1,VarArray2, LessIterated>(stateObj, varray1, varray2); }
 
 BUILD_DYNAMIC_CONSTRAINT2(CT_WATCHED_VEC_OR_LESS, VecOrLessConDynamic)
 
 template<typename VarArray1,  typename VarArray2>
-DynamicConstraint*
+AbstractConstraint*
   VecOrAndConDynamic(StateObj* stateObj,const VarArray1& varray1, const VarArray2& varray2)
   { return new VecNeqDynamic<VarArray1,VarArray2, BothNonZeroIterated>(stateObj, varray1, varray2); }
 

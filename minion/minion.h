@@ -46,9 +46,13 @@
 #define FULL_DOMAIN_TRIGGERS
 #define DYNAMICTRIGGERS
 
-#ifdef WATCHEDLITERALS
-#define DYNAMICTRIGGERS
+#ifndef WATCHEDLITERALS
+#define WATCHEDLITERALS
 #endif
+
+//#ifdef WATCHEDLITERALS
+//#define DYNAMICTRIGGERS
+//#endif
 
 #define VERSION "Minion Version 0.6.0"
 #define REVISION "Subversion (svn) Revision Number $Revision$"
@@ -75,11 +79,7 @@ typedef MoveablePointer MemOffset;
 
 typedef TrailedMonotonicSet MonotonicSet;
 
-#include "constraints/constraint.h"
-
-#ifdef DYNAMICTRIGGERS
-#include "constraints/constraint_dynamic.h"
-#endif 
+#include "constraints/constraint_abstract.h"
 
 #include "queue/standard_queue.h"
 

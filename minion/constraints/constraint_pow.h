@@ -51,7 +51,7 @@ Not reifiable.
 
 /// var1 ^ var2 = var3
 template<typename VarRef1, typename VarRef2, typename VarRef3>
-struct PowConstraint : public Constraint
+struct PowConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "Pow"; }
@@ -61,14 +61,13 @@ struct PowConstraint : public Constraint
   VarRef3 var3;
 
   PowConstraint(StateObj* _stateObj, VarRef1 _var1, VarRef2 _var2, VarRef3 _var3) :
-	Constraint(_stateObj), var1(_var1), var2(_var2), var3(_var3)
+	AbstractConstraint(_stateObj), var1(_var1), var2(_var2), var3(_var3)
   {
   
 	  if(var1.getInitialMin() < 0 || var2.getInitialMin() < 0 ||
 		 var3.getInitialMin() < 0)
 	  { 
-		cerr << "The 'pow' constraint only supports non-negative numbers at present.";
-		exit(1);
+		  FAIL_EXIT("The 'pow' constraint only supports non-negative numbers at present.");
 	  }
   }
   
@@ -201,7 +200,7 @@ struct PowConstraint : public Constraint
 };
 
 template<typename V1, typename V2>
-inline Constraint*
+inline AbstractConstraint*
 PowCon(StateObj* stateObj, const V1& vars, const V2& var2)
 {
   D_ASSERT(vars.size() == 2);

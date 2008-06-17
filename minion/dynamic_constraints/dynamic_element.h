@@ -31,6 +31,19 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+/** @help constraints;watchelement_one Description
+This constraint is identical to watchelement, except the vector
+is indexed from 1 rather than from 0.
+*/
+
+/** @help constraints;watchelement_one References
+See entry
+
+   help constraints watchelement
+
+for details of watchelement which watchelement_one is based on.
+*/
+
 /** @help constraints;watchelement Description
 The constraint 
 
@@ -69,7 +82,7 @@ consistency.
 
 
 template<typename VarArray, typename Index, typename Result>
-struct ElementConstraintDynamic : public DynamicConstraint
+struct ElementConstraintDynamic : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "ElementDynamic"; }
@@ -88,7 +101,7 @@ struct ElementConstraintDynamic : public DynamicConstraint
   vector<DomainInt> current_support;
   
   ElementConstraintDynamic(StateObj* _stateObj, const VarArray& _var_array, const Index& _index, const Result& _result) :
-	DynamicConstraint(_stateObj), var_array(_var_array), indexvar(_index), resultvar(_result)
+	AbstractConstraint(_stateObj), var_array(_var_array), indexvar(_index), resultvar(_result)
   { 
 	  initial_result_dom_min = resultvar.getInitialMin();
 	  initial_result_dom_max = resultvar.getInitialMax();
@@ -229,9 +242,10 @@ struct ElementConstraintDynamic : public DynamicConstraint
   {
 	D_INFO(2, DI_DYELEMENT, "Setup Triggers");
     for(int i=0; i<var_array.size(); i++) 
-        if(var_array[i].isBound()) 
+        if(var_array[i].isBound() && !var_array[i].isAssigned()) // isassigned excludes constants.
             cerr << "Warning: watchelement is not designed to be used on bound variables and may cause crashes." << endl;
-    if(indexvar.isBound() || resultvar.isBound())
+    if((indexvar.isBound() && !indexvar.isAssigned())
+        || (resultvar.isBound() && !resultvar.isAssigned()))
         cerr << "Warning: watchelement is not designed to be used on bound variables and may cause crashes." << endl;
     
 	int array_size = var_array.size(); 
@@ -352,11 +366,38 @@ struct ElementConstraintDynamic : public DynamicConstraint
 	return vars;
   }
   
+  virtual void get_satisfying_assignment(box<pair<int,int> >& assignment)
+  {  
+    int array_start = max(0, indexvar.getMin());
+    int array_end   = min((int)var_array.size() - 1, raw(indexvar.getMax()));
+
+    for(int i = array_start; i <= array_end; ++i)
+    {
+      if(indexvar.inDomain(i))
+      {
+        int dom_start = max(raw(resultvar.getMin()), raw(var_array[i].getMin()));
+        int dom_end   = min(raw(resultvar.getMax()), raw(var_array[i].getMax()));
+        for(int domval = dom_start; domval <= dom_end; ++domval)
+        {
+          if(var_array[i].inDomain(domval) && resultvar.inDomain(domval))
+          {
+            // indexvar = i
+            assignment.push_back(make_pair(var_array.size(), i));
+            // resultvar = domval
+            assignment.push_back(make_pair(var_array.size() + 1, domval));
+            // vararray[i] = domval
+            assignment.push_back(make_pair(i, domval));
+            return;
+          }
+        }
+      }
+    }
+  }
 };
 
 
 template<typename Var1, typename Var2>
-DynamicConstraint*
+AbstractConstraint*
 DynamicElementCon(StateObj* stateObj, const Var1& vararray, const Var2& v1, const Var1& v2)
 { 
   return new ElementConstraintDynamic<Var1, typename Var2::value_type, typename Var1::value_type>
@@ -364,14 +405,26 @@ DynamicElementCon(StateObj* stateObj, const Var1& vararray, const Var2& v1, cons
 }
 
 template<typename Var1, typename Var2, typename Var3>
-DynamicConstraint*
+AbstractConstraint*
 DynamicElementCon(StateObj* stateObj, Var1 vararray, const Var2& v1, const Var3& v2)
 { 
   return new ElementConstraintDynamic<Var1, typename Var2::value_type, AnyVarRef>
               (stateObj, vararray, v1[0], AnyVarRef(v2[0]));  
 }
 
+template<typename Var1, typename Var2, typename Var3>
+AbstractConstraint*
+DynamicElementOneCon(StateObj* stateObj, const Var1& vararray, const Var2& v1, const Var3& v2)
+{ 
+  typedef typename ShiftType<typename Var2::value_type, compiletime_val<-1> >::type ShiftVal;
+  vector<ShiftVal> replace_v1;
+  replace_v1.push_back(ShiftVarRef(v1[0], compiletime_val<-1>()));
+  return DynamicElementCon(stateObj, vararray, replace_v1, v2);
+}
+
+
 BUILD_DYNAMIC_CONSTRAINT3(CT_WATCHED_ELEMENT, DynamicElementCon);
 
+BUILD_DYNAMIC_CONSTRAINT3(CT_WATCHED_ELEMENT_ONE, DynamicElementOneCon);
 
 

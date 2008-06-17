@@ -57,7 +57,7 @@ struct TupleComparator
 	  if(tuple1[tupleIndex] != tuple2[tupleIndex])
 		return tuple1[tupleIndex] < tuple2[tupleIndex];
 	}
-	return true;
+	return false;
   }
 };
 
@@ -102,7 +102,7 @@ struct TupleTrie
 	  for(int i = 0; i < tuplelist->size(); ++i)
 		tuples_vector[i] = tuplelist->get_vector(i);
 	  
-	  std::sort(tuples_vector.begin(), tuples_vector.end(), TupleComparator(sigIndex, arity));
+	  std::stable_sort(tuples_vector.begin(), tuples_vector.end(), TupleComparator(sigIndex, arity));
       if(tuplelist->size()>0)
       {
           build_trie(0, tuplelist->size());

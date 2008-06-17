@@ -532,6 +532,11 @@ class testalldiffgacslow(testalldiff):
     def runtest(self, options=dict()):
         return runtestgeneral("alldiffgacslow", False, options, [5], ["quitesmallnum"], [5], self, not options['reify'] and not options['reifyimply'])
 
+class testgacalldiff(testalldiff):
+    def runtest(self, options=dict()):
+        return runtestgeneral("gacalldiff", False, options, [5], ["quitesmallnum"], [5], self, not options['reify'] and not options['reifyimply'])
+
+
 class testwatchedalldiff(testalldiff):
     def runtest(self, options=dict()):
         return runtestgeneral("watchedalldiff", False, options, [5], ["quitesmallnum"], [5], self, not options['reify'] and not options['reifyimply'])
@@ -558,6 +563,33 @@ class testeq:
     def runtest(self, options=dict()):
         return runtestgeneral("eq", True, options, [1,1], ["num", "num"], [1,1], self, False)
 
+class testwatchneq:
+    # printtable essentially sets up pairsame constraint. negation of alldiff.
+    def printtable(self, domains):
+        cross=[]
+        out=[]
+        crossprod(domains, [], cross)
+        for l in cross:
+            if l[0] != l[1] :
+                out.append(l)
+        return out
+
+    def runtest(self, options=dict()):
+        return runtestgeneral("watchneq", False, options, [1,1], ["num", "num"], [1,1], self, True)
+
+class testwatchless:
+    def printtable(self, domains):
+        cross=[]
+        out=[]
+        crossprod(domains, [], cross)
+        for l in cross:
+            if l[0] < l[1] :
+                out.append(l)
+        return out
+
+    def runtest(self, options=dict()):
+        return runtestgeneral("watchless", True, options, [1,1], ["num", "num"], [1,1], self, True)
+		
 class testineq:
     def printtable(self, domains):
         const=self.constants[0]
@@ -572,7 +604,7 @@ class testineq:
         return out
     
     def runtest(self, options=dict()):
-        return runtestgeneral("ineq", True, options, [2,1], ["num", "const"], [1,1,1], self, not options['reifyimply'])
+        return runtestgeneral("ineq", True, options, [1,1,1], ["num", "num", "const"], [1,1,1], self, True)
 
 class testabs:
     def printtable(self, domains):
@@ -587,7 +619,7 @@ class testabs:
         return out
 
     def runtest(self, options=dict()):
-        return runtestgeneral("abs", True, options, [2], ["num"], [1,1,], self, False)
+        return runtestgeneral("abs", True, options, [1,1], ["num","num"], [1,1], self, False)
 
 class testhamming:
     def printtable(self, domains):
@@ -673,7 +705,7 @@ class testoccurrence:
     
     def runtest(self, options=dict()):
         # note that the constant generated may be completely inappropriate. e.g. some value which is not even in the domains.
-        return runtestgeneral("occurrence", False, options, [6, 1], ["smallnum", "num"], [6, "smallconst", 1], self, False)
+        return runtestgeneral("occurrence", False, options, [6, 1, 1], ["smallnum", "smallconst", "num"], [6, 1, 1], self, False)
 
 class testoccurrenceleq:
     def printtable(self, domains, leq=True, geq=False):
@@ -689,7 +721,7 @@ class testoccurrenceleq:
     
     def runtest(self, options=dict()):
         # note that the constant generated may be completely inappropriate. e.g. some value which is not even in the domains.
-        return runtestgeneral("occurrenceleq", False, options, [6,1,1], ["smallnum", "smallconst", "smallnum"], [6,1,1], self, True)
+        return runtestgeneral("occurrenceleq", False, options, [6,1,1], ["smallnum", "smallconst", "smallconst"], [6,1,1], self, True)
 
 class testoccurrencegeq(testoccurrenceleq):
     def printtable(self, domains):
@@ -697,7 +729,7 @@ class testoccurrencegeq(testoccurrenceleq):
     
     def runtest(self, options=dict()):
         # note that the constant generated may be completely inappropriate. e.g. some value which is not even in the domains.
-        return runtestgeneral("occurrencegeq", False, options, [6,1,1], ["smallnum", "smallconst", "smallnum"], [6,1,1], self, True)
+        return runtestgeneral("occurrencegeq", False, options, [6,1,1], ["smallnum", "smallconst", "smallconst"], [6,1,1], self, False)
 
 class testproduct:
     def printtable(self, domains): 
@@ -710,6 +742,19 @@ class testproduct:
     
     def runtest(self, options=dict()):
         return runtestgeneral("product", True, options, [1,1,1], ["num", "num", "num"], [1,1,1], self, False)
+
+class testdifference:
+    def printtable(self, domains): 
+        out=[]
+        for i in domains[0]:
+            for j in domains[1]:
+                if(abs(i-j) in domains[2]):
+                    out.append([i, j, abs(i-j)])
+        return out
+
+    def runtest(self, options=dict()):
+        return runtestgeneral("difference", True, options, [1,1,1], ["num", "num", "num"], [1,1,1], self, False)
+
 
 class testgacsum:
     def printtable(self, domains):
@@ -766,14 +811,14 @@ class testweightedsumgeq(testsumgeq):
         return testsumgeq.printtable(self, domains, weights=self.constants)
     
     def runtest(self, options=dict()):
-        return runtestgeneral("weightedsumgeq", True, options, [5,5,1], ["const", "smallnum", "num"], [5,5,1], self, True)
+        return runtestgeneral("weightedsumgeq", True, options, [5,5,1], ["const", "smallnum", "num"], [5,5,1], self, False)
         
 class testweightedsumleq(testsumgeq):
     def printtable(self, domains):
         return testsumgeq.printtable(self, domains, less=True, weights=self.constants)
     
     def runtest(self, options=dict()):
-        return runtestgeneral("weightedsumleq", True, options, [5,5,1], ["const", "smallnum", "num"], [5,5,1], self, True)
+        return runtestgeneral("weightedsumleq", True, options, [5,5,1], ["const", "smallnum", "num"], [5,5,1], self, False)
 
 class testminuseq:
     def printtable(self, domains):
@@ -873,6 +918,31 @@ class testpow:
         return out
     def runtest(self, options=dict()):
         return runtestgeneral("pow", True, options, [1,1,1], ["posnum","posnum","posnum"], [1,1,1], self, False)
+    
+class testgcc:
+    def printtable(self, domains):
+        cross=[]
+        x=domains[:len(domains)/2]
+        cap=domains[len(domains)/2:]
+        crossprod(x, [], cross)
+        # assume same number of x vars and cap vars.
+        dom_min=min([min(y) for y in x])
+        out=[]
+        for line in cross:
+            occ=[0 for y in x]
+            for xi in line:
+                occ[xi-dom_min]+=1
+            flag=True
+            for i in range(len(occ)):
+                if occ[i] not in cap[i]:
+                    flag=False
+            if flag:
+                out.append(line+occ)
+        return out
+        
+    def runtest(self, options=dict()):
+        return runtestgeneral("gcc", False, options, [5,5], ["smallnum","num"], [5,5], self, False)
+        
     
 ################################################################################
 # 

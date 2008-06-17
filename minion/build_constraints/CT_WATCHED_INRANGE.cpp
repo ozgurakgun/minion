@@ -7,6 +7,6 @@
    $Id$
 */
 
-#include "../constraints/constraint_alldiff_gac_slow.h"
-BUILD_STATIC_CT(CT_ALLDIFF_GACSLOW, 1)
+#include "../dynamic_constraints/unary/dynamic_inrange.h"
+BUILD_DYNAMIC_CT(CT_WATCHED_INRANGE, 1)
 

@@ -55,7 +55,7 @@ struct BoundVarRef_internal
   static const BOOL isBool = false;
   static const BoundType isBoundConst = Bound_Yes;
   static string name() { return "BoundVar"; }
-  BOOL isBound()
+  BOOL isBound() const
   { return true;}
 
   MoveablePointer var_bound_data;
@@ -84,14 +84,14 @@ struct BoundVarRef_internal
   { }
 
   explicit BoundVarRef_internal(BoundVarContainer<DomType>*, int i, DomType* ptr) : 
-  var_num(i), var_bound_data(ptr)
+  var_bound_data(ptr), var_num(i)
   { }
 #endif
 
   BOOL isAssigned() const
   { return lower_bound() == upper_bound(); }
   
-   BOOL isAssignedValue(DomainInt i)
+   BOOL isAssignedValue(DomainInt i) const
   { 
     return isAssigned() &&
     getAssignedValue() == i;
@@ -206,8 +206,8 @@ typedef BoundVarRef_internal<> BoundVarRef;
 template<typename BoundType = DomainInt>
 struct BoundVarContainer {
   StateObj* stateObj;
-  BoundVarContainer(StateObj* _stateObj) : stateObj(_stateObj), lock_m(0), 
-                                           trigger_list(stateObj, true), var_count_m(0)
+  BoundVarContainer(StateObj* _stateObj) : stateObj(_stateObj), trigger_list(stateObj, true), 
+                                            var_count_m(0), lock_m(0)
   {}
     
   MoveablePointer bound_data;

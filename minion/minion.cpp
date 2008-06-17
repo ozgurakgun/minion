@@ -24,7 +24,6 @@
 #include "minion.h"
 #include "CSPSpec.h"
 
-using namespace ProbSpec;
 
 #include "BuildConstraint.h"
 //#include "MinionInputReader.h"
@@ -224,13 +223,18 @@ The available orders are:
 
 - sdf-random - sdf, but break ties randomly
 
+- srf - smallest ratio first, chooses unassigned variable with smallest
+  percentage of its initial values remaining, break ties lexicographically
+
+- srf-random - srf, but break ties randomly
+
 - ldf - largest domain first, break ties lexicographically
 
 - ldf-random - ldf, but break ties randomly
 
 - random - random variable ordering
 
-- static - 
+- static - lexicographical ordering
 */
 
 /* @help switches;-varorder Example 
@@ -314,10 +318,9 @@ try {
 
   getState(stateObj).getOldTimer().startClock();
   
-  cout << "# " << VERSION << endl ;
-  cout << "# Svn version: " << SVN_VER << endl; 
-
   if (argc == 1) {
+    getOptions(stateObj).printLine("# " + to_string(VERSION));
+    getOptions(stateObj).printLine("# Svn version: " + to_string(SVN_VER));
     print_default_help(argv);
     return EXIT_SUCCESS;
   }
@@ -339,10 +342,13 @@ try {
 
   parse_command_line(stateObj, args, argc, argv);
   
+  getOptions(stateObj).printLine("# " + to_string(VERSION));
+  getOptions(stateObj).printLine("# Svn version: " + to_string(SVN_VER));
+  
   if (!getOptions(stateObj).print_only_solution) 
   { 
     
-    cout << "# Svn last changed date: " << SVN_DATE << endl;
+    getOptions(stateObj).printLine("# Svn last changed date: " + to_string(SVN_DATE) );
     
     time_t rawtime;
     time(&rawtime);
@@ -359,7 +365,14 @@ try {
   
   instance = readInputFromFile(getOptions(stateObj).instance_name, getOptions(stateObj).parser_verbose);
   
-
+  if(getOptions(stateObj).redump)
+  {
+    ostringstream file;
+    print_instance(file, instance);
+    cout << file.str();
+    exit(0);
+  }
+  
   getState(stateObj).setTupleListContainer(instance.tupleListContainer);
   
   // Copy args into tableout
@@ -368,6 +381,8 @@ try {
     switch (args.preprocess) {
       case PropLevel_None:
         b = "None"; break;
+      case PropLevel_GAC:
+        b = "GAC"; break;
       case PropLevel_SAC:
         b = "SAC"; break;
       case PropLevel_SSAC:
