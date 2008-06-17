@@ -24,6 +24,20 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+/** @help constraints;element_one Description
+The constraint element one is identical to element, except that the
+vector is indexed from 1 rather than from 0.
+*/
+
+/** @help constraints;element_one References
+See
+
+   help constraints element
+
+for details of the element constraint which is almost identical to this
+one.
+*/
+
 /** @help constraints;element Description
 The constraint 
 
@@ -87,7 +101,7 @@ consistency.
 */
 
 template<typename VarArray, typename IndexRef, typename VarRef>
-struct ElementConstraint : public Constraint
+struct ElementConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "Element"; }
@@ -96,7 +110,7 @@ struct ElementConstraint : public Constraint
   IndexRef index_ref;
   VarRef result_var;
   ElementConstraint(StateObj* _stateObj, const VarArray& _var_array, const IndexRef& _index_ref, const VarRef& _result_var) :
-    Constraint(_stateObj), var_array(_var_array), index_ref(_index_ref), result_var(_result_var)
+    AbstractConstraint(_stateObj), var_array(_var_array), index_ref(_index_ref), result_var(_result_var)
   { }
   
   virtual triggerCollection setup_internal()
@@ -112,7 +126,7 @@ struct ElementConstraint : public Constraint
     return t;
   }
   
-  //  virtual Constraint* reverse_constraint()
+  //  virtual AbstractConstraint* reverse_constraint()
   
   
   PROPAGATE_FUNCTION(int prop_val, DomainDelta)
@@ -342,7 +356,7 @@ struct ElementConstraint : public Constraint
 
 
 template<typename Var1, typename Var2>
-Constraint*
+AbstractConstraint*
 ElementCon(StateObj* stateObj, const Var1& vararray, const Var2& v1, const Var1& v2)
 { 
   return new ElementConstraint<Var1, typename Var2::value_type, typename Var1::value_type>
@@ -350,12 +364,24 @@ ElementCon(StateObj* stateObj, const Var1& vararray, const Var2& v1, const Var1&
 }
 
 template<typename Var1, typename Var2, typename Var3>
-Constraint*
+AbstractConstraint*
 ElementCon(StateObj* stateObj, Var1 vararray, const Var2& v1, const Var3& v2)
 { 
   return new ElementConstraint<Var1, typename Var2::value_type, AnyVarRef>
               (stateObj, vararray, v1[0], AnyVarRef(v2[0]));  
 }
 
+template<typename Var1, typename Var2, typename Var3>
+AbstractConstraint*
+ElementOneCon(StateObj* stateObj, const Var1& vararray, const Var2& v1, const Var3& v2)
+{ 
+  typedef typename ShiftType<typename Var2::value_type, compiletime_val<-1> >::type ShiftVal;
+  vector<ShiftVal> replace_v1;
+  replace_v1.push_back(ShiftVarRef(v1[0], compiletime_val<-1>()));
+  return ElementCon(stateObj, vararray, replace_v1, v2);
+}
+
+
 BUILD_CONSTRAINT3(CT_ELEMENT, ElementCon);
+BUILD_CONSTRAINT3(CT_ELEMENT_ONE, ElementOneCon);
 

@@ -87,7 +87,7 @@ See also
 
 // VarToCount = 1 means leq, = 0 means geq.
 template<typename VarArray, typename VarSum, int VarToCount = 1 >
-struct BoolLessSumConstraintDynamic : public DynamicConstraint
+struct BoolLessSumConstraintDynamic : public AbstractConstraint
 {
   virtual string constraint_name()
   { if(VarToCount) return "Bool<=SumDynamic"; else return "Bool>=SumDynamic"; }
@@ -108,22 +108,18 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
   VarSum var_sum;
   
   BoolLessSumConstraintDynamic(StateObj* _stateObj, const VarArray& _var_array, VarSum _var_sum) :
-	DynamicConstraint(_stateObj), var_array(_var_array), var_sum(_var_sum)
+	AbstractConstraint(_stateObj), var_array(_var_array), var_sum(_var_sum), last(0)
   { 
     D_ASSERT((VarToCount == 0) || (VarToCount == 1));
 #ifndef DYNAMICTRIGGERS
     cerr << "This almost certainly isn't going to work... sorry" << endl;
 #endif
-  }
-  
-  int dynamic_trigger_count()
-  {
-	// Sum of 1's is >= K
-	// == Number of 1's is >=K         // this is the one I want to do
-	// == Number of 0's is <= N-K
-	
-	D_INFO(2,DI_DYSUMCON,"Setting up Dynamic Trigger Constraint for BoolLessSumConstraintDynamic");
-	
+  // Sum of 1's is >= K
+  // == Number of 1's is >=K         // this is the one I want to do
+  // == Number of 0's is <= N-K
+
+    D_INFO(2,DI_DYSUMCON,"Setting up Dynamic Trigger Constraint for BoolLessSumConstraintDynamic");
+
     int array_size = var_array.size();
 
     if (var_sum >= array_size || var_sum < 0)
@@ -131,19 +127,21 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
       // In these cases the constraints are all set before search.
       // This will happen before triggers set up in full_propagate
       // Thus zero triggers are needed
-      return 0;
     }
     else
     {
       num_unwatched = array_size - var_sum - 1 ;
       D_ASSERT(num_unwatched >= 0);
-
       unwatched_indexes = getMemory(stateObj).nonBackTrack().request_bytes(sizeof(unsigned) * num_unwatched);
-      // above line might request 0 bytes
-      last = 0;
-
-      return var_sum + 1;
     }
+  }
+  
+  int dynamic_trigger_count()
+  { 
+    if(var_sum >= var_array.size() || var_sum < 0)
+      return 0;
+    else
+      return var_sum + 1; 
   }
 
   virtual void full_propagate()
@@ -315,10 +313,27 @@ struct BoolLessSumConstraintDynamic : public DynamicConstraint
 	  vars.push_back(AnyVarRef(var_array[i]));
 	return vars;  
   }
+  
+  virtual void get_satisfying_assignment(box<pair<int,int> >& assignment)
+  {
+    int count = 0;
+    for(int i = 0; i < var_array.size(); ++i)
+    {
+      if(var_array[i].inDomain(!VarToCount))
+      {
+        assignment.push_back(make_pair(i, !VarToCount));
+        count++;
+        if(count == var_sum)
+          return;
+      }
+    }
+    // We didn't make a complete assignment
+    assignment.empty();
+  }
 };
 
 template<typename VarArray,  typename VarSum>
-DynamicConstraint*
+AbstractConstraint*
 BoolLessEqualSumConDynamic(StateObj* stateObj, const VarArray& _var_array,  VarSum _var_sum)
 { 
   return new BoolLessSumConstraintDynamic<VarArray,VarSum>(stateObj, _var_array,
@@ -326,7 +341,7 @@ BoolLessEqualSumConDynamic(StateObj* stateObj, const VarArray& _var_array,  VarS
 }
 
 template<typename VarArray,  typename VarSum>
-DynamicConstraint*
+AbstractConstraint*
 BoolGreaterEqualSumConDynamic(StateObj* stateObj, const VarArray& _var_array,  VarSum _var_sum)
 { 
   return new BoolLessSumConstraintDynamic<VarArray,VarSum,0>(stateObj, _var_array, _var_sum); 
@@ -338,39 +353,37 @@ BoolGreaterEqualSumConDynamic(StateObj* stateObj, const VarArray& _var_array,  V
 #include "dynamic_3_sat.h"
 
 template<typename T>
-inline DynamicConstraint*
+inline AbstractConstraint*
 BuildCT_WATCHED_LEQSUM(StateObj* stateObj, const light_vector<T>& t1, BOOL reify, const BoolVarRef& reifyVar, ConstraintBlob& b)
 { 
   for(int i = 0; i < t1.size(); ++i)
   {
     if(t1[i].getInitialMin() != 0 || t1[i].getInitialMax() != 1)
-      cerr << "watched leqsum only works on Boolean variables!" << endl;
+      FAIL_EXIT("watched leqsum only works on Boolean variables!");
   }
 
   
   if(reify) 
   { 
-    cerr << "Cannot reify 'watched literal' constraints. Sorry." << endl; 
-	  exit(0); 
+    FAIL_EXIT("Cannot reify 'watched literal' constraints. Sorry."); 
   } 
   else 
   { return BoolLessEqualSumConDynamic(stateObj, t1, runtime_val(b.constants[0][0])); } \
 }
 
 template<typename T>
-inline DynamicConstraint*
+inline AbstractConstraint*
 BuildCT_WATCHED_GEQSUM(StateObj* stateObj,const light_vector<T>& t1, BOOL reify, const BoolVarRef& reifyVar, ConstraintBlob& b)
 { 
   for(int i = 0; i < t1.size(); ++i)
   {
     if(t1[i].getInitialMin() != 0 || t1[i].getInitialMax() != 1)
-      cerr << "watched geqsum only works on Boolean variables!" << endl;
+      FAIL_EXIT("watched geqsum only works on Boolean variables!");
   }
   
   if(reify) 
   { 
-    cerr << "Cannot reify 'watched literal' constraints. Sorry." << endl; 
-	exit(0); 
+    FAIL_EXIT("Cannot reify 'watched literal' constraints. Sorry."); 
   } 
   else 
   {

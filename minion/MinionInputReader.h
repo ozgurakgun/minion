@@ -13,7 +13,6 @@
 
 #include "CSPSpec.h"
 
-using namespace ProbSpec;
 
 template<typename StreamType>
 struct ConcreteFileReader
@@ -23,7 +22,7 @@ struct ConcreteFileReader
   
   /// Removes all comments after the current place in the file.
   // Returns peeked char.
-  char check_for_comments()
+  void check_for_comments()
   {
     char peek = simplepeek_char();
     while(peek == '#')
@@ -31,21 +30,8 @@ struct ConcreteFileReader
       simplegetline();
       peek = simplepeek_char();
     }
-    return peek;
   }
- 
-  /// Removes all comments after the current place in the file
-  char check_for_comments_and_get_char()
-  {
-    char peek = simpleget_char();
-    while(peek == '#')
-    {
-      simplegetline();
-      peek = simpleget_char();
-    }
-    return peek;
-  }
-  
+   
   ConcreteFileReader(StreamType& name, string _filename) : infile(name), filename(_filename)
   {}
   
@@ -57,8 +43,8 @@ struct ConcreteFileReader
   
    string get_string()
   { 
-	string s;
-    char next_char = check_for_comments_and_get_char();
+	  string s;
+    char next_char = get_char();
     while(isalnum(next_char) || next_char == '_')
     {
       s += next_char;
@@ -79,7 +65,7 @@ struct ConcreteFileReader
    string get_asciistring()
   {
     string s;
-    char next_char = check_for_comments_and_get_char();
+    char next_char = get_char();
     while(!isspace(next_char) && !infile.eof())
     {
       s +=  next_char;
@@ -88,22 +74,21 @@ struct ConcreteFileReader
     
     putback(next_char);
     return s;
-    
-    
   }
   
    int read_num()
-  {
+  {	
+	  int i;
+	  infile >> i;
+	  if(infile.fail())
+      throw parse_exception("Problem parsing number");
+	  return i;
+	
+/*
 	// This function should just be "infile >> i;", however that is parsed differently in windows and linux
 	// So we'll have to do it manually.
-	
-	/* int i;
-	infile >> i;
-	if(infile.fail())
-    throw parse_exception("Problem parsing number");
-	return i;
-	*/
-	char next_char = check_for_comments_and_get_char();
+
+	char next_char = get_char();
 	while(isspace(next_char))
 	  next_char = infile.get();
 	
@@ -134,30 +119,39 @@ struct ConcreteFileReader
 	  num*= -1;
 	
 	return num;
+	*/
   }
   
    char simplepeek_char()
   {
-	while(isspace(infile.peek()))
-	  infile.get();
-	
-	return infile.peek();
+    char peek = infile.peek();
+    while(isspace(peek))
+    {
+      infile.get();
+      peek = infile.peek();
+    }
+    return peek;
   }
   
    char peek_char()
   {
-    check_for_comments();
-    return simplepeek_char();
+    char peek = simplepeek_char();
+    while(peek == '#')
+    {
+      simplegetline();
+      peek = simplepeek_char();
+    }
+    return peek;
   }
-  
+
   /// Check if the next character from infile is sym.
-   void check_sym(char sym)
+  void check_sym(char sym)
   {
-    char idChar = check_for_comments_and_get_char();
-	if(idChar != sym)
-	{
-	  throw parse_exception(string("Expected '") + sym + "'. Recieved '" + idChar + "'.");
-	}
+    char idChar = get_char();
+    if(idChar != sym)
+    {
+      throw parse_exception(string("Expected '") + sym + "'. Recieved '" + idChar + "'.");
+    }
   }
   
    string getline()
@@ -199,8 +193,13 @@ struct ConcreteFileReader
   
    char get_char()
   { 
-    check_for_comments();
-	return simpleget_char();
+    char peek = simpleget_char();
+    while(peek == '#')
+    {
+      simplegetline();
+      peek = simpleget_char();
+    }
+    return peek;
   }
   
    char simpleget_char()
@@ -222,6 +221,7 @@ struct ConcreteFileReader
 
 template<typename FileReader>
 class MinionInputReader {
+  MinionInputReader(MinionInputReader&);
   void parser_info(string);
   vector< vector<Var> > Vectors ;
   vector< vector<vector<Var> > > Matrices ;
@@ -230,8 +230,8 @@ class MinionInputReader {
   vector<Var> getColOfMatrix(vector<vector<Var> >& m, int c) ;
   vector<Var> getRowThroughTensor(vector<vector<vector <Var> > >& t,int r,int c) ;
   BOOL readConstraint(FileReader* infile, BOOL reified) ;
-  void readConstraintElement(FileReader* infile, const ConstraintDef&) ;
-  void readConstraintTable(FileReader* infile, const ConstraintDef&) ;
+  void readConstraintElement(FileReader* infile, ConstraintDef*) ;
+  void readConstraintTable(FileReader* infile, ConstraintDef*) ;
   Var readIdentifier(FileReader* infile) ;
   vector<Var> readPossibleMatrixIdentifier(FileReader* infile);
   vector< vector<Var> > readLiteralMatrix(FileReader* infile) ;
@@ -248,7 +248,7 @@ class MinionInputReader {
   void readSearch(FileReader* infile) ;
   vector<Var> readVectorExpression(FileReader* infile) ;
   
-  void readGeneralConstraint(FileReader*, const ConstraintDef&) ;
+  void readGeneralConstraint(FileReader*, ConstraintDef*) ;
   //FileReader* infile ;
  public:
   void read(FileReader* infile) ;
@@ -269,12 +269,13 @@ class MinionThreeInputReader {
   vector<Var> flatten(char type, int index) ;
   vector<Var> getColOfMatrix(vector<vector<Var> >& m, int c) ;
   vector<Var> getRowThroughTensor(vector<vector<vector <Var> > >& t,int r,int c) ;
-  BOOL readConstraint(FileReader* infile, BOOL reified) ;
+  ConstraintBlob readConstraint(FileReader* infile, BOOL reified = false) ;
   void readGadget(FileReader* infile) ;
-  void readConstraintElement(FileReader* infile, const ConstraintDef&) ;
-  void readConstraintTable(FileReader* infile, const ConstraintDef&) ;
-  void readConstraintGadget(FileReader* infile);
-  void readConstraintOr(FileReader* infile, const ConstraintDef&);
+  //void readConstraintElement(FileReader* infile, ConstraintDef*) ;
+//  ConstraintBlob readConstraintTable(FileReader* infile, ConstraintDef*) ;
+  TupleList* readConstraintTupleList(FileReader* infile);
+  ConstraintBlob readConstraintGadget(FileReader* infile);
+  ConstraintBlob readConstraintOr(FileReader* infile, ConstraintDef*);
   Var readIdentifier(FileReader* infile) ;
   vector<Var> readPossibleMatrixIdentifier(FileReader* infile, bool mustBeMatrix = false);
   vector< vector<Var> > readLiteralMatrix(FileReader* infile) ;
@@ -293,7 +294,8 @@ class MinionThreeInputReader {
   vector<vector<Var> > read2DMatrixVariable(FileReader* infile);
   void readAliasMatrix(FileReader* infile, const vector<int>& max_indices, vector<int> indices, string name);
   vector<Var> readVectorExpression(FileReader* infile) ;
-  void readGeneralConstraint(FileReader*, const ConstraintDef&) ;
+  ConstraintBlob readGeneralConstraint(FileReader*, ConstraintDef*) ;
+  vector<ConstraintBlob> readConstraintList(FileReader* infile);
 public:
   void read(FileReader* infile) ;
 

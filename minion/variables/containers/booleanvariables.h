@@ -66,7 +66,7 @@ struct BoolVarRef_internal
   static const BOOL isBool = true;
   static const BoundType isBoundConst = Bound_No;
   static string name() { return "Bool"; }
-  BOOL isBound()
+  BOOL isBound() const
   { return false;}
   
   data_type shift_offset;
@@ -170,8 +170,8 @@ typedef QuickVarRefType<GetBooleanContainer, BoolVarRef_internal> BoolVarRef;
 struct BooleanContainer
 {
   StateObj* stateObj;
-  BooleanContainer(StateObj* _stateObj) : stateObj(_stateObj), var_count_m(0), lock_m(false), 
-                                          trigger_list(stateObj, false)
+  BooleanContainer(StateObj* _stateObj) : stateObj(_stateObj), var_count_m(0),  
+                                          trigger_list(stateObj, false), lock_m(false)
   {}
   
   static const int width = 7;

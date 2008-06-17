@@ -66,6 +66,13 @@ This constraint is not reifiable.
 #ifndef _DYNAMIC_VECNEQ_H
 #define _DYNAMIC_VECNEQ_H
 
+#ifdef P
+#undef P
+#endif
+
+//#define P(x) cout << x << endl
+#define P(x)
+
 struct NeqIterated
 {
   static int dynamic_trigger_count()
@@ -116,6 +123,29 @@ struct NeqIterated
     else
       { var.removeFromDomain(val, label()); }
   }
+  
+  template<typename Var1, typename Var2>
+  static bool get_satisfying_assignment(const Var1& var1, const Var2& var2, pair<int,int>& assign)
+  {
+    if(var1.isAssigned() && var2.isAssigned() && var1.getAssignedValue() == var2.getAssignedValue())
+      return false;
+    
+    if(var1.isAssigned())
+    {
+      if(var2.getMin() != var1.getAssignedValue())
+        assign = make_pair(var1.getAssignedValue(), var2.getMin());
+      else
+        assign = make_pair(var1.getAssignedValue(), var2.getMax());
+    }
+    else
+    {
+      if(var1.getMin() != var2.getMin())
+        assign = make_pair(var1.getMin(), var2.getMin());
+      else
+        assign = make_pair(var1.getMax(), var2.getMin());
+    }
+    return true;
+  }
 };
 
 struct LessIterated
@@ -150,12 +180,24 @@ struct LessIterated
      var1.addDynamicTrigger(dt, LowerBound);
      var2.addDynamicTrigger(dt + 1, UpperBound);
   }
+  
+  template<typename Var1, typename Var2>
+  static bool get_satisfying_assignment(const Var1& var1, const Var2& var2, pair<int,int>& assign)
+  {
+    if(var1.getMin() < var2.getMax())
+    {
+      assign = make_pair(var1.getMin(), var2.getMax());
+      return true;
+    }
+    else
+      return false;
+  }
 };
 
 struct BothNonZeroIterated
 {
   static bool check_assignment(DomainInt i, DomainInt j)
-  { return i > 0 && j > 0; }
+  { return i > 0 || j > 0; }
 
   static int dynamic_trigger_count()
   { return 2; }
@@ -184,6 +226,18 @@ struct BothNonZeroIterated
      var1.addDynamicTrigger(dt, UpperBound);
      var2.addDynamicTrigger(dt + 1, UpperBound);
   }
+  
+  template<typename Var1, typename Var2>
+  static bool get_satisfying_assignment(const Var1& var1, const Var2& var2, pair<int,int>& assign)
+  {
+    if(var1.getMax() > 0 || var2.getMax() > 0)
+    {
+      assign = make_pair(var1.getMax(), var2.getMax());
+      return true;
+    }
+    else
+      return false;
+  }
 };
 
 /** Constraints two vectors of variables to be not equal.
@@ -191,7 +245,7 @@ struct BothNonZeroIterated
   *  \ingroup Constraints
 */
 template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated>
-  struct VecNeqDynamic : public DynamicConstraint
+  struct VecNeqDynamic : public AbstractConstraint
 {
   virtual string constraint_name()
     { return "VecNeqDynamic"; }
@@ -210,13 +264,12 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
 
   VecNeqDynamic(StateObj* _stateObj, const VarArray1& _array1,
     const VarArray2& _array2) :
-  DynamicConstraint(_stateObj), var_array1(_array1), var_array2(_array2),
+  AbstractConstraint(_stateObj), var_array1(_array1), var_array2(_array2),
     propagate_mode(_stateObj, false)
     { D_ASSERT(var_array1.size() == var_array2.size()); }
 
   int dynamic_trigger_count()
     { return Operator::dynamic_trigger_count() * 2; }
-
 
 
   bool no_support_for_index(int index)
@@ -231,6 +284,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
   virtual void full_propagate()
   {
     D_INFO(2, DI_VECNEQ, "Starting full propagate");
+    P("VecNeq full prop");
     DynamicTrigger* dt = dynamic_trigger_start();
     int size = var_array1.size();
     int index = 0;
@@ -285,6 +339,12 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
   {
     PROP_INFO_ADDONE(DynVecNeq);
     D_INFO(2, DI_VECNEQ, "Starting propagate");
+    P("VecNeq prop");
+    
+    if(propagate_mode)
+      P("Propagating: " << index_to_propagate);
+    else
+      P("Watching " << watched_index0 << "," << watched_index1);
 
     int trigger_activated = dt - dynamic_trigger_start();
     int triggerpair = trigger_activated / 2;
@@ -344,7 +404,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
       if(index == original_index)
       {
         // This is the only possible non-equal index.
-        D_INFO(2, DI_VECNEQ, "Cannot find another index");
+        P("Entering propagate mode for index " << index_to_propagate);
         propagate_mode = true;
         index_to_propagate = other_index;
         propagate_from_var1(other_index);
@@ -384,24 +444,42 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
       vars.push_back(AnyVarRef(var_array2[i]));
     return vars;  
   }
+  
+  virtual void get_satisfying_assignment(box<pair<int,int> >& assignment)
+  {
+    pair<int, int> assign;
+    for(int i = 0; i < var_array1.size(); ++i)
+    {
+      if(Operator::get_satisfying_assignment(var_array1[i], var_array2[i], assign))
+      {
+        D_ASSERT(var_array1[i].inDomain(assign.first));
+        D_ASSERT(var_array2[i].inDomain(assign.second));
+        D_ASSERT(Operator::check_assignment(assign.first, assign.second));
+        assignment.push_back(make_pair(i, assign.first));
+        assignment.push_back(make_pair(i + var_array1.size(), assign.second));
+        return;
+      }
+    }
+  }
+  
 };
 
 template<typename VarArray1,  typename VarArray2>
-DynamicConstraint*
+AbstractConstraint*
   VecNeqConDynamic(StateObj* stateObj,const VarArray1& varray1, const VarArray2& varray2)
   { return new VecNeqDynamic<VarArray1,VarArray2>(stateObj, varray1, varray2); }
 
 BUILD_DYNAMIC_CONSTRAINT2(CT_WATCHED_VECNEQ, VecNeqConDynamic)
 
 template<typename VarArray1,  typename VarArray2>
-DynamicConstraint*
+AbstractConstraint*
   VecOrLessConDynamic(StateObj* stateObj,const VarArray1& varray1, const VarArray2& varray2)
   { return new VecNeqDynamic<VarArray1,VarArray2, LessIterated>(stateObj, varray1, varray2); }
 
 BUILD_DYNAMIC_CONSTRAINT2(CT_WATCHED_VEC_OR_LESS, VecOrLessConDynamic)
 
 template<typename VarArray1,  typename VarArray2>
-DynamicConstraint*
+AbstractConstraint*
   VecOrAndConDynamic(StateObj* stateObj,const VarArray1& varray1, const VarArray2& varray2)
   { return new VecNeqDynamic<VarArray1,VarArray2, BothNonZeroIterated>(stateObj, varray1, varray2); }
 

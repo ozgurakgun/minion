@@ -27,14 +27,14 @@
 
 // X = abs(Y)
 template<typename AbsVarRef1, typename AbsVarRef2>
-struct AbsConstraint : public Constraint
+struct AbsConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "Abs"; }
   
   AbsVarRef1 var1;
   AbsVarRef2 var2;
-  AbsConstraint(StateObj* _stateObj, AbsVarRef1 _var1, AbsVarRef2 _var2) : Constraint(_stateObj),
+  AbsConstraint(StateObj* _stateObj, AbsVarRef1 _var1, AbsVarRef2 _var2) : AbstractConstraint(_stateObj),
     var1(_var1), var2(_var2)
   {}
   
@@ -100,7 +100,7 @@ struct AbsConstraint : public Constraint
       var2.setMin(-var1.getMax(), label());
       return;
       case 2:
-      if(var2.getMin() > 0)
+      if(var2.getMin() > -var1.getMin())
         var2.setMin(var1.getMin(), label());
       else
         var2.setMin(-var1.getMax(), label());
@@ -109,6 +109,8 @@ struct AbsConstraint : public Constraint
       case 4: 
       var1.setMax(absmax(var2.getMin(), var2.getMax()), label());
       var1.setMin(absmin(var2.getMin(), var2.getMax()), label());
+      if(var2.getMin() > -var1.getMin())
+        var2.setMin(var1.getMin(), label());
       return;
 
     }
@@ -136,12 +138,12 @@ struct AbsConstraint : public Constraint
 };
 
 template<typename EqualVarRef1, typename EqualVarRef2>
-Constraint*
+AbstractConstraint*
 AbsCon(StateObj* stateObj, EqualVarRef1 var1, EqualVarRef2 var2)
 { return new AbsConstraint<EqualVarRef1, EqualVarRef2>(stateObj, var1,var2); }
 
 template<typename T1, typename T2>
-Constraint*
+AbstractConstraint*
 BuildCT_ABS(StateObj* stateObj, const T1& t1, const T2& t2, BOOL reify, const BoolVarRef& reifyVar, ConstraintBlob&) 
 {
   if(reify)

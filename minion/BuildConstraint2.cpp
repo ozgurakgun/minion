@@ -18,7 +18,6 @@
 #include "minion.h"
 #include "CSPSpec.h"
 
-using namespace ProbSpec;
 
 namespace BuildCon
 {  
@@ -39,22 +38,22 @@ get_AnyVarRef_from_Var(StateObj* stateObj, const vector<Var>& vec)
 AnyVarRef
 get_AnyVarRef_from_Var(StateObj* stateObj, Var v)
 {
-  switch(v.type)
+  switch(v.type())
 		{
 		  case VAR_BOOL:
-			return AnyVarRef(getVars(stateObj).getBooleanContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getBooleanContainer().get_var_num(v.pos()));
 		  case VAR_NOTBOOL:
-		    return AnyVarRef(VarNotRef(getVars(stateObj).getBooleanContainer().get_var_num(v.pos)));
+		  return AnyVarRef(VarNotRef(getVars(stateObj).getBooleanContainer().get_var_num(v.pos())));
 		  case VAR_BOUND:
-			return AnyVarRef(getVars(stateObj).getBoundvarContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getBoundvarContainer().get_var_num(v.pos()));
 		  case VAR_SPARSEBOUND:
-			return AnyVarRef(getVars(stateObj).getSparseBoundvarContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getSparseBoundvarContainer().get_var_num(v.pos()));
 		  case VAR_DISCRETE:
-			return AnyVarRef(getVars(stateObj).getBigRangevarContainer().get_var_num(v.pos));
+			return AnyVarRef(getVars(stateObj).getBigRangevarContainer().get_var_num(v.pos()));
 		  case VAR_SPARSEDISCRETE:	
 			INPUT_ERROR("Sparse Discrete not supported at present");
 		  case VAR_CONSTANT:
-			return AnyVarRef(ConstantVar(stateObj, v.pos));
+			return AnyVarRef(ConstantVar(stateObj, v.pos()));
 		  default:
 		    INPUT_ERROR("Unknown Error.");
 		}
@@ -71,9 +70,9 @@ get_AnyVarRef_from_Var(StateObj* stateObj, Var v)
     
     if(instance.var_order.size() > instance.val_order.size())
     {
-      cout << "# Var order size = " << instance.var_order.size();  
-      cout << ", Val order size = " << instance.val_order.size();
-      cout << ", so padding val order." << endl;
+      getOptions(stateObj).print("# Var order size = " + to_string(instance.var_order.size()));  
+      getOptions(stateObj).print( ", Val order size = " + to_string(instance.val_order.size()));
+      getOptions(stateObj).printLine( ", so padding val order.");
     
       instance.val_order.insert(instance.val_order.end(), 
         instance.var_order.size() - instance.val_order.size(), instance.val_order.back());
@@ -94,7 +93,7 @@ get_AnyVarRef_from_Var(StateObj* stateObj, Var v)
   void build_variables(StateObj* stateObj, const ProbSpec::VarContainer& vars)
   {
     getVars(stateObj).getBooleanContainer().setVarCount(vars.BOOLs);
-	getVars(stateObj).getBoundvarContainer().addVariables(vars.bound);
+	  getVars(stateObj).getBoundvarContainer().addVariables(vars.bound);
     getVars(stateObj).getSparseBoundvarContainer().addVariables(vars.sparse_bound);
     getVars(stateObj).getBigRangevarContainer().addVariables(vars.discrete);
 	

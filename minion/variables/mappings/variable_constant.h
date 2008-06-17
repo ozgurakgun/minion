@@ -37,7 +37,7 @@ struct ConstantVar
   static const BoundType isBoundConst = Bound_Yes;
   
   // Hmm.. no sure if it's better to make this true or false.
-  BOOL isBound()
+  BOOL isBound() const
   { return true;}
   
   DomainInt val;
@@ -107,7 +107,7 @@ struct ConstantVar
   { dt->remove(); }
 #endif
 
-  vector<AbstractConstraint*>* getConstraints() { ; }
+  vector<AbstractConstraint*>* getConstraints() { return NULL; }
 
   void addConstraint(AbstractConstraint* c){ ; }
 

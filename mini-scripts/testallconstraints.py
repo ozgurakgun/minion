@@ -7,7 +7,7 @@ from constraint_test_common import *
 import random
 from sendemail import *
 
-(optargs, other)=getopt.gnu_getopt(sys.argv, "", ["minion=", "numtests=", "email", "fullprop"])
+(optargs, other)=getopt.gnu_getopt(sys.argv, "", ["minion=", "numtests=", "email", "fullprop", "64bit"])
 
 if len(other)>1:
     print "Usage: testallconstraints.py [--minion=<location of minion binary>] [--numtests=...] [--email]"
@@ -21,7 +21,9 @@ conslist=[]
 conslist+=["diseq", "reifydiseq", "reifyimplydiseq", "eq", "reifyeq", "reifyimplyeq"]
 
 # alldiffs
-conslist+=["alldiff", "reifyalldiff",  "reifyimplyalldiff", "alldiffgacslow", "reifyalldiffgacslow", "reifyimplyalldiffgacslow"]
+conslist+=["alldiff", "reifyalldiff",  "reifyimplyalldiff"]
+conslist+=["gacalldiff", "reifygacalldiff", "reifyimplygacalldiff"]
+conslist+=["gcc", "reifyimplygcc"]
 
 #element constraints
 conslist+=["gacelement-deprecated", "reifyimplygacelement-deprecated"]
@@ -31,6 +33,8 @@ conslist+=["element", "reifyimplyelement", "watchelement", "reifyimplywatcheleme
 conslist+=["modulo", "reifyimplymodulo", "pow", "reifyimplypow", "minuseq", "reifyimplyminuseq"]
 conslist+=["product", "reifyimplyproduct"]
 conslist+=["div", "reifyimplydiv"]
+conslist+=["abs", "reifyimplyabs"]
+
 
 conslist+=["watchsumleq", "watchsumgeq", "watchvecneq", "watchvecexists_less", "watchvecexists_and", "hamming"]
 conslist+=["reifyimplywatchsumleq", "reifyimplywatchsumgeq", "reifyimplywatchvecneq", "reifyimplywatchvecexists_less", "reifyimplywatchvecexists_and", "reifyimplyhamming"]
@@ -52,8 +56,10 @@ conslist+=["lexleq", "lexless", "reifylexleq", "reifylexless", "reifyimplylexleq
 
 conslist+=["max", "min", "reifyimplymax", "reifyimplymin"]
 
-conslist+=["abs", "reifyimplyabs"]
 
+conslist+=["watchneq, watchless"]
+
+conslist+=["difference"]
 
 #todo
 #conslist+=["weightedsumleq"...
@@ -62,6 +68,7 @@ numtests=100
 minionbin="bin/minion"
 email=False
 fullprop=False   # compare the constraint against itself with fullprop. Needs DEBUG=1.
+bit64=False
 for i in optargs:
     (a1, a2)=i
     if a1=="--minion":
@@ -72,6 +79,8 @@ for i in optargs:
         email=True
     elif a1=="--fullprop":
         fullprop=True
+    elif a1=="--64bit":
+        bit64=True
 
 for consname1 in conslist:
     random.seed(12345)   # stupid seed but at least it makes the test repeatable.
@@ -98,6 +107,12 @@ for consname1 in conslist:
             if email:
                 mailstring="Mail from testallconstraints.py.\n"
                 mailstring+="Problem with constraint %s. Run testconstraint.py %s on current SVN to replicate the test.\n"%(consname1, consname1)
+                if fullprop:
+                    mailstring+="Testing equivalence of -fullprop and normal propagation.\n"
+                else:
+                    mailstring+="Testing correctness against table representation.\n"
+                if bit64:
+                    mailstring+="Testing 64bit variant.\n"
                 mailstring+="Using binary %s\n"%minionbin
                 mail(mailstring)
             sys.exit(1)
@@ -108,6 +123,9 @@ if email:
     mailstring+="Using binary %s\n"%minionbin
     mailstring+="Tested the following constraints with no errors.\n"
     mailstring+=str(conslist)
+    if bit64:
+        mailstring+="Testing 64bit variant.\n"
+    
     mail(mailstring, subject="Minion test successful.")
     
 

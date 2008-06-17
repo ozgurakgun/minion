@@ -7,23 +7,29 @@
 # NAIVENOGOOD = use cheap but not so good g-nogoods for table constraint
 # DECISIONREPLACE = replace explns for already pruned values after decision assignment
 
-BOOSTINCLUDE = -I/usr/local/include/boost-1_35/ 
-FLAGS = -DWATCHEDLITERALS
+-include Makefile.includes
+ifndef SETUP_INCLUDED
+$(error ./configure.sh has not been executed! *** )
+endif
+
+FLAGS =
 LINKFLAGS = 
 NAMEBASE = minion
+
 
 ifdef DEBUG
  NAMEBASE := $(NAMEBASE)-debug
  ifdef PRINT
-   DEBUG_FLAGS = -D_GLIBCXX_DEBUG -g -DMORE_SEARCH_INFO
+   DEBUG_FLAGS = -D_GLIBCXX_DEBUG -DMINION_DEBUG_PRINT -g -DMORE_SEARCH_INFO 
  else
-   DEBUG_FLAGS = -D_GLIBCXX_DEBUG -DNO_PRINT -g -DMORE_SEARCH_INFO
+   DEBUG_FLAGS = -D_GLIBCXX_DEBUG -MINION_DEBUG -g -DMORE_SEARCH_INFO
  endif
 else
-  FLAGS := $(FLAGS) -O3 -DNO_DEBUG
+  FLAGS := $(FLAGS) -O3
 endif
 
 ifdef PROFILE
+  PWD := `pwd`/ 
   NAMEBASE := $(NAMEBASE)-profile
   FLAGS := $(FLAGS) -g -fno-inline -fno-inline-functions
 endif
@@ -44,7 +50,6 @@ ifdef REENTER
 endif
 
 ifdef BOOST
-  NAMEBASE := $(NAMEBASE)-boost
   FLAGS := $(FLAGS) $(BOOSTINCLUDE) -DUSE_BOOST
   ifdef DYNAMIC
     NAMEBASE := $(NAMEBASE)-dynamic
@@ -80,6 +85,9 @@ FULLFLAGS=-Wextra -Wno-sign-compare $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
 
 OBJFILES=$(patsubst minion/%.cpp,$(OBJDIR)/%.o,$(SRC))
 
+minion: depend mkdirectory external $(OBJFILES)	
+	$(CXX) $(FULLFLAGS) -o $(EXE) $(OBJFILES) $(LINKFLAGS)
+	
 external: 
 	cd external_deps/ && ./build_external_deps.sh $(MYFLAGS) $(CPU) 
 all: minion generate
@@ -96,15 +104,11 @@ Makefile.dep:
 	
 depend: Makefile.dep minion/svn_header.h
 
-	
 $(OBJDIR)/minion.o : minion/svn_header.h
 
 $(OBJDIR)/%.o: minion/%.cpp 
 	$(CXX) $(FULLFLAGS) -c -o $@ $<
 
-minion: depend mkdirectory external $(OBJFILES)	
-	$(CXX) $(FULLFLAGS) -o $(EXE) $(OBJFILES) $(LINKFLAGS)
-	
 mkdirectory:
 	if [ ! -d $(OBJDIR) ]; then mkdir $(OBJDIR); fi
 	if [ ! -d $(OBJDIR)/build_constraints ]; then mkdir $(OBJDIR)/build_constraints; fi
@@ -150,6 +154,9 @@ clean:
 veryclean: clean
 	rm -rf bin/*
 
+Makefile.includes:
+	echo Please run /configure.sh
+	exit
 .DUMMY:
 
 include Makefile.dep

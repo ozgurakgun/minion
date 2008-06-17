@@ -50,6 +50,8 @@ enum ReadTypes
   read_constant,
   read_constant_list,
   read_tuples,
+  read_constraint,
+  read_constraint_list,
   read_nothing
 };
 
@@ -70,8 +72,6 @@ struct ConstraintDef
 
 extern ConstraintDef constraint_list[];
 
-
-
 /// The currently accepted types of Variables.
 enum VariableType
 {
@@ -83,42 +83,46 @@ enum VariableType
   VAR_SPARSEDISCRETE,
   VAR_CONSTANT,
   VAR_MATRIX,
-  VAR_INVALID = -999
-};
-
-struct Var
-{
-  VariableType type;
-  int pos;
-  Var(VariableType _type, int _pos) : type(_type), pos(_pos)
-  { }
-  
-  Var(const Var& v) : type(v.type), pos(v.pos)
-  {}
-  
-  Var() : type(VAR_INVALID), pos(-1)
-  {}
-  
-  friend std::ostream& operator<<(std::ostream& o, const Var& v)
-  { return o << "Var. Type:" << v.type << " Pos:" << v.pos << "."; }
-   
-   bool operator==(const Var& var) const
-   { return type == var.type && pos == var.pos; }
-   
-   bool operator<(const Var& var) const
-   { return (type < var.type) || (type == var.type && pos < var.pos); }
+  VAR_INVALID
 };
 
 namespace ProbSpec
 {
-
 struct CSPInstance;
+
+class Var
+{
+  int pos_m : 28;
+  VariableType type_m : 4;
+public:
+  int pos() const { return pos_m; }
+  VariableType type() const { return type_m; }
+  void setType(VariableType v) { type_m = v; }
+  
+  Var(VariableType _type, int _pos) : type_m(_type), pos_m(_pos)
+  { }
+  
+  Var(const Var& v) : type_m(v.type_m), pos_m(v.pos_m)
+  {}
+  
+  Var() : type_m(VAR_INVALID), pos_m(-1)
+  {}
+  
+  friend std::ostream& operator<<(std::ostream& o, const Var& v)
+  { return o << "Var. Type:" << v.type_m << " Pos:" << v.pos_m << "."; }
+   
+   bool operator==(const Var& var) const
+   { return type_m == var.type_m && pos_m == var.pos_m; }
+   
+   bool operator<(const Var& var) const
+   { return (type_m < var.type_m) || (type_m == var.type_m && pos_m < var.pos_m); }
+};
   
 /// Constructed by the parser. Suitable for holding any kind of constraint.
 struct ConstraintBlob
 {
   /// The type of constraint.
-  ConstraintDef constraint;
+  ConstraintDef* constraint;
   /// The variables of the problem.
   vector<vector<Var> > vars;
   /// Pointer to list of tuples. Only used in Table Constraints.
@@ -135,20 +139,33 @@ struct ConstraintBlob
   /// For use in Gadget constraints, gives the actual gadget.
   shared_ptr<CSPInstance> gadget;
   
-  BOOL reified;
-  BOOL implied_reified;
+  /// For use in nested constraints.
+  vector<ConstraintBlob> internal_constraints;
+  
+  bool reified;
+  bool implied_reified;
   Var reify_var;
   
-  ConstraintBlob(ConstraintDef _con) :
+  ConstraintBlob(ConstraintDef* _con) :
 	constraint(_con), reified(false), implied_reified(false)
   {}
   
-  ConstraintBlob(ConstraintDef _con, const vector<vector<Var> >& _vars) : constraint(_con), vars(_vars), reified(false), implied_reified(false)
+  ConstraintBlob(ConstraintDef* _con, const vector<vector<Var> >& _vars) : constraint(_con), vars(_vars), reified(false), implied_reified(false)
   {}
 
+#ifdef USE_CXX0X
+  ConstraintBlob(ConstraintBlob&& b) : 
+  CXXMOVE(constraint, b), CXXMOVE(vars, b), CXXMOVE(tuples, b), CXXMOVE(negs, b), CXXMOVE(constants, b),
+  CXXMOVE(gadget_prop_type, b), CXXMOVE(gadget, b), CXXMOVE(internal_constraints, b), CXXMOVE(reified, b),
+  CXXMOVE(implied_reified, b), CXXMOVE(reify_var, b)
+  { }
+#endif
+
   /// A helper constructor for when only a SingleVar is passed.
-  ConstraintBlob(ConstraintDef _con, vector<Var>& _var) : constraint(_con), reified(false), implied_reified(false)
+  ConstraintBlob(ConstraintDef* _con, vector<Var>& _var) : constraint(_con), reified(false), implied_reified(false)
   { vars.push_back(_var); }
+
+
 
   void reify(Var _reify_var)
   {
@@ -163,8 +180,7 @@ struct ConstraintBlob
   }
   
   bool is_dynamic()
-  { return constraint.trig_type == DYNAMIC_CT; }
-  
+  { return constraint->trig_type == DYNAMIC_CT; }
 };
 
 
@@ -181,6 +197,14 @@ struct ConstraintBlob
   map<string, vector<int> > matrix_table;
   VarContainer() : BOOLs(0)
   {}
+
+#ifdef USE_CXX0X
+  VarContainer(VarContainer&& v) : 
+  CXXMOVE(BOOLs, v), CXXMOVE(symbol_table, v), CXXMOVE(name_table, v), CXXMOVE(bound, v), CXXMOVE(sparse_bound, v),
+  CXXMOVE(discrete, v), CXXMOVE(sparse_discrete, v), CXXMOVE(matrix_table, v)
+  { }
+#endif
+  
 
   /// Given a matrix variable and a parameter list, returns a slice of the matrix.
   /// Params can either be wildcards (denoted -999), or a value for the matrix.
@@ -302,10 +326,10 @@ struct ConstraintBlob
   
   Bounds get_bounds(Var v) const
   {
-    switch(v.type)
+    switch(v.type())
     {
     case VAR_CONSTANT:
-      return Bounds(v.pos, v.pos);    
+      return Bounds(v.pos(), v.pos());    
     case VAR_BOOL:
       return Bounds(0,1);
     case VAR_BOUND:  
@@ -314,7 +338,7 @@ struct ConstraintBlob
         for(unsigned int x = 0; x < bound.size(); ++x)
         {
           bound_size += bound[x].first;
-          if(v.pos < bound_size)
+          if(v.pos() < bound_size)
             return bound[x].second;
         }
         throw parse_exception("Internal Error - Bound OverFlow");
@@ -326,7 +350,7 @@ struct ConstraintBlob
         for(unsigned int x=0;x<sparse_bound.size();++x)
         {
           sparse_bound_size += sparse_bound[x].first;
-          if(v.pos < sparse_bound_size)
+          if(v.pos() < sparse_bound_size)
             return Bounds(sparse_bound[x].second.front(), sparse_bound[x].second.back());
         }
         throw parse_exception("Internal Error - SparseBound OverFlow");
@@ -337,7 +361,7 @@ struct ConstraintBlob
       for(unsigned int x = 0; x < discrete.size(); ++x)
       {
         discrete_size += discrete[x].first;
-        if(v.pos < discrete_size)
+        if(v.pos() < discrete_size)
           return discrete[x].second;
       }
       throw parse_exception("Internal Error - Discrete OverFlow");
@@ -348,13 +372,14 @@ struct ConstraintBlob
       for(unsigned int x = 0; x < sparse_discrete.size(); ++x)
       {
         sparse_discrete_size += sparse_discrete[x].first;
-        if(v.pos < sparse_discrete_size)
+        if(v.pos() < sparse_discrete_size)
           return Bounds(sparse_discrete[x].second.front(), sparse_discrete[x].second.back());
       }
       throw parse_exception("Internal Error - SparseDiscrete OverFlow");
     }
+    default:
+      throw parse_exception("Internal Error - Unknown Variable Type");    
     }
-      throw parse_exception("Internal Error - Unknown Variable Type");
   }
   
   Var get_var(char, int i) const
@@ -483,8 +508,26 @@ struct ConstraintBlob
   /// A complete list of variables in the order they are defined.
   vector<vector<Var> > all_vars_list;
   
-  CSPInstance() : is_optimisation_problem(false), tupleListContainer(new TupleListContainer)
+  map<string, TupleList*> table_symboltable;
+  /// We make these shared_ptrs so they automatically clear up after themselves.
+  map<string, shared_ptr<CSPInstance> > gadgetMap;
+  
+  
+  CSPInstance() : tupleListContainer(new TupleListContainer), is_optimisation_problem(false)
   {}
+ 
+#ifdef USE_CXX0X
+private:
+	CSPInstance(CSPInstance&);
+public:
+  
+  CSPInstance(CSPInstance&& i) : 
+  CXXMOVE(vars, i), CXXMOVE(constraints, i), CXXMOVE(tupleListContainer, i), CXXMOVE(var_order, i),
+  CXXMOVE(val_order, i), CXXMOVE(permutation, i), CXXMOVE(constructionSite, i), CXXMOVE(is_optimisation_problem, i),
+  CXXMOVE(optimise_minimising, i), CXXMOVE(optimise_variable, i), CXXMOVE(print_matrix, i), CXXMOVE(all_vars_list, i),
+  CXXMOVE(table_symboltable, i), CXXMOVE(gadgetMap, i)
+  { }
+#endif
   
   void set_optimise(BOOL _minimising, Var var)
   { 
@@ -506,7 +549,7 @@ struct ConstraintBlob
   bool bounds_check_last_constraint()
   {
     const ConstraintBlob& con = constraints.back();
-    switch(con.constraint.type)
+    switch(con.constraint->type)
     {
       case CT_REIFY:
       case CT_REIFYIMPLY:
@@ -548,7 +591,7 @@ struct ConstraintBlob
 
   }
   
-  map<string, TupleList*> table_symboltable;
+
 
   void addTableSymbol(string name, TupleList* tuplelist)
   {
@@ -564,10 +607,7 @@ struct ConstraintBlob
       throw parse_exception("Undefined tuplelist: '" + name + "'");
     return it->second;
   }
-  
-  /// We make these shared_ptrs so they automatically clear up after themselves.
-  map<string, shared_ptr<CSPInstance> > gadgetMap;
-  
+    
   void addGadgetSymbol(string name, shared_ptr<CSPInstance> gadget)
   {
     if(gadgetMap.count(name) != 0)
@@ -583,8 +623,13 @@ struct ConstraintBlob
     return it->second;
   }
 };
-  
+
+void print_instance(ostringstream& oss, CSPInstance& csp);
 }
+
+
+
+using namespace ProbSpec;
 
 #endif
 

@@ -27,7 +27,7 @@
 #include <vector>
 
 template<typename VarArray>
-struct BoolOrConstraintDynamic : public DynamicConstraint
+struct BoolOrConstraintDynamic : public AbstractConstraint
 {
   typedef typename VarArray::value_type VarRef;
 
@@ -43,7 +43,7 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
 
   BoolOrConstraintDynamic(StateObj* _stateObj, const VarArray& _var_array,
 			       const vector<int>& _negs) :
-    DynamicConstraint(_stateObj), var_array(_var_array), negs(_negs), last(0)
+    AbstractConstraint(_stateObj), var_array(_var_array), negs(_negs), last(0)
   { 
     D_INFO(2, DI_OR, "Constructor for OR constraint");
     watched[0] = watched[1] = -2;
@@ -131,21 +131,34 @@ struct BoolOrConstraintDynamic : public DynamicConstraint
       vars.push_back(AnyVarRef(var_array[i]));
     return vars;  
   }
+  
+  virtual void get_satisfying_assignment(box<pair<int,int> >& assignment)
+  {
+    for(int i = 0; i < var_array.size(); ++i)
+    {
+      if(var_array[i].inDomain(negs[i]))
+      {
+        assignment.push_back(make_pair(i, negs[i]));
+        return;
+      }
+    }
+  }
 };
 
 template<typename T>
-inline DynamicConstraint*
+inline AbstractConstraint*
 BuildCT_WATCHED_OR(StateObj* stateObj, const light_vector<T>& vs, BOOL reify,
 		   const BoolVarRef& reifyVar, ConstraintBlob& bl)
 {
   size_t vs_s = vs.size();
   for(int i = 0; i < vs_s; i++)
     if(vs[i].getInitialMin() != 0 || vs[i].getInitialMax() != 1)
-      cerr << "watched or only works on Boolean variables!" << endl;
-
+    {
+      FAIL_EXIT("watched or only works on Boolean variables!");
+    }
+    
   if(reify) {
-    cerr << "Cannot reify 'watched or' constraint." << endl;
-    exit(0);
+    FAIL_EXIT("Cannot reify 'watched or' constraint.");
   } else {
       return new BoolOrConstraintDynamic<light_vector<T> >(stateObj, vs, bl.negs);
   }

@@ -23,7 +23,7 @@
 #include "../propagation_data.h"
 
 class Trigger;
-class Constraint;
+class AbstractConstraint;
  
 /// Container for a range of triggers
 class TriggerRange
@@ -59,31 +59,15 @@ class Trigger
 { 
 public:
   /// The constraint to be propagated.
-  Constraint* constraint;
-#ifdef FUNCTIONPOINTER_TRIGGER
-  typedef void(*fun_ptr)(Constraint*, int, DomainDelta);
-  fun_ptr constraint_function_ptr;
-#endif  
+  AbstractConstraint* constraint;
   /// The first value to be passed to the propagate function.
   int info;
   
   template<typename T>
     Trigger(T* _sc, int _info) : constraint(_sc), info(_info)
-#ifdef FUNCTIONPOINTER_TRIGGER
-  { 
-    typedef void(T::*prop_ptr_type)(int, DomainDelta);
-	prop_ptr_type ptr = &T::propagate;
-    memcpy(&constraint_function_ptr,&ptr,sizeof(fun_ptr)); 
-	D_ASSERT(constraint_function_ptr != NULL);
-  }
-#else
   {  }
-#endif
   
   Trigger(const Trigger& t) : constraint(t.constraint), info(t.info) 
-#ifdef FUNCTIONPOINTER_TRIGGER
-  , constraint_function_ptr(t.constraint_function_ptr)
-#endif
   {}
   
   Trigger() : constraint(NULL)

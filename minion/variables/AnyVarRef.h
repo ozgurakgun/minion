@@ -40,10 +40,30 @@ user should use the variable which is the highest in the hierarchy,
 yet encompasses enough information to provide a full model for the
 problem they are attempting to solve.
 
+Minion also supports use of constants in place of variables, and constant
+vectors in place of vectors of variables. Using constants will be at least
+as efficient as using variables when the variable has a singleton domain.
+
 See the entry on vectors for information on how vectors, matrices and,
 more generally, tensors are handled in minion input. See also the
 alias entry for information on how to multiply name variables for
 convenience.
+*/
+
+/** @help variables;constants Description 
+Minion supports the use of constants anywhere where a variable can be used. For
+example, in a constraint as a replacement for a single variable, or a vector of
+constants as a replacement for a vector of variables.
+*/
+
+/** @help variables;constants Examples
+Use of a constant:
+
+   eq(x,1)
+
+Use of a constant vector:
+
+   element([10,9,8,7,6,5,4,3,2,1],idx,e) 
 */
 
 /** @help variables;vectors Description 
@@ -126,14 +146,14 @@ class DynamicTrigger;
 /// Internal type used by AnyVarRef.
 struct AnyVarRef_Abstract
 {
-  virtual BOOL isBound() = 0;
-  virtual BOOL isAssigned() = 0;  
-  virtual DomainInt getAssignedValue() = 0;
-  virtual BOOL isAssignedValue(DomainInt i) = 0;
-  virtual BOOL inDomain(DomainInt b) = 0;
-  virtual BOOL inDomain_noBoundCheck(DomainInt b) = 0;
-  virtual DomainInt getMax() = 0;
-  virtual DomainInt getMin() = 0;
+  virtual BOOL isBound() const = 0;
+  virtual BOOL isAssigned() const = 0;  
+  virtual DomainInt getAssignedValue() const = 0;
+  virtual BOOL isAssignedValue(DomainInt i) const = 0;
+  virtual BOOL inDomain(DomainInt b) const = 0;
+  virtual BOOL inDomain_noBoundCheck(DomainInt b) const = 0;
+  virtual DomainInt getMax() const = 0;
+  virtual DomainInt getMin() const = 0;
   virtual DomainInt getInitialMax() const = 0;
   virtual DomainInt getInitialMin() const = 0;
   virtual void setMax(DomainInt i, label l) = 0;
@@ -172,7 +192,7 @@ template<typename VarRef>
 struct AnyVarRef_Concrete : public AnyVarRef_Abstract
 {
 
-  virtual BOOL isBound()
+  virtual BOOL isBound() const
   { return data.isBound();}
   
   VarRef data;
@@ -185,25 +205,25 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   AnyVarRef_Concrete(const AnyVarRef_Concrete& b) : data(b.data)
   {}
   
-  virtual BOOL isAssigned()
+  virtual BOOL isAssigned() const
   { return data.isAssigned(); }
   
-  virtual DomainInt getAssignedValue()
+  virtual DomainInt getAssignedValue() const
   { return data.getAssignedValue(); }
   
-  virtual BOOL isAssignedValue(DomainInt i)
+  virtual BOOL isAssignedValue(DomainInt i) const
   { return data.isAssignedValue(i); }
   
-  virtual BOOL inDomain(DomainInt b)
+  virtual BOOL inDomain(DomainInt b) const
   { return data.inDomain(b); }
   
-  virtual BOOL inDomain_noBoundCheck(DomainInt b)
+  virtual BOOL inDomain_noBoundCheck(DomainInt b) const
   { return data.inDomain_noBoundCheck(b); }
   
-  virtual DomainInt getMax()
+  virtual DomainInt getMax() const
   { return data.getMax(); }
   
-  virtual DomainInt getMin()
+  virtual DomainInt getMin() const
   { return data.getMin(); }
 
   virtual DomainInt getInitialMax() const
@@ -287,7 +307,7 @@ public:
   static const BoundType isBoundConst = Bound_Maybe;
   shared_ptr<AnyVarRef_Abstract> data;
   
-  BOOL isBound()
+  BOOL isBound() const
   { return data->isBound();}
   
   template<typename VarRef>
@@ -300,28 +320,28 @@ public:
   AnyVarRef(const AnyVarRef& b) : data(b.data)
   {}
   
-  BOOL isAssigned()
+  BOOL isAssigned() const
   { return data->isAssigned(); }
   
-  DomainInt getAssignedValue()
+  DomainInt getAssignedValue() const
   { return data->getAssignedValue(); }
   
-  BOOL isAssignedValue(DomainInt i)
+  BOOL isAssignedValue(DomainInt i) const
   { 
     return data->isAssigned() &&
     data->getAssignedValue() == i;
   }
   
-  BOOL inDomain(DomainInt b)
+  BOOL inDomain(DomainInt b) const
   { return data->inDomain(b); }
 
-  BOOL inDomain_noBoundCheck(DomainInt b)
+  BOOL inDomain_noBoundCheck(DomainInt b) const
   { return data->inDomain_noBoundCheck(b); }
   
-  DomainInt getMax()
+  DomainInt getMax() const
   { return data->getMax(); }
   
-  DomainInt getMin()
+  DomainInt getMin() const
   { return data->getMin(); }
 
   DomainInt getInitialMax() const

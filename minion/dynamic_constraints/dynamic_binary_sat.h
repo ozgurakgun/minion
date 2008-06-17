@@ -27,7 +27,7 @@
 
 //! Specialised SAT implementation for just 2 variables
 template<typename VarArray>
-struct BoolBinarySATConstraintDynamic : public DynamicConstraint
+struct BoolBinarySATConstraintDynamic : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "BoolBinarySATDynamic"; }
@@ -38,7 +38,7 @@ struct BoolBinarySATConstraintDynamic : public DynamicConstraint
   VarRef var2;
   
   BoolBinarySATConstraintDynamic(StateObj* _stateObj,const VarArray& _var_array) :
-	DynamicConstraint(_stateObj), var1(_var_array[0]), var2(_var_array[1])
+	AbstractConstraint(_stateObj), var1(_var_array[0]), var2(_var_array[1])
   { D_ASSERT(_var_array.size() == 2); }
   
   int dynamic_trigger_count()
@@ -98,9 +98,24 @@ struct BoolBinarySATConstraintDynamic : public DynamicConstraint
 	vars.push_back(var2);
 	return vars;  
   }
+  
+  virtual void get_satisfying_assignment(box<pair<int,int> >& assignment)
+  {
+    if(var1.getMax() > 0)
+    {
+      assignment.push_back(make_pair(1, var1.getMax()));
+      return;
+    }
+    
+    if(var2.getMax() > 0)
+    {
+      assignment.push_back(make_pair(2, var2.getMax()));
+      return;
+    }
+  }
 };
 
 template<typename VarArray>
-DynamicConstraint*
+AbstractConstraint*
 BoolBinarySATConDynamic(StateObj* stateObj, const VarArray& _var_array)
 { return new BoolBinarySATConstraintDynamic<VarArray>(stateObj, _var_array); }

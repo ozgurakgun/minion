@@ -1,5 +1,7 @@
 #include "commandline_parse.h"
 
+extern bool in_cspcomp_for_failexit;
+
 void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, char** argv)
 {
  for(int i = 1; i < argc; ++i)
@@ -13,12 +15,20 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
   { debug_crash = true; }
 	else if(command == string("-quiet"))
 	{ getOptions(stateObj).parser_verbose = false; }
+	else if(command == string("-redump"))
+  { getOptions(stateObj).redump = true; }
 	else if(command == string("-printsols"))
 	{ getOptions(stateObj).print_solution = true; }
 	else if(command == string("-noprintsols"))
 	{ getOptions(stateObj).print_solution = false; }
 	else if(command == string("-printsolsonly"))
 	{ getOptions(stateObj).print_only_solution = true; }
+	else if(command == string("-cspcomp"))
+  { 
+    getOptions(stateObj).print_only_solution = true;
+    getOptions(stateObj).cspcomp = true;
+    in_cspcomp_for_failexit = true;
+  }
 	else if(command == string("-verbose"))
 	{ getOptions(stateObj).parser_verbose = true; }
     else if(command == string("-X-prop-node"))
@@ -42,8 +52,7 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	  cout << "# WARNING: -fullprop is not supported in this version of minion" << endl;
 	  getOptions(stateObj).fullpropagate = true; 
 #else
-	  cout << "This version of minion was not built to support the '-fullprop' command. Sorry" << endl;
-	  exit(1);
+    FAIL_EXIT("This version of minion was not built to support the '-fullprop' command. Sorry");
 #endif
 	}
 	else if(command == string("-nocheck"))
@@ -95,6 +104,13 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	  
 	  if(order == "static")
 		args.order = ORDER_STATIC;
+		else if(order == "srf")
+    args.order = ORDER_SRF;
+    else if(order == "srf-random")
+    {
+      args.order = ORDER_SRF;
+      getOptions(stateObj).randomise_valvarorder = true;
+    }  
 	  else if(order == "sdf")
 		args.order = ORDER_SDF;
 	  else if(order == "sdf-random")

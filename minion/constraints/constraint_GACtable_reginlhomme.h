@@ -45,7 +45,7 @@ struct TupleComparator
 	  if(tuple1[tupleIndex] != tuple2[tupleIndex])
 		return tuple1[tupleIndex] < tuple2[tupleIndex];
 	}
-	return true;
+	return false;
   }
 };
 
@@ -100,7 +100,7 @@ struct Regin
 			tuples[i] = tupleList->get_vector(i);
 		  
 		  // sort, required for correctness.
-		  sort(tuples.begin(), tuples.end(), TupleComparator(0, arity));
+		  std::stable_sort(tuples.begin(), tuples.end(), TupleComparator(0, arity));
 		  
 		  	  tuplelist=new TupleH*[tuples.size()];
 			  setuplist();
@@ -177,7 +177,7 @@ struct Regin
 };
 
 template<typename VarArray>
-struct GACTableConstraint : public DynamicConstraint
+struct GACTableConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "TableRegin"; }
@@ -505,7 +505,7 @@ struct GACTableConstraint : public DynamicConstraint
 
 
 template<typename VarArray>
-DynamicConstraint*
+AbstractConstraint*
 GACTableCon(const VarArray& vars, TupleList* tuples)
 { return new GACTableConstraint<VarArray>(vars, tuples); }
 

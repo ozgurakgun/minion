@@ -30,8 +30,7 @@
 #include "../solver.h"
 #include "../get_info/get_info.h"
 #include "../constraints/triggers.h"
-#include "../constraints/constraint_dynamic.h"
-#include "../constraints/constraint.h"
+#include "../constraints/constraint_abstract.h"
   
 class Queues
 {
@@ -54,7 +53,7 @@ public:
     
   DynamicTrigger*& getNextQueuePtrRef() { return next_queue_ptr; }
   
-  Queues(StateObj* _stateObj) : next_queue_ptr(NULL), stateObj(_stateObj)
+  Queues(StateObj* _stateObj) : stateObj(_stateObj), next_queue_ptr(NULL)
   {}
   
   void pushSpecialTrigger(AbstractConstraint* trigger)
