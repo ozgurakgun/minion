@@ -56,7 +56,8 @@ For Licence Information see file LICENSE.txt
   int watched_constraint[2];
 
   Dynamic_OR(StateObj* _stateObj, vector<AbstractConstraint*> _con) : 
-  AbstractConstraint(_stateObj), cons(_con), full_propagate_called(_stateObj, false), assign_size(-1)
+    AbstractConstraint(_stateObj), cons(_con), full_propagate_called(_stateObj, false), assign_size(-1),
+       constraint_locked(false)
     { }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)
@@ -129,7 +130,8 @@ For Licence Information see file LICENSE.txt
 
     DynamicTrigger* dt = dynamic_trigger_start();
 
-    if(trig >= dt && trig < dt + assign_size * 2)
+    if(!full_propagate_called && //this line may be necessary for either performance or correctness
+       trig >= dt && trig < dt + assign_size * 2)
     {
       int tripped_constraint = (trig - dt) / assign_size;
       int other_constraint = 1 - tripped_constraint;
@@ -145,7 +147,8 @@ For Licence Information see file LICENSE.txt
         return; 
       }
       
-      for(int i = 0; i < cons.size(); ++i)
+      const size_t cons_s = cons.size();
+      for(int i = 0; i < cons_s; ++i)
       {
         if(i != watched_constraint[0] && i != watched_constraint[1])
         {
@@ -163,8 +166,11 @@ For Licence Information see file LICENSE.txt
       P("Start propagating " << watched_constraint[other_constraint]);
       // Need to propagate!
       propagated_constraint = watched_constraint[other_constraint];
-      constraint_locked = true;
-	    getQueue(stateObj).pushSpecialTrigger(this);
+      cons[propagated_constraint]->full_propagate();
+      full_propagate_called = true;
+      //the following may be necessary for correctness for some constraints
+      //constraint_locked = true;
+      //getQueue(stateObj).pushSpecialTrigger(this);
       return;
     }
 
@@ -231,6 +237,7 @@ For Licence Information see file LICENSE.txt
         P("Found watch 1: " << loop);
         return;
       }
+      loop++;
     }
 
     if(found_watch == false)
