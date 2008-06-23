@@ -471,6 +471,8 @@ public:
 
 #else
 
+  RandomAccessPriorityQ<varval, varvalData> rapq;
+
   struct varval { //variable index and value
     unsigned var;
     DomainInt val;
@@ -484,158 +486,29 @@ public:
 
   struct varvalData {
     unsigned occurences; //number of remaining occurences in uncovered tuples
-    unsigned position; //position in heap <occurences>
     vector<varval> neighbours; //all pruned varvals that share a support with the varval
-    varvalData() : occurences(0), position(0) {}
+    varvalData() : occurences(0), neighbours() {}
   };
-  
-  map<varval, varvalData> varvalInfo; //mapping from varval to data
-  vector<varval> occurencesHeap;      //heap ordered by varval's data's
-				      //occurences count, allowing ties
-
-#define parent(i) ((i - 1) / 2) //macros to make it easier to do heap manipulation
-#define left(i) (2 * i + 1)
-#define right(i) (2 * i + 2)
-
-  void printHeap(size_t loc)
-    {
-      for(int i = 0; i < occurencesHeap.size(); i++)
-	cout << "[" << occurencesHeap[i].var << "." << occurencesHeap[i].val << "= " << varvalInfo.find(occurencesHeap[i])->second.occurences << "]";
-      cout << endl;
-    }
-
-  bool checkHeap(size_t loc, size_t size)
-    {
-      if(loc >= size) return true;
-      int loc_occ = varvalInfo.find(occurencesHeap[loc])->second.occurences;
-      D_ASSERT(loc_occ >= 0);
-      bool left_present = left(loc) < size;
-      bool right_present = right(loc) < size;
-      if(!left_present)
-	return true;
-      else {
-	unsigned left_occ = varvalInfo.find(occurencesHeap[left(loc)])->second.occurences;
-	if(!right_present)
-	  return loc_occ >= left_occ && checkHeap(left(loc));
-	else {
-	  unsigned right_occ = varvalInfo.find(occurencesHeap[right(loc)])->second.occurences;
-	  return loc_occ >= left_occ && loc_occ >= right_occ && checkHeap(left(loc)) && checkHeap(right(loc));
-	}
-      }
-    }
-
-  bool checkHeap() { return checkHeap(0, occurencesHeap.size()); }
-
-  bool checkHeap(size_t size) { return checkHeap(0, size); }
-  
-  void repairHeapInc(size_t loc) //entry may be too low in heap, correct it and update varvalInfo
-    {
-      varval loc_varval = occurencesHeap[loc];
-      varvalData& loc_vvd = varvalInfo.find(loc_varval)->second;
-      while(true) {
-	if(loc == 0) 
-	  break;
-	else {
-	  varvalData& parent_vvd = varvalInfo.find(occurencesHeap[parent(loc)])->second;
-	  if(loc_vvd.occurences > parent_vvd.occurences) {
-	    occurencesHeap[loc] = occurencesHeap[parent(loc)];
-	    parent_vvd.position = loc;
-	    loc = parent(loc);
-	  } else
-	    break; //right position already
-	}
-      }
-      occurencesHeap[loc] = loc_varval; //put varval in final heap location
-      loc_vvd.position = loc;
-    }
-
-  void repairHeapDec(size_t loc) //entry may be too high in heap, repair
-    {
-      varval loc_varval = occurencesHeap[loc];
-      varvalData& loc_vvd = varvalInfo.find(loc_varval)->second;
-      unsigned loc_occurences = loc_vvd.occurences;
-      while(true) {
-	unsigned left = left(loc);  unsigned right = right(loc);
-	varval left_vv;	            varval right_vv;
-	varvalData* left_vvd;       varvalData* right_vvd;
-	int left_occ;               int right_occ;
-	if(left >= occurencesHeap.size())
-	  left_occ = -1;
-	else {
-	  left_vv = occurencesHeap[left];
-	  left_vvd = &varvalInfo.find(left_vv)->second;
-	  left_occ = left_vvd->occurences;
-	  D_ASSERT(left_occ >= 0);
-	}
-	if(right >= occurencesHeap.size())
-	  right_occ = -1;
-	else {
-	  right_vv = occurencesHeap[right];
-	  right_vvd = &varvalInfo.find(right_vv)->second;
-	  right_occ = right_vvd->occurences;
-	  D_ASSERT(right_occ >= 0);
-	}
-	if(left_occ != -1 && 
-	   (loc_occurences < left_occ || loc_occurences < right_occ))
-	  if(left_occ > right_occ) {
-	    occurencesHeap[loc] = left_vv;
-	    left_vvd->position = loc;
-	    loc = left;
-	  } else {
-	    occurencesHeap[loc] = right_vv;
-	    right_vvd->position = loc;
-	    loc = right;
- 	  }
-	else 
-	  break; //right position already
-      }
-      occurencesHeap[loc] = loc_varval;
-      loc_vvd.position = loc;
-    }
-
-  void build_heap() //make a heap of varvals, ordered by occurences
-    {
-      //first, add all the varvals to the heap, once each
-      occurencesHeap.clear();
-      map<varval,varvalData>::iterator curr = varvalInfo.begin();
-      map<varval,varvalData>::iterator end = varvalInfo.end();
-      while(curr != end) {
-	occurencesHeap.push_back(curr->first);
-	curr++;
-      }
-      //next heapify it in linear time
-      printHeap(0);
-      const size_t oh_s = occurencesHeap.size();
-      for(size_t i = 1; i < oh_s; i++) {
-	repairHeapInc(i);
-	D_ASSERT(checkHeap(i + 1));
-      }
-      D_ASSERT(checkHeap());
-    }
   
   template<typename VarArray>
     label buildLabel(VarArray& vars)
     {
       label l;
       while(true) {
-	varval commonest = occurencesHeap[0];
-	varvalData& vvd = varvalInfo.find(commonest)->second;
-	if(vvd.occurences == 0) break; //all supports already covered
+	varval max_varval = rapq.getMaxKey();
+	varvalData& max_vvd = rapq.getData(max_varval);
+	rapq.removeMax();
+	if(max_vvd.occurences == 0) break; //all supports already covered
 	l.push_back(literal(false, 
-			    vars[commonest.var].getBaseVar(), 
-			    vars[commonest.var].getBaseVal(commonest.val))); //get commonest
-	vector<varval>& neighbours = vvd.neighbours;
+			    vars[max_key.var].getBaseVar(), 
+			    vars[max_key.var].getBaseVal(max_key.val)));
+	vector<varval>& neighbours = max_vvd.neighbours;
 	const size_t neighbours_s = neighbours.size();
 	for(size_t i = 0; i < neighbours_s; i++) { //reduce occurence count of all neighbours
-	  varvalData& nd = varvalInfo.find(neighbours[i])->second;
-	  D_ASSERT(nd.occurences != 0);
-	  nd.occurences--;
-	  repairHeapDec(nd.position);
-	  D_ASSERT(checkHeap());
+	  rapq.getData(neighbours[i]).occurences--;
+	  rapq.fixOrder();
 	}
-	vvd.occurences = 0; //now commonest is covered
-	repairHeapDec(0); //repair the heap
-	D_ASSERT(checkHeap());
+	max_vvd.occurences = 0; //now commonest is covered
       }
       return l;
     }
@@ -652,11 +525,8 @@ public:
 	const size_t prunings_s = prunings.size();
 	D_ASSERT(prunings_s != 0); //any tuple must have a pruning in it, else contradiction
 	for(size_t i = 0; i < prunings_s; i++) {
-	  //make sure there is data in varvalInfo for each varval, for safety
-	  varvalInfo.insert(map<varval,varvalData>::value_type(prunings[i],
-							       varvalData()));
-	  //now update it
-	  varvalData& pruning_d = varvalInfo.find(prunings[i])->second;
+	  rapq.checkAdd(prunings[i], varvalData()); //if literal not present, add it
+	  varvalData& pruning_d = rapq.getData(prunings[i]);
 	  pruning_d.occurences += 1;
 	  pruning_d.neighbours.insert(pruning_d.neighbours.end(), prunings.begin(), prunings.end());
 	}
@@ -677,14 +547,13 @@ public:
   template<typename VarArray>
     label getLabel(VarArray& vars, unsigned varIndex, DomainInt val)
     {
-      occurencesHeap.clear();
-      varvalInfo.clear();
+      rapq.clear();
       TupleTrie tt = getTrie(varIndex);
       TrieObj* to_a = tt.trie_data;
       while(to_a->val != val) to_a++;
       vector<varval> v;
       setupLabels(vars, v, to_a->offset_ptr, 1, varIndex);
-      build_heap();
+      rapq.repair();
       return buildLabel(vars);
     }
   
