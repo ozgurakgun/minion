@@ -7,31 +7,29 @@
 # NAIVENOGOOD = use cheap but not so good g-nogoods for table constraint
 # DECISIONREPLACE = replace explns for already pruned values after decision assignment
 
--include Makefile.includes
-ifndef SETUP_INCLUDED
-$(error ./configure.sh has not been executed! *** )
-endif
-
-FLAGS =
+BOOSTINCLUDE = -I/usr/local/include/boost-1_35/ 
+FLAGS = -DWATCHEDLITERALS
 LINKFLAGS = 
 NAMEBASE = minion
-
 
 ifdef DEBUG
  NAMEBASE := $(NAMEBASE)-debug
  ifdef PRINT
-   DEBUG_FLAGS = -D_GLIBCXX_DEBUG -DMINION_DEBUG_PRINT -g -DMORE_SEARCH_INFO 
+   DEBUG_FLAGS = -D_GLIBCXX_DEBUG -DMINION_DEBUG_PRINT -DMORE_SEARCH_INFO 
  else
-   DEBUG_FLAGS = -D_GLIBCXX_DEBUG -DMINION_DEBUG -g -DMORE_SEARCH_INFO
+   DEBUG_FLAGS = -D_GLIBCXX_DEBUG -DMINION_DEBUG -DMORE_SEARCH_INFO
  endif
+endif
+
+ifdef UNOPTIMISED
+  FLAGS := -g
 else
-  FLAGS := $(FLAGS) -O3
+  FLAGS := $(FLAGS) -O2 -DNO_DEBUG
 endif
 
 ifdef PROFILE
-  PWD := `pwd`/ 
   NAMEBASE := $(NAMEBASE)-profile
-  FLAGS := $(FLAGS) -g -fno-inline -fno-inline-functions
+  FLAGS := $(FLAGS) -g
 endif
 
 ifdef INFO
@@ -50,6 +48,7 @@ ifdef REENTER
 endif
 
 ifdef BOOST
+  NAMEBASE := $(NAMEBASE)-boost
   FLAGS := $(FLAGS) $(BOOSTINCLUDE) -DUSE_BOOST
   ifdef DYNAMIC
     NAMEBASE := $(NAMEBASE)-dynamic
@@ -81,13 +80,10 @@ CPU=
 
 
 
-FULLFLAGS=-Wextra -Wno-sign-compare $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
+FULLFLAGS= $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
 
 OBJFILES=$(patsubst minion/%.cpp,$(OBJDIR)/%.o,$(SRC))
 
-minion: depend mkdirectory external $(OBJFILES)	
-	$(CXX) $(FULLFLAGS) -o $(EXE) $(OBJFILES) $(LINKFLAGS)
-	
 external: 
 	cd external_deps/ && ./build_external_deps.sh $(MYFLAGS) $(CPU) 
 all: minion generate
@@ -104,11 +100,15 @@ Makefile.dep:
 	
 depend: Makefile.dep minion/svn_header.h
 
+	
 $(OBJDIR)/minion.o : minion/svn_header.h
 
 $(OBJDIR)/%.o: minion/%.cpp 
 	$(CXX) $(FULLFLAGS) -c -o $@ $<
 
+minion: depend mkdirectory external $(OBJFILES)	
+	$(CXX) $(FULLFLAGS) -o $(EXE) $(OBJFILES) $(LINKFLAGS)
+	
 mkdirectory:
 	if [ ! -d $(OBJDIR) ]; then mkdir $(OBJDIR); fi
 	if [ ! -d $(OBJDIR)/build_constraints ]; then mkdir $(OBJDIR)/build_constraints; fi
@@ -134,6 +134,11 @@ sports:
 htmlhelp:
 	bash docs/genhelp/genhelp.sh minion
 
+pdfhelp:
+	bash docs/genhelp/genlatexhelp.sh minion
+	pdflatex -output-directory=docs/latexhelp docs/latexhelp/doc.latex
+	pdflatex -output-directory=docs/latexhelp docs/latexhelp/doc.latex
+
 lisp-generate: minion-helper minion-sat minion-quasigroup
 
 minion-helper: 
@@ -154,9 +159,6 @@ clean:
 veryclean: clean
 	rm -rf bin/*
 
-Makefile.includes:
-	echo Please run /configure.sh
-	exit
 .DUMMY:
 
 include Makefile.dep

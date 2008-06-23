@@ -7,12 +7,14 @@ if [ $# -lt 1 ]; then
   exit 0
 fi
 
-if [ ! -x $1 ]
+if [ ! -x $2 ]
 then
   echo $1 either doesn\'t exist, or isn\'t executable.
   exit 0
 fi
 
+tests=$1
+shift
 exec=$1
 #Remove exec from $*, so it only contains parameters
 shift
@@ -22,22 +24,27 @@ j=0
 pass=0
 for i in `grep -l "#TEST SOLCOUNT" *.minion`; do
   LOOP=0
-  if grep "#FAIL\|#BUG" $i &> /dev/null;
+  if grep "#FAIL\|#BUG\|maximising\|minimising" $i &> /dev/null;
   then
     echo -n 
   else
-    while [ $LOOP -lt 10 ]; do
+    echo $i
+    while [ $LOOP -lt $tests ]; do
       j=$(($j + 1));
-      if $exec $* -randomiseorder $i &> /dev/null
-      then
-        pass=$(($pass + 1));
-      else
-        echo Fail $i;
+      
+      numsols=`$exec -findallsols $* $i 2>/dev/null | ../mini-scripts/solutions.sh`
+      testnumsols=`grep "#TEST SOLCOUNT" $i  | awk '{print $3}' | tr -d '\015' `
+    	if [[ "$numsols" != "$testnumsols" ]]; then
+    	  testpass=0
+    	  errormess="Got '${numsols}' instead of '${testnumsols}' solutions in $i"
+    	else
+    	 let pass=pass+1
+       let LOOP=LOOP+1
       fi
-      let LOOP=LOOP+1
     done
     fi
   echo -n .
 done
 echo
 echo $pass of $j randomised tests successful.
+exit $(($pass - $j))
