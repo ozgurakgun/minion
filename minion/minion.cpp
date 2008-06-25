@@ -364,7 +364,7 @@ try {
   }
   
   instance = readInputFromFile(getOptions(stateObj).instance_name, getOptions(stateObj).parser_verbose);
-  
+
   if(getOptions(stateObj).redump)
   {
     ostringstream file;
@@ -400,9 +400,18 @@ try {
   getState(stateObj).getOldTimer().maybePrintTimestepStore("Parsing Time: ", "ParsingTime", oldtableout, !getOptions(stateObj).print_only_solution);
   
   BuildCSP(stateObj, instance);
+#ifdef PARANOID
+  BuildCSP(debugStateObj, instance);
+  Controller::lock(debugStateObj);
+  debug_var_val_order = BuildCon::build_val_and_var_order(debugStateObj, instance);
+  doing_checks = false;
+#endif
   SolveCSP(stateObj, instance, args);
   
   delete stateObj;
+#ifdef PARANOID
+  delete debugStateObj;
+#endif
   
   return 0;
     
