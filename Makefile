@@ -6,11 +6,17 @@
 
 # NAIVENOGOOD = use cheap but not so good g-nogoods for table constraint
 # DECISIONREPLACE = replace explns for already pruned values after decision assignment
+# PARANOID = check as many explanations for soundness and/or minimality as poss.
 
-BOOSTINCLUDE = -I/usr/local/include/boost-1_35/ 
-FLAGS = -DWATCHEDLITERALS
+-include Makefile.includes
+ifndef SETUP_INCLUDED
+$(error ./configure.sh has not been executed! *** )
+endif
+
+FLAGS = 
 LINKFLAGS = 
 NAMEBASE = minion
+
 
 ifdef DEBUG
  NAMEBASE := $(NAMEBASE)-debug
@@ -24,12 +30,13 @@ endif
 ifdef UNOPTIMISED
   FLAGS := -g
 else
-  FLAGS := $(FLAGS) -O2 -DNO_DEBUG
+  FLAGS := $(FLAGS) -O3
 endif
 
 ifdef PROFILE
+  PWD := `pwd`/ 
   NAMEBASE := $(NAMEBASE)-profile
-  FLAGS := $(FLAGS) -g
+  FLAGS := $(FLAGS) -g -fno-inline -fno-inline-functions
 endif
 
 ifdef INFO
@@ -48,7 +55,6 @@ ifdef REENTER
 endif
 
 ifdef BOOST
-  NAMEBASE := $(NAMEBASE)-boost
   FLAGS := $(FLAGS) $(BOOSTINCLUDE) -DUSE_BOOST
   ifdef DYNAMIC
     NAMEBASE := $(NAMEBASE)-dynamic
@@ -80,10 +86,13 @@ CPU=
 
 
 
-FULLFLAGS= $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
+FULLFLAGS=-Wextra -Wno-sign-compare $(DEBUG_FLAGS) $(FLAGS) $(CPU) $(MYFLAGS)
 
 OBJFILES=$(patsubst minion/%.cpp,$(OBJDIR)/%.o,$(SRC))
 
+minion: depend mkdirectory external $(OBJFILES)	
+	$(CXX) $(FULLFLAGS) -o $(EXE) $(OBJFILES) $(LINKFLAGS)
+	
 external: 
 	cd external_deps/ && ./build_external_deps.sh $(MYFLAGS) $(CPU) 
 all: minion generate
@@ -100,15 +109,11 @@ Makefile.dep:
 	
 depend: Makefile.dep minion/svn_header.h
 
-	
 $(OBJDIR)/minion.o : minion/svn_header.h
 
 $(OBJDIR)/%.o: minion/%.cpp 
 	$(CXX) $(FULLFLAGS) -c -o $@ $<
 
-minion: depend mkdirectory external $(OBJFILES)	
-	$(CXX) $(FULLFLAGS) -o $(EXE) $(OBJFILES) $(LINKFLAGS)
-	
 mkdirectory:
 	if [ ! -d $(OBJDIR) ]; then mkdir $(OBJDIR); fi
 	if [ ! -d $(OBJDIR)/build_constraints ]; then mkdir $(OBJDIR)/build_constraints; fi
@@ -159,6 +164,9 @@ clean:
 veryclean: clean
 	rm -rf bin/*
 
+Makefile.includes:
+	echo Please run /configure.sh
+	exit
 .DUMMY:
 
 include Makefile.dep

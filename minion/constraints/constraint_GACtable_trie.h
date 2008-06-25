@@ -25,13 +25,14 @@
 */
 
 #include "tries.h"
+#include "../system/rapq.h"
 
 template<typename VarArray, int negative>
 struct GACTableConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { return "TableTrie"; }
-  
+
   typedef typename VarArray::value_type VarRef;
   VarArray vars;
   
@@ -57,8 +58,36 @@ struct GACTableConstraint : public AbstractConstraint
     
   TupleList* tuples;
   
+#ifndef NAIVENOGOOD
+  struct varval { //variable index and value
+    unsigned var;
+    DomainInt val;
+    varval(unsigned _var, DomainInt _val) : var(_var), val(_val) {}
+    varval() : var(0), val(0) {}
+    bool operator==(const varval& b) const
+    { return var == b.var && val == b.val; }
+    bool operator!=(const varval& b) const
+    { return !(operator==(b)); }
+    bool operator<(const varval& b) const
+    { return var < b.var || (var == b.var && val < b.val); }
+  };
+
+  struct varvalData {
+    unsigned occurences; //number of remaining occurences in uncovered tuples
+    vector<varval> neighbours; //all pruned varvals that share a support with the varval
+    varvalData() : occurences(0), neighbours() {}
+    bool operator<(const varvalData& b) const
+    { return occurences < b.occurences; }
+  };
+  
+  RandomAccessPriorityQ<varval, varvalData> rapq;
+#endif
+  
   GACTableConstraint(StateObj* _stateObj,const VarArray& _vars, TupleList* _tuples) :
-	AbstractConstraint(_stateObj), vars(_vars), tuples(_tuples)
+    AbstractConstraint(_stateObj), vars(_vars), tuples(_tuples)
+#ifndef NAIVENOGOOD
+       , rapq(_stateObj)
+#endif
   { 
     tupleTrieArrayptr = tuples->getTries();
 	int arity = tuples->tuple_size();	  
@@ -107,6 +136,123 @@ struct GACTableConstraint : public AbstractConstraint
          //trie_current_support[literal] = new_support; 
      return true;
   }
+
+  //given depth in trie, and the variable index that is at the first depth,
+  //returns the index of the variable at that depth
+  size_t map_depth(size_t depth, size_t markedVar) {
+    return depth == 0 ? markedVar : (depth <= markedVar ? depth - 1 : depth);
+  }   
+  
+#ifdef NAIVENOGOOD
+  
+  //traverses <trie> in order to add a pruned value per support to <label>
+  template<typename VarArr>
+  void getLabel(VarArr& vars, TrieObj* trie, size_t depth, 
+		       size_t varIndex, label& l)
+  {
+    //algorithm: Carry out traversal of trie, but backtrack when a pruned edge
+    //is found. This means we have a pruned value for every tuple, i.e., a
+    //pruning to cover each lost support.
+    while(trie->val != MAXINT) {
+      if(!vars[map_depth(depth, varIndex)].inDomain(trie->val)) {
+	const int md = map_depth(depth, varIndex);
+	l.push_back(literal(false, 
+			    vars[md].getBaseVar(), 
+			    vars[md].getBaseVal(trie->val)));
+      } else {
+	getLabel(vars, trie->offset_ptr, depth + 1, varIndex, l);
+      }
+      trie++;
+    }
+  }
+
+  template<typename VarArr>
+    label getLabel(VarArr& vars, int varIndex, DomainInt val)
+  {
+    //pseudocode: Carry out traversal of subtrie involving (varIndex,val).
+    label l;
+    TupleTrie tt = tupleTrieArrayptr->getTrie(varIndex); //get trie with correct variable at depth 0
+    TrieObj* to_a = tt.trie_data;
+    while(to_a->val != val) to_a++; //find the node with the correct val
+    getLabel(vars, to_a->offset_ptr, 1, varIndex, l); //traverse its subtrie
+    return l;
+  }
+
+#else
+
+  template<typename VarArr>
+    label buildLabel(VarArr& vars)
+    {
+      label l;
+      //in this loop when a varval is added it will be removed, but when it merely ends
+      //up in no uncovered tuples it will be 0
+      while(rapq.size()) { //not empty => uncovered tuples
+	varval max_varval = rapq.getMaxKey();
+	varvalData& max_vvd = rapq.getData(max_varval);
+	rapq.removeMax();
+	if(max_vvd.occurences == 0) break; //all supports already covered
+	l.push_back(literal(false, 
+			    vars[max_varval.var].getBaseVar(), 
+			    vars[max_varval.var].getBaseVal(max_varval.val)));
+	vector<varval>& neighbours = max_vvd.neighbours;
+	const size_t neighbours_s = neighbours.size();
+	for(size_t i = 0; i < neighbours_s; i++) { //reduce occurence count of all neighbours
+	  varval& n = neighbours[i];
+	  if(n != max_varval) {
+	    rapq.getData(n).occurences--;
+	    rapq.fixOrder();
+	  }
+	}
+	max_vvd.occurences = 0; //now commonest is covered
+      }
+      return l;
+    }
+
+  //setup varvalInfo and occurencesHeap by traversing trie
+  //prunings is the set of pruned values on the current path in the trie, trie is the
+  //current point in the trie, vars are just the vars the trie represents, depth is the
+  //depth of the supplied node, varIndex is the index in <vars> of the variable at depth 0
+  template<typename VarArr>
+    void setupLabels(VarArr& vars, vector<varval>& prunings, TrieObj* trie, unsigned depth,
+		     unsigned varIndex)
+    {
+      if(depth == vars.size()) { //reached end of a support in trie
+	const size_t prunings_s = prunings.size();
+	D_ASSERT(prunings_s != 0); //any tuple must have a pruning in it, else contradiction
+	for(size_t i = 0; i < prunings_s; i++) {
+	  rapq.checkAdd(prunings[i], varvalData()); //if literal not present, add it
+	  varvalData& pruning_d = rapq.getData(prunings[i]);
+	  pruning_d.occurences += 1;
+	  pruning_d.neighbours.insert(pruning_d.neighbours.end(), prunings.begin(), prunings.end());
+	}
+      } else {
+	while(trie->val != MAXINT) {
+	  if(!vars[map_depth(depth, varIndex)].inDomain(trie->val)) {
+	    prunings.push_back(varval(map_depth(depth, varIndex), trie->val));
+	    setupLabels(vars, prunings, trie->offset_ptr, depth + 1, varIndex);
+	    prunings.pop_back();
+	  } else {
+	    setupLabels(vars, prunings, trie->offset_ptr, depth + 1, varIndex);
+	  }
+	  trie++;
+	}
+      }
+    }
+
+  template<typename VarArr>
+    label getLabel(VarArr& vars, unsigned varIndex, DomainInt val)
+    {
+      rapq.clear();
+      TupleTrie tt = tupleTrieArrayptr->getTrie(varIndex);
+      TrieObj* to_a = tt.trie_data;
+      while(to_a->val != val) to_a++;
+      vector<varval> v;
+      setupLabels(vars, v, to_a->offset_ptr, 1, varIndex);
+      rapq.repair();
+      return buildLabel(vars);
+    }
+  
+#endif
   
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* propagated_trig)
   {
@@ -130,7 +276,7 @@ struct GACTableConstraint : public AbstractConstraint
 	else
 	{
 	  D_INFO(1, DI_TABLECON, "Failed to find new support");
-	  vars[varIndex].removeFromDomain(val, tupleTrieArrayptr->getLabel(vars, varIndex, val));
+	  vars[varIndex].removeFromDomain(val, getLabel(vars, varIndex, val));
 	}
   }
   
