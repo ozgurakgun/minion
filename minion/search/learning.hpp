@@ -1,3 +1,46 @@
+#ifndef PARANOID_DECS
+#define PARANOID_DECS
+
+#ifdef PARANOID
+
+static StateObj* debugStateObj = new StateObj();
+static pair<vector<AnyVarRef>, vector<int> > debug_var_val_order;
+static bool doing_checks; //this is T when a check is in progress, so that
+			  //checkExpln() will not do any recursive checking
+
+//takes a pruning and the g-explanation computed for it, and makes sure that by
+//posting the literals in the explanation, the pruning is repeated BY PROPAGATION
+inline bool checkExpln(literal pruning, vector<literal> expln) {
+  if(!doing_checks) { //don't check explanations produced in the debug solver
+    cout << "checking" << endl;
+    doing_checks = true;
+    getMemory(debugStateObj).backTrack().world_push();
+    const size_t expln_s = expln.size();
+    for(int i = 0; i < expln_s; i++) {
+      literal lit = expln[i];
+      if(lit.asgn)
+	get_AnyVarRef_from_Var(debugStateObj, lit.var).propagateAssign(lit.val, label());
+      else
+	get_AnyVarRef_from_Var(debugStateObj, lit.var).removeFromDomain(lit.val, label());
+    }
+    PropagateGAC prop = PropagateGAC();
+    prop(debugStateObj, debug_var_val_order);
+    bool notpruned = get_AnyVarRef_from_Var(debugStateObj, pruning.var).inDomain(pruning.val);
+    getMemory(debugStateObj).backTrack().world_pop();
+    doing_checks = false;
+    cout << "notpruned=" << notpruned << endl;
+    return !notpruned;
+  }
+}
+
+#else
+
+inline bool checkExpln(literal, vector<literal>) { return true; } //do nothing when paranoid is off
+
+#endif //PARANOID
+
+#endif //PARANOID_DECS
+
 #ifndef LEARNING_HPP
 #define LEARNING_HPP
 

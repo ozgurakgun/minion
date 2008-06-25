@@ -276,7 +276,10 @@ struct GACTableConstraint : public AbstractConstraint
 	else
 	{
 	  D_INFO(1, DI_TABLECON, "Failed to find new support");
-	  vars[varIndex].removeFromDomain(val, getLabel(vars, varIndex, val));
+	  const label& l = getLabel(vars, varIndex, val);
+	  D_ASSERT(checkExpln(literal(true, vars[varIndex].getBaseVar(), vars[varIndex].getBaseVal(val)),
+			      l));
+	  vars[varIndex].removeFromDomain(val, l);
 	}
   }
   
