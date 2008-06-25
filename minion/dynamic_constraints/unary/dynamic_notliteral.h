@@ -99,7 +99,7 @@ struct WatchNotLiteralBoolConstraint : public AbstractConstraint
 
   virtual void full_propagate()
   { 
-    var.removeFromDomain(val); 
+    var.removeFromDomain(val, label()); 
   }
 
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
