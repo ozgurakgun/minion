@@ -4,12 +4,17 @@ http://minion.sourceforge.net
 For Licence Information see file LICENSE.txt 
 */
 
+#include "../constraint_setup.h"
+
 template<typename SearchAlgorithm, typename VarOrder, typename Vars, typename Propogator>
   void solve_select_search(StateObj* stateObj, VarOrder order_in, SearchAlgorithm& order, 
                            Vars& vars, CSPInstance& instance, Propogator prop)
 {
+  Controller::lock(stateObj);
   switch(order_in)
   {
+    case ORDER_EXPL:
+    order.setup();
     case ORDER_STATIC:
     case ORDER_SDF:
     case ORDER_SRF:
@@ -27,9 +32,9 @@ template<typename SearchAlgorithm, typename VarOrder, typename Vars, typename Pr
       Controller::solve_loop(stateObj, order, vars, prop);
     
     break;
-    case ORDER_CONFLICT:
-      Controller::conflict_solve_loop(stateObj, order, vars, prop);
-    break;
+/*     case ORDER_CONFLICT: */
+/*       Controller::conflict_solve_loop(stateObj, order, vars, prop); */
+/*     break; */
   }
 }
 
@@ -99,6 +104,16 @@ void solve(StateObj* stateObj, VarOrder order_in, VarValOrder& search_order, CSP
     {
       Controller::VariableOrder<VarType, Controller::StaticBranch>
         order(stateObj, search_order.first, search_order.second);
+      try
+        { solve_select_search(stateObj, order_in, order, search_order.first, instance, prop); }
+      catch(EndOfSearch)
+        { }
+    }
+    break;
+    case ORDER_EXPL:
+    {
+      Controller::VariableOrder<VarType, Controller::ExplBranch<VarType> >
+	order(stateObj, search_order.first);
       try
         { solve_select_search(stateObj, order_in, order, search_order.first, instance, prop); }
       catch(EndOfSearch)

@@ -184,8 +184,9 @@ struct GACTableConstraint : public AbstractConstraint
     label buildLabel(VarArr& vars)
     {
       label l;
-      //in this loop when a varval is added it will be removed, but when it merely ends
-      //up in no uncovered tuples it will be 0
+      //in this loop when a varval is chosen it will be removed from the heap,
+      //but when it merely ends up in no uncovered tuples it will be 0 and thus
+      //ignored
       while(rapq.size()) { //not empty => uncovered tuples
 	varval max_varval = rapq.getMaxKey();
 	varvalData& max_vvd = rapq.getData(max_varval);
@@ -194,6 +195,8 @@ struct GACTableConstraint : public AbstractConstraint
 	l.push_back(literal(false, 
 			    vars[max_varval.var].getBaseVar(), 
 			    vars[max_varval.var].getBaseVal(max_varval.val)));
+	if(rapq.size() == 0) break; //all supports covered, so stop
+	//otherwise update the literals in remaining supports
 	vector<varval>& neighbours = max_vvd.neighbours;
 	const size_t neighbours_s = neighbours.size();
 	for(size_t i = 0; i < neighbours_s; i++) { //reduce occurence count of all neighbours
@@ -224,6 +227,7 @@ struct GACTableConstraint : public AbstractConstraint
 	  varvalData& pruning_d = rapq.getData(prunings[i]);
 	  pruning_d.occurences += 1;
 	  pruning_d.neighbours.insert(pruning_d.neighbours.end(), prunings.begin(), prunings.end());
+	  rapq.fixOrder();
 	}
       } else {
 	while(trie->val != MAXINT) {
@@ -248,7 +252,6 @@ struct GACTableConstraint : public AbstractConstraint
       while(to_a->val != val) to_a++;
       vector<varval> v;
       setupLabels(vars, v, to_a->offset_ptr, 1, varIndex);
-      rapq.repair();
       return buildLabel(vars);
     }
   

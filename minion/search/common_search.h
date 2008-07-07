@@ -234,7 +234,6 @@ void inline maybe_print_search_action(StateObj* stateObj, const char* action)
 	getState(stateObj).setNodeCount(0);
   getState(stateObj).setupAlarm();
   install_ctrlc_trigger(stateObj);
-	lock(stateObj);
 	if (!getOptions(stateObj).print_only_solution) 
 	  getState(stateObj).getOldTimer().printTimestepWithoutReset("First Node Time: ");
 	/// Failed initially propagating constraints!

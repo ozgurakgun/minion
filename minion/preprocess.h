@@ -130,6 +130,7 @@ enum VarOrder
 #ifdef WDEG
   ORDER_WDEG,
 #endif
+  ORDER_EXPL,
   ORDER_CONFLICT
 };
 

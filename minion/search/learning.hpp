@@ -94,7 +94,7 @@ inline label computeFirstUip(StateObj* stateObj, Var v)
   sort(final.begin(), final.end()); //sort literals in preparation for removing duplicates
   vector<literal>::iterator unique_end = unique(final.begin(), final.end());
   final.erase(unique_end, final.end()); //kill dupes 
-  cout << "final=" << final << endl;
+  //cout << "final=" << final << endl;
   return final;
 }
 
