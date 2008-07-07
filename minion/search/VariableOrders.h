@@ -63,7 +63,8 @@ struct VariableOrder
     first_unassigned_variable.reserve(var_order.size());
     pos = 0; 
   }
-  
+
+  void setup() { ; }
   
   // Returns true if all variables assigned
   bool find_next_unassigned()
@@ -134,6 +135,58 @@ struct VariableOrder
     
     pos = first_unassigned_variable.back();
     first_unassigned_variable.pop_back();
+  }
+};
+
+//partial specialisation of above class to allow ExplBranch to be properly initialised
+//and also to handle the fact it explicitly does 2-way branching
+template<typename VarType>
+struct VariableOrder<VarType, typename Controller::ExplBranch<VarType> >
+{
+  StateObj* stateObj;
+  vector<VarType> var_order;
+  vector<pair<int,int> > branches;
+  pair<int,int> pos;
+  
+  ExplBranch<VarType> branch_method;
+  
+  VariableOrder(StateObj* _stateObj, vector<VarType>& _varorder)
+    : stateObj(_stateObj), var_order(_varorder), branch_method(_stateObj, _varorder)
+  {
+    // if this isn't enough room, the vector will autoresize. While that can be slow,
+    // it only has to happen at most the log of the maximum search depth.
+    branches.reserve(var_order.size());
+  }
+
+  void setup() { branch_method.setup(); }
+  
+  // Returns true if all variables assigned
+  bool find_next_unassigned()
+  {
+    pos = branch_method();
+    return pos.first == var_order.size();
+  }
+
+  bool finished_search()
+  { return branches.size() == 0; }
+  
+  void branch_left()
+  {
+    D_ASSERT(!var_order[pos.first].isAssigned()) 
+    var_order[pos.first].decisionAssign(pos.second);
+    maybe_print_search_assignment(stateObj, var_order[pos.first], pos.second, true);
+    branches.push_back(pos);
+  }
+  
+  void branch_right()
+  {  
+    //get last decision
+    pos = branches.back();
+    branches.pop_back();
+    //make sure the domain has at least two distinct values
+    D_ASSERT(var_order[pos.first].getMin() != var_order[pos.first].getMax());
+    maybe_print_search_assignment(stateObj, var_order[pos.first], pos.second, false);
+    var_order[pos.first].removeFromDomain(pos.second, label()); //not try NOT the last decision
   }
 };
 

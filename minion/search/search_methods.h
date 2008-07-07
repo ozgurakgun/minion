@@ -1,4 +1,50 @@
+#include "../system/rapq.h"
 
+template<typename VarType>
+struct ExplBranch
+{
+  RandomAccessPriorityQ<pair<int,int>,double> rapq;
+  
+  vector<VarType> var_order;
+  
+  ExplBranch(StateObj* stateObj, vector<VarType>& vs) : rapq(stateObj), var_order(vs) {}
+
+  void setup()
+  {
+    //initialise each varval score to be 1000.0 over the size of the domain it's from
+    const size_t var_order_s = var_order.size();
+    for(size_t i = 0; i < var_order_s; i++) {
+      VarType& v = var_order[i];
+      const DomainInt min = v.getMin();
+      const DomainInt max = v.getMax();
+      const DomainInt dom_size = max - min + 1;
+      for(int val = min; val <= max; val++)
+	if(v.inDomain(val))
+	  rapq.add(make_pair(i, val), 1000.0/dom_size); //init literal to score
+    }
+  }
+  
+  //make sure to return var = var_order.size() when run out of options
+  pair<int,int> operator()()
+  {
+    for(int i = 0; i < rapq.heap.size(); i++) {
+      cout << "var=" << rapq.heap[i].first << ",val=" << rapq.heap[i].second << ",score=" << rapq.getData(rapq.heap[i]) << ",inDomain=" << var_order[rapq.heap[i].first].inDomain(rapq.heap[i].second) << endl;
+    }
+    //sentinel varval to indicate that no choices are left
+    pair<int,int> max = make_pair(var_order.size(), 0); 
+    while(rapq.size()) { //not empty
+      pair<int,int> curr = rapq.getMaxKey();
+      rapq.removeMax();
+      //TODO: test which way round gives better efficiency
+      if(var_order[curr.first].inDomain(curr.second) && !var_order[curr.first].isAssigned()) {
+	max = curr;
+	break;
+      }
+    }    
+    return max;
+  }
+};
+  
 struct StaticBranch
 {
   template<typename VarType>

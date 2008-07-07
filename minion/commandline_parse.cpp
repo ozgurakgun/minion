@@ -135,6 +135,8 @@ void parse_command_line(StateObj* stateObj, MinionArguments& args, int argc, cha
 	    getOptions(stateObj).wdeg_on = true;
 	  }
 #endif
+	  else if(order == "expl")
+	    args.order = ORDER_EXPL;
 	  else
 	  {
 		cerr << "I do not understand the order:" << order << endl;

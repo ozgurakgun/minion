@@ -569,7 +569,7 @@ public:
 #endif
 	D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 	
-	for(DomainInt i = low_bound; i < offset; i--)
+	for(DomainInt i = low_bound; i < offset; i++)
 	  if(inDomain(d, i))
 	    setLabel(d, i, l); //label all unpruned values plus the assignment
 	
