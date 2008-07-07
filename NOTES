@@ -1,0 +1,64 @@
+implement first UIP explanations
+
+how - put a function into learning
+    - parameters are reference to the empty variable (template by VarType)
+    - have two vectors, one containing the decisions and prunings at the current level (sorted by depth)
+    -                   the other contains everything else completely unsorted and with duplicates
+    -                   also associate the stuff in the second list with the depths (fetch once only)
+    - now repeatedly fetch explanation for the deepest thing, and merge it into the lists
+    - when the last list has only one thing in it, stop and return vector<literal> 
+    - can use a special depth(curr_d, 0) to find out what's at current depth
+
+--------------------------------------------------------------------------
+
+how to implement? - (1) - inside propagator
+                  - (2) - wait until variable is assigned and then give it MHAV by default
+                  - (3) - have a BT'able bit and return empty FOR ALL VALUES while it is 1
+                  - (4) - only label the assignment and values that weren't already removed with empty
+                  - (5) - set expln to empty
+
+implementation - add decisionAssign() to variables (to trunk) DONE
+               - factor out all the assignment code sensibly so that there is an opportunity to add 
+                 extra work to either case DONE
+               - change all the search algorithsm and branching code to get it right DONE
+
+then in learning branch:
+
+in decisions - give an empty nogood to the assignment, and label ALL prunings by the assignment (use BT bit), or DONE
+             - give empty nogood to assignment, or leave old labels in place and label remainder                 DONE
+
+in other assignments - label everything with provided label DONE
+
+in setmin and setmax - label each removed by a provided label, plus potentially MHAV for an assignment DONE
+
+in remove - label each by a provided label, plus potentially MHAV for an assignment DONE
+
+implementation - add labels as parameters to the above functions where necessary DONE
+               - trawl through variable types and add implementations to do it DONE
+
+TODO - fix explanations in table constraints to use BASE values only! DONE
+
+-----------------------------------------------------------------------
+
+depths - what do these functions do? - tell you the depth at which some value was removed or assigned DONE
+
+                                     - if neither removed nor assigned the value could be anything DONE
+
+       - need to read the thesis again to check consistency, but depth should be in two parts : tree depth and then
+         sequence number in propagation DONE
+
+       - this allows us to resolve in explns for values in reverse order DONE
+
+HOW - set the depth of assignments and prunings at the same time as dealing with their labels (for case (3) just set it
+      once and return the same depth for all) DONE
+
+    - change depths to be a pair, first value is the depth, second comes from a counter reset by every left branch DONE
+
+    - include a lex ordering function for these DONE
+
+
+-----------------------------------------------------------------------
+
+Read thesis to check for any details I might have forgotten.
+
+-----------------------------------------------------------------------
