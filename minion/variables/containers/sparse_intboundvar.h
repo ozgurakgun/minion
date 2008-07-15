@@ -256,6 +256,18 @@ struct SparseBoundVarContainer {
       
       return std::binary_search( dom.begin(), dom.end(), i );
   }
+
+  pair<unsigned,unsigned> getDepth(SparseBoundVarRef_internal<BoundType> ref, DomainInt i) const
+  {
+    D_ASSERT(false);
+    return make_pair(0,0); //haven't implemented yet
+  }
+  
+  void setExplanation(SparseBoundVarRef_internal<BoundType>, DomainInt start, DomainInt end, Explanation* e)
+  { D_ASSERT(false); } //not yet implemented
+
+  Explanation* getExplanation(const SparseBoundVarRef_internal<BoundType> d, DomainInt val) const
+  { D_ASSERT(false); return NULL; } //not yet implemented
   
   DomainInt getMin(SparseBoundVarRef_internal<BoundType> d) const
   {

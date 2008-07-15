@@ -109,7 +109,8 @@ struct BigRangeVarContainer {
 #ifdef WDEG
   vector<unsigned int> wdegs;
 #endif
-  
+  vector<vector<pair<unsigned,unsigned> > > depths;
+  vector<vector<Explanation*> > explns;
  
   unsigned var_count_m;
   BOOL lock_m;
@@ -195,6 +196,8 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
       var_count_m++;
       D_INFO(0,DI_LONGINTCON,"Adding var of domain: (" + to_string(new_domains[i].second.lower_bound) + "," +
                                                          to_string(new_domains[i].second.upper_bound) + ")");
+      depths.push_back(vector<pair<unsigned,unsigned> >(domain_size));
+      explns.push_back(vector<Explanation*>(domain_size));
     }
     constraints.resize(var_count_m);
 #ifdef WDEG
@@ -265,6 +268,32 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
     D_ASSERT(i <= upper_bound(d));
     return bms_array.isMember(var_offset[d.var_num] + i );
   }
+
+  pair<unsigned,unsigned> getDepth(BigRangeVarRef_internal d, DomainInt i) const
+  {
+    D_ASSERT(lock_m);
+    D_ASSERT(i >= getInitialMin(d));
+    D_ASSERT(i <= getInitialMax(d));
+    return depths[d.var_num][i - getInitialMin(d)];
+  }
+
+  void setExplanation(BigRangeVarRef_internal& d, DomainInt start, DomainInt end, Explanation* e)
+  { 
+    D_ASSERT(start <= end);
+    D_ASSERT(start >= getInitialMin(d));
+    D_ASSERT(end <= getInitialMax(d));
+    vector<Explanation*>& var_explns = explns[d.var_num];
+    vector<pair<unsigned,unsigned> >& var_depths = depths[d.var_num];
+    pair<unsigned,unsigned> timestamp = getMemory(stateObj).backTrack().next_timestamp();
+    const DomainInt last = end - getInitialMin(d);
+    for(DomainInt curr = start - getInitialMin(d); curr <= last; curr++) {
+      var_explns[curr] = e;
+      var_depths[curr] = timestamp;
+    }
+  }
+
+  Explanation* getExplanation(const BigRangeVarRef_internal& d, DomainInt val) const
+  { return explns[d.var_num][val - getInitialMin(d)]; }
   
   DomainInt getMin(BigRangeVarRef_internal d) const
   {
@@ -312,7 +341,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
 	trigger_list.push_domain(d.var_num);
 #endif
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + i));
-    
+
     domain_bound_type up_bound = upper_bound(d);
     if(i == up_bound)
     {
@@ -396,6 +425,7 @@ private:
         trigger_list.push_domain_removal(d.var_num, loop);
     }
 #endif
+    
     trigger_list.push_domain(d.var_num);
     trigger_list.push_assign(d.var_num, offset);
     
@@ -452,7 +482,7 @@ public:
       upper_bound(d) = offset;      
 	  DomainInt new_upper = find_new_upper_bound(d);
 	  upper_bound(d) = new_upper;
-      
+
 #ifndef NO_DOMAIN_TRIGGERS
 	trigger_list.push_domain(d.var_num);
 #endif

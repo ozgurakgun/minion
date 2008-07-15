@@ -63,6 +63,15 @@ struct ConstantVar
   BOOL inDomain(DomainInt b) const
   { return b == val; }
 
+  pair<unsigned,unsigned> getDepth(DomainInt b) const
+  { D_ASSERT(false); return make_pair(0,0); } //not implemented
+
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { D_ASSERT(false); } //not implemented
+
+  Explanation* getExplanation(DomainInt val) const
+  { D_ASSERT(false); return NULL; } //not implemented
+
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { 
     D_ASSERT(b == val);

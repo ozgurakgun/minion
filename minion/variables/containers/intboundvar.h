@@ -116,6 +116,23 @@ struct BoundVarRef_internal
 	D_ASSERT(i <= upper_bound());
     return true;
   }
+
+  pair<unsigned,unsigned> getDepth(DomainInt i) const
+  {
+    D_ASSERT(false); //not done this code yet
+    return make_pair(0,0);
+  }
+
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { 
+    D_ASSERT(false); //not implemented yet
+  }
+
+  Explanation* getExplanation(DomainInt val) const
+  { 
+    D_ASSERT(false); //not implemented yet
+    return NULL; 
+  }
   
   DomainInt getMin() const
   { return lower_bound(); }

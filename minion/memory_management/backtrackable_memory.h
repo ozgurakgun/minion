@@ -44,6 +44,8 @@ class BackTrackMemory
   int current_depth_m;
   int max_depth;
   bool locked;
+  vector<unsigned> old_seq_nos; //old sequence nums from other depths
+  unsigned seq_no; //starts and 0 and counts up when generating new timestamp
 public:
     
   
@@ -62,7 +64,7 @@ public:
     return new_memory_block.requestArray<T>(size);
   }
   
-  BackTrackMemory() : backtrack_data(NULL), current_depth_m(0), max_depth(0), locked(false)
+  BackTrackMemory() : backtrack_data(NULL), current_depth_m(0), max_depth(0), locked(false), seq_no(0)
   {
       
   }
@@ -99,6 +101,8 @@ public:
     unsigned data_size = new_memory_block.getDataSize();
     memcpy(backtrack_data + current_depth_m * data_size, new_memory_block.getDataPtr(), data_size);
     current_depth_m++;
+    old_seq_nos.push_back(seq_no);
+    seq_no = 0;
   }
   
   /// Restores the state of backtrackable memory to the last stored state.
@@ -107,7 +111,8 @@ public:
     D_ASSERT(locked);
     D_ASSERT(current_depth_m > 0);
     current_depth_m--;
-    
+    seq_no = old_seq_nos.back();
+    old_seq_nos.pop_back();
     unsigned data_size = new_memory_block.getDataSize();
     memcpy(new_memory_block.getDataPtr(), backtrack_data + current_depth_m * data_size, data_size);
   }
@@ -115,6 +120,12 @@ public:
   /// Returns the current number of stored copies of the state.
   int current_depth()
   { return current_depth_m; }
+
+  pair<unsigned, unsigned> next_timestamp()
+  { 
+    D_ASSERT(current_depth_m >= 0);
+    return make_pair(current_depth_m, seq_no++); 
+  }
 };
 
 #endif

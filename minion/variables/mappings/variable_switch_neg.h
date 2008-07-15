@@ -64,7 +64,21 @@ struct SwitchNeg
   
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { return data.inDomain(b * multiplier); }
+
+  pair<unsigned,unsigned> getDepth(DomainInt b) const
+  { return data.getDepth(b * multiplier); }
   
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { 
+    if(multiplier == 1)
+      data.setExplanation(start, end, e); 
+    else
+      data.setExplanation(-end, -start, e);
+  }
+
+  Explanation* getExplanation(DomainInt val) const
+  { return data.getExplanation(multiplier * val); }
+
   DomainInt getMax() const
   { 
 	if(multiplier == 1)
