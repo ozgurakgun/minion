@@ -52,7 +52,6 @@ eq(bool, 0) #variable bool equals 0
 
 #include "../../constraints/constraint_abstract.h"
 
-
 /// Standard data type used for storing compressed booleans 
 typedef unsigned long data_type;
 static const data_type one = 1;
@@ -126,7 +125,7 @@ struct BoolVarRef_internal
     D_ASSERT(b == 0 || b == 1);
 	return (!isAssigned()) || (b == getAssignedValue());
   }
-  
+
   DomainInt getMin() const
   {
     if(!isAssigned()) return 0;
@@ -181,6 +180,9 @@ struct BooleanContainer
 #ifdef WDEG
   vector<unsigned int> wdegs;
 #endif
+  vector<vector<pair<unsigned,unsigned> > > depths;
+  vector<vector<Explanation*> > explns;
+
   unsigned var_count_m;
   TriggerList trigger_list;
   /// When false, no variable can be altered. When true, no variables can be created.
@@ -222,11 +224,39 @@ struct BooleanContainer
 #ifdef WDEG
     if(getOptions(stateObj).wdeg_on) wdegs.resize(bool_count);
 #endif
+    depths.resize(bool_count, vector<pair<unsigned,unsigned> >(2)); //have a 2 vector per var
+    explns.resize(bool_count, vector<Explanation*>(2));
   }
   
   /// Returns a reference to the ith Boolean variable which was previously created.
   BoolVarRef get_var_num(int i);
-  
+
+  pair<unsigned,unsigned> getDepth(const BoolVarRef_internal& d, DomainInt b) const
+  {
+    D_ASSERT(b == 0 || b == 1);
+    return depths[d.var_num][b];
+  }
+
+  void setExplanation(BoolVarRef_internal& d, DomainInt start, DomainInt end, Explanation* e)
+  { 
+    D_ASSERT(start == 0 || start == 1);
+    D_ASSERT(end == 0 || end == 1);
+    vector<Explanation*>& var_explns = explns[d.var_num];
+    vector<pair<unsigned,unsigned> >& var_depths = depths[d.var_num];
+    if(start == end) {
+      var_explns[start] = e;
+      var_depths[start] = getMemory(stateObj).backTrack().next_timestamp();
+    } else {
+      var_explns[start] = var_explns[end] = e;
+      var_depths[start] = var_depths[end] = getMemory(stateObj).backTrack().next_timestamp();
+    }
+  }
+
+  Explanation* getExplanation(const BoolVarRef_internal& d, DomainInt val) const
+  { 
+    D_ASSERT(val == 0 || val == 1);
+    return explns[d.var_num][val];
+  }
   
   void setMax(const BoolVarRef_internal& d, DomainInt i) 
   {

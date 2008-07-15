@@ -48,8 +48,25 @@ struct InfoRefType
     VAR_INFO_ADDONE(VAR_TYPE, inDomain_noBoundCheck);
     return data.inDomain_noBoundCheck(b);
   }
-  
-  
+
+  pair<unsigned,unsigned> getDepth(DomainInt b) const
+  {
+    VAR_INFO_ADDONE(VAR_TYPE, getDepth);
+    return data.getDepth(b);
+  }
+
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { 
+    VAR_INFO_ADDONE(VAR_TYPE, setExplanation);
+    data.setExplanation(start, end, e); 
+  }
+
+  Explanation* getExplanation(DomainInt val) const
+  { 
+    VAR_INFO_ADDONE(VAR_TYPE, getExplanation);
+    return data.getExplanation(val); 
+  }
+   
   DomainInt getMax() const
   {
     VAR_INFO_ADDONE(VAR_TYPE, getMax);

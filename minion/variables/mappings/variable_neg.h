@@ -65,7 +65,16 @@ struct VarNeg
 
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { return data.inDomain(-b); }
+
+  pair<unsigned,unsigned> getDepth(DomainInt b) const 
+  { return data.getDepth(-b); }
   
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { data.setExplanation(-end, -start, e); }
+
+  Explanation* getExplanation(DomainInt val) const
+  { return data.getExplanation(-val); }
+
   DomainInt getMax() const
   { return -data.getMin(); }
   

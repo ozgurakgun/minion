@@ -82,183 +82,6 @@ struct MultiplyHelp<BoolVarRef>
   
 };*/
 
-#if 0
-struct TrivialMapData
-{
-  int multiply()
-    { return 1 };
-    
-  int shift()
-    { return 1 };
-    
-  static BoundType ;
-    { return true; }
-    
-    static bool MultEqualsOne = true;
-};
-
-template<typename VarRef, typename DataMap = TrivialDataMap>
-{
-  static const BOOL isBool = VarRef::isBool;
-  static const BoundType isBoundConst = MapData::BoundType || VarRef::isBoundConst;
-  BOOL isBound() const
-  { return MapData::BoundType || data.isBound(); }
-  
-  VarRef data;
-  DataMap dataMap;
-  MultiplyVar(const VarRef& _data, DataMap _dataMap) : data(_data), dataMap(_dataMap)
-  { 
-    D_ASSERT(DOMAIN_CHECK(checked_cast<BigInt>(data.getInitialMax()) * dataMap.multiply() + dataMap.shift()));
-    D_ASSERT(DOMAIN_CHECK(checked_cast<BigInt>(data.getInitialMin()) * dataMap.multiply() + dataMap.shift()));
-    D_ASSERT(Multiply != 0); 
-  }
-  
-  MultiplyVar() : data()
-  { }
-  
-  MultiplyVar(const MultiplyVar& b) : data(b.data), dataMap(b.dataMap)
-  { }
-  
-  BOOL isAssigned() const
-  { return data.isAssigned(); }
-  
-  DomainInt getAssignedValue() const
-  { return data.getAssignedValue() * dataMap.multiply() + dataMap.shift(); }
-  
-  BOOL isAssignedValue(DomainInt i) const
-  { 
-    if(!data.isAssigned()) return false;	
-	  return this->getAssignedValue() == i;
-  }
-  
-  BOOL inDomain(DomainInt b) const
-  { 
-    if((b - dataMap.shift()) % dataMap.multiply() != 0)
-	    return false;
-	  return data.inDomain(MapHelp::divide_exact(b - dataMap.shift(), dataMap));
-  }
-  
-  BOOL inDomain_noBoundCheck(DomainInt b) const
-  { 
-    if(b % dataMap.multiply() != 0)
-	  return false;
-  	return data.inDomain(MapHelp::divide_exact(b - dataMap.shift(), dataMap));
-  }
-  
-  DomainInt getMax() const
-  {  
-    if(dataMap.multiply() >= 0)
-      return data.getMax() * dataMap.multiply() + dataMap.shift(); 
-  	else
-	  return data.getMin() * dataMap.multiply() + dataMap.shift();
-  }
-  
-  DomainInt getMin() const
-  { 
-    if(dataMap.multiply() >= 0)
-	  return data.getMin() * dataMap.multiply() + dataMap.shift(); 
-	    else
-	  return data.getMax() * dataMap.multiply() + dataMap.shift();  
-  }
-
-  DomainInt getInitialMax() const
-  {  
-    if(dataMap.multiply() >= 0)
-      return data.getInitialMax() * dataMap.multiply() + dataMap.shift(); 
-	else
-	  return data.getInitialMin() * dataMap.multiply() + dataMap.shift();
-  }
-  
-  DomainInt getInitialMin() const
-  { 
-    if(dataMap.multiply() >= 0)
-	  return data.getInitialMin() * dataMap.multiply() + dataMap.shift(); 
-	else
-	  return data.getInitialMax() * dataMap.multiply() + dataMap.shift();  
-  }
-  
-  void setMax(DomainInt i)
-  { 
-    if(dataMap.multiply() >= 0)
-      data.setMax(MapHelp::round_down(i, dataMap.multiply())); 
-	else
-	  data.setMin(MapHelp::round_up(-i, -dataMap.multiply()));  
-  }
-  
-  void setMin(DomainInt i)
-  { 
-    if(Multiply >= 0)
-	  data.setMin(MapHelp::round_up(i, dataMap.multiply()));
-	else
-	  data.setMax(MapHelp::round_down(-i, dataMap.multiply()));  
-  }
-  
-  void uncheckedAssign(DomainInt b)
-  { 
-    D_ASSERT(b % dataMap.multiply() == 0);
-    data.uncheckedAssign(MultiplyHelp<VarRef>::divide_exact(b, Multiply)); 
-  }
-  
-  void propagateAssign(DomainInt b)
-  { data.propagateAssign(MultiplyHelp<VarRef>::divide_exact(b, Multiply)); }
-  
-  void removeFromDomain(DomainInt)
-  { FAIL_EXIT(); }
-
-  void addTrigger(Trigger t, TrigType type)
-  { 
-    switch(type)
-	{
-	  case UpperBound:
-		if(Multiply>=0)
-		  data.addTrigger(t, UpperBound);
-		else
-		  data.addTrigger(t, LowerBound);
-		break;
-	  case LowerBound:
-		if(Multiply>=0)
-		  data.addTrigger(t, LowerBound);
-		else
-		  data.addTrigger(t, UpperBound);
-		break;
-	  case Assigned:
-	  case DomainChanged:
-	    data.addTrigger(t, type);
-	}
-  }
-
-#ifdef DYNAMICTRIGGERS
-  void addDynamicTrigger(DynamicTrigger* t, TrigType type, DomainInt pos = -999)
-  {  data.addDynamicTrigger(t, type, pos); }
-#endif
-
-  
-  friend std::ostream& operator<<(std::ostream& o, const MultiplyVar& n)
-  { return o << "Mult:" << n.data << "*" << n.Multiply; }
-  
-  int getDomainChange(DomainDelta d)
-  { return abs(Multiply) * data.getDomainChange(d); }
-
-  vector<AbstractConstraint*>* getConstraints()
-  { return data.getConstraints(); }
-
-  void addConstraint(AbstractConstraint* c)
-  { data.addConstraint(c); }
-
-  VarIdent getIdent()
-  { return VarIdent(stretchT, Multiply, data.getIdent()); }
-
-#ifdef WDEG
-  int getBaseWdeg()
-  { return data.getBaseWdeg(); }
-
-  void incWdeg()
-  { data.incWdeg(); }
-#endif
-};
-
-#endif
-
 template<typename VarRef>
 struct MultiplyVar
 {
@@ -308,7 +131,30 @@ struct MultiplyVar
 	  return false;
 	return data.inDomain(MultiplyHelp<VarRef>::divide_exact(b, Multiply));
   }
+
+  pair<unsigned,unsigned> getDepth(DomainInt b) const
+  {
+    if(b % Multiply != 0) {
+      return make_pair(0,0); //if never removed then removed at root
+    }
+    return data.getDepth(MultiplyHelp<VarRef>::divide_exact(b, Multiply));
+  }
   
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { 
+    if(Multiply >= 0)
+      data.setExplanation(Multiply * start, Multiply * end, e);
+    else
+      data.setExplanation(Multiply * end, Multiply * start, e);
+  }
+  
+  Explanation* getExplanation(DomainInt val) const
+  { 
+    if(val % Multiply != 0)
+      return NULL; //if never removed or set then no expln
+    return data.getExplanation(Multiply * val); 
+  }
+
   DomainInt getMax() const
   {  
     if(Multiply >= 0)

@@ -69,6 +69,15 @@ struct VarRefType
   BOOL inDomain(DomainInt b) const
   { return GET_CONTAINER().inDomain(data, b); }
 
+  pair<unsigned,unsigned> getDepth(DomainInt b) const
+  { return GET_CONTAINER().getDepth(data, b); }
+
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { GET_CONTAINER().setExplanation(data, start, end, e); }
+
+  Explanation* getExplanation(DomainInt val) const
+  { return GET_CONTAINER().getExplanation(data, val); }
+
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { return GET_CONTAINER().inDomain_noBoundCheck(data, b); }
   
@@ -174,6 +183,15 @@ struct QuickVarRefType
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { return data.inDomain_noBoundCheck(b); }
 
+  pair<unsigned,unsigned> getDepth(DomainInt b) const
+  { return GET_CONTAINER().getDepth(data, b); }
+
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { GET_CONTAINER().setExplanation(data, start, end, e); }
+
+  Explanation* getExplanation(DomainInt val) const
+  { return GET_CONTAINER().getExplanation(data, val); }
+
   DomainInt getMax() const
   { return data.getMax(); }
   
@@ -266,7 +284,16 @@ struct CompleteVarRefType
   }
   BOOL inDomain(DomainInt b) const
   { return (data.getCon()).inDomain(data, b); }
+
+  pair<unsigned,unsigned> getDepth(DomainInt b) const
+  { return (data.getCon()).getDepth(data, b); }
   
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { (data.getCon()).setExplanation(data, start, end, e); }
+
+  Explanation* getExplanation(DomainInt val) const
+  { return (data.getCon()).getExplanation(data, val); }
+
   DomainInt getMax() const
   { return (data.getCon()).getMax(data); }
   

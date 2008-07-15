@@ -63,6 +63,15 @@ struct ShiftVar
   BOOL inDomain_noBoundCheck(DomainInt i) const
   { return data.inDomain(i - shift); }
   
+  pair<unsigned,unsigned> getDepth(DomainInt b) const
+  { return data.getDepth(b - shift); }
+
+  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  { data.setExplanation(start - shift, end - shift, e); }
+
+  Explanation* getExplanation(DomainInt val) const
+  { return data.getExplanation(val - shift); }
+
   DomainInt getMax() const
   { return data.getMax() + shift; }
   
