@@ -102,8 +102,13 @@ struct NeqConstraint : public AbstractConstraint
 		  if(var_array[i].getMax() == remove_val)
 		    var_array[i].setMax(remove_val - 1);
 	    }
-		else
+		else {
 		  var_array[i].removeFromDomain(remove_val);
+		  ExplPtr e = ExplPtr(new Explanation());
+		  cout << e.get() << endl;
+		  var_array[i].setExplanation(remove_val, remove_val, e);
+		  cout << var_array[i].getExplanation(remove_val).get() << endl;
+		}
 	  }
     }
 	

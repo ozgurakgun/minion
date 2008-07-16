@@ -55,13 +55,13 @@ struct InfoRefType
     return data.getDepth(b);
   }
 
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, setExplanation);
     data.setExplanation(start, end, e); 
   }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { 
     VAR_INFO_ADDONE(VAR_TYPE, getExplanation);
     return data.getExplanation(val); 

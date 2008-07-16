@@ -140,7 +140,7 @@ struct MultiplyVar
     return data.getDepth(MultiplyHelp<VarRef>::divide_exact(b, Multiply));
   }
   
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { 
     if(Multiply >= 0)
       data.setExplanation(Multiply * start, Multiply * end, e);
@@ -148,10 +148,10 @@ struct MultiplyVar
       data.setExplanation(Multiply * end, Multiply * start, e);
   }
   
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { 
     if(val % Multiply != 0)
-      return NULL; //if never removed or set then no expln
+      return ExplPtr(NULL); //if never removed or set then no expln
     return data.getExplanation(Multiply * val); 
   }
 

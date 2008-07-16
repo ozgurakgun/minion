@@ -110,7 +110,7 @@ struct BigRangeVarContainer {
   vector<unsigned int> wdegs;
 #endif
   vector<vector<pair<unsigned,unsigned> > > depths;
-  vector<vector<Explanation*> > explns;
+  vector<vector<ExplPtr> > explns;
  
   unsigned var_count_m;
   BOOL lock_m;
@@ -197,7 +197,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
       D_INFO(0,DI_LONGINTCON,"Adding var of domain: (" + to_string(new_domains[i].second.lower_bound) + "," +
                                                          to_string(new_domains[i].second.upper_bound) + ")");
       depths.push_back(vector<pair<unsigned,unsigned> >(domain_size));
-      explns.push_back(vector<Explanation*>(domain_size));
+      explns.push_back(vector<ExplPtr>(domain_size));
     }
     constraints.resize(var_count_m);
 #ifdef WDEG
@@ -277,12 +277,12 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
     return depths[d.var_num][i - getInitialMin(d)];
   }
 
-  void setExplanation(BigRangeVarRef_internal& d, DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(BigRangeVarRef_internal& d, DomainInt start, DomainInt end, ExplPtr e)
   { 
     D_ASSERT(start <= end);
     D_ASSERT(start >= getInitialMin(d));
     D_ASSERT(end <= getInitialMax(d));
-    vector<Explanation*>& var_explns = explns[d.var_num];
+    vector<ExplPtr>& var_explns = explns[d.var_num];
     vector<pair<unsigned,unsigned> >& var_depths = depths[d.var_num];
     pair<unsigned,unsigned> timestamp = getMemory(stateObj).backTrack().next_timestamp();
     const DomainInt initMin = getInitialMin(d);
@@ -293,7 +293,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
     }
   }
 
-  Explanation* getExplanation(const BigRangeVarRef_internal& d, DomainInt val) const
+  ExplPtr getExplanation(const BigRangeVarRef_internal& d, DomainInt val) const
   { return explns[d.var_num][val - getInitialMin(d)]; }
   
   DomainInt getMin(BigRangeVarRef_internal d) const

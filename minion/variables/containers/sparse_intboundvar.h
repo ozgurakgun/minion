@@ -263,11 +263,11 @@ struct SparseBoundVarContainer {
     return make_pair(0,0); //haven't implemented yet
   }
   
-  void setExplanation(SparseBoundVarRef_internal<BoundType>, DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(SparseBoundVarRef_internal<BoundType>, DomainInt start, DomainInt end, ExplPtr e)
   { D_ASSERT(false); } //not yet implemented
 
-  Explanation* getExplanation(const SparseBoundVarRef_internal<BoundType> d, DomainInt val) const
-  { D_ASSERT(false); return NULL; } //not yet implemented
+  ExplPtr getExplanation(const SparseBoundVarRef_internal<BoundType> d, DomainInt val) const
+  { D_ASSERT(false); return ExplPtr(NULL); } //not yet implemented
   
   DomainInt getMin(SparseBoundVarRef_internal<BoundType> d) const
   {
