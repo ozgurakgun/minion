@@ -285,8 +285,9 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
     vector<Explanation*>& var_explns = explns[d.var_num];
     vector<pair<unsigned,unsigned> >& var_depths = depths[d.var_num];
     pair<unsigned,unsigned> timestamp = getMemory(stateObj).backTrack().next_timestamp();
-    const DomainInt last = end - getInitialMin(d);
-    for(DomainInt curr = start - getInitialMin(d); curr <= last; curr++) {
+    const DomainInt initMin = getInitialMin(d);
+    const DomainInt last = end - initMin;
+    for(DomainInt curr = start - initMin; curr <= last; curr++) {
       var_explns[curr] = e;
       var_depths[curr] = timestamp;
     }
