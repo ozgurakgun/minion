@@ -153,8 +153,8 @@ struct AnyVarRef_Abstract
   virtual BOOL inDomain(DomainInt b) const = 0;
   virtual BOOL inDomain_noBoundCheck(DomainInt b) const = 0;
   virtual pair<unsigned,unsigned> getDepth(DomainInt b) const = 0;
-  virtual void setExplanation(DomainInt start, DomainInt end, Explanation* e) = 0;
-  virtual Explanation* getExplanation(DomainInt val) const = 0;
+  virtual void setExplanation(DomainInt start, DomainInt end, ExplPtr e) = 0;
+  virtual ExplPtr getExplanation(DomainInt val) const = 0;
   virtual DomainInt getMax() const = 0;
   virtual DomainInt getMin() const = 0;
   virtual DomainInt getInitialMax() const = 0;
@@ -222,10 +222,10 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual pair<unsigned,unsigned> getDepth(DomainInt b) const
   { return data.getDepth(b); }
 
-  virtual void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  virtual void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { data.setExplanation(start, end, e); }
 
-  virtual Explanation* getExplanation(DomainInt val) const
+  virtual ExplPtr getExplanation(DomainInt val) const
   { return data.getExplanation(val); }
 
   virtual DomainInt getMax() const
@@ -337,10 +337,10 @@ public:
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { return data->inDomain_noBoundCheck(b); }
   
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { data->setExplanation(start, end, e); }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { return data->getExplanation(val); }
 
   DomainInt getMax() const

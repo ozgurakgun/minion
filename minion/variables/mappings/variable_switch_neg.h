@@ -68,7 +68,7 @@ struct SwitchNeg
   pair<unsigned,unsigned> getDepth(DomainInt b) const
   { return data.getDepth(b * multiplier); }
   
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { 
     if(multiplier == 1)
       data.setExplanation(start, end, e); 
@@ -76,7 +76,7 @@ struct SwitchNeg
       data.setExplanation(-end, -start, e);
   }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { return data.getExplanation(multiplier * val); }
 
   DomainInt getMax() const

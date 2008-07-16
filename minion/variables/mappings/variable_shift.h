@@ -66,10 +66,10 @@ struct ShiftVar
   pair<unsigned,unsigned> getDepth(DomainInt b) const
   { return data.getDepth(b - shift); }
 
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { data.setExplanation(start - shift, end - shift, e); }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { return data.getExplanation(val - shift); }
 
   DomainInt getMax() const

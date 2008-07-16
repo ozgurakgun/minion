@@ -72,10 +72,10 @@ struct VarRefType
   pair<unsigned,unsigned> getDepth(DomainInt b) const
   { return GET_CONTAINER().getDepth(data, b); }
 
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { GET_CONTAINER().setExplanation(data, start, end, e); }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { return GET_CONTAINER().getExplanation(data, val); }
 
   BOOL inDomain_noBoundCheck(DomainInt b) const
@@ -186,10 +186,10 @@ struct QuickVarRefType
   pair<unsigned,unsigned> getDepth(DomainInt b) const
   { return GET_CONTAINER().getDepth(data, b); }
 
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { GET_CONTAINER().setExplanation(data, start, end, e); }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { return GET_CONTAINER().getExplanation(data, val); }
 
   DomainInt getMax() const
@@ -288,10 +288,10 @@ struct CompleteVarRefType
   pair<unsigned,unsigned> getDepth(DomainInt b) const
   { return (data.getCon()).getDepth(data, b); }
   
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { (data.getCon()).setExplanation(data, start, end, e); }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { return (data.getCon()).getExplanation(data, val); }
 
   DomainInt getMax() const

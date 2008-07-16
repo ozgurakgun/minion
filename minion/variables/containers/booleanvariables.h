@@ -181,7 +181,7 @@ struct BooleanContainer
   vector<unsigned int> wdegs;
 #endif
   vector<vector<pair<unsigned,unsigned> > > depths;
-  vector<vector<Explanation*> > explns;
+  vector<vector<ExplPtr> > explns;
 
   unsigned var_count_m;
   TriggerList trigger_list;
@@ -225,7 +225,7 @@ struct BooleanContainer
     if(getOptions(stateObj).wdeg_on) wdegs.resize(bool_count);
 #endif
     depths.resize(bool_count, vector<pair<unsigned,unsigned> >(2)); //have a 2 vector per var
-    explns.resize(bool_count, vector<Explanation*>(2));
+    explns.resize(bool_count, vector<ExplPtr>(2));
   }
   
   /// Returns a reference to the ith Boolean variable which was previously created.
@@ -237,11 +237,11 @@ struct BooleanContainer
     return depths[d.var_num][b];
   }
 
-  void setExplanation(BoolVarRef_internal& d, DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(BoolVarRef_internal& d, DomainInt start, DomainInt end, ExplPtr e)
   { 
     D_ASSERT(start == 0 || start == 1);
     D_ASSERT(end == 0 || end == 1);
-    vector<Explanation*>& var_explns = explns[d.var_num];
+    vector<ExplPtr>& var_explns = explns[d.var_num];
     vector<pair<unsigned,unsigned> >& var_depths = depths[d.var_num];
     if(start == end) {
       var_explns[start] = e;
@@ -252,7 +252,7 @@ struct BooleanContainer
     }
   }
 
-  Explanation* getExplanation(const BoolVarRef_internal& d, DomainInt val) const
+  ExplPtr getExplanation(const BoolVarRef_internal& d, DomainInt val) const
   { 
     D_ASSERT(val == 0 || val == 1);
     return explns[d.var_num][val];

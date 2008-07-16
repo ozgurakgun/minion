@@ -123,15 +123,15 @@ struct BoundVarRef_internal
     return make_pair(0,0);
   }
 
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { 
     D_ASSERT(false); //not implemented yet
   }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { 
     D_ASSERT(false); //not implemented yet
-    return NULL; 
+    return ExplPtr(NULL);
   }
   
   DomainInt getMin() const

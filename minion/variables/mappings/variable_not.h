@@ -81,10 +81,10 @@ struct VarNot
   pair<unsigned,unsigned> getDepth(DomainInt b) const
   { return data.getDepth(swap(b)); }  
   
-  void setExplanation(DomainInt start, DomainInt end, Explanation* e)
+  void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
   { data.setExplanation(swap(end), swap(start), e); }
 
-  Explanation* getExplanation(DomainInt val) const
+  ExplPtr getExplanation(DomainInt val) const
   { return data.getExplanation(swap(val)); }
 
   DomainInt getMax() const
