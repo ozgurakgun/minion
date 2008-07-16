@@ -277,6 +277,17 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
     return depths[d.var_num][i - getInitialMin(d)];
   }
 
+  void clearExplanations()
+  {
+    for(int i = explns.size() - 1; i >= 0; i--) {
+      vector<ExplPtr>& es = explns[i];
+      const size_t s = es.size();
+      es.assign(s, ExplPtr());
+      vector<pair<unsigned,unsigned> >& ds = depths[i];
+      ds.assign(s, make_pair(0, 0));
+    }
+  }
+
   void setExplanation(BigRangeVarRef_internal& d, DomainInt start, DomainInt end, ExplPtr e)
   { 
     D_ASSERT(start <= end);
