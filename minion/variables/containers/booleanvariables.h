@@ -237,6 +237,12 @@ struct BooleanContainer
     return depths[d.var_num][b];
   }
 
+  void clearExplanations()
+  {
+    explns.assign(explns.size(), vector<ExplPtr>(2));
+    depths.assign(depths.size(), vector<pair<unsigned,unsigned> >(2));
+  }
+
   void setExplanation(BoolVarRef_internal& d, DomainInt start, DomainInt end, ExplPtr e)
   { 
     D_ASSERT(start == 0 || start == 1);

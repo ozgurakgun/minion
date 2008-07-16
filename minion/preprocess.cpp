@@ -18,9 +18,12 @@ void PropogateCSP(StateObj* stateObj, PropagationLevel preprocessLevel, vector<A
   
   PropagateGAC propGAC;
   propGAC(stateObj, vars);
-  
-  if(preprocessLevel == PropLevel_GAC)
+
+  if(preprocessLevel == PropLevel_GAC) {
+    getVars(stateObj).getBooleanContainer().clearExplanations();
+    getVars(stateObj).getBigRangevarContainer().clearExplanations(); 
     return;
+  }
   
   long long lits = lit_count(vars);
   bool bounds_check = (preprocessLevel == PropLevel_SACBounds) ||
@@ -39,8 +42,11 @@ void PropogateCSP(StateObj* stateObj, PropagationLevel preprocessLevel, vector<A
   if(print_info) cout << "Preprocess Time: " << (clock() - start_SAC_time) / (1.0 * CLOCKS_PER_SEC) << endl;
   if(print_info) cout << "Removed " << (lits - lit_count(vars)) << " literals" << endl;
   
-  if(preprocessLevel == PropLevel_SAC || preprocessLevel == PropLevel_SACBounds)
+  if(preprocessLevel == PropLevel_SAC || preprocessLevel == PropLevel_SACBounds) {
+    getVars(stateObj).getBooleanContainer().clearExplanations();
+    getVars(stateObj).getBigRangevarContainer().clearExplanations(); 
     return;
+  }
 
   lits = lit_count(vars);
   start_SAC_time = clock();
@@ -57,4 +63,6 @@ void PropogateCSP(StateObj* stateObj, PropagationLevel preprocessLevel, vector<A
   if(print_info) cout << "Preprocess 2 Time: " << (clock() - start_SAC_time) / (1.0 * CLOCKS_PER_SEC) << endl;
   if(print_info) cout << "Removed " << (lits - lit_count(vars)) << " literals" << endl;
 
+    getVars(stateObj).getBooleanContainer().clearExplanations();
+    getVars(stateObj).getBigRangevarContainer().clearExplanations(); 
 }
