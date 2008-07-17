@@ -22,6 +22,9 @@ using namespace ProbSpec;
 /// Builds the CSP given by instance into stateObj.
 void BuildCSP(StateObj* stateObj, CSPInstance& instance)
 {
+  // XXX : Hack for reify / reifyimply problem.
+  getState(stateObj).setDynamicTriggersUsed(true);
+        
   // Set up variables
   BuildCon::build_variables(stateObj, instance.vars);
   

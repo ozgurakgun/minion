@@ -49,6 +49,6 @@ ConstraintDef constraint_list[] = {
 { "w-notinrange" , CT_WATCHED_NOT_INRANGE, 2,{ read_var , read_constant_list }, DYNAMIC_CT },
 { "w-literal" , CT_WATCHED_LIT, 2,{ read_var , read_constant }, DYNAMIC_CT },
 { "w-notliteral" , CT_WATCHED_NOTLIT, 2,{ read_var , read_constant }, DYNAMIC_CT },
-{ "reify", CT_REIFY, 0, {read_var}, STATIC_CT },
-{ "reifyimply", CT_REIFYIMPLY, 0, {read_var}, STATIC_CT },
+{ "reify" , CT_REIFY, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
+{ "reifyimply-gac" , CT_REIFYIMPLY, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
 };

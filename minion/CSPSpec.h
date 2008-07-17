@@ -62,6 +62,7 @@ enum ReadTypes
   read_tuples,
   read_constraint,
   read_constraint_list,
+  read_bool_var,
   read_nothing
 };
 

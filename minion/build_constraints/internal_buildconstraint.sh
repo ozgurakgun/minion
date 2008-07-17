@@ -11,6 +11,9 @@
       "read_var")
         count=$((count + 1))
       ;;
+      "read_bool_var")
+        count=$((count + 1))
+      ;;
       "read_2_vars")
         count=$((count + 1))
       ;;

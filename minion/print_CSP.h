@@ -78,6 +78,7 @@ void print_instance(const ConstraintBlob& blob)
         print_instance( blob.vars[var_pos++]);
   		break;
   	  case read_var:
+      case read_bool_var:
         print_instance( blob.vars[var_pos++][0]);
   		break;
   	  case read_2_vars:
