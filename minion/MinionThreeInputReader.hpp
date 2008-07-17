@@ -474,7 +474,7 @@ ConstraintBlob MinionThreeInputReader<FileReader>::readConstraint(FileReader* in
 
   switch(constraint->type)
   {
-    case CT_REIFY:
+ /*   case CT_REIFY:
     case CT_REIFYIMPLY:
     { 
       if(reified)
@@ -492,7 +492,7 @@ ConstraintBlob MinionThreeInputReader<FileReader>::readConstraint(FileReader* in
         blob.reifyimply(reifyVar);
       return blob;
     }
-    break;
+    break;*/
 
     case CT_WATCHED_OR:
     return readConstraintOr(infile, get_constraint(CT_WATCHED_OR));
@@ -526,6 +526,11 @@ ConstraintBlob MinionThreeInputReader<FileReader>::readGeneralConstraint(FileRea
       break;
       case read_var:
       varsblob.push_back(make_vec(readIdentifier(infile)));
+      break;
+      case read_bool_var:
+      varsblob.push_back(make_vec(readIdentifier(infile)));
+      if(varsblob.back().back().type() != VAR_BOOL)
+        throw parse_exception("Expected Boolean variable!");
       break;
       case read_2_vars:
       {

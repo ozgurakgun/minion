@@ -445,7 +445,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     return vars;  
   }
   
-  virtual void get_satisfying_assignment(box<pair<int,int> >& assignment)
+  virtual void get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
   {
     pair<int, int> assign;
     for(int i = 0; i < var_array1.size(); ++i)

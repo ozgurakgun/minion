@@ -184,7 +184,7 @@ For Licence Information see file LICENSE.txt
     }
   }
 
-  void watch_assignment(AbstractConstraint* con, DynamicTrigger* dt, box<pair<int,int> >& assignment)
+  void watch_assignment(AbstractConstraint* con, DynamicTrigger* dt, box<pair<int,DomainInt> >& assignment)
   {
     vector<AnyVarRef>& vars = *(con->get_vars_singleton());
     for(int i = 0; i < assignment.size(); ++i)

@@ -245,4 +245,10 @@ reify<BoolVar>*
 reifyCon(StateObj* stateObj, AbstractConstraint* c, BoolVar var)
 { return new reify<BoolVar>(stateObj, &*c, var); }
 
+template<typename VarArray>
+inline AbstractConstraint*
+BuildCT_REIFY(StateObj* stateObj, const VarArray& vars, BOOL reify, 
+                          const BoolVarRef& reifyVar, ConstraintBlob& bl)
+                        { abort(); }
+
 #endif
