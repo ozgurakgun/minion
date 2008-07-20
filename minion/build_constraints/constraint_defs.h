@@ -50,5 +50,6 @@ ConstraintDef constraint_list[] = {
 { "w-literal" , CT_WATCHED_LIT, 2,{ read_var , read_constant }, DYNAMIC_CT },
 { "w-notliteral" , CT_WATCHED_NOTLIT, 2,{ read_var , read_constant }, DYNAMIC_CT },
 { "reify" , CT_REIFY, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
-{ "reifyimply-gac" , CT_REIFYIMPLY, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
+{ "reifyimply-quick" , CT_REIFYIMPLY_QUICK, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
+{ "reifyimply" , CT_REIFYIMPLY, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
 };

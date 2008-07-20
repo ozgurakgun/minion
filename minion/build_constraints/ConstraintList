@@ -48,5 +48,5 @@ DYNAMIC_CT "w-notinrange" 		CT_WATCHED_NOT_INRANGE 	read_var read_constant_list
 DYNAMIC_CT "w-literal" 			CT_WATCHED_LIT 		read_var read_constant
 DYNAMIC_CT "w-notliteral" 		CT_WATCHED_NOTLIT 	read_var read_constant
 DYNAMIC_CT "reify" 			CT_REIFY 		read_constraint read_bool_var
-DYNAMIC_CT "reifyimply-gac" 		CT_REIFYIMPLY 		read_constraint read_bool_var
-DYNAMIC_CT "reifyimply" 		CT_REIFYIMPLY_QUICK 	read_constraint read_bool_var
+DYNAMIC_CT "reifyimply-quick" 		CT_REIFYIMPLY_QUICK	read_constraint read_bool_var
+DYNAMIC_CT "reifyimply" 		CT_REIFYIMPLY 		read_constraint read_bool_var

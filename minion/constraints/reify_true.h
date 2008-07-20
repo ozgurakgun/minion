@@ -61,13 +61,24 @@ template<typename BoolVar, bool DoWatchAssignment>
   { D_FATAL_ERROR("You can't reverse a reified Constraint!"); }
 
   virtual int dynamic_trigger_count()
-  { 
+  {
     if(DoWatchAssignment)
       return child_constraints[0]->get_vars_singleton()->size(); 
     else
       return 0;
   }
 
+  virtual void get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+  {
+    if(rar_var.inDomain(0))
+    {
+      D_ASSERT(get_vars()[child_constraints[0]->get_vars_singleton()->size()].inDomain(0));
+      assignment.push_back(make_pair(child_constraints[0]->get_vars_singleton()->size(), 0));
+      return;
+    }
+    
+    child_constraints[0]->get_satisfying_assignment(assignment);
+  }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)
   {
@@ -80,7 +91,7 @@ template<typename BoolVar, bool DoWatchAssignment>
   }
 
   virtual vector<AnyVarRef> get_vars()
-  { 
+  {
     vector<AnyVarRef> vec = child_constraints[0]->get_vars();
     vec.push_back(rar_var);
     return vec;
@@ -242,7 +253,7 @@ BuildCT_REIFYIMPLY(StateObj* stateObj, const VarArray& vars, BOOL reify,
   D_ASSERT(bl.internal_constraints.size() == 1);
   D_ASSERT(vars.size() == 1);
   D_ASSERT(reify == false);
-  return truereifyCon(stateObj, build_dynamic_constraint(stateObj, bl.internal_constraints[0]), vars[0]);
+  return truereifyCon(stateObj, build_constraint(stateObj, bl.internal_constraints[0]), vars[0]);
 }
 
 template<typename VarArray>
@@ -253,7 +264,7 @@ BuildCT_REIFYIMPLY_QUICK(StateObj* stateObj, const VarArray& vars, BOOL reify,
   D_ASSERT(bl.internal_constraints.size() == 1);
   D_ASSERT(vars.size() == 1);
   D_ASSERT(reify == false);
-  return truereifyQuickCon(stateObj, build_dynamic_constraint(stateObj, bl.internal_constraints[0]), vars[0]);
+  return truereifyQuickCon(stateObj, build_constraint(stateObj, bl.internal_constraints[0]), vars[0]);
 }
 
 
