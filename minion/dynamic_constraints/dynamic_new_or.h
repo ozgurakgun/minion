@@ -39,12 +39,11 @@ For Licence Information see file LICENSE.txt
 //#define P(x) cout << x << endl;
 #define P(x)
 
-  struct Dynamic_OR : public AbstractConstraint
+  struct Dynamic_OR : public ParentConstraint
 {
   virtual string constraint_name()
     { return "Dynamic OR:"; }
 
-  vector<AbstractConstraint*> cons;
 
   Reversible<bool> full_propagate_called;
   bool constraint_locked;
@@ -56,27 +55,54 @@ For Licence Information see file LICENSE.txt
   int watched_constraint[2];
 
   Dynamic_OR(StateObj* _stateObj, vector<AbstractConstraint*> _con) : 
-    AbstractConstraint(_stateObj), cons(_con), full_propagate_called(_stateObj, false), assign_size(-1),
+    ParentConstraint(_stateObj, _con), full_propagate_called(_stateObj, false), assign_size(-1),
        constraint_locked(false)
-    { }
+    {
+      size_t max_size = 0;
+      for(int i = 0; i < child_constraints.size(); ++i)
+        max_size = max(max_size, child_constraints[i]->get_vars_singleton()->size());
+      assign_size = max_size;
+    }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)
   {
-  /*  DomainInt back_val = *(v + v_size - 1);
-    if(back_val != 0)
-      return poscon->check_assignment(v, v_size - 1);
-    else*/
-      return true;
+    for(int i = 0; i < child_constraints.size(); ++i)
+    {
+      if(child_constraints[i]->check_assignment(v + start_of_constraint[i],
+         child_constraints[i]->get_vars_singleton()->size()))
+         return true;
+    }
+    return false;
   }
+  
+  virtual void get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+  {
+    for(int i = 0; i < child_constraints.size(); ++i)
+    {
+      child_constraints[i]->get_satisfying_assignment(assignment);
+      if(!assignment.empty())
+      {
+        // Fix up assignment
+        int var_start = start_of_constraint[i];
+        for(int j = 0; j < assignment.size(); ++j)
+        {
+          assignment[j].first += start_of_constraint[i];
+        }
+        return; 
+      }
+    }
+  }
+  
 
   virtual vector<AnyVarRef> get_vars()
   { 
-  /*
-    vector<AnyVarRef> vec = poscon->get_vars();
-    vec.push_back(rar_var);
-    return vec;
-    */
-    return vector<AnyVarRef>();
+    vector<AnyVarRef> vecs;
+    for(int i = 0; i < child_constraints.size(); ++i)
+    {
+      vector<AnyVarRef>* var_ptr = child_constraints[i]->get_vars_singleton(); 
+      vecs.insert(vecs.end(), var_ptr->begin(), var_ptr->end());
+    }
+    return vecs;
   }
 
   virtual int dynamic_trigger_count() 
@@ -84,33 +110,12 @@ For Licence Information see file LICENSE.txt
     return assign_size * 2;
   }
 
-  // Override setup!
-  virtual void setup()
-  {
-    size_t max_size = 0;
-    for(int i = 0; i < cons.size(); ++i)
-      max_size = max(max_size, cons[i]->get_vars_singleton()->size());
-    assign_size = max_size;
-    
-    AbstractConstraint::setup();
-
-    for(int i = 0; i < cons.size(); ++i)
-    {
-      cons[i]->setup();
-      DynamicTrigger* start = cons[i]->dynamic_trigger_start();
-      int trigs = cons[i]->dynamic_trigger_count();
-
-      for(int i = 0; i < trigs; ++i)
-        (start + i)->constraint = this;
-    }
-  }
-
   virtual void special_check()
   {
     D_ASSERT(constraint_locked);
     constraint_locked = false;
     P("Full propagating: " << propagated_constraint);
-    cons[propagated_constraint]->full_propagate();
+    child_constraints[propagated_constraint]->full_propagate();
     full_propagate_called = true;
   }
 
@@ -138,24 +143,24 @@ For Licence Information see file LICENSE.txt
       P("Tripped: " << tripped_constraint << ":" << watched_constraint[tripped_constraint]);
       D_ASSERT(tripped_constraint == 0 || tripped_constraint == 1);
 
-      GET_ASSIGNMENT(assignment_try, cons[watched_constraint[tripped_constraint]]);
+      GET_ASSIGNMENT(assignment_try, child_constraints[watched_constraint[tripped_constraint]]);
       if(!assignment_try.empty())
       { // Found new support without having to move.
-        watch_assignment(cons[watched_constraint[tripped_constraint]], 
+        watch_assignment(child_constraints[watched_constraint[tripped_constraint]], 
                          dt + tripped_constraint * assign_size, assignment_try);
         P("Fixed, returning");
         return; 
       }
       
-      const size_t cons_s = cons.size();
+      const size_t cons_s = child_constraints.size();
       for(int i = 0; i < cons_s; ++i)
       {
         if(i != watched_constraint[0] && i != watched_constraint[1])
         {
-          GET_ASSIGNMENT(assignment, cons[i]);
+          GET_ASSIGNMENT(assignment, child_constraints[i]);
           if(!assignment.empty())
           {
-            watch_assignment(cons[i], dt + tripped_constraint * assign_size, assignment);
+            watch_assignment(child_constraints[i], dt + tripped_constraint * assign_size, assignment);
             watched_constraint[tripped_constraint] = i;
             P("New support. Switch " << tripped_constraint << " to " << i);
             return;
@@ -166,7 +171,7 @@ For Licence Information see file LICENSE.txt
       P("Start propagating " << watched_constraint[other_constraint]);
       // Need to propagate!
       propagated_constraint = watched_constraint[other_constraint];
-      cons[propagated_constraint]->full_propagate();
+      child_constraints[propagated_constraint]->full_propagate();
       full_propagate_called = true;
       //the following may be necessary for correctness for some constraints
       //constraint_locked = true;
@@ -175,8 +180,8 @@ For Licence Information see file LICENSE.txt
     }
 
 
-    if(full_propagate_called && cons[propagated_constraint]->own_trigger(trig))
-    { cons[propagated_constraint]->propagate(trig); }
+    if(full_propagate_called && dynamic_trigger_to_constraint[trig] == propagated_constraint)
+    { child_constraints[propagated_constraint]->propagate(trig); }
     else
     {
       // This is an optimisation.
@@ -204,14 +209,14 @@ For Licence Information see file LICENSE.txt
 
     bool found_watch = false;
 
-    while(loop < cons.size() && !found_watch)
+    while(loop < child_constraints.size() && !found_watch)
     {
-      GET_ASSIGNMENT(assignment, cons[loop]);
+      GET_ASSIGNMENT(assignment, child_constraints[loop]);
       if(!assignment.empty())
       {
         found_watch = true;
         watched_constraint[0] = loop;
-        watch_assignment(cons[loop], dt, assignment);
+        watch_assignment(child_constraints[loop], dt, assignment);
       }
       loop++;
     }
@@ -226,14 +231,14 @@ For Licence Information see file LICENSE.txt
     
     found_watch = false;
 
-    while(loop < cons.size() && !found_watch)
+    while(loop < child_constraints.size() && !found_watch)
     {
-      GET_ASSIGNMENT(assignment, cons[loop]);
+      GET_ASSIGNMENT(assignment, child_constraints[loop]);
       if(!assignment.empty())
       {
         found_watch = true;
         watched_constraint[1] = loop;
-        watch_assignment(cons[loop], dt + assign_size, assignment);
+        watch_assignment(child_constraints[loop], dt + assign_size, assignment);
         P("Found watch 1: " << loop);
         return;
       }
@@ -259,7 +264,7 @@ BuildCT_WATCHED_NEW_OR(StateObj* stateObj, BOOL reify,
 {
   vector<AbstractConstraint*> cons;
   for(int i = 0; i < bl.internal_constraints.size(); ++i)
-    cons.push_back(build_dynamic_constraint(stateObj, bl.internal_constraints[i]));
+    cons.push_back(build_constraint(stateObj, bl.internal_constraints[i]));
 
 
   if(reify) {

@@ -59,10 +59,12 @@ typedef vector<shared_ptr<AbstractTriggerCreator> > triggerCollection;
 class AbstractConstraint
 {
 protected:
-  /// Private member of the base class.
+  /// Private members of the base class.
+  
+  StateObj* stateObj;
   MemOffset _DynamicTriggerCache;
   vector<AnyVarRef> singleton_vars;
-  StateObj* stateObj;
+
 
 public:
 
@@ -149,7 +151,7 @@ public:
 #ifdef WDEG
   wdeg(1),
 #endif
-    stateObj(_stateObj), full_propagate_done(false)
+    stateObj(_stateObj), _DynamicTriggerCache(), singleton_vars(), full_propagate_done(false)
     {}
 
   /// Method to get constraint name for debugging.
@@ -235,6 +237,10 @@ protected:
   map<DynamicTrigger*, int> dynamic_trigger_to_constraint;
   // Maps a static trigger to a pair { constraint, trigger for that constraint } 
   vector< pair<int, int> > static_trigger_to_constraint;
+  // Maps variables to constraints
+  vector<int> variable_to_constraint;
+  // Gets start of each constraint
+  vector<int> start_of_constraint;
 public:
 
   pair<int,int> getChildStaticTrigger(int i)
@@ -264,7 +270,19 @@ public:
 
   ParentConstraint(StateObj* _stateObj, const vector<AbstractConstraint*> _children = vector<AbstractConstraint*>()) : 
   AbstractConstraint(_stateObj), child_constraints(_children)
-    {}
+  {
+    int var_count = 0;
+    for(int i = 0; i < child_constraints.size(); ++i)
+    {
+      start_of_constraint.push_back(var_count);
+      int con_size = child_constraints[i]->get_vars_singleton()->size();
+      for(int j = 0; j < con_size; ++j)
+      {
+        variable_to_constraint.push_back(i);
+      }
+      var_count += con_size;
+    }
+  }
 
   virtual ~ParentConstraint()
     {}
