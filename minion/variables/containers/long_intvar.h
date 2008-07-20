@@ -598,7 +598,7 @@ public:
 
   DomainInt getBaseVal(const BigRangeVarRef_internal& b, DomainInt v) const 
   {
-    D_ASSERT(inDomain(b, v));
+    D_ASSERT(getInitialMin(b) <= v && v <= getInitialMax(b));
     return v; 
   }
 
