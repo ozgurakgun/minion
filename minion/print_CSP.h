@@ -49,18 +49,7 @@ void print_instance( const vector<T>& vars, char start = '[', char end = ']')
 }
 
 void print_instance(const ConstraintBlob& blob)
-{
-    
-  if(blob.reified)
-  {
-    oss << "reify( ";
-  }
-  
-  if(blob.implied_reified)
-  {
-    oss << "reifyimply( ";
-  }
-  
+{  
   oss << blob.constraint->name;
   oss << "(";
   
@@ -104,13 +93,6 @@ void print_instance(const ConstraintBlob& blob)
   }
   
   oss << ")";
-  
-  if(blob.reified || blob.implied_reified)
-  {
-    oss << ", ";
-    print_instance( blob.reify_var);
-    oss << " )";
-  }
   oss << endl;  
 }
   
