@@ -24,6 +24,8 @@ For Licence Information see file LICENSE.txt
   * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#define SLOW_WOR
+
 #ifndef DYNAMIC_WATCHED_OR_NEW_H
 #define DYNAMIC_WATCHED_OR_NEW_H
 
@@ -36,8 +38,8 @@ For Licence Information see file LICENSE.txt
 #undef P
 #endif
 
-//#define P(x) cout << x << endl;
-#define P(x)
+#define P(x) cout << x << endl;
+//#define P(x)
 
   struct Dynamic_OR : public ParentConstraint
 {
@@ -125,6 +127,26 @@ For Licence Information see file LICENSE.txt
     constraint_locked = false;
   }
 
+  PROPAGATE_FUNCTION(int i, DomainDelta domain)
+  {
+    //PROP_INFO_ADDONE(WatchedOR);
+    P("Static propagate start");
+    if(constraint_locked)
+      return;
+
+    if(full_propagate_called)
+    {
+      P("Already doing static full propagate");
+      pair<int,int> childTrigger = getChildStaticTrigger(i);
+      P("Got trigger: " << i << ", maps to: " << childTrigger.first << "." << childTrigger.second);
+      if(childTrigger.first == propagated_constraint)
+      {
+        P("Passing trigger" << childTrigger.second << "on");
+        child_constraints[propagated_constraint]->propagate(childTrigger.second, domain);
+      }
+    }
+  }
+  
   PROPAGATE_FUNCTION(DynamicTrigger* trig)
   {
     //PROP_INFO_ADDONE(WatchedOr);
@@ -169,18 +191,21 @@ For Licence Information see file LICENSE.txt
       }
       
       P("Start propagating " << watched_constraint[other_constraint]);
-      // Need to propagate!
       propagated_constraint = watched_constraint[other_constraint];
+      // Need to propagate!
+      //the following may be necessary for correctness for some constraints
+#ifdef SLOW_WOR
+      constraint_locked = true;
+      getQueue(stateObj).pushSpecialTrigger(this);
+#else
       child_constraints[propagated_constraint]->full_propagate();
       full_propagate_called = true;
-      //the following may be necessary for correctness for some constraints
-      //constraint_locked = true;
-      //getQueue(stateObj).pushSpecialTrigger(this);
+#endif
       return;
     }
 
 
-    if(full_propagate_called && dynamic_trigger_to_constraint[trig] == propagated_constraint)
+    if(full_propagate_called && getChildDynamicTrigger(trig) == propagated_constraint)
     { child_constraints[propagated_constraint]->propagate(trig); }
     else
     {

@@ -474,26 +474,6 @@ ConstraintBlob MinionThreeInputReader<FileReader>::readConstraint(FileReader* in
 
   switch(constraint->type)
   {
- /*   case CT_REIFY:
-    case CT_REIFYIMPLY:
-    { 
-      if(reified)
-        throw parse_exception("Can't reify a reified constraint!");
-      ConstraintBlob blob = readConstraint(infile, true);
-
-      infile->check_sym(',');
-      Var reifyVar = readIdentifier(infile);
-      if(reifyVar.type() != VAR_BOOL)
-        throw parse_exception("Can only reify to a Boolean!");
-      infile->check_sym(')');
-      if(constraint->type == CT_REIFY)
-        blob.reify(reifyVar);
-      else
-        blob.reifyimply(reifyVar);
-      return blob;
-    }
-    break;*/
-
     case CT_WATCHED_OR:
     return readConstraintOr(infile, get_constraint(CT_WATCHED_OR));
     break;
