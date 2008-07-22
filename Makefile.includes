@@ -1,0 +1,8 @@
+# BOOST=1
+# BOOSTINCLUDE=-I/usr/local/include/boost-1_35/
+BOOST=1
+BOOSTINCLUDE=-I/usr/local/include/boost-1_35/
+MYFLAGS := -DUSE_TR1_HASH_MAP_AND_SET
+# This next line is just to allow the Makefile to check this file exists,
+# and is vaguely sane.
+SETUP_INCLUDED=1
