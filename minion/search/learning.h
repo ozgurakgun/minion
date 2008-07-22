@@ -37,4 +37,15 @@ class Literal : public Explanation {
   //NB. use dynamic_literal and dynamic_notliteral to implement getNegCon()
 };
 
+//the following class is for the use of alldiff and it's templated by variable
+//type so that the constraint posted can be a nice fast templated version of
+//alldiff
+template<typename VarRef>
+class Pairsame : public Explanation {
+public:
+  vector<VarRef> vars;
+
+  Pairsame(const vector<VarRef>& _vars) : vars(_vars) {}
+};
+
 #endif
