@@ -78,10 +78,6 @@ public:
   DynamicTrigger* dynamic_trigger_start()
     { return static_cast<DynamicTrigger*>(_DynamicTriggerCache.get_ptr()); }
 
-  /// Gives the value of a specific dynamic trigger.
-  //int dynamic_trigger_num(DynamicTrigger* trig)
-  //{ return trig - static_cast<DynamicTrigger*>(_DynamicTriggerCache.get_ptr()); }
-
   /// Defines the number of dynamic triggers the constraint wants.
   /// Must be implemented by any constraint.
   virtual int dynamic_trigger_count() 
@@ -91,10 +87,6 @@ public:
   /// this constraint. Only differs from the above for things like 'reify', 'reifyimply' and 'or'.
   virtual int dynamic_trigger_count_with_children()
     { return dynamic_trigger_count(); }
-
-  /// Checks if this constraint 'owns' this trigger.
-  virtual bool own_trigger(DynamicTrigger* trig)
-    { return false; }
 
   /// Gets all the triggers a constraint wants to set up.
   /** This function shouldn't do any propagation. That is full_propagate's job.*/
@@ -184,6 +176,7 @@ public:
     FAIL_EXIT(); 
   }
 
+  // Called if failure occurs without actiating a special trigger, so the constraint can unlock.
   virtual void special_unlock()
   { 
     cerr << "Serious internal error" << endl;
