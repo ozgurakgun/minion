@@ -25,13 +25,13 @@ class Conjunction : public Explanation {
   vector<ExplPtr> conjuncts;
 };
 
-class Literal : public Explanation {
+class Lit : public Explanation {
  public:
   Var var;
   DomainInt val; 
   bool assignment; //T iff it's an assignment
 
-  Literal(Var _var, DomainInt _val, bool _assignment) :
+  Lit(Var _var, DomainInt _val, bool _assignment) :
     var(_var), val(_val), assignment(_assignment) {}
 
   //NB. use dynamic_literal and dynamic_notliteral to implement getNegCon()

@@ -35,6 +35,7 @@
 
 #include "system/defined_macros.h"
 
+#include "print_CSP.h"
 
 /** @help switches Description 
 Minion supports a number of switches to augment default behaviour.  To
@@ -45,6 +46,11 @@ below contains all available switches. For example to see help on
    minion help switches -quiet
 
 replacing 'minion' by the name of the executable you're using.
+*/
+
+/** @help switches;-redump Description
+Print the minion input instance file to standard out. No search is
+carried out when this switch is used.
 */
 
 /** @help switches;-findallsols Description
@@ -368,8 +374,8 @@ try {
   if(getOptions(stateObj).redump)
   {
     ostringstream file;
-    print_instance(file, instance);
-    cout << file.str();
+    MinionInstancePrinter printer(instance);
+    cout << printer.getInstance();
     exit(0);
   }
   

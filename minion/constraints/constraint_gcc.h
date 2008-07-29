@@ -29,14 +29,10 @@
 The Generalized Cardinality Constraint (GCC) constrains the number of each value
 that a set of variables can take.
 
-gcc([primary variables], [capacity variables])
+gcc([primary variables], [values of interest], [capacity variables])
 
-For each value in the initial domains of the primary variables, there must be 
-a capacity variable. 
-
-For example, if the union of the initial domains of the primary variables is
-{-5,-3,-1,0,2,3,5} then there would be 11 capacity variables, specifying the
-number of occurrences of each value in the interval [-5 ... 5].
+For each value of interest, there must be a capacity variable, which specifies
+the number of occurrences of the value in the primary variables.
 
 This constraint is new, and its syntax and implementation are not finalised.
 */
@@ -51,7 +47,7 @@ The following constraint would restrict the occurrence of values 1..9 in myVec
 to be at most 2 each initially, and finally equal to the values of the cap
 vector.
 
-gcc(myVec, cap)
+gcc(myVec, [1,2,3,4,5,6,7,8,9], cap)
 */
 
 /** @help constraints;gcc Reifiability
@@ -65,17 +61,13 @@ bounds of the capacity variables are updated by counting values in the domains
 of the primary variables.
 */
 
-
-
-
 #include "gcc_common.h"
 
 template<typename VarArray1, typename VarArray2>
 AbstractConstraint*
-GlobalCardCon(StateObj* stateObj, const VarArray1& var_array, const VarArray2& cap_array)
-{ return new GCC<VarArray1, VarArray2>(stateObj, var_array, cap_array); }
-
-BUILD_CONSTRAINT2(CT_GCC, GlobalCardCon)
+GlobalCardCon(StateObj* stateObj, const VarArray1& var_array, const VarArray2& cap_array, ConstraintBlob& b)
+{ return new GCC<VarArray1, VarArray2>(stateObj, var_array, cap_array, b); }
 
 
+BUILD_CONSTRAINT2_WITH_BLOB(CT_GCC, GlobalCardCon)
 

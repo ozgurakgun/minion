@@ -22,6 +22,12 @@ cout << "Minion supports a number of switches to augment default behaviour. To" 
 << "" << endl
 << "replacing 'minion' by the name of the executable you're using." << endl << endl << endl;
 } else
+if("switches -redump" == request) {
+cout << "Help entry: " << "switches -redump" << endl << endl;
+cout << "Description" << "---------------------------------------------------------------------" << endl;
+cout << "Print the minion input instance file to standard out. No search is" << endl
+<< "carried out when this switch is used." << endl << endl << endl;
+} else
 if("switches -findallsols" == request) {
 cout << "Help entry: " << "switches -findallsols" << endl << endl;
 cout << "Description" << "---------------------------------------------------------------------" << endl;
@@ -239,6 +245,19 @@ cout << "Randomises the ordering of the decision variables. If the input file" <
 << "specifies as ordering it will randomly permute this. If no ordering is" << endl
 << "specified a random permutation of all the variables is used." << endl << endl << endl;
 } else
+if("constraints abs" == request) {
+cout << "Help entry: " << "constraints abs" << endl << endl;
+cout << "Description" << "---------------------------------------------------------------------" << endl;
+cout << "The constraint" << endl
+<< "" << endl
+<< " abs(x,y)" << endl
+<< "" << endl
+<< "makes sure that x=|y|, i.e. x is the absolute value of y." << endl << endl << endl;
+cout << "Reifiability" << "--------------------------------------------------------------------" << endl;
+cout << "This constraint is reifyimply'able but not reifiable." << endl << endl << endl;
+cout << "Reference" << "-----------------------------------------------------------------------" << endl;
+cout << "help constraints abs" << endl << endl << endl;
+} else
 if("constraints element_one" == request) {
 cout << "Help entry: " << "constraints element_one" << endl << endl;
 cout << "Description" << "---------------------------------------------------------------------" << endl;
@@ -364,14 +383,10 @@ cout << "Description" << "------------------------------------------------------
 cout << "The Generalized Cardinality Constraint (GCC) constrains the number of each value" << endl
 << "that a set of variables can take." << endl
 << "" << endl
-<< "gcc([primary variables], [capacity variables])" << endl
+<< "gcc([primary variables], [values of interest], [capacity variables])" << endl
 << "" << endl
-<< "For each value in the initial domains of the primary variables, there must be " << endl
-<< "a capacity variable. " << endl
-<< "" << endl
-<< "For example, if the union of the initial domains of the primary variables is" << endl
-<< "{-5,-3,-1,0,2,3,5} then there would be 11 capacity variables, specifying the" << endl
-<< "number of occurrences of each value in the interval [-5 ... 5]." << endl
+<< "For each value of interest, there must be a capacity variable, which specifies" << endl
+<< "the number of occurrences of the value in the primary variables." << endl
 << "" << endl
 << "This constraint is new, and its syntax and implementation are not finalised." << endl << endl << endl;
 cout << "Example" << "-------------------------------------------------------------------------" << endl;
@@ -384,7 +399,7 @@ cout << "Suppose the input file had the following vectors of variables defined:"
 << "to be at most 2 each initially, and finally equal to the values of the cap" << endl
 << "vector." << endl
 << "" << endl
-<< "gcc(myVec, cap)" << endl << endl << endl;
+<< "gcc(myVec, [1,2,3,4,5,6,7,8,9], cap)" << endl << endl << endl;
 cout << "Reifiability" << "--------------------------------------------------------------------" << endl;
 cout << "This constraint is reifyimply'able but not reifiable." << endl << endl << endl;
 cout << "Notes" << "---------------------------------------------------------------------------" << endl;
@@ -1068,8 +1083,8 @@ cout << "The constraint" << endl
 << "" << endl
 << " hamming(X,Y,c)" << endl
 << "" << endl
-<< "ensures that the hamming distance between X and Y is c. That is, that" << endl
-<< "c is the size of the set {i | X[i] != y[i]}" << endl << endl << endl;
+<< "ensures that the hamming distance between X and Y is at least c. That is, that" << endl
+<< "the size of the set {i | X[i] != y[i]} is greater than or equal to c." << endl << endl << endl;
 cout << "Reifiability" << "--------------------------------------------------------------------" << endl;
 cout << "This constraint is reifyimply'able but not reifiable." << endl << endl << endl;
 } else
@@ -1380,6 +1395,7 @@ cout << "help variables" << endl;
 } else
 if("constraints" == request) {
 cout << "Available subentries:" << endl;
+cout << "help constraints abs" << endl;
 cout << "help constraints alldiff" << endl;
 cout << "help constraints difference" << endl;
 cout << "help constraints diseq" << endl;
@@ -1442,6 +1458,7 @@ cout << "help switches -printsolsonly" << endl;
 cout << "help switches -quiet" << endl;
 cout << "help switches -randomiseorder" << endl;
 cout << "help switches -randomseed" << endl;
+cout << "help switches -redump" << endl;
 cout << "help switches -sollimit" << endl;
 cout << "help switches -solsout" << endl;
 cout << "help switches -tableout" << endl;
