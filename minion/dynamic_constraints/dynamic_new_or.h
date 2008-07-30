@@ -152,14 +152,21 @@ For Licence Information see file LICENSE.txt
     //PROP_INFO_ADDONE(WatchedOr);
     P("Prop");
     P("Current: " << watched_constraint[0] << " . " << watched_constraint[1]);
+    P("FullPropOn: " << (bool)full_propagate_called << ", on: " << propagated_constraint);
+    P("Locked:" << constraint_locked);
     if(constraint_locked)
       return;
 
     DynamicTrigger* dt = dynamic_trigger_start();
+    
+    P("Trig: " << trig - dt);
+    
 
-    if(!full_propagate_called && //this line may be necessary for either performance or correctness
-       trig >= dt && trig < dt + assign_size * 2)
+    if(trig >= dt && trig < dt + assign_size * 2)
     {
+      if(full_propagate_called)
+        return;
+
       int tripped_constraint = (trig - dt) / assign_size;
       int other_constraint = 1 - tripped_constraint;
       P("Tripped: " << tripped_constraint << ":" << watched_constraint[tripped_constraint]);
@@ -170,7 +177,9 @@ For Licence Information see file LICENSE.txt
       { // Found new support without having to move.
         watch_assignment(child_constraints[watched_constraint[tripped_constraint]], 
                          dt + tripped_constraint * assign_size, assignment_try);
-        P("Fixed, returning");
+        for(int i = 0; i < assignment_try.size(); ++i)
+          P(assignment_try[i].first << "." << assignment_try[i].second << "  ");
+        P(" -- Fixed, returning");
         return; 
       }
       
@@ -206,9 +215,13 @@ For Licence Information see file LICENSE.txt
 
 
     if(full_propagate_called && getChildDynamicTrigger(trig) == propagated_constraint)
-    { child_constraints[propagated_constraint]->propagate(trig); }
+    { 
+      P("Propagating child");
+      child_constraints[propagated_constraint]->propagate(trig); 
+    }
     else
     {
+      P("Clean old trigger");
       // This is an optimisation.
       trig->remove();
     }
@@ -217,6 +230,7 @@ For Licence Information see file LICENSE.txt
   void watch_assignment(AbstractConstraint* con, DynamicTrigger* dt, box<pair<int,DomainInt> >& assignment)
   {
     vector<AnyVarRef>& vars = *(con->get_vars_singleton());
+    D_ASSERT(assignment.size() <= assign_size);
     for(int i = 0; i < assignment.size(); ++i)
       vars[assignment[i].first].addDynamicTrigger(dt + i, DomainRemoval, assignment[i].second);
   }
@@ -242,8 +256,12 @@ For Licence Information see file LICENSE.txt
         found_watch = true;
         watched_constraint[0] = loop;
         watch_assignment(child_constraints[loop], dt, assignment);
+        for(int i = 0; i < assignment.size(); ++i)
+          P(assignment[i].first << "." << assignment[i].second << "  ");
+        
       }
-      loop++;
+      else
+        loop++;
     }
 
     if(found_watch == false)
@@ -252,10 +270,11 @@ For Licence Information see file LICENSE.txt
       return;
     }
 
-    P("Found watch 0: " << loop);
+    P(" -- Found watch 0: " << loop);
+    loop++;
     
     found_watch = false;
-
+    
     while(loop < child_constraints.size() && !found_watch)
     {
       GET_ASSIGNMENT(assignment, child_constraints[loop]);
@@ -264,10 +283,13 @@ For Licence Information see file LICENSE.txt
         found_watch = true;
         watched_constraint[1] = loop;
         watch_assignment(child_constraints[loop], dt + assign_size, assignment);
-        P("Found watch 1: " << loop);
+        for(int i = 0; i < assignment.size(); ++i)
+          P(assignment[i].first << "." << assignment[i].second << "  ");
+        P(" -- Found watch 1: " << loop);
         return;
       }
-      loop++;
+      else
+        loop++;
     }
 
     if(found_watch == false)
