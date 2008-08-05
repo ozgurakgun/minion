@@ -4,6 +4,8 @@
 # For now, you can try adding it to the end, it seems having multiple 
 # directories does not hurt.
 
+#C_PRUN_DLESS - make d_less return and store c explanations
+
 -include Makefile.includes
 ifndef SETUP_INCLUDED
 $(error ./configure.sh has not been executed! *** )
