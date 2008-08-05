@@ -187,6 +187,79 @@ struct GCC : public AbstractConstraint
     
   }
     
+  
+  virtual void get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+  {  
+      // borrow augpath for a second, to represent value occurrences
+      augpath.clear();
+      augpath.resize(numvals, 0);
+      // Check if the matching is OK.
+      bool matchok=true;
+      for(int i=0; i<numvars; i++)
+      {
+          if(var_array[i].inDomain(varvalmatching[i]))
+          {
+              augpath[varvalmatching[i]-dom_min]++;
+          }
+          else
+          {
+              matchok=false;
+              break;
+          }
+      }
+      if(matchok)
+      {
+          // now check occurrences
+          for(int i=0; i<val_array.size(); i++)
+          {
+              int val=val_array[i];
+              if(!capacity_array[i].inDomain(augpath[val-dom_min]))
+              {
+                  matchok=false;
+                  break;
+              }
+          }
+      }
+      
+      if(!matchok)
+      {
+          // run matching algorithm
+          // populate lower and upper
+        for(int i=0; i<val_array.size(); i++)
+        {
+            if(val_array[i]>=dom_min && val_array[i]<=dom_max)
+            {
+                int capi=val_to_cap_index[val_array[i]-dom_min];
+                if(capi>-1)
+                {
+                    lower[val_array[i]-dom_min]=capacity_array[capi].getMin();   // not quite right in the presence of duplicate values.
+                    upper[val_array[i]-dom_min]=capacity_array[capi].getMax();
+                }
+            }
+        }
+        
+        matchok=bfsmatching_gcc();
+      }
+      
+      if(!matchok)
+      {
+          // return empty list
+          return;
+      }
+      else
+      {
+          for(int i=0; i<numvars; i++)
+          {
+              assignment.push_back(make_pair(i, varvalmatching[i]));
+          }
+          for(int i=0; i<val_array.size(); i++)
+          {
+              assignment.push_back(make_pair(i+numvars, augpath[val_array[i]-dom_min]));
+          }
+          return;
+      }
+  }
+  
     void do_gcc_prop()
     {
         // find/ repair the matching.
