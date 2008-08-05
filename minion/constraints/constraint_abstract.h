@@ -66,6 +66,12 @@ class AbstractConstraint
 
 public:
   
+  vector<ExplPtr> ae; //explanations that must be added by default to any stored
+		      //by the constraint
+
+  void setAdditionalExplns(const vector<ExplPtr>& _ae) { ae = _ae; }
+  vector<ExplPtr>& getAdditionalExplns() { return ae; }
+  
   #ifdef WDEG
     unsigned int wdeg;
   #endif
