@@ -635,7 +635,19 @@ public:
 
 }
 
-ConstraintDef* get_constraint(ConstraintType t);
+extern ConstraintDef constraint_list[];
+extern int num_of_constraints;
+
+inline ConstraintDef* get_constraint(ConstraintType t)
+{
+  for(int i = 0; i < num_of_constraints; ++i)
+  {
+    if(constraint_list[i].type == t)
+      return constraint_list + i;
+  }
+
+  D_FATAL_ERROR("Constraint not found");
+}
 
 using namespace ProbSpec;
 

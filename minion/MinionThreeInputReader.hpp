@@ -300,25 +300,12 @@ nothing at all...)
 
 #include "MinionInputReader.h"
 
-
-
-extern ConstraintDef constraint_list[];
-
 #ifdef IN_MAIN
 #include "build_constraints/constraint_defs.h"
 int num_of_constraints = sizeof(constraint_list) / sizeof(ConstraintDef);
 #endif
 
-inline ConstraintDef* get_constraint(ConstraintType t)
-{
-  for(int i = 0; i < num_of_constraints; ++i)
-  {
-    if(constraint_list[i].type == t)
-      return constraint_list + i;
-  }
 
-  D_FATAL_ERROR("Constraint not found");
-}
 
 template<typename FileReader>
 void MinionThreeInputReader<FileReader>::parser_info(string s)
