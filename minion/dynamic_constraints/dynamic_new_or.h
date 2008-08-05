@@ -58,7 +58,7 @@ For Licence Information see file LICENSE.txt
 
   Dynamic_OR(StateObj* _stateObj, vector<AbstractConstraint*> _con) : 
     ParentConstraint(_stateObj, _con), full_propagate_called(_stateObj, false), assign_size(-1),
-       constraint_locked(false)
+       constraint_locked(false), propagated_constraint(-1)
     {
       size_t max_size = 0;
       for(int i = 0; i < child_constraints.size(); ++i)
@@ -158,9 +158,8 @@ For Licence Information see file LICENSE.txt
       return;
 
     DynamicTrigger* dt = dynamic_trigger_start();
-    
+
     P("Trig: " << trig - dt);
-    
 
     if(trig >= dt && trig < dt + assign_size * 2)
     {
@@ -200,8 +199,8 @@ For Licence Information see file LICENSE.txt
       }
       
       P("Start propagating " << watched_constraint[other_constraint]);
-      propagated_constraint = watched_constraint[other_constraint];
       // Need to propagate!
+      propagated_constraint = watched_constraint[other_constraint];
       //the following may be necessary for correctness for some constraints
 #ifdef SLOW_WOR
       constraint_locked = true;
@@ -247,7 +246,7 @@ For Licence Information see file LICENSE.txt
     int loop = 0;
 
     bool found_watch = false;
-
+    
     while(loop < child_constraints.size() && !found_watch)
     {
       GET_ASSIGNMENT(assignment, child_constraints[loop]);
@@ -258,7 +257,6 @@ For Licence Information see file LICENSE.txt
         watch_assignment(child_constraints[loop], dt, assignment);
         for(int i = 0; i < assignment.size(); ++i)
           P(assignment[i].first << "." << assignment[i].second << "  ");
-        
       }
       else
         loop++;
