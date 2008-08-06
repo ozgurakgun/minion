@@ -288,9 +288,6 @@ public:
     }
   }
 
-  virtual ~ParentConstraint()
-    {}
-
   virtual int dynamic_trigger_count_with_children()
   {
     int trigger_count = dynamic_trigger_count();
@@ -356,7 +353,11 @@ public:
     }
   }
 
-
+  virtual ~ParentConstraint()
+  {
+    for(int i = 0; i < child_constraints.size(); ++i)
+      delete child_constraints[i];
+  }
 };
 
 
