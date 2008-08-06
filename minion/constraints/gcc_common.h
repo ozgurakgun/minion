@@ -193,6 +193,7 @@ struct GCC : public AbstractConstraint
       // borrow augpath for a second, to represent value occurrences
       augpath.clear();
       augpath.resize(numvals, 0);
+      D_ASSERT(dom_max-dom_min+1 == numvals);
       // Check if the matching is OK.
       bool matchok=true;
       for(int i=0; i<numvars; i++)
@@ -239,6 +240,18 @@ struct GCC : public AbstractConstraint
         }
         
         matchok=bfsmatching_gcc();
+        
+        if(matchok)
+        {
+            // count occurrences again.
+            augpath.clear();
+              augpath.resize(numvals, 0);
+              for(int i=0; i<numvars; i++)
+              {
+                  D_ASSERT(var_array[i].inDomain(varvalmatching[i]));
+                  augpath[varvalmatching[i]-dom_min]++;
+              }
+        }
       }
       
       if(!matchok)
@@ -254,7 +267,26 @@ struct GCC : public AbstractConstraint
           }
           for(int i=0; i<val_array.size(); i++)
           {
-              assignment.push_back(make_pair(i+numvars, augpath[val_array[i]-dom_min]));
+              int occ;
+              if(val_array[i]<dom_min || val_array[i]>dom_max)
+              {
+                  occ=0;
+              }
+              else
+              {
+                  occ=augpath[val_array[i]-dom_min];
+              }
+              
+             if(capacity_array[i].inDomain(occ))
+             {
+                 assignment.push_back(make_pair(i+numvars, occ));
+             }
+             else
+             {
+                 // push upper and lower bounds.
+                 assignment.push_back(make_pair(i+numvars, capacity_array[i].getMin()));
+                 assignment.push_back(make_pair(i+numvars, capacity_array[i].getMax()));
+             }
           }
           return;
       }
