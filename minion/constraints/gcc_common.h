@@ -214,7 +214,12 @@ struct GCC : public AbstractConstraint
           for(int i=0; i<val_array.size(); i++)
           {
               int val=val_array[i];
-              if(!capacity_array[i].inDomain(augpath[val-dom_min]))
+              if( (val<dom_min || val>dom_max) && !capacity_array[i].inDomain(0))
+              {
+                  matchok=false;
+                  break;
+              }
+              if( val>=dom_min && val<=dom_max && !capacity_array[i].inDomain(augpath[val-dom_min]))
               {
                   matchok=false;
                   break;
