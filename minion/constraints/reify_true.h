@@ -63,7 +63,7 @@ template<typename BoolVar, bool DoWatchAssignment>
   virtual int dynamic_trigger_count()
   {
     if(DoWatchAssignment)
-      return child_constraints[0]->get_vars_singleton()->size(); 
+      return child_constraints[0]->get_vars_singleton()->size()*2; 
     else
       return 0;
   }

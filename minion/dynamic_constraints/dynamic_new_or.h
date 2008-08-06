@@ -63,7 +63,7 @@ For Licence Information see file LICENSE.txt
       size_t max_size = 0;
       for(int i = 0; i < child_constraints.size(); ++i)
         max_size = max(max_size, child_constraints[i]->get_vars_singleton()->size());
-      assign_size = max_size;
+      assign_size = max_size * 2;
     }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)
