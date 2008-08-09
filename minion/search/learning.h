@@ -30,7 +30,21 @@ class Conjunction : public Explanation {
  public:
   vector<ExplPtr> conjuncts;
 
-  Conjunction(vector<ExplPtr>& _conjuncts) : conjuncts(_conjuncts) {}
+  Conjunction(const vector<ExplPtr>& _conjuncts) : conjuncts(_conjuncts) {}
+
+  //convenience constructors
+  Conjunction(const vector<ExplPtr>& c, const ExplPtr e)
+  {
+    conjuncts = c;
+    conjuncts.push_back(e);
+  }
+  Conjunction(const vector<ExplPtr>& c1, const vector<ExplPtr>& c2)
+  {
+    conjuncts = c1;
+    conjuncts.reserve(conjuncts.size() + c2.size());
+    conjuncts.insert(conjuncts.end(), c2.begin(), c2.end());
+  }
+
   Conjunction() {}
 
   virtual void myPrint(std::ostream& o) const
@@ -41,6 +55,14 @@ class Conjunction : public Explanation {
     o << ")";
   }
 };
+
+//build a conjunction, but if it's length 1 don't bother!
+inline ExplPtr conjToExplPtr(const vector<ExplPtr>& con)
+{
+  D_ASSERT(con.size() > 0);
+  if(con.size() == 1) return con[0];
+  else return ExplPtr(new Conjunction(con));
+}
 
 class Lit : public Explanation {
  public:
@@ -85,5 +107,10 @@ class LessConstant : public Explanation {
     else o << "LESS(" << c << "," << v << ")";
   }
 };
+
+inline ExplPtr makeConjunction(vector<ExplPtr>& conjuncts)
+{
+  
+}
 
 #endif

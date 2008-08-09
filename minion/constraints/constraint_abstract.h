@@ -95,6 +95,9 @@ public:
   /// this constraint. Only differs from the above for things like 'reify', 'reifyimply' and 'or'.
   virtual int dynamic_trigger_count_with_children()
   { return dynamic_trigger_count(); }
+
+  //why is the constraint false in the current state?
+  virtual void getFalseExpl(vector<ExplPtr>&) { D_ASSERT(false); } //not functional
   
   /// Checks if this constraint 'owns' this trigger.
   virtual bool own_trigger(DynamicTrigger* trig)

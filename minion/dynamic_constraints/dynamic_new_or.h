@@ -122,6 +122,23 @@ For Licence Information see file LICENSE.txt
     constraint_locked = false;
   }
 
+  //the following code sets up the propagating child constraint with additional
+  //explanations that it must use to justify why it is propagating in the first
+  //place
+  void setupAdditionalExpls()
+  {
+    D_ASSERT(child_constraints.size() > 1);
+    vector<ExplPtr> conjuncts;
+    const size_t num_cons = child_constraints.size();
+    conjuncts.reserve(num_cons - 1);
+     //now loop over all constraints
+    D_ASSERT(0 <= propagated_constraint && propagated_constraint < num_cons);
+    for(size_t i = 0; i < num_cons; i++)
+      if(i != propagated_constraint)
+	child_constraints[i]->getFalseExpl(conjuncts);
+    child_constraints[propagated_constraint]->setAdditionalExplns(conjuncts);
+  }
+  
   PROPAGATE_FUNCTION(DynamicTrigger* trig)
   {
     //PROP_INFO_ADDONE(WatchedOr);
@@ -176,6 +193,7 @@ For Licence Information see file LICENSE.txt
       P("Start propagating " << watched_constraint[other_constraint]);
       // Need to propagate!
       propagated_constraint = watched_constraint[other_constraint];
+      setupAdditionalExpls();
       //the following may be necessary for correctness for some constraints
 #ifdef SLOW_WOR
       constraint_locked = true;
@@ -268,8 +286,9 @@ For Licence Information see file LICENSE.txt
     if(found_watch == false)
     { 
       propagated_constraint = watched_constraint[0];
+      setupAdditionalExpls();
       constraint_locked = true;
-	    getQueue(stateObj).pushSpecialTrigger(this);
+      getQueue(stateObj).pushSpecialTrigger(this);
     }
 
   }
