@@ -52,22 +52,31 @@ struct WatchLessConstraint : public AbstractConstraint
       vector<ExplPtr> prunings;
       const Var var1_var = var1.getBaseVar();
       const DomainInt var1_min = var1.getMin();
-      for(DomainInt val = var1.getInitialMin(); val < var1_min; val++)
+      const DomainInt var1_initmin = var1.getInitialMin();
+      prunings.reserve(var1_min - var1_initmin);
+      for(DomainInt val = var1_initmin; val < var1_min; val++)
 	prunings.push_back(ExplPtr(new Lit(var1_var, var1.getBaseVal(val), false)));
       //next start storing explanations for each value of var2 that will shortly be pruned
       const DomainInt var2_min = var2.getMin();
       for(DomainInt val = var1.getMin(); val >= var2_min; val--) {
 	if(var2.inDomain(val)) //might be quicker here to overwrite anyway, which is safe
-	  var2.setExplanation(val, val, ExplPtr(new Conjunction(prunings)));
+	  var2.setExplanation(val, val, ExplPtr(new Conjunction(getAdditionalExplns(), prunings)));
 	if(prunings.size() > 0)
 	  prunings.pop_back();
       }
     }
 #else
+    const DomainInt var1_initmin = var1.getInitialMin();
     const DomainInt lim = var1.getMin(); //last value that may be pruned below
     for(DomainInt val = var2.getMin(); val <= lim; val++)
       if(var2.inDomain(val)) //might be quicker to overwrite anyway, and safe, but unknown empirical effect
-	var2.setExplanation(val, val, ExplPtr(new LessConstant<Var1>(val - 1, var1)));
+	if(val <= var1_initmin) { //removal explanation can be empty, i.e. no extra assumptions needed
+	  var2.setExplanation(val, val, ExplPtr(new Conjunction(getAdditionalExplns())));
+	} else {
+	  var2.setExplanation(val, val, 
+			      ExplPtr(new Conjunction(getAdditionalExplns(),
+						      ExplPtr(new LessConstant<Var1>(val - 1, var1)))));
+	}
     //i.e. whenever var1 > val-1, i.e. var1 >= val, i.e. var1 can't be less than val
 #endif
     var2.setMin(var1.getMin() + 1);
@@ -81,22 +90,31 @@ struct WatchLessConstraint : public AbstractConstraint
       vector<ExplPtr> prunings;
       const Var var2_var = var2.getBaseVar();
       const DomainInt var2_max = var2.getMax();
-      for(DomainInt val = var2.getInitialMax(); val > var2_max; val--)
+      const DomainInt var2_initmax = var2.getInitialMax();
+      prunings.reserve(var2_initmax - var2_max);
+      for(DomainInt val = var2_initmax; val > var2_max; val--)
 	prunings.push_back(ExplPtr(new Lit(var2_var, var2.getBaseVal(val), false)));
       //next start storing explanations for each value of var1 that will shortly be pruned
       const DomainInt var1_max = var1.getMax();
       for(DomainInt val = var2.getMax(); val <= var1_max; val++) {
 	if(var1.inDomain(val)) //might be quicker here to overwrite anyway, which is safe
-	  var1.setExplanation(val, val, ExplPtr(new Conjunction(prunings)));
+	  var1.setExplanation(val, val, ExplPtr(new Conjunction(getAdditionalExplns(), prunings)));
 	if(prunings.size() > 0)
 	  prunings.pop_back();
       }
     }
 #else
+    const DomainInt var2_initmax = var2.getInitialMax();
     const DomainInt lim = var1.getMax(); //last value that may be pruned
     for(DomainInt val = var2.getMax(); val <= lim; val++)
       if(var1.inDomain(val)) //might be quicker to overwrite anyway, and safe, but unknown empirical effect
-	var1.setExplanation(val, val, ExplPtr(new LessConstant<Var2>(var2, val + 1)));
+	if(val >= var2_initmax) {
+	  var1.setExplanation(val, val, ExplPtr(new Conjunction(getAdditionalExplns())));
+	} else {
+	  var1.setExplanation(val, val, 
+			      ExplPtr(new Conjunction(getAdditionalExplns(),
+						      ExplPtr(new LessConstant<Var2>(var2, val + 1)))));
+	}
     //i.e. whenever var2 < val+1, i.e. var2 <= val, i.e. var2 can't be more than val
 #endif
     var1.setMax(var2.getMax() - 1);    
@@ -141,22 +159,23 @@ struct WatchLessConstraint : public AbstractConstraint
     return vars;
   }
 
-  ExplPtr getFalseExpl()
+  //get explanations for falseness and put them in the provided vector
+  virtual void getFalseExpl(vector<ExplPtr>& expl)
   {
 #ifndef C_PRUN_LESS
     //explanation is all the prunings from var1 < var2.getMax() and from var2 > var1.getMin()
-    vector<ExplPtr> prunings;
     const Var var2_var = var2.getBaseVar();
     const DomainInt var2_initmax = var2.getInitialMax();
-    for(DomainInt val = var1.getMin() + 1; val < var2_initmax; val++)
-      prunings.push_back(ExplPtr(new Lit(var2_var, var2.getBaseVal(val), false)));
-    const Var var1_var = var1.getBaseVar();
+    const DomainInt var1_min = var1.getMin();
     const DomainInt var2_max = var2.getMax();
-    for(DomainInt val = var1.getInitialMin(); val < var2_max; val++)
-      prunings.push_back(ExplPtr(new Lit(var1_var, var1.getBaseVal(val), false)));
-    return ExplPtr(new Conjunction(prunings));
+    const DomainInt var1_initmin = var1.getInitialMin();
+    for(DomainInt val = var1_min + 1; val <= var2_initmax; val++)
+      expl.push_back(ExplPtr(new Lit(var2_var, var2.getBaseVal(val), false)));
+    const Var var1_var = var1.getBaseVar();
+    for(DomainInt val = var1_initmin; val < var2_max; val++)
+      expl.push_back(ExplPtr(new Lit(var1_var, var1.getBaseVal(val), false)));
 #else
-    return ExplPtr(new GreaterEqual<Var1,Var2>(var1, var2)); //false when var1 >= var2
+    expl.push_back(ExplPtr(new GreaterEqual<Var1,Var2>(var1, var2))); //false when var1 >= var2
 #endif
   }  
   
