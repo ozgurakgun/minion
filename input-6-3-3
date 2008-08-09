@@ -1,0 +1,38 @@
+MINION 3
+#antichain<6,3,3>
+**VARIABLES**
+DISCRETE ARRAY[6,3] {0..2}
+**SEARCH**
+VARORDER [ARRAY]
+**CONSTRAINTS**
+watched-or({watchless(ARRAY[0,0],ARRAY[1,0]),watchless(ARRAY[0,1],ARRAY[1,1]),watchless(ARRAY[0,2],ARRAY[1,2])})
+watched-or({watchless(ARRAY[1,0],ARRAY[0,0]),watchless(ARRAY[1,1],ARRAY[0,1]),watchless(ARRAY[1,2],ARRAY[0,2])})
+watched-or({watchless(ARRAY[0,0],ARRAY[2,0]),watchless(ARRAY[0,1],ARRAY[2,1]),watchless(ARRAY[0,2],ARRAY[2,2])})
+watched-or({watchless(ARRAY[2,0],ARRAY[0,0]),watchless(ARRAY[2,1],ARRAY[0,1]),watchless(ARRAY[2,2],ARRAY[0,2])})
+watched-or({watchless(ARRAY[0,0],ARRAY[3,0]),watchless(ARRAY[0,1],ARRAY[3,1]),watchless(ARRAY[0,2],ARRAY[3,2])})
+watched-or({watchless(ARRAY[3,0],ARRAY[0,0]),watchless(ARRAY[3,1],ARRAY[0,1]),watchless(ARRAY[3,2],ARRAY[0,2])})
+watched-or({watchless(ARRAY[0,0],ARRAY[4,0]),watchless(ARRAY[0,1],ARRAY[4,1]),watchless(ARRAY[0,2],ARRAY[4,2])})
+watched-or({watchless(ARRAY[4,0],ARRAY[0,0]),watchless(ARRAY[4,1],ARRAY[0,1]),watchless(ARRAY[4,2],ARRAY[0,2])})
+watched-or({watchless(ARRAY[0,0],ARRAY[5,0]),watchless(ARRAY[0,1],ARRAY[5,1]),watchless(ARRAY[0,2],ARRAY[5,2])})
+watched-or({watchless(ARRAY[5,0],ARRAY[0,0]),watchless(ARRAY[5,1],ARRAY[0,1]),watchless(ARRAY[5,2],ARRAY[0,2])})
+watched-or({watchless(ARRAY[1,0],ARRAY[2,0]),watchless(ARRAY[1,1],ARRAY[2,1]),watchless(ARRAY[1,2],ARRAY[2,2])})
+watched-or({watchless(ARRAY[2,0],ARRAY[1,0]),watchless(ARRAY[2,1],ARRAY[1,1]),watchless(ARRAY[2,2],ARRAY[1,2])})
+watched-or({watchless(ARRAY[1,0],ARRAY[3,0]),watchless(ARRAY[1,1],ARRAY[3,1]),watchless(ARRAY[1,2],ARRAY[3,2])})
+watched-or({watchless(ARRAY[3,0],ARRAY[1,0]),watchless(ARRAY[3,1],ARRAY[1,1]),watchless(ARRAY[3,2],ARRAY[1,2])})
+watched-or({watchless(ARRAY[1,0],ARRAY[4,0]),watchless(ARRAY[1,1],ARRAY[4,1]),watchless(ARRAY[1,2],ARRAY[4,2])})
+watched-or({watchless(ARRAY[4,0],ARRAY[1,0]),watchless(ARRAY[4,1],ARRAY[1,1]),watchless(ARRAY[4,2],ARRAY[1,2])})
+watched-or({watchless(ARRAY[1,0],ARRAY[5,0]),watchless(ARRAY[1,1],ARRAY[5,1]),watchless(ARRAY[1,2],ARRAY[5,2])})
+watched-or({watchless(ARRAY[5,0],ARRAY[1,0]),watchless(ARRAY[5,1],ARRAY[1,1]),watchless(ARRAY[5,2],ARRAY[1,2])})
+watched-or({watchless(ARRAY[2,0],ARRAY[3,0]),watchless(ARRAY[2,1],ARRAY[3,1]),watchless(ARRAY[2,2],ARRAY[3,2])})
+watched-or({watchless(ARRAY[3,0],ARRAY[2,0]),watchless(ARRAY[3,1],ARRAY[2,1]),watchless(ARRAY[3,2],ARRAY[2,2])})
+watched-or({watchless(ARRAY[2,0],ARRAY[4,0]),watchless(ARRAY[2,1],ARRAY[4,1]),watchless(ARRAY[2,2],ARRAY[4,2])})
+watched-or({watchless(ARRAY[4,0],ARRAY[2,0]),watchless(ARRAY[4,1],ARRAY[2,1]),watchless(ARRAY[4,2],ARRAY[2,2])})
+watched-or({watchless(ARRAY[2,0],ARRAY[5,0]),watchless(ARRAY[2,1],ARRAY[5,1]),watchless(ARRAY[2,2],ARRAY[5,2])})
+watched-or({watchless(ARRAY[5,0],ARRAY[2,0]),watchless(ARRAY[5,1],ARRAY[2,1]),watchless(ARRAY[5,2],ARRAY[2,2])})
+watched-or({watchless(ARRAY[3,0],ARRAY[4,0]),watchless(ARRAY[3,1],ARRAY[4,1]),watchless(ARRAY[3,2],ARRAY[4,2])})
+watched-or({watchless(ARRAY[4,0],ARRAY[3,0]),watchless(ARRAY[4,1],ARRAY[3,1]),watchless(ARRAY[4,2],ARRAY[3,2])})
+watched-or({watchless(ARRAY[3,0],ARRAY[5,0]),watchless(ARRAY[3,1],ARRAY[5,1]),watchless(ARRAY[3,2],ARRAY[5,2])})
+watched-or({watchless(ARRAY[5,0],ARRAY[3,0]),watchless(ARRAY[5,1],ARRAY[3,1]),watchless(ARRAY[5,2],ARRAY[3,2])})
+watched-or({watchless(ARRAY[4,0],ARRAY[5,0]),watchless(ARRAY[4,1],ARRAY[5,1]),watchless(ARRAY[4,2],ARRAY[5,2])})
+watched-or({watchless(ARRAY[5,0],ARRAY[4,0]),watchless(ARRAY[5,1],ARRAY[4,1]),watchless(ARRAY[5,2],ARRAY[4,2])})
+**EOF**
