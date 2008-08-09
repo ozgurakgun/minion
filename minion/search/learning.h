@@ -21,6 +21,8 @@ class Explanation {
  public:
   friend std::ostream& operator<<(std::ostream& o, const Explanation& e)
   { e.myPrint(o); return o; }
+
+  virtual ~Explanation() { }
 };
 
 //explanations are stored as garbage collected pointers
