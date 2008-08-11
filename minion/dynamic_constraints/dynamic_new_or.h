@@ -131,7 +131,7 @@ For Licence Information see file LICENSE.txt
     vector<ExplPtr> conjuncts;
     const size_t num_cons = child_constraints.size();
     conjuncts.reserve(num_cons - 1);
-     //now loop over all constraints
+    //now loop over all constraints
     D_ASSERT(0 <= propagated_constraint && propagated_constraint < num_cons);
     for(size_t i = 0; i < num_cons; i++)
       if(i != propagated_constraint)

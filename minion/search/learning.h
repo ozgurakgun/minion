@@ -110,9 +110,4 @@ class LessConstant : public Explanation {
   }
 };
 
-inline ExplPtr makeConjunction(vector<ExplPtr>& conjuncts)
-{
-  
-}
-
 #endif
