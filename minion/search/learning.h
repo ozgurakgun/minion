@@ -28,6 +28,9 @@ class Explanation {
 //explanations are stored as garbage collected pointers
 typedef shared_ptr<Explanation> ExplPtr;
 
+inline std::ostream& operator<<(std::ostream& o, const ExplPtr& e)
+{ if(e.get()) { o << *(e.get()); } return o; }
+
 class Lit : public Explanation {
  public:
   Var var;
@@ -36,6 +39,10 @@ class Lit : public Explanation {
 
   Lit(Var _var, DomainInt _val, bool _assignment) :
     var(_var), val(_val), assignment(_assignment) {}
+
+  Lit(const Lit& l) : Explanation(), var(l.var), val(l.val), assignment(l.assignment) {}
+
+  virtual bool operator==(const Lit& l) { return val == l.val && var == l.var && assignment == l.assignment; }
 
   virtual void myPrint(std::ostream& o) const
   { o << "LIT(var=" << var << ",val=" << val << ",ass=" << assignment << ")"; }

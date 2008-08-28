@@ -113,4 +113,6 @@ namespace Controller
 #include "constraints/function_defs.hpp"
 #include "constraints/constraint_abstract.hpp"
 
+#include "search/learning.hpp"
+
 #endif
