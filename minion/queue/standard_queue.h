@@ -203,7 +203,9 @@ public:
 	  return;
 	}
 #endif
-	
+
+	bool* fail_ptr = getState(stateObj).getFailedPtr();
+		
 	while(true)
 	{
 #ifdef DYNAMICTRIGGERS
@@ -237,6 +239,13 @@ public:
 	  special_triggers.pop_back();
 	  CON_INFO_ADDONE(SpecialTrigger);
 	  trig->special_check();
+#ifndef USE_SETJMP
+	  if(*fail_ptr)
+	    {
+	      clearQueues();
+	      return;
+	    }
+#endif
 #ifdef WDEG
 	  if(getOptions(stateObj).wdeg_on && getState(stateObj).isFailed()) trig->incWdeg();
 #endif

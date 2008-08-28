@@ -121,6 +121,15 @@ struct BigRangeVarContainer {
   domain_bound_type& upper_bound(BigRangeVarRef_internal i) const
   { return static_cast<domain_bound_type*>(bound_data.get_ptr())[i.var_num*2 + 1]; }
     
+  DomainInt getBaseVal(const BigRangeVarRef_internal& b, DomainInt v) const 
+  {
+    D_ASSERT(getInitialMin(b) <= v && v <= getInitialMax(b));
+    return v; 
+  }
+
+  Var getBaseVar(const BigRangeVarRef_internal& b) const
+  { return Var(VAR_DISCRETE, b.var_num); }
+
   /// Find new "true" upper bound.
   /// This should be used by first setting the value of upper_bound(d), then calling
   /// this function to move this value past any removed values.
@@ -132,6 +141,7 @@ struct BigRangeVarContainer {
     //DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar < lower)
 	{
+	  getState(stateObj).failed_var = getBaseVar(d);
 	  getState(stateObj).setFailed(true);
 	  /// Here just remove the value which should lead to the least work.
 	  return upper_bound(d);
@@ -144,6 +154,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
+    getState(stateObj).failed_var = getBaseVar(d);
     getState(stateObj).setFailed(true);
     return old_up_bound;
   }
@@ -159,6 +170,7 @@ struct BigRangeVarContainer {
     //DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar > upper)
 	{
+	  getState(stateObj).failed_var = getBaseVar(d);
 	  getState(stateObj).setFailed(true);
 	  /// Here just remove the value which should lead to the least work.
 	  return lower_bound(d);
@@ -171,6 +183,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
+    getState(stateObj).failed_var = getBaseVar(d);
     getState(stateObj).setFailed(true);
     return old_low_bound;
   }
@@ -388,6 +401,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     if(!inDomain(d,offset))
     {
+      getState(stateObj).failed_var = getBaseVar(d);
       getState(stateObj).setFailed(true); 
       return false;
     }
@@ -395,6 +409,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
       return false;
     if(offset > upper || offset < lower)
     {
+      getState(stateObj).failed_var = getBaseVar(d);
       getState(stateObj).setFailed(true);
       return false;
     }
@@ -475,6 +490,7 @@ public:
 	
 	if(offset < low_bound)
 	{
+	  getState(stateObj).failed_var = getBaseVar(d);
 	  getState(stateObj).setFailed(true);
 	  return;
     }
@@ -529,6 +545,7 @@ public:
     
 	if(offset > up_bound)
 	{
+	  getState(stateObj).failed_var = getBaseVar(d);
 	  getState(stateObj).setFailed(true);
 	  return;
 	}
@@ -595,15 +612,6 @@ public:
     if(getOptions(stateObj).wdeg_on) wdegs[b.var_num] += c->getWdeg(); //add constraint score to base var wdeg
 #endif
   }
-
-  DomainInt getBaseVal(const BigRangeVarRef_internal& b, DomainInt v) const 
-  {
-    D_ASSERT(getInitialMin(b) <= v && v <= getInitialMax(b));
-    return v; 
-  }
-
-  Var getBaseVar(const BigRangeVarRef_internal& b) const
-  { return Var(VAR_DISCRETE, b.var_num); }
 
 #ifdef WDEG
   int getBaseWdeg(const BigRangeVarRef_internal& b)

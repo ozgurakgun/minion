@@ -68,6 +68,8 @@ class SearchState
     
 public:
 
+  Var failed_var; //the last variable to empty
+
   unsigned long long getNodeCount() { return nodes; }
   void setNodeCount(unsigned long long _nodes) { nodes = _nodes; }
   void incrementNodeCount() { nodes++; }
