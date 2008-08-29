@@ -44,13 +44,23 @@ template<typename Var>
   { return 0; }
 
   virtual void full_propagate()
-  { var.propagateAssign(val); }
+  { 
+    var.setExplanation(val, val, ExplPtr(new Conjunction(getAdditionalExplns()))); //no expl needed!
+    var.propagateAssign(val); 
+  }
 
 
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
+    var.setExplanation(val, val, ExplPtr(new Conjunction(getAdditionalExplns()))); //no expl needed!
     var.propagateAssign(val);
+  }
+
+  virtual void getFalseExpl(vector<ExplPtr>& e) 
+  { 
+    e.reserve(1);
+    e.push_back(ExplPtr(new Lit(var.getBaseVar(), var.getBaseVal(val), false)));
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)
