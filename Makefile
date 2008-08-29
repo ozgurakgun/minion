@@ -11,7 +11,7 @@ ifndef SETUP_INCLUDED
 $(error ./configure.sh has not been executed! *** )
 endif
 
-FLAGS =
+FLAGS = -DC_LEARNING
 LINKFLAGS = 
 NAMEBASE = minion
 

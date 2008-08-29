@@ -315,6 +315,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
       var_explns[curr] = e;
       var_depths[curr] = timestamp;
     }
+    cout << e << " is expl for [" << start << ".." << end << "] for " << d.var_num << endl;
   }
 
   ExplPtr getExplanation(const BigRangeVarRef_internal& d, DomainInt val) const
