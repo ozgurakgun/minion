@@ -1,6 +1,22 @@
 #ifndef EXPLANATIONS_HPP
 #define EXPLANATIONS_HPP
 
+#ifdef C_LEARNING
+
+inline vector<ExplPtr> workOutWhy(StateObj* stateObj)
+{
+  AnyVarRef failed = get_AnyVarRef_from_Var(stateObj, getState(stateObj).failed_var);
+  vector<ExplPtr> res;
+  DomainInt curr = failed.getInitialMin();
+  const DomainInt f_initmax = failed.getInitialMax();
+  res.reserve(f_initmax - curr + 1);
+  for(; curr <= f_initmax; curr++)
+    res.push_back(failed.getExplanation(curr));
+  return res;
+}
+
+#endif
+
 // inline bool descending_depth(const pair<Literal*,pair<unsigned,unsigned> >& p1,
 // 			     const pair<Literal*,pair<unsigned,unsigned> >& p2) {
 //   return p1.second < p2.second;
