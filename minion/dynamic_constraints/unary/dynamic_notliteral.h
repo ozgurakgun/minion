@@ -44,6 +44,7 @@ template<typename Var>
 
   virtual void full_propagate()
   { 
+    var.setExplanation(val, val, ExplPtr(new Conjunction(getAdditionalExplns()))); //no explanation required!
     var.removeFromDomain(val); 
   }
 
@@ -51,6 +52,7 @@ template<typename Var>
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
+    var.setExplanation(val, val, ExplPtr(new Conjunction(getAdditionalExplns()))); //no explanation required!
     var.removeFromDomain(val); 
   }
 
@@ -58,6 +60,12 @@ template<typename Var>
   {
     D_ASSERT(v_size == 1);
     return (v[0] != val);
+  }
+
+  virtual void getFalseExpl(vector<ExplPtr>& e) 
+  { 
+    e.reserve(1);
+    e.push_back(ExplPtr(new Lit(var.getBaseVar(), var.getBaseVal(val), true)));
   }
 
   virtual vector<AnyVarRef> get_vars()
