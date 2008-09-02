@@ -54,10 +54,8 @@ namespace Controller
 		  maybe_print_search_state(stateObj, "Node: ", v);
 		  failureExpls.push_back(currFailureExpl);
 		  currFailureExpl = new Conjunction();
-		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_left();
 		  world_push(stateObj);
 		  order.branch_left();
-		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_left();
           prop(stateObj, v);
 		}
 		
@@ -94,9 +92,7 @@ namespace Controller
 						    failureExpls.back()->conjuncts.end());
 		  failureExpls.pop_back();
 
-		  getVars(stateObj).getBigRangevarContainer().bms_array.before_branch_right();
 		  order.branch_right();
-		  getVars(stateObj).getBigRangevarContainer().bms_array.after_branch_right();
 
 		  set_optimise_and_propagate_queue(stateObj);
 		}
