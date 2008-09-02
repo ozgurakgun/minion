@@ -35,6 +35,11 @@ struct ConstantVar
   
   static const BOOL isBool = false;
   static const BoundType isBoundConst = Bound_Yes;
+
+  //couldn't think of an easy way to clear these explanations after the root
+  //node propagates, so didn't bother
+  ExplPtr expl;
+  pair<unsigned,unsigned> depth;
   
   // Hmm.. no sure if it's better to make this true or false.
   BOOL isBound() const
@@ -64,13 +69,13 @@ struct ConstantVar
   { return b == val; }
 
   pair<unsigned,unsigned> getDepth(DomainInt b) const
-  { D_ASSERT(false); return make_pair(0,0); } //not implemented
+  { return depth; }
 
   void setExplanation(DomainInt start, DomainInt end, ExplPtr e)
-  { D_ASSERT(false); } //not implemented
+  { D_ASSERT(start == end && end == val); expl = e; depth = getMemory(stateObj).backTrack().next_timestamp(); }
 
-  ExplPtr getExplanation(DomainInt val) const
-  { D_ASSERT(false); return ExplPtr(NULL); } //not implemented
+  ExplPtr getExplanation(DomainInt v) const
+  { D_ASSERT(v == val); return e; }
 
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { 
@@ -91,22 +96,42 @@ struct ConstantVar
   { return val; }
   
   void setMax(DomainInt i)
-  { if(i<val) getState(stateObj).setFailed(true); }
+  { 
+    if(i<val) {
+      getState(stateObj).failed_var = getBaseVar();
+      getState(stateObj).setFailed(true); 
+    }
+  }
   
   void setMin(DomainInt i)
-  { if(i>val) getState(stateObj).setFailed(true); }
+  { 
+    if(i>val) {
+      getState(stateObj).failed_var = getBaseVar();
+      getState(stateObj).setFailed(true); 
+    }
+  }
   
   void uncheckedAssign(DomainInt)
   { FAIL_EXIT(); }
   
   void propagateAssign(DomainInt b)
-  {if(b != val) getState(stateObj).setFailed(true); }
+  {
+    if(b != val) {
+      getState(stateObj).failed_var = getBaseVar();
+      getState(stateObj).setFailed(true); 
+    }
+  }
   
   void decisionAssign(DomainInt b)
   { propagateAssign(b); }
   
   void removeFromDomain(DomainInt b)
-  { if(b==val) getState(stateObj).setFailed(true); }
+  {
+    if(b == val) {
+      getState(stateObj).failed_var = getBaseVar();
+      getState(stateObj).setFailed(true); 
+    }
+  }
  
   void addTrigger(Trigger, TrigType)
   { }
