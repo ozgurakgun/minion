@@ -60,7 +60,7 @@ class AbstractConstraint
 {
  protected:
   /// Private member of the base class.
-  MemOffset _DynamicTriggerCache;
+  DynamicTrigger* trigs_ptr;
   vector<AnyVarRef> singleton_vars;
   StateObj* stateObj;
 
@@ -80,7 +80,7 @@ public:
     
   /// Returns a point to the first dynamic trigger of the constraint.
   DynamicTrigger* dynamic_trigger_start()
-  { return static_cast<DynamicTrigger*>(_DynamicTriggerCache.get_ptr()); }
+  { return trigs_ptr; }
   
   /// Gives the value of a specific dynamic trigger.
   //int dynamic_trigger_num(DynamicTrigger* trig)
@@ -203,14 +203,8 @@ public:
   virtual BOOL check_assignment(DomainInt* v, int v_size) = 0;
     
   virtual ~AbstractConstraint()
-  {}
+  { delete[] trigs_ptr; }
 
-    
-  
-  virtual void setup_dynamic_triggers(MemOffset DynamicTriggerPointer)
-  { _DynamicTriggerCache = DynamicTriggerPointer; }
-
-  
   /// Actually creates the dynamic triggers. Calls dynamic_trigger_count from function to get
   /// the number of triggers required.
   virtual void setup()
@@ -218,7 +212,7 @@ public:
     // Dynamic initialisation
     int trigs = dynamic_trigger_count();
     D_ASSERT(trigs >= 0);
-    setup_dynamic_triggers(getMemory(stateObj).nonBackTrack().request_bytes((sizeof(DynamicTrigger) * trigs)));
+    trigs_ptr = new DynamicTrigger[trigs];
     
     DynamicTrigger* start = dynamic_trigger_start();
     for(int i = 0 ; i < trigs; ++i)
