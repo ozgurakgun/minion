@@ -75,7 +75,7 @@ struct ConstantVar
   { D_ASSERT(start == end && end == val); expl = e; depth = getMemory(stateObj).backTrack().next_timestamp(); }
 
   ExplPtr getExplanation(DomainInt v) const
-  { D_ASSERT(v == val); return e; }
+  { D_ASSERT(v == val); return expl; }
 
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { 
