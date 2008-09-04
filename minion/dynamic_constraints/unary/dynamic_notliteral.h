@@ -24,6 +24,8 @@ For Licence Information see file LICENSE.txt
   * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#ifndef WNOTLITERALCON
+#define WNOTLITERALCON
 
 // Checks if a variable is equal to a value.
 template<typename Var>
@@ -137,12 +139,12 @@ struct WatchNotLiteralBoolConstraint : public AbstractConstraint
   }
 };
 
-AbstractConstraint*
+inline AbstractConstraint*
 WatchNotLiteralConDynamic(StateObj* stateObj, const light_vector<BoolVarRef>& vec, const ConstraintBlob& b)
 { return new WatchNotLiteralBoolConstraint(stateObj, vec[0], b.constants[0][0]); }
 
 template<typename VarArray1>
-AbstractConstraint*
+inline AbstractConstraint*
 WatchNotLiteralConDynamic(StateObj* stateObj, const VarArray1& _var_array_1, const ConstraintBlob& b)
 { 
   return new WatchNotLiteralConstraint<typename VarArray1::value_type>
@@ -150,3 +152,5 @@ WatchNotLiteralConDynamic(StateObj* stateObj, const VarArray1& _var_array_1, con
 }
 
 BUILD_CONSTRAINT1_WITH_BLOB(CT_WATCHED_NOTLIT, WatchNotLiteralConDynamic)
+
+#endif

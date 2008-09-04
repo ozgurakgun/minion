@@ -13,6 +13,9 @@
 
 #include "../CSPSpec.h"
 
+class StateObj;
+class AbstractConstraint;
+
 class Explanation {
  protected:
   virtual void myPrint(std::ostream& o) const
@@ -21,7 +24,9 @@ class Explanation {
  public:
   friend std::ostream& operator<<(std::ostream& o, const Explanation& e)
   { e.myPrint(o); return o; }
-  
+
+  virtual AbstractConstraint* getNegCon(StateObj* stateObj) const; 
+
   virtual ~Explanation() { }
 };
 
@@ -47,6 +52,8 @@ class Lit : public Explanation {
   virtual void myPrint(std::ostream& o) const
   { o << "LIT(var=" << var << ",val=" << val << ",ass=" << assignment << ")"; }
 
+  virtual AbstractConstraint* getNegCon(StateObj* stateObj) const;
+
   //NB. use dynamic_literal and dynamic_notliteral to implement getNegCon()
 };
 
@@ -60,6 +67,8 @@ public:
 
   virtual void myPrint(std::ostream& o) const
   { o << "GEQ(" << v1 << "," << v2 << ")"; }
+
+  virtual AbstractConstraint* getNegCon(StateObj* stateObj) const;
 };
 
 template<typename VarRef>
@@ -77,6 +86,8 @@ class LessConstant : public Explanation {
     if(varOnLeft) o << "LESS(" << v << "," << c << ")";
     else o << "LESS(" << c << "," << v << ")";
   }
+
+  virtual AbstractConstraint* getNegCon(StateObj* stateObj) const;
 };
 
 class Conjunction : public Explanation {
@@ -153,6 +164,8 @@ class Conjunction : public Explanation {
       }
     }
   }
+
+  virtual AbstractConstraint* getNegCon(StateObj* stateObj) const;
 };
 
 //build a conjunction, but if it's length 1 don't bother!
