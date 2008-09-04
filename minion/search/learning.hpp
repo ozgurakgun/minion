@@ -3,6 +3,45 @@
 
 #ifdef C_LEARNING
 
+#include "../constraints/constraint_abstract.h"
+
+#include "../dynamic_constraints/dynamic_new_or.h"
+#include "../dynamic_constraints/dynamic_less.h"
+#include "../dynamic_constraints/unary/dynamic_literal.h"
+#include "../dynamic_constraints/unary/dynamic_notliteral.h"
+
+inline AbstractConstraint* Explanation::getNegCon(StateObj* stateObj) const
+{ D_ASSERT(false); return 0; }
+
+template<typename Var1, typename Var2>
+inline AbstractConstraint* GreaterEqual<Var1,Var2>::getNegCon(StateObj* stateObj) const
+{ return new WatchLessConstraint<Var1,Var2>(stateObj, v1, v2); }
+
+inline AbstractConstraint* Lit::getNegCon(StateObj* stateObj) const
+{
+  if(assignment) return new WatchNotLiteralConstraint<AnyVarRef>(stateObj, get_AnyVarRef_from_Var(stateObj, var), val);
+  else return new WatchLiteralConstraint<AnyVarRef>(stateObj, get_AnyVarRef_from_Var(stateObj, var), val);
+}
+
+template<typename VarRef>
+inline AbstractConstraint* LessConstant<VarRef>::getNegCon(StateObj* stateObj) const
+{
+  if(varOnLeft) //make v >= c, i.e. c <= v, i.e. c-1 < v
+    return new WatchLessConstraint<ConstantVar,VarRef>(stateObj, ConstantVar(stateObj, c - 1), v);
+  else //make c >= v, i.e. v <= c, i.e. v < c+1
+    return new WatchLessConstraint<VarRef,ConstantVar>(stateObj, v, ConstantVar(stateObj, c + 1));
+}
+
+inline AbstractConstraint* Conjunction::getNegCon(StateObj* stateObj) const
+{
+  vector<AbstractConstraint*> cons;
+  vector<ExplPtr>::const_iterator curr = conjuncts.begin();
+  const vector<ExplPtr>::const_iterator end = conjuncts.end();
+  for(; curr != end; curr++)
+    cons.push_back((*curr)->getNegCon(stateObj));
+  return new Dynamic_OR(stateObj, cons);
+}
+
 inline vector<ExplPtr> workOutWhy(StateObj* stateObj)
 {
   AnyVarRef failed = get_AnyVarRef_from_Var(stateObj, getState(stateObj).failed_var);
