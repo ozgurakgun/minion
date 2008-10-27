@@ -23,7 +23,7 @@ template<typename SearchAlgorithm, typename VarOrder, typename Vars, typename Pr
       Controller::group_solve_loop(stateObj, order, vars, perm, prop);
     }
     else
-      Controller::solve_loop(stateObj, order, vars, prop);
+      Controller::solve_loop_recursive(stateObj, order, vars, prop);
     
     break;
     case ORDER_CONFLICT:
