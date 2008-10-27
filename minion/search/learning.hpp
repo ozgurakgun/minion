@@ -49,8 +49,14 @@ inline vector<ExplPtr> workOutWhy(StateObj* stateObj)
   DomainInt curr = failed.getInitialMin();
   const DomainInt f_initmax = failed.getInitialMax();
   res.reserve(f_initmax - curr + 1);
-  for(; curr <= f_initmax; curr++)
-    res.push_back(failed.getExplanation(curr));
+  for(; curr <= f_initmax; curr++) {
+    ExplPtr e = failed.getExplanation(curr);
+    Conjunction* e_c = dynamic_cast<Conjunction*>(e.get());
+    if(e_c) //if expl isconjunction
+      res.insert(res.end(), e_c->conjuncts.begin(), e_c->conjuncts.end());
+    else
+      res.push_back(e);
+  }
   return res;
 }
 

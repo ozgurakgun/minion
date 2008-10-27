@@ -315,7 +315,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
       var_explns[curr] = e;
       var_depths[curr] = timestamp;
     }
-    cout << e << " is expl for [" << start << ".." << end << "] for " << d.var_num << endl;
+    //cout << e << " is expl for [" << start << ".." << end << "] for " << d.var_num << endl;
   }
 
   ExplPtr getExplanation(const BigRangeVarRef_internal& d, DomainInt val) const
@@ -436,7 +436,13 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
   {
     D_ASSERT(inDomain(d,i));
     D_ASSERT(!isAssigned(d));
-    commonAssign(d,i, lower_bound(d), upper_bound(d)); 
+    vector<ExplPtr>& expls = explns[d.var_num];
+    const DomainInt max = getMax(d);
+    const ExplPtr e(new Lit(getBaseVar(d), i, true));
+    for(DomainInt curr = getMin(d); curr <= max; curr++)
+      if(inDomain(d, curr))
+	setExplanation(d, curr, curr, e);
+    commonAssign(d,i, lower_bound(d), upper_bound(d));
   }
     
 private:
