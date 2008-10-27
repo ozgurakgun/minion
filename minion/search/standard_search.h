@@ -25,8 +25,8 @@ namespace Controller
 	  
 	  maybe_print_search_state(stateObj, "Node: ", v);
 
-	  vector<Conjunction*> failureExpls;
-	  Conjunction* currFailureExpl; //partial explanation for eventual failure of current LB
+	  vector<vector<ExplPtr> > failureExpls;
+	  vector<ExplPtr> currFailureExpl; //partial explanation for eventual failure of current LB
 
 	  while(true)
 	  {
@@ -53,7 +53,7 @@ namespace Controller
 		{
 		  maybe_print_search_state(stateObj, "Node: ", v);
 		  failureExpls.push_back(currFailureExpl);
-		  currFailureExpl = new Conjunction();
+		  currFailureExpl = vector<ExplPtr>();
 		  world_push(stateObj);
 		  order.branch_left();
           prop(stateObj, v);
@@ -62,15 +62,9 @@ namespace Controller
 		// Either search failed, or a solution was found.
 		while(getState(stateObj).isFailed())
 		{
-		  cout << "failed_var=" << getState(stateObj).failed_var << endl;
 		  vector<ExplPtr> fail = workOutWhy(stateObj);
-		  cout << "1" << endl;
-		  cout << "fail=" << ExplPtr(new Conjunction(fail)) << endl;
 		  //complete reason for failure of this LB
-		  currFailureExpl->conjuncts.insert(currFailureExpl->conjuncts.end(), 
-						   fail.begin(), fail.end());
-		  cout << "2" << endl;
-		  currFailureExpl->myPrint(cout); cout << endl;
+		  currFailureExpl.insert(currFailureExpl.end(), fail.begin(), fail.end());
 
 		  getState(stateObj).setFailed(false);
 		  
@@ -83,13 +77,12 @@ namespace Controller
 		  //post <fail>
 		  
 		  pair<int,DomainInt> lastLeft = order.getLast();
-		  cout << "lastLeft" << lastLeft.first << "," << lastLeft.second << endl;
 		  v[lastLeft.first].setExplanation(lastLeft.second, lastLeft.second,
-						   ExplPtr(currFailureExpl));
+						   ExplPtr(new Conjunction(currFailureExpl)));
 		  //contibute the reason for this LB loss to the explanation for the previous LB
-		  currFailureExpl->conjuncts.insert(currFailureExpl->conjuncts.end(),
-						    failureExpls.back()->conjuncts.begin(),
-						    failureExpls.back()->conjuncts.end());
+		  currFailureExpl.insert(currFailureExpl.end(),
+					 failureExpls.back().begin(),
+					 failureExpls.back().end());
 		  failureExpls.pop_back();
 
 		  order.branch_right();
