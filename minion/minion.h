@@ -61,6 +61,8 @@
 
 #include "get_info/get_info.h"
 
+#include "search/learning.h"
+
 #include "solver.h"
 
 VARDEF(TableOut oldtableout);

@@ -205,6 +205,15 @@ struct SwitchNeg
   void incWdeg()
   { data.incWdeg(); }
 #endif
+
+  pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
+  { D_ASSERT(false); return make_pair(-1,-1); }
+
+  void setExpl(bool assg, DomainInt i, VirtCon _vc)
+  { D_ASSERT(false); }
+  
+  VirtCon getExpl(bool assg, DomainInt i) const
+  { D_ASSERT(false); return 0; }
 };
 
 

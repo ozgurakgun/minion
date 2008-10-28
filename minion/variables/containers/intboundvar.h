@@ -172,6 +172,15 @@ struct BoundVarRef_internal
   { GET_LOCAL_CON().incWdeg(*this); }
 #endif
 
+  pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
+  { D_ASSERT(false); return make_pair(-1, -1); }
+
+  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  { D_ASSERT(false); }
+  
+  VirtCon getExpl(bool assg, DomainInt i) const
+  { D_ASSERT(false); return 0; }
+
   friend std::ostream& operator<<(std::ostream& o, const BoundVarRef_internal& v)
   { return o << "BoundVar:" << v.var_num; }
     

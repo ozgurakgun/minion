@@ -109,8 +109,12 @@ struct BigRangeVarContainer {
 #ifdef WDEG
   vector<unsigned int> wdegs;
 #endif
-  
- 
+
+  vector<vector<pair<unsigned,unsigned> > > prun_depths;
+  vector<vector<VirtCon> > prun_explns;
+  vector<pair<unsigned,unsigned> > assg_depth;
+  vector<VirtCon> assg_expln;
+   
   unsigned var_count_m;
   BOOL lock_m;
   
@@ -195,8 +199,12 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
       var_count_m++;
       D_INFO(0,DI_LONGINTCON,"Adding var of domain: (" + to_string(new_domains[i].second.lower_bound) + "," +
                                                          to_string(new_domains[i].second.upper_bound) + ")");
+      prun_depths.push_back(vector<pair<unsigned,unsigned> >(domain_size));
+      prun_explns.push_back(vector<VirtCon>(domain_size));
     }
     constraints.resize(var_count_m);
+    assg_depth.resize(var_count_m);
+    assg_expln.resize(var_count_m);
 #ifdef WDEG
     if(getOptions(stateObj).wdeg_on) wdegs.resize(var_count_m);
 #endif
@@ -570,6 +578,40 @@ public:
   void incWdeg(const BigRangeVarRef_internal& b)
   { wdegs[b.var_num]++; }
 #endif
+
+  pair<unsigned,unsigned> getDepth(const BigRangeVarRef_internal& b, bool assg, DomainInt i) const
+  {
+    if(!assg) {
+      D_ASSERT(!inDomain(b, i));
+      return prun_depths[b.var_num][i - getInitialMin(b)];
+    } else {
+      D_ASSERT(i == getAssignedValue(b));
+      return assg_depth[b.var_num];
+    }
+  }
+
+  void setExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i, VirtCon vc)
+  {
+    if(!assg) {
+      prun_explns[b.var_num][i - getInitialMin(b)] = vc;
+      prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
+    } else {
+      D_ASSERT(i == getAssignedValue(b));
+      assg_expln[b.var_num] = vc;
+      assg_depth[b.var_num] = getMemory(stateObj).backTrack().next_timestamp();
+    }
+  }
+  
+  VirtCon getExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i) const
+  {
+    if(!assg) {
+      D_ASSERT(!inDomain(b, i));
+      return prun_explns[b.var_num][i - getInitialMin(b)];
+    } else {
+      D_ASSERT(i == getAssignedValue(b));
+      return assg_expln[b.var_num];
+    }
+  }
 
   ~BigRangeVarContainer() { 
     for(unsigned i=0; i < var_count_m ; i++) {
