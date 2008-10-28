@@ -125,6 +125,15 @@ struct VarRefType
   { GET_CONTAINER().incWdeg(data); }
 #endif
 
+  pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
+  { return GET_CONTAINER().getDepth(data, assg, i); }
+
+  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  { GET_CONTAINER().setExpl(data, assg, i, vc); }
+  
+  VirtCon getExpl(bool assg, DomainInt i) const
+  { return GET_CONTAINER().getExpl(data, assg, i); }
+
   friend std::ostream& operator<<(std::ostream& o, const VarRefType& v)
   { return o << InternalRefType::name() << v.data.var_num; }
     
@@ -227,6 +236,15 @@ struct QuickVarRefType
   { GET_CONTAINER().incWdeg(data); }
 #endif
 
+  pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
+  { D_ASSERT(false); return make_pair(-1,-1); }
+
+  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  { D_ASSERT(false); }
+  
+  VirtCon getExpl(bool assg, DomainInt i) const
+  { D_ASSERT(false); return 0; }
+
   friend std::ostream& operator<<(std::ostream& o, const QuickVarRefType& b)
   { return o << "Bool:" << b.data; }
   
@@ -319,6 +337,15 @@ struct CompleteVarRefType
   void incWdeg()
   { (data.getCon()).incWdeg(data); }
 #endif
+
+  pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
+  { D_ASSERT(false); return make_pair(-1,-1); }
+
+  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  { D_ASSERT(false); }
+  
+  VirtCon getExpl(bool assg, DomainInt i) const
+  { D_ASSERT(false); return 0; }
   
   friend std::ostream& operator<<(std::ostream& o, const CompleteVarRefType& cv)
   { return o << "CompleteCon:" << cv.data.var_num; }

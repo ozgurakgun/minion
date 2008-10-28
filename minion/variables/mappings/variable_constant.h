@@ -36,6 +36,9 @@ struct ConstantVar
   static const BOOL isBool = false;
   static const BoundType isBoundConst = Bound_Yes;
   
+  VirtCon vc_prun;
+  pair<unsigned,unsigned> d;
+  
   // Hmm.. no sure if it's better to make this true or false.
   BOOL isBound() const
   { return true;}
@@ -126,6 +129,24 @@ struct ConstantVar
   void incWdeg() { ; }
 #endif
 
+  pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
+  { 
+    D_ASSERT(i == val);
+    if(assg) return make_pair(0, 0); else return d; //constant has been "assigned" since the start, pruning is more recent
+  }
+
+  void setExpl(bool assg, DomainInt i, VirtCon _vc)
+  { 
+    D_ASSERT(i == val);
+    if(!assg) vc_prun = _vc; //don't store an explanation for why it's assigned, because it's always assigned
+  } 
+  
+  VirtCon getExpl(bool assg, DomainInt i) const
+  { 
+    D_ASSERT(i == val);
+    if(assg) return 0; else return vc_prun; 
+  }
+  
   int getDomainChange(DomainDelta d)
   { 
     D_ASSERT(d.XXX_get_domain_diff() == 0);
