@@ -427,11 +427,11 @@ struct SparseBoundVarContainer {
   pair<unsigned,unsigned> getDepth(const SparseBoundVarRef_internal<BoundType>& b, bool assg, DomainInt i) const
   { D_ASSERT(false); return make_pair(-1, -1); }
 
-  void setExpl(const SparseBoundVarRef_internal<BoundType>& b, bool assg, DomainInt i, VirtCon vc)
+  void setExpl(const SparseBoundVarRef_internal<BoundType>& b, bool assg, DomainInt i, VirtConPtr vc)
   { D_ASSERT(false); }
   
-  VirtCon getExpl(const SparseBoundVarRef_internal<BoundType>& b, bool assg, DomainInt i) const
-  { D_ASSERT(false); return 0; }
+  VirtConPtr getExpl(const SparseBoundVarRef_internal<BoundType>& b, bool assg, DomainInt i) const
+  { D_ASSERT(false); return VirtConPtr(); }
 
 #ifdef DYNAMICTRIGGERS
   void addDynamicTrigger(SparseBoundVarRef_internal<BoundType> b, DynamicTrigger* t, TrigType type, DomainInt pos = -999)
