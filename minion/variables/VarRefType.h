@@ -128,10 +128,10 @@ struct VarRefType
   pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
   { return GET_CONTAINER().getDepth(data, assg, i); }
 
-  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  void setExpl(bool assg, DomainInt i, VirtConPtr vc)
   { GET_CONTAINER().setExpl(data, assg, i, vc); }
   
-  VirtCon getExpl(bool assg, DomainInt i) const
+  VirtConPtr getExpl(bool assg, DomainInt i) const
   { return GET_CONTAINER().getExpl(data, assg, i); }
 
   friend std::ostream& operator<<(std::ostream& o, const VarRefType& v)
@@ -239,11 +239,11 @@ struct QuickVarRefType
   pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
   { D_ASSERT(false); return make_pair(-1,-1); }
 
-  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  void setExpl(bool assg, DomainInt i, VirtConPtr vc)
   { D_ASSERT(false); }
   
-  VirtCon getExpl(bool assg, DomainInt i) const
-  { D_ASSERT(false); return 0; }
+  VirtConPtr getExpl(bool assg, DomainInt i) const
+  { D_ASSERT(false); return VirtConPtr(); }
 
   friend std::ostream& operator<<(std::ostream& o, const QuickVarRefType& b)
   { return o << "Bool:" << b.data; }
@@ -341,10 +341,10 @@ struct CompleteVarRefType
   pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
   { D_ASSERT(false); return make_pair(-1,-1); }
 
-  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  void setExpl(bool assg, DomainInt i, VirtConPtr vc)
   { D_ASSERT(false); }
   
-  VirtCon getExpl(bool assg, DomainInt i) const
+  VirtConPtr getExpl(bool assg, DomainInt i) const
   { D_ASSERT(false); return 0; }
   
   friend std::ostream& operator<<(std::ostream& o, const CompleteVarRefType& cv)
