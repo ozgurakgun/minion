@@ -24,6 +24,8 @@ For Licence Information see file LICENSE.txt
   * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#ifndef WATCH_LIT_CON
+#define WATCH_LIT_CON
 
 // Checks if a variable is equal to a value.
 template<typename Var>
@@ -44,12 +46,16 @@ template<typename Var>
   { return 0; }
 
   virtual void full_propagate()
-  { var.propagateAssign(val); }
+  { 
+    var.setExpl(true, val, VirtConPtr()); //no explanation required
+    var.propagateAssign(val); 
+  }
 
 
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
+    var.setExpl(true, val, VirtConPtr()); //no explanation required
     var.propagateAssign(val);
   }
 
@@ -80,7 +86,7 @@ template<typename Var>
 };
 
 template<typename VarArray1>
-AbstractConstraint*
+inline AbstractConstraint*
 WatchLiteralConDynamic(StateObj* stateObj, const VarArray1& _var_array_1, const ConstraintBlob& b)
 { 
   return new WatchLiteralConstraint<typename VarArray1::value_type>
@@ -88,3 +94,5 @@ WatchLiteralConDynamic(StateObj* stateObj, const VarArray1& _var_array_1, const 
 }
 
 BUILD_CONSTRAINT1_WITH_BLOB(CT_WATCHED_LIT, WatchLiteralConDynamic)
+
+#endif
