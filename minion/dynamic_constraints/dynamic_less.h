@@ -24,6 +24,9 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#ifndef WATCH_LESS
+#define WATCH_LESS
+
 // var1 < var2
 template<typename Var1, typename Var2>
 struct WatchLessConstraint : public AbstractConstraint
@@ -98,7 +101,7 @@ struct WatchLessConstraint : public AbstractConstraint
 };
 
 template<typename VarArray1, typename VarArray2>
-AbstractConstraint*
+inline AbstractConstraint*
 WatchLessConDynamic(StateObj* stateObj, const VarArray1& _var_array_1, const VarArray2& _var_array_2)
 { 
   return new WatchLessConstraint<typename VarArray1::value_type, typename VarArray2::value_type>
@@ -106,3 +109,5 @@ WatchLessConDynamic(StateObj* stateObj, const VarArray1& _var_array_1, const Var
 }
 
 BUILD_CONSTRAINT2(CT_WATCHED_LESS, WatchLessConDynamic)
+
+#endif
