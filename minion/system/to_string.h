@@ -61,4 +61,8 @@ std::ostream& operator<<(std::ostream& o, const std::list<T>& t)
   return o;
 }
 
+template<typename A, typename B>
+std::ostream& operator<<(std::ostream& o, const std::pair<A,B>& p)
+{ o << "(" << p.first << "," << p.second << ")"; }
+
 #endif

@@ -124,7 +124,7 @@ public:
   pair<unsigned, unsigned> next_timestamp()
   { 
     D_ASSERT(current_depth_m >= 0);
-    return make_pair(current_depth_m, seq_no++); 
+    return make_pair((unsigned)current_depth_m, seq_no++); 
   }
 };
 

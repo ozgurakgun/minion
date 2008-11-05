@@ -157,16 +157,16 @@ struct InfoRefType
   pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
   {
     VAR_INFO_ADDONE(VAR_TYPE, getDepth);
-    data.getDepth(assg, i);
+    return data.getDepth(assg, i);
   }
 
-  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  void setExpl(bool assg, DomainInt i, VirtConPtr vc)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, setExpl);
     data.setExpl(assg, i, vc);
   }
   
-  VirtCon getExpl(bool assg, DomainInt i) const
+  VirtConPtr getExpl(bool assg, DomainInt i) const
   { 
     VAR_INFO_ADDONE(VAR_TYPE, setExpl);
     return data.getExpl(assg, i);

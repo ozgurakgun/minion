@@ -582,7 +582,7 @@ public:
   pair<unsigned,unsigned> getDepth(const BigRangeVarRef_internal& b, bool assg, DomainInt i) const
   {
     if(!assg) {
-      D_ASSERT(!inDomain(b, i));
+      D_ASSERT(!inDomain(b, i) || getState(stateObj).isFailed());
       return prun_depths[b.var_num][i - getInitialMin(b)];
     } else {
       D_ASSERT(i == getAssignedValue(b));
@@ -595,16 +595,18 @@ public:
     if(!assg) {
       prun_explns[b.var_num][i - getInitialMin(b)] = vc;
       prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
+      cout << "stored " << *vc << " for pruning of " << i << " from discrete var "<< b.var_num << "@" << prun_depths[b.var_num][i - getInitialMin(b)] << endl;
     } else {
       assg_expln[b.var_num] = vc;
       assg_depth[b.var_num] = getMemory(stateObj).backTrack().next_timestamp();
+      cout << "stored " << *vc << " for assignment of " << i << " to discrete var " << b.var_num << "@" << assg_depth[b.var_num] << endl;
     }
   }
   
   VirtConPtr getExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i) const
   {
     if(!assg) {
-      D_ASSERT(!inDomain(b, i));
+      D_ASSERT(!inDomain(b, i) || getState(stateObj).isFailed());
       return prun_explns[b.var_num][i - getInitialMin(b)];
     } else {
       D_ASSERT(i == getAssignedValue(b));
