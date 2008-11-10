@@ -55,22 +55,27 @@ class DynamicTrigger;
 struct AbstractTriggerCreator;
 typedef vector<shared_ptr<AbstractTriggerCreator> > triggerCollection;
 
+class ParentConstraint;
+
 /// Base type from which all constraints are derived.
 class AbstractConstraint
 {
 protected:
   /// Private members of the base class.
   
-  StateObj* stateObj;
   MemOffset _DynamicTriggerCache;
   vector<AnyVarRef> singleton_vars;
 
-
 public:
+
+  StateObj* stateObj;
 
   #ifdef WDEG
   unsigned int wdeg;
   #endif
+
+  BOOL disjunct; //true iff the constraint is a disjunct in a watched or
+  Dynamic_OR* parent; //disjunction it's in, if any
 
   BOOL full_propagate_done;
 
@@ -143,7 +148,7 @@ public:
 #ifdef WDEG
   wdeg(1),
 #endif
-    stateObj(_stateObj), _DynamicTriggerCache(), singleton_vars(), full_propagate_done(false)
+    stateObj(_stateObj), _DynamicTriggerCache(), singleton_vars(), full_propagate_done(false), disjunct(false)
     {}
 
   /// Method to get constraint name for debugging.
@@ -219,13 +224,25 @@ public:
       (*it)->post_trigger();
     }
   }
+
+  virtual pair<unsigned,unsigned> whenF() const //when did this constraint become disentailed
+  { D_ASSERT(false); return make_pair(-1, -1); }
+
+  virtual vector<VirtConPtr> whyF() const //why is it disentailed?
+  { D_ASSERT(false); return vector<VirtConPtr>(); }
+
+  template<typename VarRef>
+  void storeExpl(bool assg, VarRef& var, DomainInt i, VirtConPtr vcp)
+  {
+    if(!disjunct) var.setExpl(assg, i, vcp);
+    else var.setExpl(assg, i, VirtConPtr(new DisjunctionPrun(this, vcp, parent)));
+  }
 };
 
 /// Constraint from which other constraints can be inherited. Extends dynamicconstraint to allow children to be dynamic.
 class ParentConstraint : public AbstractConstraint
 {
 protected:
-  vector<AbstractConstraint*> child_constraints;
   // Maps a dynamic trigger to the constraint which it belongs to.
   vector<int> _dynamic_trigger_to_constraint;
   // Maps a static trigger to a pair { constraint, trigger for that constraint } 
@@ -235,6 +252,8 @@ protected:
   // Gets start of each constraint
   vector<int> start_of_constraint;
 public:
+
+  vector<AbstractConstraint*> child_constraints;
 
   pair<int,int> getChildStaticTrigger(int i)
     { return _static_trigger_to_constraint[i]; }

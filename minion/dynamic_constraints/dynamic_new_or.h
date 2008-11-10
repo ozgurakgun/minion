@@ -64,8 +64,11 @@ struct Dynamic_OR : public ParentConstraint
     assign_size(-1), propagated_constraint(-1)
     {
       size_t max_size = 0;
-      for(int i = 0; i < child_constraints.size(); ++i)
+      for(int i = 0; i < child_constraints.size(); ++i) {
         max_size = max(max_size, child_constraints[i]->get_vars_singleton()->size());
+	child_constraints[i]->disjunct = true;
+	child_constraints[i]->parent = this;
+      }
       assign_size = max_size * 2;
     }
 
