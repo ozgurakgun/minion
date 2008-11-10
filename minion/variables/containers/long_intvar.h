@@ -135,6 +135,8 @@ struct BigRangeVarContainer {
     //DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar < lower)
 	{
+	  //store MHAV as the failure
+	  getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num])));
 	  getState(stateObj).setFailed(true);
 	  /// Here just remove the value which should lead to the least work.
 	  return upper_bound(d);
@@ -147,6 +149,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
+    getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
     getState(stateObj).setFailed(true);
     return old_up_bound;
   }
@@ -162,6 +165,7 @@ struct BigRangeVarContainer {
     //DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar > upper)
 	{
+	  getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
 	  getState(stateObj).setFailed(true);
 	  /// Here just remove the value which should lead to the least work.
 	  return lower_bound(d);
@@ -174,6 +178,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
+    getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
     getState(stateObj).setFailed(true);
     return old_low_bound;
   }
@@ -320,6 +325,8 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
 	trigger_list.push_domain(d.var_num);
 #endif
     D_ASSERT( ! bms_array.isMember(var_offset[d.var_num] + i));
+
+    //add new test to check if this pruning is for a value already assigned
     
     domain_bound_type up_bound = upper_bound(d);
     if(i == up_bound)
@@ -335,8 +342,13 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
       trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
     }
     
-    if(upper_bound(d) == lower_bound(d))
+    if(upper_bound(d) == lower_bound(d)) {
       trigger_list.push_assign(d.var_num, getAssignedValue(d));
+      setExpl(d, true, getAssignedValue(d), //assignment, set expln for it!
+	      VirtConPtr(new BecauseOfPruningsAssignment<BigRangeVarRef>(stateObj, 
+									 BigRangeVarRef(d), 
+									 getAssignedValue(d))));
+    }
 
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 
@@ -355,16 +367,19 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     if(!inDomain(d,offset))
     {
+      //store assignedOrPruned nogood
+      getMemory(stateObj).setFailure(VirtConPtr(new AssgOrPrun(prun_explns[d.var_num][offset - getInitialMin(d)],
+							       assg_expln[d.var_num])));
       getState(stateObj).setFailed(true); 
       return false;
     }
     if(offset == upper && offset == lower)
       return false;
-    if(offset > upper || offset < lower)
-    {
-      getState(stateObj).setFailed(true);
-      return false;
-    }
+    //if(offset > upper || offset < lower)
+    //{
+    //  getState(stateObj).setFailed(true);
+    //  return false;
+    //}
     return true;
   }    
   
@@ -372,6 +387,10 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
   {
     DomainInt lower = lower_bound(d);
     DomainInt upper = upper_bound(d);
+    for(DomainInt i = lower; i <= upper; i++) //explain the values being pruned
+      if(inDomain(d, i) && i != offset)
+	setExpl(d, false, i, 
+		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), i)));
     if(!validAssignment(d, offset, lower, upper)) return;
     commonAssign(d, offset, lower, upper);
   }
@@ -380,14 +399,26 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
   { 
     D_ASSERT(inDomain(d,i));
     D_ASSERT(!isAssigned(d));
-    commonAssign(d,i, lower_bound(d), upper_bound(d)); 
+    DomainInt lower = lower_bound(d);
+    DomainInt upper = upper_bound(d);
+    for(DomainInt val = lower; val <= upper; val++) //explain the values being pruned
+      if(inDomain(d, val) && val != i)
+	setExpl(d, false, val, 
+		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), val)));
+    commonAssign(d,i, lower, upper); 
   }
 
   void decisionAssign(BigRangeVarRef_internal d, DomainInt i)
   {
     D_ASSERT(inDomain(d,i));
     D_ASSERT(!isAssigned(d));
-    commonAssign(d,i, lower_bound(d), upper_bound(d)); 
+    DomainInt lower = lower_bound(d);
+    DomainInt upper = upper_bound(d);
+    for(DomainInt val = lower; val <= upper; val++) //explain the values being pruned
+      if(inDomain(d, val) && val != i)
+	setExpl(d, false, val, 
+		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), val)));
+    commonAssign(d,i, lower, upper); 
   }
     
 private:
@@ -441,6 +472,7 @@ public:
 	
 	if(offset < low_bound)
 	{
+	  getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
 	  getState(stateObj).setFailed(true);
 	  return;
     }
@@ -466,8 +498,13 @@ public:
 #endif
        trigger_list.push_upper(d.var_num, up_bound - upper_bound(d));
 	  
-      if(lower_bound(d) == upper_bound(d)) 
-        trigger_list.push_assign(d.var_num, getAssignedValue(d));
+       if(lower_bound(d) == upper_bound(d)) {
+	 trigger_list.push_assign(d.var_num, getAssignedValue(d));
+	 setExpl(d, true, getAssignedValue(d), //assignment, set expln for it!
+		 VirtConPtr(new BecauseOfPruningsAssignment<BigRangeVarRef>(stateObj, 
+									    BigRangeVarRef(d), 
+									    getAssignedValue(d))));
+       }
     }
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 #ifdef DEBUG
@@ -495,6 +532,7 @@ public:
     
 	if(offset > up_bound)
 	{
+	  getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
 	  getState(stateObj).setFailed(true);
 	  return;
 	}
@@ -520,9 +558,14 @@ public:
 #ifndef NO_DOMAIN_TRIGGERS
 	trigger_list.push_domain(d.var_num);
 #endif
-    trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
-    if(lower_bound(d) == upper_bound(d)) 
-      trigger_list.push_assign(d.var_num, getAssignedValue(d)); 
+	trigger_list.push_lower(d.var_num, lower_bound(d) - low_bound);
+	if(lower_bound(d) == upper_bound(d)) {
+	  trigger_list.push_assign(d.var_num, getAssignedValue(d)); 
+	  setExpl(d, true, getAssignedValue(d), //assignment, set expln for it!
+		  VirtConPtr(new BecauseOfPruningsAssignment<BigRangeVarRef>(stateObj, 
+									     BigRangeVarRef(d), 
+									     getAssignedValue(d))));
+	}
     }
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
 #ifdef DEBUG
@@ -595,11 +638,10 @@ public:
     if(!assg) {
       prun_explns[b.var_num][i - getInitialMin(b)] = vc;
       prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
-      cout << "stored " << *vc << " for pruning of " << i << " from discrete var "<< b.var_num << "@" << prun_depths[b.var_num][i - getInitialMin(b)] << endl;
     } else {
+      D_ASSERT(inDomain(b, i)); //make sure not duplicating expl
       assg_expln[b.var_num] = vc;
       assg_depth[b.var_num] = getMemory(stateObj).backTrack().next_timestamp();
-      cout << "stored " << *vc << " for assignment of " << i << " to discrete var " << b.var_num << "@" << assg_depth[b.var_num] << endl;
     }
   }
   

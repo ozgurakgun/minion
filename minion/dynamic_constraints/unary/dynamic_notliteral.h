@@ -46,16 +46,16 @@ template<typename Var>
 
   virtual void full_propagate()
   { 
-    var.setExpl(false, val, VirtConPtr()); //no explanation required
     var.removeFromDomain(val); 
+    storeExpl(false, var, val, VirtConPtr()); //no explanation required
   }
 
 
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
-    var.setExpl(false, val, VirtConPtr()); //no explanation required
     var.removeFromDomain(val); 
+    storeExpl(false, var, val, VirtConPtr()); //no explanation required
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)
@@ -88,6 +88,12 @@ template<typename Var>
     }
     return false;
   }
+
+  virtual pair<unsigned,unsigned> whenF() const
+  { return var.getDepth(true, val); }
+
+  virtual vector<VirtConPtr> whyF() const
+  { return vector<VirtConPtr>(1, VirtConPtr(new Assignment<Var>(stateObj, var, val))); }
 };
 
 struct WatchNotLiteralBoolConstraint : public AbstractConstraint

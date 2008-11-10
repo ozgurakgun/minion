@@ -24,6 +24,8 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <limits>
+
 #ifndef WATCH_LESS
 #define WATCH_LESS
 
@@ -50,8 +52,21 @@ struct WatchLessConstraint : public AbstractConstraint
 	    
     var1.addDynamicTrigger(dt    , LowerBound);
     var2.addDynamicTrigger(dt + 1, UpperBound);
-    
+
+    //explns for var2 prunings
+    const DomainInt var1_min = var1.getMin();
+    for(DomainInt i = var2.getMin(); i <= var1_min; i++)
+      if(var2.inDomain(i))
+	storeExpl(false, var2, i, VirtConPtr(new WatchlessPrunRight<Var1,Var2>(this,i)));
+    //do prunings
     var2.setMin(var1.getMin() + 1);
+
+    //store explns for prunings from var1
+    const DomainInt v1_max = var1.getMax();
+    for(DomainInt i = var2.getMax(); i <= v1_max; i++)
+      if(var1.inDomain(i)) 
+	storeExpl(false, var1, i, VirtConPtr(new WatchlessPrunLeft<Var1,Var2>(this,i)));
+    //then do the prunings
     var1.setMax(var2.getMax() - 1);
   }
   
@@ -65,11 +80,24 @@ struct WatchLessConstraint : public AbstractConstraint
     
 	  if(dt == dt_start)
 	  {
-      var2.setMin(var1.getMin() + 1);
+	    //explns
+	    const DomainInt var1_min = var1.getMin();
+	    for(DomainInt i = var2.getMin(); i <= var1_min; i++)
+	      if(var2.inDomain(i))
+		storeExpl(false, var2, i, VirtConPtr(new WatchlessPrunRight<Var1,Var2>(this,i)));
+	    //prunings
+	    var2.setMin(var1.getMin() + 1);
 	  }
 	  else
 	  {
-      var1.setMax(var2.getMax() - 1);
+	    //store explns for prunings from var1
+	    const DomainInt v1_max = var1.getMax();
+	    for(DomainInt i = var2.getMax(); i <= v1_max; i++)
+	      if(var1.inDomain(i))
+		storeExpl(false, var1, i, VirtConPtr(new WatchlessPrunLeft<Var1,Var2>(this,i)));
+
+	    //then do the prunings
+	    var1.setMax(var2.getMax() - 1);
 	  }
   }
   
@@ -97,6 +125,89 @@ struct WatchLessConstraint : public AbstractConstraint
       return true;
     }
     return false;
+  }
+
+  virtual vector<VirtConPtr> whyF() const //see 4/11/08 of neil's notebook for notes
+  {
+    //calculate the earliest value for which x >= value and value >= y
+    vector<pair<unsigned,unsigned> > v1_d_max; //v1_d_max[i] is max depth of pruning from var1 < i+var2.max
+    vector<pair<unsigned,unsigned> > v2_d_max; //v2_d_max[i] is max depth of pruning from var2 > i+var2.max
+    const DomainInt var2_max = var2.getMax();
+    const DomainInt var1_min = var1.getMin();
+    const size_t array_s = var1_min - var2_max + 1;
+    v1_d_max.resize(array_s);
+    v2_d_max.resize(array_s);
+    //compute v1_d_max[0]
+    v1_d_max[0] = make_pair(0, 0);
+    for(DomainInt v = var1.getInitialMin(); v < var2_max; v++)
+      v1_d_max[0] = max(v1_d_max[0], var1.getDepth(false, v));
+    //compute rest of v1_d_max
+    for(size_t curr = 1; curr < array_s; curr++)
+      v1_d_max[curr] = max(v1_d_max[curr - 1], var1.getDepth(false, var2_max + curr - 1));
+    //compute v2_d_max.back
+    pair<unsigned,unsigned>& v2_d_max_back = v2_d_max.back();
+    v2_d_max_back = make_pair(0, 0);
+    for(size_t v = var2.getInitialMax(); v > var1_min; v--)
+      v2_d_max_back = max(v2_d_max_back, var2.getDepth(false, v));
+    //compute rest of v2_d_max
+    for(int curr = array_s - 2; curr >= 0; curr--)
+      v2_d_max[curr] = max(v2_d_max[curr + 1], var2.getDepth(false, var2_max + curr + 1));
+    //find i that makes max(v1_d_max[i],v2_d_max[i]) as small as possible
+    size_t best_i = -1;
+    pair<unsigned,unsigned> best_d = make_pair(UINT_MAX, UINT_MAX);
+    for(size_t i = 0; i < array_s; i++) {
+      pair<unsigned,unsigned> next = max(v1_d_max[i], v2_d_max[i]);
+      if(best_d > next) {
+	best_i = i;
+	best_d = next;
+      }
+    }
+    //convert to value
+    best_i += var2_max;
+    //now built VCs
+    vector<VirtConPtr> retVal;
+    retVal.reserve(2);
+    retVal.push_back(VirtConPtr(new GreaterConstant<Var1>(stateObj, var1, best_i - 1))); //x>=best_i
+    retVal.push_back(VirtConPtr(new LessConstant<Var2>(stateObj, var2, best_i + 1))); //y<=best_i
+    return retVal; 
+  }
+
+  virtual pair<unsigned,unsigned> whenF() const //max depth of pruning of x<sv and sv<y
+  {
+    //calculate the earliest depth for which x >= value and value >= y
+    vector<pair<unsigned,unsigned> > v1_d_max; //v1_d_max[i] is max depth of pruning from var1 < i+var2.max
+    vector<pair<unsigned,unsigned> > v2_d_max; //v2_d_max[i] is max depth of pruning from var2 > i+var2.max
+    const DomainInt var2_max = var2.getMax();
+    const DomainInt var1_min = var1.getMin();
+    const size_t array_s = var1_min - var2_max + 1;
+    v1_d_max.resize(array_s);
+    v2_d_max.resize(array_s);
+    //compute v1_d_max[0]
+    v1_d_max[0] = make_pair(0, 0);
+    for(DomainInt v = var1.getInitialMin(); v < var2_max; v++)
+      v1_d_max[0] = max(v1_d_max[0], var1.getDepth(false, v));
+    //compute rest of v1_d_max
+    for(size_t curr = 1; curr < array_s; curr++)
+      v1_d_max[curr] = max(v1_d_max[curr - 1], var1.getDepth(false, var2_max + curr - 1));
+    //compute v2_d_max.back
+    pair<unsigned,unsigned>& v2_d_max_back = v2_d_max.back();
+    v2_d_max_back = make_pair(0, 0);
+    for(size_t v = var2.getInitialMax(); v > var1_min; v--)
+      v2_d_max_back = max(v2_d_max_back, var2.getDepth(false, v));
+    //compute rest of v2_d_max
+    for(int curr = array_s - 2; curr >= 0; curr--)
+      v2_d_max[curr] = max(v2_d_max[curr + 1], var2.getDepth(false, var2_max + curr + 1));
+    //find i that makes max(v1_d_max[i],v2_d_max[i]) as small as possible
+    size_t best_i = -1;
+    pair<unsigned,unsigned> best_d = make_pair(UINT_MAX, UINT_MAX);
+    for(size_t i = 0; i < array_s; i++) {
+      pair<unsigned,unsigned> next = max(v1_d_max[i], v2_d_max[i]);
+      if(best_d > next) {
+	best_i = i;
+	best_d = next;
+      }
+    }
+    return best_d;
   }
 };
 

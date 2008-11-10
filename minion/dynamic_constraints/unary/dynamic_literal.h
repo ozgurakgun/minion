@@ -47,7 +47,7 @@ template<typename Var>
 
   virtual void full_propagate()
   { 
-    var.setExpl(true, val, VirtConPtr()); //no explanation required
+    storeExpl(true, var, val, VirtConPtr()); //no explanation required
     var.propagateAssign(val); 
   }
 
@@ -55,7 +55,7 @@ template<typename Var>
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
-    var.setExpl(true, val, VirtConPtr()); //no explanation required
+    storeExpl(true, var, val, VirtConPtr()); //no explanation required
     var.propagateAssign(val);
   }
 
@@ -83,6 +83,12 @@ template<typename Var>
     else
         return false;
   }
+
+  virtual pair<unsigned,unsigned> whenF() const
+  { return var.getDepth(false, val); }
+
+  virtual vector<VirtConPtr> whyF() const
+  { return vector<VirtConPtr>(1, VirtConPtr(new DisAssignment<Var>(stateObj, var, val))); }
 };
 
 template<typename VarArray1>

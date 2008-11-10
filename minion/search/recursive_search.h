@@ -38,6 +38,7 @@ namespace Controller
       if(cv.inDomain(i)) {
 	maybe_print_search_state(stateObj, "Node: ", v);
 	world_push(stateObj);
+	cv.setExpl(true, i, VirtConPtr(new DecisionAssg<Var>(stateObj, cv, i)));
 	cv.decisionAssign(i);
 	maybe_print_search_assignment(stateObj, cv, i, true);
 	prop(stateObj, v);

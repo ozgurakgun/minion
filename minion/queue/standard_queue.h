@@ -192,6 +192,8 @@ public:
   inline void propagateQueue()
   {
     D_INFO(2, DI_QUEUE, "Starting Propagation");
+    bool* fail_ptr = getState(stateObj).getFailedPtr();
+
 #ifdef USE_SETJMP
     int setjmp_return = SYSTEM_SETJMP(*(getState(stateObj).getJmpBufPtr()));
 	if(setjmp_return != 0)
@@ -233,6 +235,13 @@ public:
 		return;
 	  
 	  D_INFO(1, DI_QUEUE, string("Doing a special trigger!"));
+#ifndef USE_SETJMP
+	  if(*fail_ptr) //stop propagating after failure!
+	    {
+	      clearQueues();
+	      return;
+	    }
+#endif
 	  AbstractConstraint* trig = special_triggers.back();
 	  special_triggers.pop_back();
 	  CON_INFO_ADDONE(SpecialTrigger);

@@ -83,24 +83,49 @@ struct ConstantVar
   
   DomainInt getInitialMin() const
   { return val; }
+
+  //Using the vc for the pruning of the sole value as the nogood, because when
+  //whyT() is called it will provide a node that lead to the sole pruning
+  //causing the failure. An alternative would have been to return (v <-\- c) but
+  //this is pointless and would end up causing (v <- c) to be posted.
   
   void setMax(DomainInt i)
-  { if(i<val) getState(stateObj).setFailed(true); }
+  { 
+    if(i<val) {
+      getMemory(stateObj).setFailure(vc_prun);
+      getState(stateObj).setFailed(true); 
+    }
+  }
   
   void setMin(DomainInt i)
-  { if(i>val) getState(stateObj).setFailed(true); }
+  { 
+    if(i>val) {
+      getMemory(stateObj).setFailure(vc_prun);
+      getState(stateObj).setFailed(true); 
+    }
+  }
   
   void uncheckedAssign(DomainInt)
   { FAIL_EXIT(); }
   
   void propagateAssign(DomainInt b)
-  {if(b != val) getState(stateObj).setFailed(true); }
+  {
+    if(b != val) {
+      getMemory(stateObj).setFailure(vc_prun);      
+      getState(stateObj).setFailed(true); 
+    }
+  }
   
   void decisionAssign(DomainInt b)
   { propagateAssign(b); }
   
   void removeFromDomain(DomainInt b)
-  { if(b==val) getState(stateObj).setFailed(true); }
+  { 
+    if(b==val) {
+      getMemory(stateObj).setFailure(vc_prun);
+      getState(stateObj).setFailed(true); 
+    }
+  }
  
   void addTrigger(Trigger, TrigType)
   { }
