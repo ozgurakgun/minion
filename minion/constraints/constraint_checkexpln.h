@@ -23,19 +23,19 @@
 
 #include <limits>
 
-template<typename VarArray, typename OriginalConstraint>
+template<typename VarArray>
 struct CheckExplnConstraint : public AbstractConstraint
 {
   //return T iff OK
   bool check_recursive(pair<unsigned,unsigned> prev_d, VirtConPtr node) {
-    if(node.get() == NULL || node->getDepth().second == 0) 
+    if(node.get() == NULL || node->getDepth().second == 0) {
       return true; //hit assumptions and decisions, go no further
-    else {
+    } else {
       if(prev_d < node->getDepth()) { //make sure depth is sane
 	D_ASSERT(false); //trap error for debugger
 	return false; //depth is dodgy
       }
-      vector<VirtConPtr> preds = why[i]->whyT();
+      vector<VirtConPtr> preds = node->whyT();
       for(size_t i = 0; i < preds.size(); i++)
 	if(!check_recursive(node->getDepth(), preds[i])) {
 	  return false;
@@ -51,29 +51,26 @@ struct CheckExplnConstraint : public AbstractConstraint
 
   vector<pair<size_t,DomainInt> > varval_trigger_mapping;
   
-  CheckExplnConstraint(StateObj* _stateObj, VarArray& vars)
-  : AbstractConstraint(_stateObj), variables(vars)
+  CheckExplnConstraint(StateObj* _stateObj, const VarArray& _variables)
+  : AbstractConstraint(_stateObj), variables(_variables)
   { D_INFO(2, DI_CHECKCON, "Constructing"); }
   
+  virtual int dynamic_trigger_count()
+  {
+    unsigned count = 0;
+    for(size_t var = 0; var < variables.size(); var++)
+      count += (variables[var].getInitialMax() - variables[var].getInitialMin() + 1);
+    return count; //one per varval
+  }
+
   virtual triggerCollection setup_internal()
   {
-    //Events are numbered -i for the -(i+1)th variable being assigned, positive
-    //i events can be related to prunings to particular varvals via the
-    //varval_trigger_mapping.
+    //Events are numbered i for the i'th variable being assigned
     D_INFO(2,DI_CHECKCON,"Setting up Constraint");
     triggerCollection t;
     //watch all assignments
     for(unsigned i = 0; i < variables.size(); ++i)
-      t.push_back(make_trigger(variables[i], Trigger(this, -(i + 1)), Assigned));
-    //watch all prunings
-    int trig_no = 0;
-    for(unsigned var = 0; var < variables.size(); ++var) {
-      for(DomainInt val = variables[i].getInitialMin(); val <= variables[i].getInitialMax(); val++) {
-	varval_trigger_mapping.push_back(make_pair(var, val));
-	t.push_back(make_trigger(variables[var], Trigger(this, trig_no), DomainChanged));
-	trig_no++;
-      }
-    }
+      t.push_back(make_trigger(variables[i], Trigger(this, i), Assigned));
     return t;
   }
   
@@ -82,29 +79,24 @@ struct CheckExplnConstraint : public AbstractConstraint
     cerr << "shouldn't get reversed." << endl;
     FAIL_EXIT();
   }
+
+  void do_checks(bool assg, size_t var, DomainInt val)
+  {
+    if(!check_recursive(make_pair(UINT_MAX, UINT_MAX), 
+			variables[var].getExpl(assg, val)))
+      cout << "problem with nonincreasing depths" << endl;
+    //next check that propagation doesn't happen at a later depth than it's explanation
+    if(variables[var].getDepth(assg, val).first != getMemory(stateObj).backTrack().current_depth())
+      cout << "problem with props happening late" << endl;
+  }    
   
   PROPAGATE_FUNCTION(int prop_val, DomainDelta)
+  { do_checks(true, prop_val, variables[prop_val].getAssignedValue()); }
+
+  DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* trig)
   {
-    size_t var;
-    DomainInt val;
-    bool assg;
-    if(prop_val < 0) {
-      //assignment
-      assg = true;
-      var = -prop_val - 1;
-      val = variables[var].getAssignedValue();
-    } else {
-      //pruning
-      pair<size_t,DomainInt> varval = varval_trigger_mapping[prop_val];
-      var = varval.first;
-      val = varval.second;
-      assg = false;
-    }
-    if(!check_recursive(make_pair(MAX_UINT, MAX_UINT), 
-			variables[var].getExpl(assg, val)))
-      cout << "problem with nonincreasing depths (assg)" << endl;
-    if(variables[var].getDepth(assg, val).first != getMemory(stateObj).current_depth())
-      cout << "problem with props happening late (assg)" << endl;
+    pair<size_t, DomainInt> varval = varval_trigger_mapping[trig->trigger_info()];
+    do_checks(false, varval.first, varval.second);
   }
   
   virtual BOOL check_unsat(int,DomainDelta)
@@ -118,7 +110,20 @@ struct CheckExplnConstraint : public AbstractConstraint
   }
   
   virtual void full_propagate()
-  { ; }
+  { 
+    DynamicTrigger* dt = dynamic_trigger_start();
+    //setup varval triggers
+    unsigned code = 0;
+    for(size_t var = 0; var < variables.size(); var++) {
+      for(DomainInt val = variables[var].getInitialMin(); val <= variables[var].getInitialMax(); val++) {
+	variables[var].addDynamicTrigger(dt, DomainRemoval, val);
+	dt->trigger_info() = code;
+	varval_trigger_mapping.push_back(make_pair(var, val));
+	code++;
+	dt++;
+      }
+    }
+  }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
   {
@@ -135,8 +140,8 @@ struct CheckExplnConstraint : public AbstractConstraint
 };
 
 template<typename VarArray>
-AbstractConstraint*
-CheckExplnCon(StateObj* stateObj,const VarArray& vars, ConstraintBlob&)
+inline AbstractConstraint*
+CheckExplnCon(StateObj* stateObj, const VarArray& vars, ConstraintBlob&)
 { 
   return new CheckExplnConstraint<VarArray>(stateObj, vars); 
 }

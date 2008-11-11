@@ -57,5 +57,6 @@ case CT_WATCHED_NOTLIT : return build_constraint_CT_WATCHED_NOTLIT(stateObj, b);
 case CT_REIFY : return build_constraint_CT_REIFY(stateObj, b);
 case CT_REIFYIMPLY_QUICK : return build_constraint_CT_REIFYIMPLY_QUICK(stateObj, b);
 case CT_REIFYIMPLY : return build_constraint_CT_REIFYIMPLY(stateObj, b);
+case CT_CHECKEXPLN : return build_constraint_CT_CHECKEXPLN(stateObj, b);
 default: D_FATAL_ERROR("Fatal error building constraints");
 }}
