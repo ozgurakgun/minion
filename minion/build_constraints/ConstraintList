@@ -54,3 +54,4 @@ DYNAMIC_CT "w-notliteral" 		CT_WATCHED_NOTLIT 	read_var read_constant
 DYNAMIC_CT "reify" 			CT_REIFY 		read_constraint read_bool_var
 DYNAMIC_CT "reifyimply-quick" 		CT_REIFYIMPLY_QUICK	read_constraint read_bool_var
 DYNAMIC_CT "reifyimply" 		CT_REIFYIMPLY 		read_constraint read_bool_var
+STATIC_CT "checkexpln"			CT_CHECKEXPLN		read_list
