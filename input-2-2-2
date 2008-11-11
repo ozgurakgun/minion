@@ -1,0 +1,11 @@
+MINION 3
+#antichain<2,2,2>
+**VARIABLES**
+DISCRETE ARRAY[2,2] {0..1}
+**SEARCH**
+VARORDER [ARRAY]
+**CONSTRAINTS**
+checkexpln(ARRAY[_,_])
+watched-or({watchless(ARRAY[0,0],ARRAY[1,0]),watchless(ARRAY[0,1],ARRAY[1,1])})
+watched-or({watchless(ARRAY[1,0],ARRAY[0,0]),watchless(ARRAY[1,1],ARRAY[0,1])})
+**EOF**
