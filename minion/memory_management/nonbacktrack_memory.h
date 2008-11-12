@@ -38,17 +38,12 @@ class Memory
   BackTrackMemory backtrack_memory;
   NewMemoryBlock nonbacktrack_memory;
   
-  VirtConPtr failure; //expect to be able to call whyT() to get why it's T, getDepth(), getNeg(), etc. needn't work
-
 public:
   MonotonicSet * monotonic_set;   // this needs to become a ptr to getVars(stateObj).getBigRangevarContainer().bms_array
 
   BackTrackMemory& backTrack() { return backtrack_memory; }
   NewMemoryBlock& nonBackTrack() { return nonbacktrack_memory; }
   MonotonicSet& monotonicSet() { return *monotonic_set; }
-
-  VirtConPtr getFailure() { return failure; } //reason for failure?
-  void setFailure(VirtConPtr _failure) { failure = _failure; }
 };
 
 // @}

@@ -92,7 +92,7 @@ struct ConstantVar
   void setMax(DomainInt i)
   { 
     if(i<val) {
-      getMemory(stateObj).setFailure(vc_prun);
+      getState(stateObj).setFailure(vc_prun);
       getState(stateObj).setFailed(true); 
     }
   }
@@ -100,7 +100,7 @@ struct ConstantVar
   void setMin(DomainInt i)
   { 
     if(i>val) {
-      getMemory(stateObj).setFailure(vc_prun);
+      getState(stateObj).setFailure(vc_prun);
       getState(stateObj).setFailed(true); 
     }
   }
@@ -111,7 +111,7 @@ struct ConstantVar
   void propagateAssign(DomainInt b)
   {
     if(b != val) {
-      getMemory(stateObj).setFailure(vc_prun);      
+      getState(stateObj).setFailure(vc_prun);      
       getState(stateObj).setFailed(true); 
     }
   }
@@ -122,7 +122,7 @@ struct ConstantVar
   void removeFromDomain(DomainInt b)
   { 
     if(b==val) {
-      getMemory(stateObj).setFailure(vc_prun);
+      getState(stateObj).setFailure(vc_prun);
       getState(stateObj).setFailed(true); 
     }
   }

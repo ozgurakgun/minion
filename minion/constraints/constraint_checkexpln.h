@@ -29,17 +29,24 @@ struct CheckExplnConstraint : public AbstractConstraint
   //return T iff OK
   bool check_recursive(pair<unsigned,unsigned> prev_d, VirtConPtr node) {
     if(node.get() == NULL || node->getDepth().second == 0) {
+      if(node.get() == NULL) cout << "assumption d=" << node->getDepth();
+      else cout << "decision d=" << node->getDepth();
       return true; //hit assumptions and decisions, go no further
     } else {
+      cout << *node << " d=" << node->getDepth();
+      cout << " {" << endl;
       if(prev_d < node->getDepth()) { //make sure depth is sane
 	D_ASSERT(false); //trap error for debugger
 	return false; //depth is dodgy
       }
       vector<VirtConPtr> preds = node->whyT();
-      for(size_t i = 0; i < preds.size(); i++)
+      for(size_t i = 0; i < preds.size(); i++) {
 	if(!check_recursive(node->getDepth(), preds[i])) {
 	  return false;
 	}
+	if(i != preds.size() - 1) cout << "," << endl;
+      }
+      cout << "}";
       return true; //succeeded down all branches 
     }
   }
@@ -82,9 +89,11 @@ struct CheckExplnConstraint : public AbstractConstraint
 
   void do_checks(bool assg, size_t var, DomainInt val)
   {
+    cout << "assg=" << assg << ",var=" << var << ",val=" << val << endl;
     if(!check_recursive(make_pair(UINT_MAX, UINT_MAX), 
 			variables[var].getExpl(assg, val)))
       cout << "problem with nonincreasing depths" << endl;
+    cout << endl;
     //next check that propagation doesn't happen at a later depth than it's explanation
     if(variables[var].getDepth(assg, val).first != getMemory(stateObj).backTrack().current_depth())
       cout << "problem with props happening late" << endl;
