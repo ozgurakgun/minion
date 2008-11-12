@@ -70,6 +70,8 @@ class SearchState
   
   volatile bool ctrl_c_pressed;
     
+  VirtConPtr failure; //expect to be able to call whyT() to get why it's T, getDepth(), getNeg(), etc. needn't work
+
 public:
 
   vector<set<AbstractConstraint*> >& getConstraintsToPropagate()
@@ -118,6 +120,12 @@ public:
   // variables.
   bool* getFailedPtr() { return &failed; }
   
+  VirtConPtr getFailure() { return failure; } //reason for failure?
+  void setFailure(VirtConPtr _failure) { 
+    cout << "failure=" << *_failure << endl;
+    if(isFailed()) failure = _failure; 
+  }
+
   TimerClass& getOldTimer() { return oldtimer; }
   
   

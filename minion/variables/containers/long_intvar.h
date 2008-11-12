@@ -136,7 +136,7 @@ struct BigRangeVarContainer {
     if(loopvar < lower)
 	{
 	  //store MHAV as the failure
-	  getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num])));
+	  getState(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num])));
 	  getState(stateObj).setFailed(true);
 	  /// Here just remove the value which should lead to the least work.
 	  return upper_bound(d);
@@ -149,7 +149,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
-    getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
+    getState(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
     getState(stateObj).setFailed(true);
     return old_up_bound;
   }
@@ -165,7 +165,7 @@ struct BigRangeVarContainer {
     //DomainInt low_bound = initial_bounds[d.var_num].first; 
     if(loopvar > upper)
 	{
-	  getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
+	  getState(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
 	  getState(stateObj).setFailed(true);
 	  /// Here just remove the value which should lead to the least work.
 	  return lower_bound(d);
@@ -178,7 +178,7 @@ struct BigRangeVarContainer {
       if(bms_array.isMember(var_offset[d.var_num] + loopvar)) 
         return loopvar;
     }
-    getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
+    getState(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
     getState(stateObj).setFailed(true);
     return old_low_bound;
   }
@@ -368,7 +368,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
     if(!inDomain(d,offset))
     {
       //store assignedOrPruned nogood
-      getMemory(stateObj).setFailure(VirtConPtr(new AssgOrPrun(prun_explns[d.var_num][offset - getInitialMin(d)],
+      getState(stateObj).setFailure(VirtConPtr(new AssgOrPrun(prun_explns[d.var_num][offset - getInitialMin(d)],
 							       assg_expln[d.var_num])));
       getState(stateObj).setFailed(true); 
       return false;
@@ -472,7 +472,7 @@ public:
 	
 	if(offset < low_bound)
 	{
-	  getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
+	  getState(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
 	  getState(stateObj).setFailed(true);
 	  return;
     }
@@ -532,7 +532,7 @@ public:
     
 	if(offset > up_bound)
 	{
-	  getMemory(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
+	  getState(stateObj).setFailure(VirtConPtr(new MHAV(prun_explns[d.var_num]))); //store MHAV
 	  getState(stateObj).setFailed(true);
 	  return;
 	}
@@ -638,11 +638,14 @@ public:
     if(!assg) {
       prun_explns[b.var_num][i - getInitialMin(b)] = vc;
       prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
+      //cout << "stored " << *vc << " for pruning " << i << " from " << b.var_num << endl;
     } else {
       D_ASSERT(inDomain(b, i)); //make sure not duplicating expl
       assg_expln[b.var_num] = vc;
       assg_depth[b.var_num] = getMemory(stateObj).backTrack().next_timestamp();
+      //cout << "stored " << *vc << " for assigned " << b.var_num << " to " << i << endl;
     }
+    //print_recursive(vector<int>(), vc->whyT());
   }
   
   VirtConPtr getExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i) const

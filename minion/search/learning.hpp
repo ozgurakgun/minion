@@ -278,7 +278,7 @@ inline bool MHAV::equals(VirtCon*) const
 { D_ASSERT(false); return false; }
 
 inline void MHAV::print(std::ostream& o) const
-{ D_ASSERT(false); }
+{ o << "MHAV"; }
 
 inline vector<VirtConPtr> AssgOrPrun::whyT() const
 {
@@ -299,7 +299,7 @@ inline bool AssgOrPrun::equals(VirtCon*) const
 { D_ASSERT(false); return false; }
 
 inline void AssgOrPrun::print(std::ostream& o) const
-{ D_ASSERT(false); }
+{ o << "AssgOrPrun"; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> BecauseOfPruningsAssignment<VarRef>::whyT() const

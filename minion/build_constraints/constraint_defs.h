@@ -56,5 +56,5 @@ ConstraintDef constraint_list[] = {
 { "reify" , CT_REIFY, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
 { "reifyimply-quick" , CT_REIFYIMPLY_QUICK, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
 { "reifyimply" , CT_REIFYIMPLY, 2,{ read_constraint , read_bool_var }, DYNAMIC_CT },
-{ "checkexpln" , CT_CHECKEXPLN, 1,{ read_list }, STATIC_CT },
+{ "checkexpln" , CT_CHECKEXPLN, 1,{ read_list }, DYNAMIC_CT },
 };
