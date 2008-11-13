@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 using namespace std;
-void help(string request)
+inline void help(string request)
 {
 if("" == request) {
 cout << "To use this help feature run the minion executable followed by help followed by the" << endl;
