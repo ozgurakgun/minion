@@ -5,7 +5,7 @@ DISCRETE ARRAY[8,3] {0..2}
 **SEARCH**
 VARORDER [ARRAY]
 **CONSTRAINTS**
-checkexpln(ARRAY[_,_])
+#checkexpln(ARRAY[_,_])
 watched-or({watchless(ARRAY[0,0],ARRAY[1,0]),watchless(ARRAY[0,1],ARRAY[1,1]),watchless(ARRAY[0,2],ARRAY[1,2])})
 watched-or({watchless(ARRAY[1,0],ARRAY[0,0]),watchless(ARRAY[1,1],ARRAY[0,1]),watchless(ARRAY[1,2],ARRAY[0,2])})
 watched-or({watchless(ARRAY[0,0],ARRAY[2,0]),watchless(ARRAY[0,1],ARRAY[2,1]),watchless(ARRAY[0,2],ARRAY[2,2])})
