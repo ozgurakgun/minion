@@ -168,8 +168,8 @@ struct AnyVarRef_Abstract
   virtual DomainInt getBaseVal(DomainInt) const = 0;
   virtual Var getBaseVar() const = 0;
   virtual pair<unsigned,unsigned> getDepth(bool assg, DomainInt) const = 0;
-  virtual void setExpl(bool assg, DomainInt, VirtCon) = 0;
-  virtual VirtCon getExpl(bool assg, DomainInt) const = 0;
+  virtual void setExpl(bool assg, DomainInt, VirtConPtr) = 0;
+  virtual VirtConPtr getExpl(bool assg, DomainInt) const = 0;
 #ifdef WDEG
   virtual int getBaseWdeg() = 0;
   virtual void incWdeg() = 0;
@@ -274,10 +274,10 @@ struct AnyVarRef_Concrete : public AnyVarRef_Abstract
   virtual pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
   { return data.getDepth(assg, i); }
 
-  virtual void setExpl(bool assg, DomainInt i, VirtCon vc)
+  virtual void setExpl(bool assg, DomainInt i, VirtConPtr vc)
   { data.setExpl(assg, i, vc); }
   
-  virtual VirtCon getExpl(bool assg, DomainInt i) const
+  virtual VirtConPtr getExpl(bool assg, DomainInt i) const
   { return data.getExpl(assg, i); }
   
   virtual string virtual_to_string()
@@ -390,10 +390,10 @@ public:
   pair<unsigned,unsigned> getDepth(bool assg, DomainInt i) const
   { return data->getDepth(assg, i); }
 
-  void setExpl(bool assg, DomainInt i, VirtCon vc)
+  void setExpl(bool assg, DomainInt i, VirtConPtr vc)
   { data->setExpl(assg, i, vc); }
   
-  VirtCon getExpl(bool assg, DomainInt i) const
+  VirtConPtr getExpl(bool assg, DomainInt i) const
   { return data->getExpl(assg, i); }
 
   friend std::ostream& operator<<(std::ostream& o, const AnyVarRef& avr)
