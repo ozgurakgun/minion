@@ -141,7 +141,10 @@ struct CheckExplnConstraint : public AbstractConstraint
   
   virtual vector<AnyVarRef> get_vars()
   { 
-    return variables;
+    vector<AnyVarRef> retVal;
+    for(int i = 0; i < variables.size(); i++)
+      retVal.push_back(AnyVarRef(variables[i]));
+    return retVal;
   }
   
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
