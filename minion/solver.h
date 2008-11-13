@@ -112,7 +112,7 @@ public:
     if(f)
       SYSTEM_LONGJMP(*(getState(stateObj).getJmpBufPtr()),1);
 #endif
-    cout << "failed" << endl;
+    //cout << "failed" << endl;
     failed = f; 
   }
   // This function is here because a number of pieces of code want a raw reference to the 'failed' variable.
@@ -122,7 +122,7 @@ public:
   
   VirtConPtr getFailure() { return failure; } //reason for failure?
   void setFailure(VirtConPtr _failure) { 
-    cout << "failure=" << *_failure << endl;
+    //cout << "failure=" << *_failure << endl;
     if(isFailed()) failure = _failure; 
   }
 

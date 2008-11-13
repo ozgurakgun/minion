@@ -19,7 +19,7 @@ class VirtCon {
   virtual pair<unsigned,unsigned> getDepth() const = 0;
   friend bool operator==(const VirtConPtr a, const VirtConPtr b) { return a->equals(b.get()); }
   virtual bool equals(VirtCon* other) const = 0;
-  friend std::ostream& operator<<(std::ostream& o, const VirtCon& vc) { if(&vc) vc.print(o); else o << "null"; }
+  friend std::ostream& operator<<(std::ostream& o, const VirtCon& vc) { if(&vc) vc.print(o); else o << "null"; return o; }
   virtual void print(std::ostream& o) const = 0;
   virtual size_t hash() const = 0;
   virtual ~VirtCon() {}
