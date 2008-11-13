@@ -21,8 +21,29 @@ class VirtCon {
   virtual bool equals(VirtCon* other) const = 0;
   friend std::ostream& operator<<(std::ostream& o, const VirtCon& vc) { if(&vc) vc.print(o); else o << "null"; }
   virtual void print(std::ostream& o) const = 0;
+  virtual size_t hash() const = 0;
   virtual ~VirtCon() {}
 };
+
+struct VirtConPtrHash : unary_function<VirtCon, size_t>
+{
+  size_t operator()(const VirtConPtr vc) const
+  { return vc->hash(); }
+};
+
+typedef depth_VirtConPtr pair<pair<unsigned,unsigned>,VirtConPtr>;
+
+//NB. this comparison is carefully reasoned! The first disjunct is to make the
+//first() in the set the deepest depth. However we don't have convenient access
+//to a < operator for VirtCons and I don't want to write one, so we don't order
+//them within depth (and it's not essential to do so).
+struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
+{
+  bool operator()(const depth_VirtConPtr& left, const depth_VirtConPtr& right) const
+  { return left.first > right.first || (left.first == right.first && left.second != right.second); }
+};
+
+inline distribute(set
 
 template<typename VarRef>
 class DisAssignment : public VirtCon { //var != val
@@ -37,6 +58,7 @@ class DisAssignment : public VirtCon { //var != val
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };
 
 template<typename VarRef>
@@ -52,6 +74,7 @@ class Assignment : public VirtCon { //var == val
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };  
 
 template<typename VarRef>
@@ -68,6 +91,7 @@ public:
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };
 
 template<typename VarRef>
@@ -84,6 +108,7 @@ public:
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };  
 
 template<typename VarRef1, typename VarRef2> //class prototype
@@ -103,6 +128,7 @@ public:
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };
 
 template<typename VarRef1, typename VarRef2>
@@ -119,6 +145,7 @@ public:
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };
 
 class NegOfPostedCon : public VirtCon {
@@ -131,6 +158,7 @@ class NegOfPostedCon : public VirtCon {
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };
 
 class Dynamic_OR;
@@ -148,6 +176,7 @@ class DisjunctionPrun : public VirtCon {
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };
 
 template<typename VarRef>
@@ -162,6 +191,7 @@ class BecauseOfAssignmentPrun : public VirtCon {
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
 };
 
 class MHAV : public VirtCon {
@@ -174,6 +204,7 @@ class MHAV : public VirtCon {
   virtual pair<unsigned,unsigned> getDepth() const; //do nothing
   virtual bool equals(VirtCon* other) const; //do nothing
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };
 
 class AssgOrPrun : public VirtCon {
@@ -187,6 +218,7 @@ class AssgOrPrun : public VirtCon {
   virtual pair<unsigned,unsigned> getDepth() const; //do nothing
   virtual bool equals(VirtCon* other) const; //do nothing
   virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
 };
 
 template<typename VarRef>
@@ -201,6 +233,7 @@ class BecauseOfPruningsAssignment : public VirtCon {
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
 };
 
 template<typename VarRef>
@@ -217,6 +250,7 @@ public:
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
 };
 
 inline void print_recursive(vector<int> count_seq, vector<VirtConPtr> why) {
