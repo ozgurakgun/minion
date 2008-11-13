@@ -31,6 +31,10 @@ inline void DisAssignment<VarRef>::print(std::ostream& o) const
 { o << "DisAssignment(var=" << var << ",val=" << val << ")"; }
 
 template<typename VarRef>
+inline size_t DisAssignment<VarRef>::hash() const
+{ return ((size_t)&typeid(*this) + var.getBaseVal(val) + var.getBaseVar().pos()) % 16777619; }
+
+template<typename VarRef>
 inline vector<VirtConPtr> Assignment<VarRef>::whyT() const
 { return var.getExpl(true, val)->whyT(); } //get the assignments stored explanation
 
@@ -53,6 +57,10 @@ inline bool Assignment<VarRef>::equals(VirtCon* other) const
 template<typename VarRef>
 inline void Assignment<VarRef>::print(std::ostream& o) const
 { o << "Assignment(var=" << var << ",val=" << val << ")"; }
+
+template<typename VarRef>
+inline size_t Assignment<VarRef>::hash() const
+{ return ((size_t)&typeid(*this) + var.getBaseVal(val) + var.getBaseVar().pos()) % 16777619; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> LessConstant<VarRef>::whyT() const
@@ -95,6 +103,10 @@ inline void LessConstant<VarRef>::print(std::ostream& o) const
 { o << "LessConstant(var=" << var << " < val=" << constant << ")"; }
 
 template<typename VarRef>
+inline size_t LessConstant<VarRef>::hash() const
+{ return ((size_t)&typeid(*this) + var.getBaseVal(constant) + var.getBaseVar().pos()) % 16777619; }
+
+template<typename VarRef>
 inline vector<VirtConPtr> GreaterConstant<VarRef>::whyT() const
 {
   D_ASSERT(constant >= var.getInitialMin()); //shouldn't ask why true- been true since start
@@ -134,6 +146,10 @@ template<typename VarRef>
 inline void GreaterConstant<VarRef>::print(std::ostream& o) const
 { o << "GreaterConstant(var=" << var << " > val=" << constant << ")"; }
 
+template<typename VarRef>
+inline size_t GreaterConstant<VarRef>::hash() const
+{ return ((size_t)&typeid(*this) + var.getBaseVal(constant) + var.getBaseVar().pos()) % 16777619; }
+
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunLeft<VarRef1,VarRef2>::whyT() const //return var2 <= val
 { return vector<VirtConPtr>(1, VirtConPtr(new LessConstant<VarRef2>(con->stateObj, con->var2, val + 1))); }
@@ -159,6 +175,10 @@ inline void WatchlessPrunLeft<VarRef1,VarRef2>::print(std::ostream& o) const
 { o << "WatchlessPrunLeft(var=" << con->var1 << ",val=" << val << ")"; }
 
 template<typename VarRef1, typename VarRef2>
+inline size_t WatchlessPrunLeft<VarRef1,VarRef2>::hash() const
+{ return ((size_t)&typeid(*this) + val + (size_t)con) % 16777619; }
+
+template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunRight<VarRef1,VarRef2>::whyT() const //return var1 >= val 
 { return vector<VirtConPtr>(1, VirtConPtr(new GreaterConstant<VarRef1>(con->stateObj, con->var1, val - 1))); }
 
@@ -182,6 +202,10 @@ template<typename VarRef1, typename VarRef2>
 inline void WatchlessPrunRight<VarRef1,VarRef2>::print(std::ostream& o) const
 { o << "WatchlessPrunRight(var=" << con->var2 << ",val=" << val << ")"; }
 
+template<typename VarRef1, typename VarRef2>
+inline size_t WatchlessPrunRight<VarRef1,VarRef2>::hash() const
+{ return ((size_t)&typeid(*this) + val + (size_t)con) % 16777619; }
+
 inline vector<VirtConPtr> NegOfPostedCon::whyT() const
 { return con->whyF(); }
 
@@ -199,6 +223,9 @@ inline bool NegOfPostedCon::equals(VirtCon* other) const
 
 inline void NegOfPostedCon::print(std::ostream& o) const
 { o << "NegOfPostedCon(con=" << con << ")"; }
+
+inline size_t NegOfPostedCon::hash() const
+{ return ((size_t)&typeid(*this) + (size_t)&con) % 16777619; }
 
 inline vector<VirtConPtr> DisjunctionPrun::whyT() const
 {
@@ -241,6 +268,9 @@ inline bool DisjunctionPrun::equals(VirtCon* other) const
 inline void DisjunctionPrun::print(std::ostream& o) const
 { o << "DisjunctionPrun(done=" << *done << ",doer=" << doer << ",dj=" << dj << ")"; }
 
+inline size_t DisjunctionPrun::hash() const
+{ return ((size_t)&typeid(*this) + (size_t)dj + (size_t)doer) % 16777619; }
+
 template<typename VarRef>
 inline vector<VirtConPtr> BecauseOfAssignmentPrun<VarRef>::whyT() const
 { return vector<VirtConPtr>(1, var.getExpl(true, var.getAssignedValue())); } //return the assignment that caused it
@@ -265,6 +295,10 @@ template<typename VarRef>
 inline void BecauseOfAssignmentPrun<VarRef>::print(std::ostream& o) const
 { o << "BecauseOfAssignmentPrun(var=" << var << ",pruned=" << pruned << ")"; }
 
+template<typename VarRef>
+inline size_t BecauseOfAssignmentPrun<VarRef>::hash() const
+{ return ((size_t)&typeid(*this) + var.getBaseVar().pos() + var.getBaseVal(pruned)) % 16777619; }
+
 inline vector<VirtConPtr> MHAV::whyT() const
 { return expls; } //just return all the virtcons for the prunings to the variable
 
@@ -279,6 +313,9 @@ inline bool MHAV::equals(VirtCon*) const
 
 inline void MHAV::print(std::ostream& o) const
 { o << "MHAV"; }
+
+inline size_t MHAV::hash() const
+{ D_ASSERT(false); return 0; }
 
 inline vector<VirtConPtr> AssgOrPrun::whyT() const
 {
@@ -300,6 +337,9 @@ inline bool AssgOrPrun::equals(VirtCon*) const
 
 inline void AssgOrPrun::print(std::ostream& o) const
 { o << "AssgOrPrun"; }
+
+inline size_t AssgOrPrun::hash() const
+{ D_ASSERT(false); return 0; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> BecauseOfPruningsAssignment<VarRef>::whyT() const
@@ -336,6 +376,10 @@ inline void BecauseOfPruningsAssignment<VarRef>::print(std::ostream& o) const
 { o << "BecauseOfPruningsAssignment(var=" << var << ",assigned=" << assigned << ")"; }
 
 template<typename VarRef>
+inline size_t BecauseOfPruningsAssignment<VarRef>::hash() const
+{ return ((size_t)&typeid(*this) + var.getBaseVar().pos() + var.getBaseVal(assigned)) % 16777619; }
+
+template<typename VarRef>
 inline vector<VirtConPtr> DecisionAssg<VarRef>::whyT() const
 {
   D_ASSERT(false); //shouldn't be called
@@ -360,5 +404,9 @@ inline bool DecisionAssg<VarRef>::equals(VirtCon* other) const
 template<typename VarRef>
 inline void DecisionAssg<VarRef>::print(std::ostream& o) const
 { o << "DecisionAssg(" << var << " <- " << val << ")"; }
+
+template<typename VarRef>
+inline size_t DecisionAssg<VarRef>::hash() const
+{ return ((size_t)&typeid(*this) + val + var.getBaseVar().pos()) % 16777619; }
 
 #endif
