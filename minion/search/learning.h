@@ -45,6 +45,7 @@ struct VirtConPtrHash : unary_function<VirtCon, size_t>
 
 template<typename VarRef>
 class DisAssignment : public VirtCon { //var != val
+  static const size_t guid = 0;
   StateObj* stateObj;
   VarRef var;
   DomainInt val;
@@ -61,6 +62,7 @@ class DisAssignment : public VirtCon { //var != val
 
 template<typename VarRef>
 class Assignment : public VirtCon { //var == val
+  static const size_t guid = 1000;
   StateObj* stateObj;
   VarRef var;
   DomainInt val;
@@ -77,7 +79,7 @@ class Assignment : public VirtCon { //var == val
 
 template<typename VarRef>
 class LessConstant : public VirtCon { //var < constant
-
+  static const size_t guid = 2000;
   StateObj* stateObj;
   VarRef var;
   DomainInt constant;
@@ -94,7 +96,7 @@ public:
 
 template<typename VarRef>
 class GreaterConstant : public VirtCon { //var > constant ie constant < var
-
+  static const size_t guid = 3000;
   StateObj* stateObj;
   VarRef var;
   DomainInt constant;
@@ -114,7 +116,7 @@ class WatchLessConstraint;
 
 template<typename VarRef1, typename VarRef2>
 class WatchlessPrunLeft : public VirtCon { //var1 < var2 has pruned val from var1
-
+  static const size_t guid = 4000;
   WatchLessConstraint<VarRef1, VarRef2>* con;
   DomainInt val;
 
@@ -131,7 +133,7 @@ public:
 
 template<typename VarRef1, typename VarRef2>
 class WatchlessPrunRight : public VirtCon { //var1 < var2 has pruned val from var2
-
+  static const size_t guid = 5000;
   WatchLessConstraint<VarRef1, VarRef2>* con;
   DomainInt val;
 
@@ -147,6 +149,7 @@ public:
 };
 
 class NegOfPostedCon : public VirtCon {
+  static const size_t guid = 6000;
   AbstractConstraint* con;
  
  public:
@@ -162,6 +165,7 @@ class NegOfPostedCon : public VirtCon {
 class Dynamic_OR;
 
 class DisjunctionPrun : public VirtCon {
+  static const size_t guid = 7000;
   AbstractConstraint* doer; //the constraint that did something
   VirtConPtr done;             //what they did
   Dynamic_OR* dj;           //the disjunction it was in
@@ -179,6 +183,7 @@ class DisjunctionPrun : public VirtCon {
 
 template<typename VarRef>
 class BecauseOfAssignmentPrun : public VirtCon {
+  static const size_t guid = 8000;
   StateObj* stateObj;
   VarRef var;
   DomainInt pruned;
@@ -193,6 +198,7 @@ class BecauseOfAssignmentPrun : public VirtCon {
 };
 
 class MHAV : public VirtCon {
+  static const size_t guid = 9000;
   vector<VirtConPtr>& expls; //reference to the explns in the variable type
 
  public:
@@ -206,6 +212,7 @@ class MHAV : public VirtCon {
 };
 
 class AssgOrPrun : public VirtCon {
+  static const size_t guid = 10000;
   VirtConPtr assg;
   VirtConPtr prun;
 
@@ -221,6 +228,7 @@ class AssgOrPrun : public VirtCon {
 
 template<typename VarRef>
 class BecauseOfPruningsAssignment : public VirtCon {
+  static const size_t guid = 11000;
   StateObj* stateObj;
   VarRef var;
   DomainInt assigned;
@@ -236,7 +244,7 @@ class BecauseOfPruningsAssignment : public VirtCon {
 
 template<typename VarRef>
 class DecisionAssg : public VirtCon { //decision did assignment
-
+  static const size_t guid = 12000;
   StateObj* stateObj;
   VarRef var;
   DomainInt val;
