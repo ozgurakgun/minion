@@ -4,6 +4,11 @@
 
 #include "../system/linked_ptr.h"
 
+#include <tr1/unordered_set>
+using namespace std::tr1;
+
+#include <set>
+
 class AbstractConstraint;
 
 class VirtCon;
@@ -24,24 +29,6 @@ class VirtCon {
   virtual size_t hash() const = 0;
   virtual ~VirtCon() {}
 };
-
-struct VirtConPtrHash : unary_function<VirtCon, size_t>
-{
-  size_t operator()(const VirtConPtr vc) const
-  { return vc->hash(); }
-};
-
-//typedef depth_VirtConPtr pair<pair<unsigned,unsigned>,VirtConPtr>;
-
-//NB. this comparison is carefully reasoned! The first disjunct is to make the
-//first() in the set the deepest depth. However we don't have convenient access
-//to a < operator for VirtCons and I don't want to write one, so we don't order
-//them within depth (and it's not essential to do so).
-//struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
-//{
-//  bool operator()(const depth_VirtConPtr& left, const depth_VirtConPtr& right) const
-//  { return left.first > right.first || (left.first == right.first && left.second != right.second); }
-//};
 
 template<typename VarRef>
 class DisAssignment : public VirtCon { //var != val

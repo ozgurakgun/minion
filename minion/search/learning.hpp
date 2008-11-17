@@ -6,6 +6,59 @@
 #include "../dynamic_constraints/unary/dynamic_notliteral.h"
 #include "../dynamic_constraints/dynamic_new_or.h"
 
+inline bool operator!=(const VirtConPtr& l, const VirtConPtr& r)
+{ return !(l->equals(r.get())); }
+
+struct VirtConPtrHash : unary_function<VirtCon, size_t>
+{
+  size_t operator()(const VirtConPtr vc) const
+  { return vc->hash(); }
+};
+
+typedef pair<pair<unsigned,unsigned>,VirtConPtr> depth_VirtConPtr;
+
+//NB. this comparison is carefully reasoned! The first disjunct is to make the
+//first() in the set the deepest depth. However we don't have convenient access
+//to a < operator for VirtCons and I don't want to write one, so we don't order
+//them within depth (and it's not essential to do so).
+struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
+{
+  bool operator()(const depth_VirtConPtr& left, const depth_VirtConPtr& right) const
+  { return left.first > right.first || (left.first == right.first && left.second != right.second); }
+};
+
+inline void distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d_VCP>& curr_d, 
+		       unordered_set<VirtConPtr,VirtConPtrHash>& earlier, const vector<VirtConPtr>& things)
+{
+  D_ASSERT(things.size() != 0);
+  const size_t things_s = things.size();
+  const pair<unsigned,unsigned> cd = make_pair(getMemory(stateObj).backTrack().current_depth(), 0);
+  for(size_t i = 0; i < things_s; i++) {
+    pair<unsigned,unsigned> i_d = things[i]->getDepth();
+    if(i_d < cd)
+      earlier.insert(things[i]);
+    else
+      curr_d.insert(make_pair(i_d, things[i]));
+  }
+}
+
+inline void firstUipLearn(StateObj* stateObj, const VirtConPtr& failure)
+{
+  set<depth_VirtConPtr,comp_d_VCP> curr_d; 
+  unordered_set<VirtConPtr,VirtConPtrHash> earlier; 
+  distribute(stateObj, curr_d, earlier, failure->whyT());
+  D_ASSERT(curr_d.size() != 0);
+  while(curr_d.size() > 1) { 
+    VirtConPtr shallowest = curr_d.begin()->second; 
+    curr_d.erase(curr_d.begin()); 
+    distribute(stateObj, curr_d, earlier, shallowest->whyT()); 
+  } 
+  earlier.insert(curr_d.begin()->second);
+  for(unordered_set<VirtConPtr,VirtConPtrHash>::iterator curr = earlier.begin(); curr != earlier.end(); curr++)
+    cout << **curr << "=" << (*curr)->hash() << "@" << (*curr)->getDepth() << endl;
+  cout << endl;
+} 
+
 template<typename VarRef>
 inline vector<VirtConPtr> DisAssignment<VarRef>::whyT() const
 { return var.getExpl(false, val)->whyT(); } //get the disassignments stored explanation

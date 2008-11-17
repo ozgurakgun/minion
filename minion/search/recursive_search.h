@@ -8,6 +8,8 @@ $Id: standard_search.h 478 2006-11-24 09:42:10Z azumanga $
 
 #include "common_search.h"
 
+#include "learning.hpp"
+
 namespace Controller
 {
 #include "VariableOrders.h"
@@ -43,6 +45,7 @@ namespace Controller
 	maybe_print_search_assignment(stateObj, cv, i, true);
 	prop(stateObj, v);
 	if(getState(stateObj).isFailed()) {
+	  firstUipLearn(stateObj, getState(stateObj).getFailure());
 	  getState(stateObj).setFailed(false);
 	  world_pop(stateObj);
 	} else {
