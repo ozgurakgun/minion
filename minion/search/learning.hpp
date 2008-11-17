@@ -32,7 +32,7 @@ inline void DisAssignment<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t DisAssignment<VarRef>::hash() const
-{ return (guid + var.getBaseVal(val) + var.getBaseVar().pos()) % 16777619; }
+{ return (guid + 37 * var.getBaseVal(val) + 111 * var.getBaseVar().pos()) % 16777619; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> Assignment<VarRef>::whyT() const
@@ -60,7 +60,7 @@ inline void Assignment<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t Assignment<VarRef>::hash() const
-{ return (guid + var.getBaseVal(val) + var.getBaseVar().pos()) % 16777619; }
+{ return (guid + 17 * var.getBaseVal(val) + 83 * var.getBaseVar().pos()) % 16777619; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> LessConstant<VarRef>::whyT() const
@@ -104,7 +104,7 @@ inline void LessConstant<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t LessConstant<VarRef>::hash() const
-{ return (guid + var.getBaseVal(constant) + var.getBaseVar().pos()) % 16777619; }
+{ return (guid + 13 * var.getBaseVal(constant) + 127 * var.getBaseVar().pos()) % 16777619; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> GreaterConstant<VarRef>::whyT() const
@@ -148,7 +148,7 @@ inline void GreaterConstant<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t GreaterConstant<VarRef>::hash() const
-{ return (guid + var.getBaseVal(constant) + var.getBaseVar().pos()) % 16777619; }
+{ return (guid + 13 * var.getBaseVal(constant) + 41 * var.getBaseVar().pos()) % 16777619; }
 
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunLeft<VarRef1,VarRef2>::whyT() const //return var2 <= val
@@ -225,7 +225,7 @@ inline void NegOfPostedCon::print(std::ostream& o) const
 { o << "NegOfPostedCon(con=" << con << ")"; }
 
 inline size_t NegOfPostedCon::hash() const
-{ return (guid + (size_t)&con) % 16777619; }
+{ return (guid + (size_t)con) % 16777619; }
 
 inline vector<VirtConPtr> DisjunctionPrun::whyT() const
 {
@@ -297,7 +297,7 @@ inline void BecauseOfAssignmentPrun<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t BecauseOfAssignmentPrun<VarRef>::hash() const
-{ return (guid + var.getBaseVar().pos() + var.getBaseVal(pruned)) % 16777619; }
+{ return (guid + 17 * var.getBaseVar().pos() + 141 * var.getBaseVal(pruned)) % 16777619; }
 
 inline vector<VirtConPtr> MHAV::whyT() const
 { return expls; } //just return all the virtcons for the prunings to the variable
@@ -377,7 +377,7 @@ inline void BecauseOfPruningsAssignment<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t BecauseOfPruningsAssignment<VarRef>::hash() const
-{ return (guid + var.getBaseVar().pos() + var.getBaseVal(assigned)) % 16777619; }
+{ return (guid + 13 * var.getBaseVar().pos() + 127 * var.getBaseVal(assigned)) % 16777619; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> DecisionAssg<VarRef>::whyT() const
@@ -407,6 +407,6 @@ inline void DecisionAssg<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t DecisionAssg<VarRef>::hash() const
-{ return (guid + val + var.getBaseVar().pos()) % 16777619; }
+{ return (guid + 7 * val + 17 * var.getBaseVar().pos()) % 16777619; }
 
 #endif
