@@ -27,36 +27,42 @@ struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
   { return left.first > right.first || (left.first == right.first && left.second != right.second); }
 };
 
-inline void distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d_VCP>& curr_d, 
-		       unordered_set<VirtConPtr,VirtConPtrHash>& earlier, const vector<VirtConPtr>& things)
+inline int distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d_VCP>& curr_d, 
+		      unordered_set<VirtConPtr,VirtConPtrHash>& earlier, const vector<VirtConPtr>& things)
 {
   D_ASSERT(things.size() != 0);
   const size_t things_s = things.size();
   const pair<unsigned,unsigned> cd = make_pair(getMemory(stateObj).backTrack().current_depth(), 0);
+  unsigned retVal = 0;
   for(size_t i = 0; i < things_s; i++) {
     pair<unsigned,unsigned> i_d = things[i]->getDepth();
-    if(i_d < cd)
+    if(i_d < cd) {
       earlier.insert(things[i]);
-    else
+      retVal = max(retVal, i_d.first);
+    } else
       curr_d.insert(make_pair(i_d, things[i]));
   }
+  return (int)retVal;
 }
 
-inline void firstUipLearn(StateObj* stateObj, const VirtConPtr& failure)
+inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure)
 {
   set<depth_VirtConPtr,comp_d_VCP> curr_d; 
   unordered_set<VirtConPtr,VirtConPtrHash> earlier; 
-  distribute(stateObj, curr_d, earlier, failure->whyT());
+  int retVal; //the deepest thing that ends up in earlier
+  retVal = max(retVal, distribute(stateObj, curr_d, earlier, failure->whyT()));
   D_ASSERT(curr_d.size() != 0);
   while(curr_d.size() > 1) { 
     VirtConPtr shallowest = curr_d.begin()->second; 
     curr_d.erase(curr_d.begin()); 
-    distribute(stateObj, curr_d, earlier, shallowest->whyT()); 
+    retVal = max(retVal, distribute(stateObj, curr_d, earlier, shallowest->whyT()));
   } 
   earlier.insert(curr_d.begin()->second);
   for(unordered_set<VirtConPtr,VirtConPtrHash>::iterator curr = earlier.begin(); curr != earlier.end(); curr++)
     cout << **curr << "=" << (*curr)->hash() << "@" << (*curr)->getDepth() << endl;
+  cout << "far BT depth=" << retVal << endl;
   cout << endl;
+  return retVal;
 } 
 
 template<typename VarRef>

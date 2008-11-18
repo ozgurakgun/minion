@@ -34,6 +34,7 @@ namespace Controller
       return -2;
     }
 
+    int target;
     Var& cv = v[order.pos];
 
     for(DomainInt i = cv.getMin(); i <= cv.getMax(); i++) {
@@ -45,20 +46,27 @@ namespace Controller
 	maybe_print_search_assignment(stateObj, cv, i, true);
 	prop(stateObj, v);
 	if(getState(stateObj).isFailed()) {
-	  firstUipLearn(stateObj, getState(stateObj).getFailure());
+	  /*target = */firstUipLearn(stateObj, getState(stateObj).getFailure());
+	  target = getMemory(stateObj).backTrack().current_depth() - 2;
 	  getState(stateObj).setFailed(false);
 	  world_pop(stateObj);
 	} else {
-	  int target = solve_loop_recursive(stateObj, order, v, prop);
-	  if(target + 1 != getMemory(stateObj).backTrack().current_depth())
-	    return target;
+	  /*target = */solve_loop_recursive(stateObj, order, v, prop);
+	  target = getMemory(stateObj).backTrack().current_depth() - 2;
 	  getState(stateObj).setFailed(false);
 	  world_pop(stateObj);
 	}
-        maybe_print_search_action(stateObj, "bt");
+	if(target + 1 != getMemory(stateObj).backTrack().current_depth()) {
+	  maybe_print_search_action(stateObj, "bt");
+	  return target;
+	}
+	prop(stateObj, v);
+	//if(getState(stateObj).isFailed())
+	//  return firstUipLearn(stateObj, getState(stateObj).getFailure());
+	  
       }
     }
-    return getMemory(stateObj).backTrack().current_depth() - 1;
+    return getMemory(stateObj).backTrack().current_depth() - 2;
   }
 }
 
