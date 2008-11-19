@@ -46,27 +46,26 @@ namespace Controller
 	maybe_print_search_assignment(stateObj, cv, i, true);
 	prop(stateObj, v);
 	if(getState(stateObj).isFailed()) {
-	  /*target = */firstUipLearn(stateObj, getState(stateObj).getFailure());
-	  target = getMemory(stateObj).backTrack().current_depth() - 2;
+	  target = firstUipLearn(stateObj, getState(stateObj).getFailure());
 	  getState(stateObj).setFailed(false);
 	  world_pop(stateObj);
 	} else {
-	  /*target = */solve_loop_recursive(stateObj, order, v, prop);
-	  target = getMemory(stateObj).backTrack().current_depth() - 2;
+	  target = solve_loop_recursive(stateObj, order, v, prop);
 	  getState(stateObj).setFailed(false);
 	  world_pop(stateObj);
 	}
-	if(target + 1 != getMemory(stateObj).backTrack().current_depth()) {
+	if(target != getMemory(stateObj).backTrack().current_depth()) {
 	  maybe_print_search_action(stateObj, "bt");
 	  return target;
 	}
 	prop(stateObj, v);
-	//if(getState(stateObj).isFailed())
-	//  return firstUipLearn(stateObj, getState(stateObj).getFailure());
-	  
+	if(getState(stateObj).isFailed())
+	  return firstUipLearn(stateObj, getState(stateObj).getFailure());
+	--i; //retry same value to avoid incompleteness after backjump
       }
     }
-    return getMemory(stateObj).backTrack().current_depth() - 2;
+    maybe_print_search_action(stateObj, "bt");    
+    return getMemory(stateObj).backTrack().current_depth() - 1; //not necessary with learning
   }
 }
 
