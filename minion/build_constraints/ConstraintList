@@ -4,6 +4,7 @@ STATIC_CT  "eq"     			CT_EQ      		read_var read_var
 STATIC_CT  "__reify_eq"			CT_EQ_REIFY		read_var read_var read_bool_var
 STATIC_CT  "minuseq" 			CT_MINUSEQ 		read_var read_var 
 STATIC_CT  "__reify_minuseq"		CT_MINUSEQ_REIFY	read_var read_var read_bool_var
+DYNAMIC_CT "watchless"			CT_WATCHED_LESS		read_var read_var
 DYNAMIC_CT "table" 			CT_WATCHED_TABLE 	read_list read_tuples 
 DYNAMIC_CT "negativetable" 	CT_WATCHED_NEGATIVE_TABLE	read_list read_tuples
 STATIC_CT "gadget" 			CT_GADGET		read_list

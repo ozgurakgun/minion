@@ -7,6 +7,7 @@ case CT_EQ : return build_constraint_CT_EQ(stateObj, b);
 case CT_EQ_REIFY : return build_constraint_CT_EQ_REIFY(stateObj, b);
 case CT_MINUSEQ : return build_constraint_CT_MINUSEQ(stateObj, b);
 case CT_MINUSEQ_REIFY : return build_constraint_CT_MINUSEQ_REIFY(stateObj, b);
+case CT_WATCHED_LESS : return build_constraint_CT_WATCHED_LESS(stateObj, b);
 case CT_WATCHED_TABLE : return build_constraint_CT_WATCHED_TABLE(stateObj, b);
 case CT_WATCHED_NEGATIVE_TABLE : return build_constraint_CT_WATCHED_NEGATIVE_TABLE(stateObj, b);
 case CT_GADGET : return build_constraint_CT_GADGET(stateObj, b);
