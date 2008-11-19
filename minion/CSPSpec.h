@@ -649,34 +649,6 @@ public:
     const ConstraintBlob& con = constraints.back();
     switch(con.constraint->type)
     {
-      case CT_PRODUCT2:
-        return DOMAIN_CHECK(checked_cast<BigInt>(vars.get_bounds(con.vars[0][0]).lower_bound)*
-                     checked_cast<BigInt>(vars.get_bounds(con.vars[0][0]).lower_bound))
-        &&
-        DOMAIN_CHECK(checked_cast<BigInt>(vars.get_bounds(con.vars[0][0]).upper_bound)*
-                     checked_cast<BigInt>(vars.get_bounds(con.vars[0][0]).upper_bound));
-      case CT_POW:
-      {
-        BigInt a = checked_cast<BigInt>(vars.get_bounds(con.vars[0][0]).upper_bound);
-        BigInt b = checked_cast<BigInt>(vars.get_bounds(con.vars[0][1]).upper_bound);
-        BigInt out = 1;
-        for(int i = 0; i < b; ++i)
-        { 
-          out *= a;
-          if(!DOMAIN_CHECK(out))
-            return false;
-        }
-        return true;
-      }
-      
-        // XXX : Todo : Check these constraints!
-      case CT_WEIGHTLEQSUM:
-      case CT_WEIGHTGEQSUM:
-      case CT_LEQSUM:
-      case CT_GEQSUM:
-      case CT_WATCHED_GEQSUM:
-      case CT_WATCHED_LEQSUM:
-      
       default:
         return true;
     }

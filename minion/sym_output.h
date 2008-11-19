@@ -346,64 +346,6 @@ struct GraphBuilder
   {
     switch(b.constraint->type)
     {
-      case CT_ELEMENT:
-      case CT_WATCHED_ELEMENT:
-      case CT_GACELEMENT:
-        return colour_element(b, "ELEMENT");
-      case CT_ELEMENT_ONE:
-      case CT_WATCHED_ELEMENT_ONE:
-        return colour_element(b, "ELEMENT_ONE");
-      case CT_ALLDIFF:
-      case CT_GACALLDIFF:
-        return colour_symmetric_constraint(b, "ALLDIFF");
-        
-      case CT_WATCHED_NEQ:
-      case CT_DISEQ: return colour_eq(b, "DISEQ");
-      case CT_EQ:    return colour_eq(b, "EQ");
-      
-      case CT_MINUSEQ: return colour_no_symmetry(b, "MINUSEQ");
-      case CT_ABS:     return colour_no_symmetry(b, "ABS");
-      case CT_INEQ:    return colour_no_symmetry(b, "INEQ");
-      case CT_WATCHED_LESS: return colour_no_symmetry(b, "LESS");
-      
-      case CT_LEXLEQ: return colour_no_symmetry(b, "LEXLEQ");
-      case CT_LEXLESS: return colour_no_symmetry(b, "LEXLESS");
-      
-      case CT_MAX: return colour_symmetric_constraint(b, "MAX");
-      case CT_MIN: return colour_symmetric_constraint(b, "MIN");
-      
-      case CT_OCCURRENCE: return colour_symmetric_constraint(b, "OCCURRENCE");
-      case CT_LEQ_OCCURRENCE: return colour_symmetric_constraint(b, "OCC_LEQ");
-      case CT_GEQ_OCCURRENCE: return colour_symmetric_constraint(b, "OCC_GEQ");
-      
-      case CT_PRODUCT2: return colour_symmetric_constraint(b, "PRODUCT");
-      
-      case CT_DIFFERENCE: return colour_symmetric_constraint(b, "DIFFERENCE");
-      
-      case CT_WEIGHTGEQSUM: return colour_weighted_sum(b, "WEIGHT_GEQSUM");
-      case CT_WEIGHTLEQSUM: return colour_weighted_sum(b, "WEIGHT_LEQSUM");
-      
-      case CT_GEQSUM:
-      case CT_WATCHED_GEQSUM: return colour_symmetric_constraint(b, "GEQSUM");
-      
-      case CT_LEQSUM:
-      case CT_WATCHED_LEQSUM: return colour_symmetric_constraint(b, "LEQSUM");
-      
-      case CT_WATCHED_TABLE: return colour_no_symmetry(b, "TABLE");
-      case CT_WATCHED_NEGATIVE_TABLE: return colour_no_symmetry(b, "NEG_TABLE");
-      
-      case CT_WATCHED_VECNEQ: return colour_array_swap_each_index(b, "VECNEQ");
-      case CT_WATCHED_LITSUM: return colour_no_symmetry(b, "LITSUM");
-      
-      case CT_POW: return colour_no_symmetry(b, "POW");
-      case CT_DIV: return colour_no_symmetry(b, "DIV");
-      case CT_MODULO: return colour_no_symmetry(b, "MOD");
-      
-      case CT_WATCHED_VEC_OR_AND: return colour_array_swap_each_index(b, "VEC_OR_AND");
-      
-      case CT_WATCHED_VEC_OR_LESS: return colour_symmetric_indexes(b, "VEC_OR_LESS");
-      case CT_WATCHED_HAMMING: return colour_array_swap_each_index(b, "HAMMING");
-      
       default:
         abort();
     }
