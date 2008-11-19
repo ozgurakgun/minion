@@ -6,6 +6,7 @@ ConstraintDef constraint_list[] = {
 { "__reify_eq" , CT_EQ_REIFY, 3,{ read_var , read_var , read_bool_var }, STATIC_CT },
 { "minuseq" , CT_MINUSEQ, 2,{ read_var , read_var }, STATIC_CT },
 { "__reify_minuseq" , CT_MINUSEQ_REIFY, 3,{ read_var , read_var , read_bool_var }, STATIC_CT },
+{ "watchless" , CT_WATCHED_LESS, 2,{ read_var , read_var }, DYNAMIC_CT },
 { "table" , CT_WATCHED_TABLE, 2,{ read_list , read_tuples }, DYNAMIC_CT },
 { "negativetable" , CT_WATCHED_NEGATIVE_TABLE, 2,{ read_list , read_tuples }, DYNAMIC_CT },
 { "gadget" , CT_GADGET, 1,{ read_list }, STATIC_CT },
