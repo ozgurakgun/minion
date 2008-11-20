@@ -5,6 +5,7 @@
 #include "../dynamic_constraints/unary/dynamic_literal.h"
 #include "../dynamic_constraints/unary/dynamic_notliteral.h"
 #include "../dynamic_constraints/dynamic_new_or.h"
+#include "../dynamic_constraints/dynamic_nogood.h"
 
 inline bool operator!=(const VirtConPtr& l, const VirtConPtr& r)
 { return !(l->equals(r.get())); }
@@ -49,7 +50,7 @@ inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure)
 {
   set<depth_VirtConPtr,comp_d_VCP> curr_d; 
   unordered_set<VirtConPtr,VirtConPtrHash> earlier; 
-  int retVal; //the deepest thing that ends up in earlier
+  int retVal = 0; //the deepest thing that ends up in earlier
   retVal = max(retVal, distribute(stateObj, curr_d, earlier, failure->whyT()));
   D_ASSERT(curr_d.size() != 0);
   while(curr_d.size() > 1) { 
@@ -62,6 +63,12 @@ inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure)
     cout << **curr << "=" << (*curr)->hash() << "@" << (*curr)->getDepth() << endl;
   cout << "far BT depth=" << retVal << endl;
   cout << endl;
+  vector<VirtConPtr> earlier_vec;
+  const size_t earlier_s = earlier.size();
+  earlier_vec.reserve(earlier_s);
+  for(unordered_set<VirtConPtr,VirtConPtrHash>::iterator curr = earlier.begin(); curr != earlier.end(); curr++)
+    earlier_vec.push_back(*curr);
+  getState(stateObj).addConstraintMidsearch(new NogoodConstraint(stateObj, earlier_vec));
   return retVal;
 } 
 
@@ -467,5 +474,23 @@ inline void DecisionAssg<VarRef>::print(std::ostream& o) const
 template<typename VarRef>
 inline size_t DecisionAssg<VarRef>::hash() const
 { return (guid + 7 * val + 17 * var.getBaseVar().pos()) % 16777619; }
+
+inline vector<VirtConPtr> Anything::whyT() const
+{ return blamed; }
+
+inline AbstractConstraint* Anything::getNeg() const
+{ D_ASSERT(false);return NULL; }
+
+inline pair<unsigned, unsigned> Anything::getDepth() const
+{ D_ASSERT(false); return make_pair(-1, -1); }
+
+inline bool Anything::equals(VirtCon* other) const
+{ D_ASSERT(false); return false; }
+
+inline void Anything::print(std::ostream& o) const
+{ D_ASSERT(false); }
+
+inline size_t Anything::hash() const
+{ D_ASSERT(false); return 0; }
 
 #endif

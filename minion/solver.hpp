@@ -98,15 +98,11 @@ inline void SearchState::addConstraint(AbstractConstraint* c)
     (*vars)[i].addConstraint(c);
 }
 
+//add the constraint to necessary data structures, but it is not propagated
+//first until the next backtrack
 inline void SearchState::addConstraintMidsearch(AbstractConstraint* c)
 {
   addConstraint(c);
   c->setup();
-  redoFullPropagate(c);
-}
-
-inline void SearchState::redoFullPropagate(AbstractConstraint* c)
-{
   constraints_to_propagate[Controller::get_world_depth(stateObj)].insert(c);
-  c->full_propagate();
 }
