@@ -246,6 +246,20 @@ public:
   virtual size_t hash() const;
 };
 
+class Anything : public VirtCon { //any virtcons that are blamed
+  static const size_t guid = 13000;
+  vector<VirtConPtr> blamed;
+
+public:
+  Anything(vector<VirtConPtr>& _blamed) : blamed(_blamed) {}
+  virtual vector<VirtConPtr> whyT() const;
+  virtual AbstractConstraint* getNeg() const;
+  virtual pair<unsigned,unsigned> getDepth() const;
+  virtual bool equals(VirtCon* other) const;
+  virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
+};
+
 inline void print_recursive(vector<int> count_seq, vector<VirtConPtr> why) {
   for(size_t i = 0; i < why.size(); i++) {
     cout << count_seq << endl;

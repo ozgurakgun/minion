@@ -63,7 +63,7 @@ class AbstractConstraint
 protected:
   /// Private members of the base class.
   
-  MemOffset _DynamicTriggerCache;
+  DynamicTrigger* trigs_ptr;
   vector<AnyVarRef> singleton_vars;
 
 public:
@@ -81,7 +81,7 @@ public:
 
   /// Returns a point to the first dynamic trigger of the constraint.
   DynamicTrigger* dynamic_trigger_start()
-    { return static_cast<DynamicTrigger*>(_DynamicTriggerCache.get_ptr()); }
+    { return trigs_ptr; }
 
   /// Defines the number of dynamic triggers the constraint wants.
   /// Must be implemented by any constraint.
@@ -148,7 +148,7 @@ public:
 #ifdef WDEG
   wdeg(1),
 #endif
-    stateObj(_stateObj), _DynamicTriggerCache(), singleton_vars(), full_propagate_done(false), disjunct(false)
+    stateObj(_stateObj), singleton_vars(), full_propagate_done(false), disjunct(false)
     {}
 
   /// Method to get constraint name for debugging.
@@ -193,12 +193,10 @@ public:
   virtual BOOL check_assignment(DomainInt* v, int v_size) = 0;
 
   virtual ~AbstractConstraint()
-    {}
+  { if(!disjunct) delete[] trigs_ptr; } //Only non-disjuncts have their own memory
 
-
-
-  virtual void setup_dynamic_triggers(MemOffset DynamicTriggerPointer)
-    { _DynamicTriggerCache = DynamicTriggerPointer; }
+  virtual void setup_dynamic_triggers(DynamicTrigger* ptr)
+    { trigs_ptr = ptr; }
 
 
   virtual triggerCollection setup_internal_gather_triggers()
@@ -211,7 +209,7 @@ public:
     // Dynamic initialisation
     int trigs = dynamic_trigger_count();
     D_ASSERT(trigs >= 0);
-    setup_dynamic_triggers(getMemory(stateObj).nonBackTrack().request_bytes((sizeof(DynamicTrigger) * trigs)));
+    setup_dynamic_triggers(new DynamicTrigger[trigs]);
 
     DynamicTrigger* start = dynamic_trigger_start();
     for(int i = 0 ; i < trigs; ++i)
@@ -315,9 +313,9 @@ public:
     return trigger_count;
   }
 
-  virtual void setup_dynamic_triggers(MemOffset dynamicTriggerPointer)
+  virtual void setup_dynamic_triggers(DynamicTrigger* trigs)
   {
-    _DynamicTriggerCache = dynamicTriggerPointer;
+    trigs_ptr = trigs;
 
     int current_trigger_count = dynamic_trigger_count();
     
@@ -332,7 +330,7 @@ public:
         return;
         
       // Get start child's dynamic triggers.      
-      MemOffset childPtr = dynamicTriggerPointer.getOffset(current_trigger_count * sizeof(DynamicTrigger));
+      DynamicTrigger* childPtr = trigs_ptr + current_trigger_count;
       child_constraints[i]->setup_dynamic_triggers(childPtr);
       
       int child_trig_count = child_constraints[i]->dynamic_trigger_count_with_children();
@@ -355,12 +353,11 @@ public:
     D_ASSERT(trigs >= 0);
     D_ASSERT(all_trigs >= trigs);
 
-    MemOffset trigMem = getMemory(stateObj).nonBackTrack().request_bytes(sizeof(DynamicTrigger) * all_trigs);
+    DynamicTrigger* trigMem = new DynamicTrigger[all_trigs];
     
     // Start by allocating triggers in the memory block
-    DynamicTrigger* start = static_cast<DynamicTrigger*>(trigMem.get_ptr());
     for(int i = 0 ; i < all_trigs; ++i)
-      new (start+i) DynamicTrigger(this);
+      new (trigMem+i) DynamicTrigger(this);
 
     setup_dynamic_triggers(trigMem);
 

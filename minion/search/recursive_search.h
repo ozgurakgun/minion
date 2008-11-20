@@ -23,7 +23,7 @@ namespace Controller
   //-2 is stop and -1 restart
 
   template<typename VarOrder, typename Var, typename Propogator>
-  inline int solve_loop_recursive(StateObj* stateObj, VarOrder& order, vector<Var>& v, Propogator prop = PropagateGAC())
+  inline int search(StateObj* stateObj, VarOrder& order, vector<Var>& v, Propogator prop = PropagateGAC())
   {
     getState(stateObj).incrementNodeCount();
     if(do_checks(stateObj))
@@ -37,38 +37,51 @@ namespace Controller
     int target;
     Var& cv = v[order.pos];
 
-    for(DomainInt i = cv.getMin(); i <= cv.getMax(); i++) {
-      if(cv.inDomain(i)) {
-	maybe_print_search_state(stateObj, "Node: ", v);
-	world_push(stateObj);
-	cv.setExpl(true, i, VirtConPtr(new DecisionAssg<Var>(stateObj, cv, i)));
-	cv.decisionAssign(i);
-	maybe_print_search_assignment(stateObj, cv, i, true);
-	prop(stateObj, v);
-	if(getState(stateObj).isFailed()) {
-	  target = firstUipLearn(stateObj, getState(stateObj).getFailure());
-	  getState(stateObj).setFailed(false);
-	  world_pop(stateObj);
-	} else {
-	  target = solve_loop_recursive(stateObj, order, v, prop);
-	  getState(stateObj).setFailed(false);
-	  world_pop(stateObj);
-	}
-	if(target != getMemory(stateObj).backTrack().current_depth()) {
-	  maybe_print_search_action(stateObj, "bt");
-	  return target;
-	}
-	prop(stateObj, v);
-	if(getState(stateObj).isFailed())
-	  return firstUipLearn(stateObj, getState(stateObj).getFailure());
-	--i; //retry same value to avoid incompleteness after backjump
-      }
+    maybe_print_search_state(stateObj, "Node: ", v);
+    world_push(stateObj);
+    cv.setExpl(true, cv.getMin(), VirtConPtr(new DecisionAssg<Var>(stateObj, cv, cv.getMin())));
+    cv.decisionAssign(cv.getMin());
+    maybe_print_search_assignment(stateObj, cv, cv.getMin(), true);
+    prop(stateObj, v);
+    if(getState(stateObj).isFailed()) {
+      cout << "failed after prop" << endl;
+      target = firstUipLearn(stateObj, getState(stateObj).getFailure());
+    } else {
+      cout << "assignment succeeded - recursing" << endl;
+      target = search(stateObj, order, v, prop);
     }
-    maybe_print_search_action(stateObj, "bt");    
-    return getMemory(stateObj).backTrack().current_depth() - 1; //not necessary with learning
+    while(true) {
+      getState(stateObj).setFailed(false);
+      prop(stateObj, v);
+      if(target < getMemory(stateObj).backTrack().current_depth()) {
+	cout << "jumping beyond" << endl;
+	world_pop(stateObj);
+	maybe_print_search_action(stateObj, "bt");
+	return target;
+      }
+      if(getState(stateObj).isFailed()) {
+	cout << "failed on return" << endl;
+	target = firstUipLearn(stateObj, getState(stateObj).getFailure());
+	world_pop(stateObj);
+	maybe_print_search_action(stateObj, "bt");
+	return target;
+      }
+      cout << "recursing on return" << endl;
+      target = search(stateObj, order, v, prop);
+    }
+  }
+
+  template<typename VarOrder, typename Var, typename Propogator>
+  inline int solve_loop_recursive(StateObj* stateObj, VarOrder& order, vector<Var>& v, Propogator prop = PropagateGAC())
+  {
+    while(true) { 
+      int res = search(stateObj, order, v, prop);   //possibilities are 0, -1 and -2
+      D_ASSERT(res == 0 || res == -1 || res == -2); //resp. retry 1st branch, restart and finished
+      if(res == -2) //this signals completion
+	return -2;
+      prop(stateObj, v);
+      if(getState(stateObj).isFailed())
+	return -2; //failed at root node means failed!
+    }
   }
 }
-
-
-
-
