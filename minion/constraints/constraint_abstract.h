@@ -350,8 +350,6 @@ public:
     // Dynamic initialisation
     int all_trigs = dynamic_trigger_count_with_children();
 
-    D_ASSERT(all_trigs >= trigs);
-
     DynamicTrigger* trigMem = new DynamicTrigger[all_trigs];
     
     // Start by allocating triggers in the memory block
