@@ -122,8 +122,8 @@ public:
   
   VirtConPtr getFailure() { return failure; } //reason for failure?
   void setFailure(VirtConPtr _failure) { 
-    //cout << "failure=" << *_failure << endl;
-    if(isFailed()) failure = _failure; 
+    cout << "failure=" << *_failure << endl;
+    failure = _failure; 
   }
 
   TimerClass& getOldTimer() { return oldtimer; }
