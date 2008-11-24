@@ -133,7 +133,9 @@ struct WatchLessConstraint : public AbstractConstraint
     vector<pair<unsigned,unsigned> > v1_d_max; //v1_d_max[i] is max depth of pruning from var1 < i+var2.max
     vector<pair<unsigned,unsigned> > v2_d_max; //v2_d_max[i] is max depth of pruning from var2 > i+var2.max
     const DomainInt var2_max = var2.getMax();
+    const DomainInt var2_initmax = var2.getInitialMax();
     const DomainInt var1_min = var1.getMin();
+    const DomainInt var1_initmin = var1.getInitialMin();
     const size_t array_s = var1_min - var2_max + 1;
     v1_d_max.resize(array_s);
     v2_d_max.resize(array_s);
@@ -143,7 +145,10 @@ struct WatchLessConstraint : public AbstractConstraint
       v1_d_max[0] = max(v1_d_max[0], var1.getDepth(false, v));
     //compute rest of v1_d_max
     for(size_t curr = 1; curr < array_s; curr++)
-      v1_d_max[curr] = max(v1_d_max[curr - 1], var1.getDepth(false, var2_max + curr - 1));
+      v1_d_max[curr] = max(v1_d_max[curr - 1], 
+			   var2_max + curr - 1 >= var1_initmin //only if value was once present
+			   ? var1.getDepth(false, var2_max + curr - 1)
+			   : make_pair((unsigned)0,(unsigned)0));
     //compute v2_d_max.back
     pair<unsigned,unsigned>& v2_d_max_back = v2_d_max.back();
     v2_d_max_back = make_pair(0, 0);
@@ -151,7 +156,10 @@ struct WatchLessConstraint : public AbstractConstraint
       v2_d_max_back = max(v2_d_max_back, var2.getDepth(false, v));
     //compute rest of v2_d_max
     for(int curr = array_s - 2; curr >= 0; curr--)
-      v2_d_max[curr] = max(v2_d_max[curr + 1], var2.getDepth(false, var2_max + curr + 1));
+      v2_d_max[curr] = max(v2_d_max[curr + 1], 
+			   var2_max + curr + 1 <= var2_initmax //only if value was once present
+			   ? var2.getDepth(false, var2_max + curr + 1)
+			   : make_pair((unsigned)0,(unsigned)0));
     //find i that makes max(v1_d_max[i],v2_d_max[i]) as small as possible
     size_t best_i = -1;
     pair<unsigned,unsigned> best_d = make_pair(UINT_MAX, UINT_MAX);
@@ -178,7 +186,9 @@ struct WatchLessConstraint : public AbstractConstraint
     vector<pair<unsigned,unsigned> > v1_d_max; //v1_d_max[i] is max depth of pruning from var1 < i+var2.max
     vector<pair<unsigned,unsigned> > v2_d_max; //v2_d_max[i] is max depth of pruning from var2 > i+var2.max
     const DomainInt var2_max = var2.getMax();
+    const DomainInt var2_initmax = var2.getInitialMax();
     const DomainInt var1_min = var1.getMin();
+    const DomainInt var1_initmin = var1.getInitialMin();
     const size_t array_s = var1_min - var2_max + 1;
     v1_d_max.resize(array_s);
     v2_d_max.resize(array_s);
@@ -188,7 +198,10 @@ struct WatchLessConstraint : public AbstractConstraint
       v1_d_max[0] = max(v1_d_max[0], var1.getDepth(false, v));
     //compute rest of v1_d_max
     for(size_t curr = 1; curr < array_s; curr++)
-      v1_d_max[curr] = max(v1_d_max[curr - 1], var1.getDepth(false, var2_max + curr - 1));
+      v1_d_max[curr] = max(v1_d_max[curr - 1], 
+			   var2_max + curr - 1 >= var1_initmin //only if value was once present
+			   ? var1.getDepth(false, var2_max + curr - 1)
+			   : make_pair((unsigned)0,(unsigned)0));
     //compute v2_d_max.back
     pair<unsigned,unsigned>& v2_d_max_back = v2_d_max.back();
     v2_d_max_back = make_pair(0, 0);
@@ -196,7 +209,10 @@ struct WatchLessConstraint : public AbstractConstraint
       v2_d_max_back = max(v2_d_max_back, var2.getDepth(false, v));
     //compute rest of v2_d_max
     for(int curr = array_s - 2; curr >= 0; curr--)
-      v2_d_max[curr] = max(v2_d_max[curr + 1], var2.getDepth(false, var2_max + curr + 1));
+      v2_d_max[curr] = max(v2_d_max[curr + 1], 
+			   var2_max + curr + 1 <= var2_initmax //only if value was once present
+			   ? var2.getDepth(false, var2_max + curr + 1)
+			   : make_pair((unsigned)0,(unsigned)0));
     //find i that makes max(v1_d_max[i],v2_d_max[i]) as small as possible
     size_t best_i = -1;
     pair<unsigned,unsigned> best_d = make_pair(UINT_MAX, UINT_MAX);

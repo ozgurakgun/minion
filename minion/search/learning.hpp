@@ -54,6 +54,9 @@ inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure)
   retVal = max(retVal, distribute(stateObj, curr_d, earlier, failure->whyT()));
   D_ASSERT(curr_d.size() != 0);
   while(curr_d.size() > 1) { 
+    cout << endl;
+    for(set<depth_VirtConPtr,comp_d_VCP>::iterator curr = curr_d.begin(); curr != curr_d.end(); curr++)
+      cout << "d=" << (*curr).first << ",vc=" << *((*curr).second) << endl;
     VirtConPtr shallowest = curr_d.begin()->second; 
     curr_d.erase(curr_d.begin()); 
     retVal = max(retVal, distribute(stateObj, curr_d, earlier, shallowest->whyT()));
@@ -160,8 +163,7 @@ template<typename VarRef>
 inline bool LessConstant<VarRef>::equals(VirtCon* other) const
 {
   LessConstant<VarRef>* other_lc = dynamic_cast<LessConstant<VarRef>*>(other);
-  return other_lc && var.getBaseVal(constant) == other_lc->var.getBaseVal(other_lc->constant) && 
-    var.getBaseVar() == other_lc->var.getBaseVar();
+  return other_lc && constant == other_lc->constant && var.getBaseVar() == other_lc->var.getBaseVar();
 }
 
 template<typename VarRef>
@@ -170,7 +172,7 @@ inline void LessConstant<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t LessConstant<VarRef>::hash() const
-{ return (guid + 13 * var.getBaseVal(constant) + 127 * var.getBaseVar().pos()) % 16777619; }
+{ return (guid + 13 * constant + 127 * var.getBaseVar().pos()) % 16777619; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> GreaterConstant<VarRef>::whyT() const
@@ -204,8 +206,7 @@ template<typename VarRef>
 inline bool GreaterConstant<VarRef>::equals(VirtCon* other) const
 {
   GreaterConstant<VarRef>* other_gc = dynamic_cast<GreaterConstant<VarRef>*>(other);
-  return other_gc && var.getBaseVal(constant) == other_gc->var.getBaseVal(other_gc->constant) && 
-    var.getBaseVar() == other_gc->var.getBaseVar();
+  return other_gc && constant == other_gc->constant && var.getBaseVar() == other_gc->var.getBaseVar();
 }
 
 template<typename VarRef>
@@ -214,7 +215,7 @@ inline void GreaterConstant<VarRef>::print(std::ostream& o) const
 
 template<typename VarRef>
 inline size_t GreaterConstant<VarRef>::hash() const
-{ return (guid + 13 * var.getBaseVal(constant) + 41 * var.getBaseVar().pos()) % 16777619; }
+{ return (guid + 13 * constant + 41 * var.getBaseVar().pos()) % 16777619; }
 
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunLeft<VarRef1,VarRef2>::whyT() const //return var2 <= val
@@ -402,7 +403,7 @@ inline bool AssgOrPrun::equals(VirtCon*) const
 { D_ASSERT(false); return false; }
 
 inline void AssgOrPrun::print(std::ostream& o) const
-{ o << "AssgOrPrun"; }
+{ o << "AssgOrPrun(assg=" << *assg << ",prun=" << *prun << ")"; }
 
 inline size_t AssgOrPrun::hash() const
 { D_ASSERT(false); return 0; }
@@ -454,7 +455,7 @@ inline vector<VirtConPtr> DecisionAssg<VarRef>::whyT() const
 
 template<typename VarRef>
 inline AbstractConstraint* DecisionAssg<VarRef>::getNeg() const
-{ return new WatchNotLiteralConstraint<VarRef>(stateObj, var, val); } //replace with (var != val) constraint
+{ return new WatchNotLiteralConstraint<VarRef>(stateObj, var, val); }
 
 template<typename VarRef>
 inline pair<unsigned, unsigned> DecisionAssg<VarRef>::getDepth() const
@@ -475,22 +476,60 @@ template<typename VarRef>
 inline size_t DecisionAssg<VarRef>::hash() const
 { return (guid + 7 * val + 17 * var.getBaseVar().pos()) % 16777619; }
 
-inline vector<VirtConPtr> Anything::whyT() const
-{ return blamed; }
+template<typename VarRef>
+inline vector<VirtConPtr> NoReasonPrun<VarRef>::whyT() const
+{ return vector<VirtConPtr>(); }
 
-inline AbstractConstraint* Anything::getNeg() const
-{ D_ASSERT(false);return NULL; }
+template<typename VarRef>
+inline AbstractConstraint* NoReasonPrun<VarRef>::getNeg() const
+{ return new WatchLiteralConstraint<VarRef>(stateObj, var, val); }
 
-inline pair<unsigned, unsigned> Anything::getDepth() const
-{ D_ASSERT(false); return make_pair(-1, -1); }
+template<typename VarRef>
+inline pair<unsigned, unsigned> NoReasonPrun<VarRef>::getDepth() const
+{ return make_pair(0, 0); }
 
-inline bool Anything::equals(VirtCon* other) const
-{ D_ASSERT(false); return false; }
+template<typename VarRef>
+inline bool NoReasonPrun<VarRef>::equals(VirtCon* other) const
+{
+  NoReasonPrun<VarRef>* other_nrp = dynamic_cast<NoReasonPrun<VarRef>*>(other);
+  return other_nrp && var.getBaseVal(val) == other_nrp->var.getBaseVal(other_nrp->val) && 
+    var.getBaseVar() == other_nrp->var.getBaseVar();
+}
 
-inline void Anything::print(std::ostream& o) const
-{ D_ASSERT(false); }
+template<typename VarRef>
+inline void NoReasonPrun<VarRef>::print(std::ostream& o) const
+{ o << "NoReasonPrun(" << var << " <-/- " << val << ")"; }
 
-inline size_t Anything::hash() const
-{ D_ASSERT(false); return 0; }
+template<typename VarRef>
+inline size_t NoReasonPrun<VarRef>::hash() const
+{ return (guid + 7 * val + 17 * var.getBaseVar().pos()) % 16777619; }
+
+template<typename VarRef>
+inline vector<VirtConPtr> NoReasonAssg<VarRef>::whyT() const
+{ return vector<VirtConPtr>(); }
+
+template<typename VarRef>
+inline AbstractConstraint* NoReasonAssg<VarRef>::getNeg() const
+{ return new WatchNotLiteralConstraint<VarRef>(stateObj, var, val); }
+
+template<typename VarRef>
+inline pair<unsigned, unsigned> NoReasonAssg<VarRef>::getDepth() const
+{ return make_pair(0, 0); }
+
+template<typename VarRef>
+inline bool NoReasonAssg<VarRef>::equals(VirtCon* other) const
+{
+  NoReasonAssg<VarRef>* other_nra = dynamic_cast<NoReasonAssg<VarRef>*>(other);
+  return other_nra && var.getBaseVal(val) == other_nra->var.getBaseVal(other_nra->val) && 
+    var.getBaseVar() == other_nra->var.getBaseVar();
+}
+
+template<typename VarRef>
+inline void NoReasonAssg<VarRef>::print(std::ostream& o) const
+{ o << "NoReasonAssg(" << var << " <- " << val << ")"; }
+
+template<typename VarRef>
+inline size_t NoReasonAssg<VarRef>::hash() const
+{ return (guid + 7 * val + 17 * var.getBaseVar().pos()) % 16777619; }
 
 #endif

@@ -47,7 +47,8 @@ template<typename Var>
 
   virtual void full_propagate()
   { 
-    storeExpl(true, var, val, VirtConPtr()); //no explanation required
+    if(!var.isAssigned())
+      storeExpl(true, var, val, VirtConPtr(new NoReasonAssg<Var>(stateObj, var, val)));
     var.propagateAssign(val); 
   }
 
@@ -55,7 +56,8 @@ template<typename Var>
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
-    storeExpl(true, var, val, VirtConPtr()); //no explanation required
+    if(!var.isAssigned())
+      storeExpl(true, var, val, VirtConPtr(new NoReasonAssg<Var>(stateObj, var, val)));
     var.propagateAssign(val);
   }
 

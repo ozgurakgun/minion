@@ -46,16 +46,18 @@ template<typename Var>
 
   virtual void full_propagate()
   { 
+    if(var.inDomain(val))
+      storeExpl(false, var, val, VirtConPtr(new NoReasonPrun<Var>(stateObj, var, val)));
     var.removeFromDomain(val); 
-    storeExpl(false, var, val, VirtConPtr()); //no explanation required
   }
 
 
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
+    if(var.inDomain(val))
+      storeExpl(false, var, val, VirtConPtr(new NoReasonPrun<Var>(stateObj, var, val)));
     var.removeFromDomain(val); 
-    storeExpl(false, var, val, VirtConPtr()); //no explanation required
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

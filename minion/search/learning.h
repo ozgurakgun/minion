@@ -246,12 +246,32 @@ public:
   virtual size_t hash() const;
 };
 
-class Anything : public VirtCon { //any virtcons that are blamed
+template<typename VarRef>
+class NoReasonPrun : public VirtCon {
   static const size_t guid = 13000;
-  vector<VirtConPtr> blamed;
+  StateObj* stateObj;
+  VarRef var;
+  DomainInt val;
 
 public:
-  Anything(vector<VirtConPtr>& _blamed) : blamed(_blamed) {}
+  NoReasonPrun(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {}
+  virtual vector<VirtConPtr> whyT() const;
+  virtual AbstractConstraint* getNeg() const;
+  virtual pair<unsigned,unsigned> getDepth() const;
+  virtual bool equals(VirtCon* other) const;
+  virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
+};
+
+template<typename VarRef>
+class NoReasonAssg : public VirtCon {
+  static const size_t guid = 14000;
+  StateObj* stateObj;
+  VarRef var;
+  DomainInt val;
+
+public:
+  NoReasonAssg(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
