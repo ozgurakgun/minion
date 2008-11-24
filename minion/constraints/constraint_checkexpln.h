@@ -148,7 +148,7 @@ struct CheckExplnConstraint : public AbstractConstraint
   }
   
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
-  { ; }
+  { D_ASSERT(false); return false; }
 };
 
 template<typename VarArray>
