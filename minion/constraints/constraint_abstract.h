@@ -145,10 +145,11 @@ public:
   }
 
   AbstractConstraint(StateObj* _stateObj) : 
+    singleton_vars(), stateObj(_stateObj), 
 #ifdef WDEG
-  wdeg(1),
+    wdeg(1),
 #endif
-    stateObj(_stateObj), singleton_vars(), full_propagate_done(false), disjunct(false)
+    disjunct(false), full_propagate_done(false)
     {}
 
   /// Method to get constraint name for debugging.
@@ -170,7 +171,7 @@ public:
 #ifdef WDEG
   unsigned int getWdeg();
 
-  unsigned int incWdeg();
+  void incWdeg();
 #endif
 
   /// Allows functions to activate a special kind of trigger, run only
@@ -347,7 +348,6 @@ public:
   virtual void setup()
   {
     // Dynamic initialisation
-    int trigs = dynamic_trigger_count();
     int all_trigs = dynamic_trigger_count_with_children();
 
     D_ASSERT(trigs >= 0);
