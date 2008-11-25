@@ -225,6 +225,9 @@ struct WatchLessConstraint : public AbstractConstraint
     }
     return best_d;
   }
+
+  virtual void print(std::ostream& o) const
+  { o << "DynamicLess(var1=" << var1 << ",var2=" << var2 << ")"; }
 };
 
 template<typename VarArray1, typename VarArray2>

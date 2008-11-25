@@ -91,6 +91,9 @@ template<typename Var>
 
   virtual vector<VirtConPtr> whyF() const
   { return vector<VirtConPtr>(1, VirtConPtr(new DisAssignment<Var>(stateObj, var, val))); }
+
+  virtual void print(std::ostream& o) const
+  { o << "DynamicLiteral(var=" << var << ",val=" << val << ")"; }
 };
 
 template<typename VarArray1>
