@@ -236,6 +236,11 @@ public:
     if(!disjunct) var.setExpl(assg, i, vcp);
     else var.setExpl(assg, i, VirtConPtr(new DisjunctionPrun(this, vcp, parent)));
   }
+
+  virtual void print(std::ostream& o) const { o << "UnknownConstraint"; }
+  
+  friend std::ostream& operator<<(std::ostream& o, const AbstractConstraint& c) 
+  { c.print(o); return o; }
 };
 
 /// Constraint from which other constraints can be inherited. Extends dynamicconstraint to allow children to be dynamic.

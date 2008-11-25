@@ -150,6 +150,9 @@ struct WatchNotLiteralBoolConstraint : public AbstractConstraint
     }
     return false;
   }
+
+  virtual void print(std::ostream& o) const
+  { o << "DynamicNotLiteral(var=" << var << ",val=" << val << ")"; }
 };
 
 inline AbstractConstraint*

@@ -315,6 +315,9 @@ struct Dynamic_OR : public ParentConstraint
       }
       return new Dynamic_AND(stateObj, con);
   }
+
+  virtual void print(std::ostream& o) const
+  { o << "WatchedOr(...)"; }
 };
 
 inline AbstractConstraint*

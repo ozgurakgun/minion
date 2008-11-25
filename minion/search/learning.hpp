@@ -289,7 +289,7 @@ inline bool NegOfPostedCon::equals(VirtCon* other) const
 }
 
 inline void NegOfPostedCon::print(std::ostream& o) const
-{ o << "NegOfPostedCon(con=" << con << ")"; }
+{ o << "NegOfPostedCon(con=" << *con << ")"; }
 
 inline size_t NegOfPostedCon::hash() const
 { return (guid + (size_t)con) % 16777619; }
