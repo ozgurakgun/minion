@@ -104,7 +104,8 @@ public:
       cout << "Run out of backtrackable bools" << endl;
       exit(1);
     }
-    pair<MoveablePointer,unsigned> ret(backtrack_ptr.getOffset(offset / sizeof(int)), offset % sizeof(int));
+    pair<MoveablePointer,unsigned> ret(backtrack_ptr.getOffset((offset / sizeof(int)) * sizeof(int)), //byte number
+				       ((unsigned)1) << (offset % sizeof(int));
     offset++;
     return ret;
   }
