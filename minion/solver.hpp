@@ -49,6 +49,8 @@ inline void world_pop(StateObj* stateObj)
  
   getMemory(stateObj).backTrack().world_pop();
   
+  getVars(stateObj).getBigRangevarContainer().bms_array.undo();
+
   vector<set<AbstractConstraint*> >& constraintList = getState(stateObj).getConstraintsToPropagate();
   int propagateDepth = get_world_depth(stateObj) + 1;
   if(constraintList.size() > propagateDepth)
@@ -65,8 +67,6 @@ inline void world_pop(StateObj* stateObj)
     }
     constraintList.pop_back();
   }
-
-  getVars(stateObj).getBigRangevarContainer().bms_array.undo();
 }
 
 
@@ -102,6 +102,7 @@ inline void SearchState::addConstraint(AbstractConstraint* c)
 //first until the next backtrack
 inline void SearchState::addConstraintMidsearch(AbstractConstraint* c)
 {
+  cout << "learned " << c << endl;
   addConstraint(c);
   c->setup();
   constraints_to_propagate[Controller::get_world_depth(stateObj)].insert(c);

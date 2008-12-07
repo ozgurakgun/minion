@@ -67,7 +67,6 @@ struct Dynamic_OR : public ParentConstraint
       for(int i = 0; i < child_constraints.size(); ++i) {
         max_size = max(max_size, child_constraints[i]->get_vars_singleton()->size());
 	child_constraints[i]->disjunct = true;
-	child_constraints[i]->parent = this;
       }
       assign_size = max_size * 2;
     }
@@ -121,7 +120,7 @@ struct Dynamic_OR : public ParentConstraint
     D_ASSERT(constraint_locked);
     constraint_locked = false;
     P("Full propagating: " << propagated_constraint);
-    child_constraints[propagated_constraint]->full_propagate();
+    child_constraints[propagated_constraint]->full_propagate(this);
     full_propagate_called = true;
   }
 
@@ -133,6 +132,7 @@ struct Dynamic_OR : public ParentConstraint
 
   PROPAGATE_FUNCTION(int i, DomainDelta domain)
   {
+    D_ASSERT(false); //haven't done any work to allow this to run
     //PROP_INFO_ADDONE(WatchedOR);
     P("Static propagate start");
     if(constraint_locked)
@@ -211,7 +211,7 @@ struct Dynamic_OR : public ParentConstraint
       constraint_locked = true;
       getQueue(stateObj).pushSpecialTrigger(this);
 #else
-      child_constraints[propagated_constraint]->full_propagate();
+      child_constraints[propagated_constraint]->full_propagate(this);
       full_propagate_called = true;
 #endif
       return;
@@ -221,7 +221,7 @@ struct Dynamic_OR : public ParentConstraint
     if(full_propagate_called && getChildDynamicTrigger(trig) == propagated_constraint)
     { 
       P("Propagating child");
-      child_constraints[propagated_constraint]->propagate(trig); 
+      child_constraints[propagated_constraint]->propagate(this, trig); 
     }
     else
     {
@@ -270,6 +270,8 @@ struct Dynamic_OR : public ParentConstraint
 
     if(found_watch == false)
     {
+      //aren't prepared for this to happen to a learned con
+      D_ASSERT(getMemory(stateObj).backTrack().current_depth() == 0); 
       getState(stateObj).setFailed(true);
       return;
     }

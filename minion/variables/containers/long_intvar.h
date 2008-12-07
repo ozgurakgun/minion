@@ -301,6 +301,7 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
    
   void removeFromDomain(BigRangeVarRef_internal d, DomainInt i)
   {
+    cout << "removing " << i << " from " << d.var_num << endl;
 #ifdef DEBUG
     cout << "Calling removeFromDomain: " << d.var_num << " " << i << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["
@@ -645,11 +646,11 @@ public:
     if(!assg) {
       prun_explns[b.var_num][i - getInitialMin(b)] = vc;
       prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
-      cout << "stored " << *vc << "(" << vc.get() << ") for pruning " << i << " from " << b.var_num << endl;
+      cout << "stored " << *vc << "(" << vc.get() << ") for pruning " << i << " from " << b.var_num << "@" << prun_depths[b.var_num][i - getInitialMin(b)] << endl;
     } else {
       assg_expln[b.var_num] = vc;
       assg_depth[b.var_num] = getMemory(stateObj).backTrack().next_timestamp();
-      cout << "stored " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << endl;
+      cout << "stored " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
     }
     //print_recursive(vector<int>(), vc->whyT());
   }

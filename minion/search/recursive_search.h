@@ -25,6 +25,8 @@ namespace Controller
   template<typename VarOrder, typename Var, typename Propogator>
   inline int search(StateObj* stateObj, VarOrder& order, vector<Var>& v, Propogator prop = PropagateGAC())
   {
+    D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+
     getState(stateObj).incrementNodeCount();
     if(do_checks(stateObj))
       return -2;
@@ -46,27 +48,32 @@ namespace Controller
     if(getState(stateObj).isFailed()) {
       cout << "failed after prop" << endl;
       target = firstUipLearn(stateObj, getState(stateObj).getFailure());
+      D_ASSERT(getQueue(stateObj).isQueuesEmpty());
     } else {
       cout << "assignment succeeded - recursing" << endl;
       target = search(stateObj, order, v, prop);
     }
     while(true) {
       getState(stateObj).setFailed(false);
-      prop(stateObj, v);
       if(target < getMemory(stateObj).backTrack().current_depth()) {
 	cout << "jumping beyond" << endl;
+	getQueue(stateObj).clearQueues();
+	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
 	world_pop(stateObj);
 	maybe_print_search_action(stateObj, "bt");
 	return target;
       }
+      prop(stateObj, v);
       if(getState(stateObj).isFailed()) {
 	cout << "failed on return" << endl;
 	target = firstUipLearn(stateObj, getState(stateObj).getFailure());
+	D_ASSERT(getQueue(stateObj).isQueuesEmpty());	
 	world_pop(stateObj);
 	maybe_print_search_action(stateObj, "bt");
 	return target;
       }
       cout << "recursing on return" << endl;
+      prop(stateObj, v);
       target = search(stateObj, order, v, prop);
     }
   }
