@@ -103,6 +103,14 @@ public:
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger*)
     { D_FATAL_ERROR("Fatal error in 'Dynamic Propagate' in " + constraint_name()); }
 
+  // Alternative DPF to be used for disjuncts
+  DYNAMIC_PROPAGATE_FUNCTION(Dynamic_OR* dj, DynamicTrigger* dt)
+  {
+    D_ASSERT(disjunct);
+    parent = dj;
+    propagate(dt);
+  }    
+
   /// Iterative propagation function.
   /** Can assume full_propagate is always called at least once before propagate */
   PROPAGATE_FUNCTION(int, DomainDelta) 
@@ -158,6 +166,15 @@ public:
   /// Performs a full round of propagation and sets up any data needs by propagate().
   /** This function can be called during search if the function is reified */
   virtual void full_propagate() = 0;
+
+  // Special FP for disjuncts in a watched or. If a con is a disjunct the other
+  // FP should never be invoked.
+  virtual void full_propagate(Dynamic_OR* dj)
+  { 
+    D_ASSERT(disjunct);
+    parent = dj;
+    full_propagate();
+  }
 
   // Returns the variables of the constraint
   virtual vector<AnyVarRef> get_vars() = 0;

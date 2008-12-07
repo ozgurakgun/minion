@@ -54,9 +54,9 @@ inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure)
   retVal = max(retVal, distribute(stateObj, curr_d, earlier, failure->whyT()));
   D_ASSERT(curr_d.size() != 0);
   while(curr_d.size() > 1) { 
-    cout << endl;
-    for(set<depth_VirtConPtr,comp_d_VCP>::iterator curr = curr_d.begin(); curr != curr_d.end(); curr++)
-      cout << "d=" << (*curr).first << ",vc=" << *((*curr).second) << endl;
+//     cout << endl;
+//     for(set<depth_VirtConPtr,comp_d_VCP>::iterator curr = curr_d.begin(); curr != curr_d.end(); curr++)
+//       cout << "d=" << (*curr).first << ",vc=" << *((*curr).second) << endl;
     VirtConPtr shallowest = curr_d.begin()->second; 
     curr_d.erase(curr_d.begin()); 
     retVal = max(retVal, distribute(stateObj, curr_d, earlier, shallowest->whyT()));
@@ -303,10 +303,8 @@ inline vector<VirtConPtr> DisjunctionPrun::whyT() const
   for(size_t i = 0; i < child_cons_s; i++)
     if(child_cons[i] != doer)
       retVal.push_back(VirtConPtr(new NegOfPostedCon(child_cons[i])));
-  if(done.get() != NULL) {
-    const vector<VirtConPtr>& pruning_reason = done->whyT();
-    retVal.insert(retVal.end(), pruning_reason.begin(), pruning_reason.end());
-  }
+  const vector<VirtConPtr>& pruning_reason = done->whyT();
+  retVal.insert(retVal.end(), pruning_reason.begin(), pruning_reason.end());
   return retVal;
 }
 
@@ -314,17 +312,7 @@ inline AbstractConstraint* DisjunctionPrun::getNeg() const
 { return done->getNeg(); }
 
 inline pair<unsigned,unsigned> DisjunctionPrun::getDepth() const
-{ 
-  pair<unsigned,unsigned> retVal;
-  if(done.get() != NULL) retVal = done->getDepth();
-  else retVal = make_pair(0,0);
-  vector<AbstractConstraint*>& child_cons = dj->child_constraints;
-  const size_t child_cons_s = child_cons.size();
-  for(size_t i = 0; i < child_cons_s; i++)
-    if(child_cons[i] != doer)
-      retVal = max(retVal, child_cons[i]->whenF());
-  return retVal;
-}
+{ return done->getDepth(); }
 
 inline bool DisjunctionPrun::equals(VirtCon* other) const
 {
@@ -486,7 +474,7 @@ inline AbstractConstraint* NoReasonPrun<VarRef>::getNeg() const
 
 template<typename VarRef>
 inline pair<unsigned, unsigned> NoReasonPrun<VarRef>::getDepth() const
-{ return make_pair(0, 0); }
+{ return var.getDepth(false, val); }
 
 template<typename VarRef>
 inline bool NoReasonPrun<VarRef>::equals(VirtCon* other) const
@@ -514,7 +502,7 @@ inline AbstractConstraint* NoReasonAssg<VarRef>::getNeg() const
 
 template<typename VarRef>
 inline pair<unsigned, unsigned> NoReasonAssg<VarRef>::getDepth() const
-{ return make_pair(0, 0); }
+{ return var.getDepth(true, val); }
 
 template<typename VarRef>
 inline bool NoReasonAssg<VarRef>::equals(VirtCon* other) const

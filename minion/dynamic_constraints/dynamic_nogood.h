@@ -24,4 +24,10 @@ class NogoodConstraint : public Dynamic_OR
   
   NogoodConstraint(StateObj* _stateObj, vector<VirtConPtr> _vcs) :
     Dynamic_OR(_stateObj, toCons(_vcs)), vcs(_vcs) {}
+
+  virtual void full_propagate()
+  { 
+    full_propagate_called = false; //reset BT memory
+    Dynamic_OR::full_propagate(); //call superclass to do the job
+  }
 };
