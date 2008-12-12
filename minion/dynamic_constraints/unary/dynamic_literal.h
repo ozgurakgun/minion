@@ -90,10 +90,13 @@ template<typename Var>
   { return var.getDepth(false, val); }
 
   virtual vector<VirtConPtr> whyF() const
-  { return vector<VirtConPtr>(1, VirtConPtr(new DisAssignment<Var>(stateObj, var, val))); }
+  { return vector<VirtConPtr>(1, var.getExpl(false, val)); }
 
   virtual void print(std::ostream& o) const
   { o << "DynamicLiteral(var=" << var << ",val=" << val << ")"; }
+  
+  virtual AbstractConstraint* copy() const
+  { return new WatchLiteralConstraint<Var>(stateObj, var, val); }
 };
 
 template<typename VarArray1>

@@ -7,6 +7,8 @@
 #include "../dynamic_constraints/dynamic_new_or.h"
 #include "../dynamic_constraints/dynamic_nogood.h"
 
+#include "common_search.h"
+
 inline bool operator!=(const VirtConPtr& l, const VirtConPtr& r)
 { return !(l->equals(r.get())); }
 
@@ -19,117 +21,199 @@ struct VirtConPtrHash : unary_function<VirtCon, size_t>
 typedef pair<pair<unsigned,unsigned>,VirtConPtr> depth_VirtConPtr;
 
 //NB. this comparison is carefully reasoned! The first disjunct is to make the
-//first() in the set the deepest depth. However we don't have convenient access
-//to a < operator for VirtCons and I don't want to write one, so we don't order
-//them within depth (and it's not essential to do so).
+//first() in the set the deepest depth. See above for definition of != for
+//VirtConPtr.
 struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
 {
   bool operator()(const depth_VirtConPtr& left, const depth_VirtConPtr& right) const
-  { return left.first > right.first || (left.first == right.first && left.second != right.second); }
+  { 
+    D_ASSERT(!(left.first.first == right.first.first && //not allowed multiple decisions at same depth
+	       left.second->isDecision() && 
+	       right.second->isDecision() &&
+	       left.second != right.second));
+    return left.first > right.first  //order by depth first
+      //then arbitrary order after that...
+      || (left.first == right.first && !left.second->isDecision() && !right.second->isDecision() && 
+	  left.second != right.second && left.second.get() < right.second.get())
+      //except that decisions always come last
+      || (left.first == right.first && right.second->isDecision() && left.second != right.second);
+  }
 };
 
-inline int distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d_VCP>& curr_d, 
-		      unordered_set<VirtConPtr,VirtConPtrHash>& earlier, const vector<VirtConPtr>& things)
+//Distribute things into curr_d and earlier. Do nothing and return false iff
+//this would mean curr_d is empty.
+inline pair<bool,int> distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d_VCP>& curr_d, 
+				 unordered_set<VirtConPtr,VirtConPtrHash>& earlier, const vector<VirtConPtr>& things)
 {
   D_ASSERT(things.size() != 0);
   const size_t things_s = things.size();
   const pair<unsigned,unsigned> cd = make_pair(getMemory(stateObj).backTrack().current_depth(), 0);
   unsigned retVal = 0;
+  vector<depth_VirtConPtr > things_w_depth; //things waiting to be categorised
+  //first fill things_w_depth and check that curr_d will not be empty
+  bool something_for_curr_d = false;
   for(size_t i = 0; i < things_s; i++) {
-    pair<unsigned,unsigned> i_d = things[i]->getDepth();
-    if(i_d < cd) {
-      earlier.insert(things[i]);
-      retVal = max(retVal, i_d.first);
-    } else
-      curr_d.insert(make_pair(i_d, things[i]));
+    depth_VirtConPtr thing = make_pair(things[i]->getDepth(), things[i]);
+    things_w_depth.push_back(thing);
+    if(thing.first >= cd)
+      something_for_curr_d = true;
   }
-  return (int)retVal;
+  if(curr_d.size() == 0 && !something_for_curr_d)
+    return make_pair(false, 0);
+  //now distribute the stuff as usual
+  for(size_t i = 0; i < things_s; i++) {
+    if(things_w_depth[i].first < cd) {
+      earlier.insert(things_w_depth[i].second);
+      retVal = max(retVal, things_w_depth[i].first.first);
+    } else
+      curr_d.insert(things_w_depth[i]);
+  }
+  return make_pair(true,(int)retVal);
 }
 
-inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure)
-{
-  set<depth_VirtConPtr,comp_d_VCP> curr_d; 
-  unordered_set<VirtConPtr,VirtConPtrHash> earlier; 
-  int retVal = 0; //the deepest thing that ends up in earlier
-  retVal = max(retVal, distribute(stateObj, curr_d, earlier, failure->whyT()));
-  D_ASSERT(curr_d.size() != 0);
-  while(curr_d.size() > 1) { 
-//     cout << endl;
-//     for(set<depth_VirtConPtr,comp_d_VCP>::iterator curr = curr_d.begin(); curr != curr_d.end(); curr++)
-//       cout << "d=" << (*curr).first << ",vc=" << *((*curr).second) << endl;
-    VirtConPtr shallowest = curr_d.begin()->second; 
-    curr_d.erase(curr_d.begin()); 
-    retVal = max(retVal, distribute(stateObj, curr_d, earlier, shallowest->whyT()));
-  } 
-  earlier.insert(curr_d.begin()->second);
-  for(unordered_set<VirtConPtr,VirtConPtrHash>::iterator curr = earlier.begin(); curr != earlier.end(); curr++)
-    cout << **curr << "=" << (*curr)->hash() << "@" << (*curr)->getDepth() << endl;
-  cout << "far BT depth=" << retVal << endl;
-  cout << endl;
+inline NogoodConstraint* makeCon(StateObj* stateObj,
+				 const unordered_set<VirtConPtr,VirtConPtrHash>& earlier,
+				 const set<depth_VirtConPtr,comp_d_VCP>& curr_d) {
   vector<VirtConPtr> earlier_vec;
   const size_t earlier_s = earlier.size();
-  earlier_vec.reserve(earlier_s);
-  for(unordered_set<VirtConPtr,VirtConPtrHash>::iterator curr = earlier.begin(); curr != earlier.end(); curr++)
+  earlier_vec.reserve(earlier_s + 1);
+  for(unordered_set<VirtConPtr,VirtConPtrHash>::const_iterator curr = earlier.begin(); curr != earlier.end(); curr++)
     earlier_vec.push_back(*curr);
-  getState(stateObj).addConstraintMidsearch(new NogoodConstraint(stateObj, earlier_vec));
-  return retVal;
-} 
+  earlier_vec.push_back(curr_d.begin()->second);
+  return new NogoodConstraint(stateObj, earlier_vec);
+}  
 
-template<typename VarRef>
-inline vector<VirtConPtr> DisAssignment<VarRef>::whyT() const
-{ return var.getExpl(false, val)->whyT(); } //get the disassignments stored explanation
-
-template<typename VarRef>
-inline AbstractConstraint* DisAssignment<VarRef>::getNeg() const
-{ return new WatchLiteralConstraint<VarRef>(stateObj, var, val); }
-
-template<typename VarRef>
-inline pair<unsigned,unsigned> DisAssignment<VarRef>::getDepth() const
-{ return var.getDepth(false, val); }
-
-template<typename VarRef>
-inline bool DisAssignment<VarRef>::equals(VirtCon* other) const
+inline void print_cut(const unordered_set<VirtConPtr,VirtConPtrHash>& earlier,
+		      const set<depth_VirtConPtr,comp_d_VCP>& curr_d) 
 {
-  DisAssignment<VarRef>* other_da = dynamic_cast<DisAssignment<VarRef>*>(other);
-  return other_da && var.getBaseVal(val) == other_da->var.getBaseVal(other_da->val) &&
-    var.getBaseVar() == other_da->var.getBaseVar();
-}
+  for(unordered_set<VirtConPtr,VirtConPtrHash>::const_iterator curr = earlier.begin(); curr != earlier.end(); curr++)
+    cout << **curr << "=" << (*curr)->hash() << "@" << (*curr)->getDepth() << endl;
+  for(set<depth_VirtConPtr,comp_d_VCP>::const_iterator curr = curr_d.begin(); curr != curr_d.end(); curr++)
+    cout << *(curr->second) << "=" << curr->second->hash() << "@" << curr->second->getDepth() << endl;
+}  
 
-template<typename VarRef>
-inline void DisAssignment<VarRef>::print(std::ostream& o) const
-{ o << "DisAssignment(var=" << var << ",val=" << val << ")"; }
+namespace Controller {
 
-template<typename VarRef>
-inline size_t DisAssignment<VarRef>::hash() const
-{ return (guid + 37 * var.getBaseVal(val) + 111 * var.getBaseVar().pos()) % 16777619; }
+  template<typename Propagator, typename Var>
+  inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure, vector<Var>& v,
+			   Propagator prop)
+  {
+    getState(stateObj).setFailed(false);
+    set<depth_VirtConPtr,comp_d_VCP> curr_d; 
+    unordered_set<VirtConPtr,VirtConPtrHash> earlier; 
+    int retVal = 0; //the deepest thing that ends up in earlier
+    //make firstUip cut
+    pair<bool,int> dist = distribute(stateObj, curr_d, earlier, failure->whyT());
+    retVal = dist.second;
+    D_ASSERT(dist.first);
+    D_ASSERT(curr_d.size() != 0);
+    while(curr_d.size() > 1) { 
+      VirtConPtr deepest = curr_d.begin()->second; 
+      curr_d.erase(curr_d.begin()); 
+      retVal = max(retVal, distribute(stateObj, curr_d, earlier, deepest->whyT()).second);
+    }
+    NogoodConstraint* firstUIP = makeCon(stateObj, earlier, curr_d);
+    //also make lastUIP in case it's needed, code will work if firstUIP=lastUIP
+    while(true) {
+      depth_VirtConPtr deepest = *curr_d.begin();
+      curr_d.erase(curr_d.begin());
+      if(deepest.first.second == 0) { //can't resolve a decision, so replace shallowest and stop
+	curr_d.insert(deepest);
+	break;
+      }
+      pair<bool,int> dist_res = distribute(stateObj, curr_d, earlier, deepest.second->whyT());
+      if(!dist_res.first) { //reached last UIP, so put the shallowest back and stop
+	curr_d.insert(deepest);
+	break;
+      } else { //otherwise continue calculating cut
+	retVal = max(retVal, dist_res.second);
+      }
+    }
+    NogoodConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
+    //try firstUIP
+    world_pop(stateObj);
+    maybe_print_search_action(stateObj, "bt");
+    firstUIP->setup();
+    unsigned seq_no_bef = getMemory(stateObj).backTrack().seq_no;
+    cout << "start trying firstUIP" << endl;
+    firstUIP->full_propagate();
+    prop(stateObj, v);
+    cout << "end trying firstUIP" << endl;
+    if(seq_no_bef < getMemory(stateObj).backTrack().seq_no) { //did propagation occur? if so add
+      cout << "adding firstUIP" << endl;
+      getState(stateObj).addConstraintMidsearch(firstUIP);
+    } else { //if not build a first decision cut and add it
+      firstUIP->cleanup(); //remove effects of propagating it before
+      cout << "adding lastUIP" << endl;
+      getState(stateObj).addConstraintMidsearch(lastUIP);
+      cout << "start trying lastUIP" << endl;
+      lastUIP->setup();
+      lastUIP->full_propagate();
+      prop(stateObj, v);
+      cout << "end trying lastUIP" << endl;
+      D_ASSERT(seq_no_bef < getMemory(stateObj).backTrack().seq_no);
+    }
+    cout << "far BT depth=" << retVal << endl;
+    return retVal;
+  } 
 
-template<typename VarRef>
-inline vector<VirtConPtr> Assignment<VarRef>::whyT() const
-{ return var.getExpl(true, val)->whyT(); } //get the assignments stored explanation
+} //namespace Controller
 
-template<typename VarRef>
-inline AbstractConstraint* Assignment<VarRef>::getNeg() const
-{ return new WatchNotLiteralConstraint<VarRef>(stateObj, var, val); }
+// template<typename VarRef>
+// inline vector<VirtConPtr> DisAssignment<VarRef>::whyT() const
+// { return var.getExpl(false, val)->whyT(); } //get the disassignments stored explanation
 
-template<typename VarRef>
-inline pair<unsigned,unsigned> Assignment<VarRef>::getDepth() const
-{ return var.getDepth(true, val); }
+// template<typename VarRef>
+// inline AbstractConstraint* DisAssignment<VarRef>::getNeg() const
+// { return new WatchLiteralConstraint<VarRef>(stateObj, var, val); }
 
-template<typename VarRef>
-inline bool Assignment<VarRef>::equals(VirtCon* other) const
-{
-  Assignment<VarRef>* other_da = dynamic_cast<Assignment<VarRef>*>(other);
-  return other_da && var.getBaseVal(val) == other_da->var.getBaseVal(other_da->val) &&
-    var.getBaseVar() == other_da->var.getBaseVar();
-}
+// template<typename VarRef>
+// inline pair<unsigned,unsigned> DisAssignment<VarRef>::getDepth() const
+// { return var.getDepth(false, val); }
 
-template<typename VarRef>
-inline void Assignment<VarRef>::print(std::ostream& o) const
-{ o << "Assignment(var=" << var << ",val=" << val << ")"; }
+// template<typename VarRef>
+// inline bool DisAssignment<VarRef>::equals(VirtCon* other) const
+// {
+//   DisAssignment<VarRef>* other_da = dynamic_cast<DisAssignment<VarRef>*>(other);
+//   return other_da && var.getBaseVal(val) == other_da->var.getBaseVal(other_da->val) &&
+//     var.getBaseVar() == other_da->var.getBaseVar();
+// }
 
-template<typename VarRef>
-inline size_t Assignment<VarRef>::hash() const
-{ return (guid + 17 * var.getBaseVal(val) + 83 * var.getBaseVar().pos()) % 16777619; }
+// template<typename VarRef>
+// inline void DisAssignment<VarRef>::print(std::ostream& o) const
+// { o << "DisAssignment(var=" << var << ",val=" << val << ")"; }
+
+// template<typename VarRef>
+// inline size_t DisAssignment<VarRef>::hash() const
+// { return (guid + 37 * var.getBaseVal(val) + 111 * var.getBaseVar().pos()) % 16777619; }
+
+// template<typename VarRef>
+// inline vector<VirtConPtr> Assignment<VarRef>::whyT() const
+// { return var.getExpl(true, val)->whyT(); } //get the assignments stored explanation
+
+// template<typename VarRef>
+// inline AbstractConstraint* Assignment<VarRef>::getNeg() const
+// { return new WatchNotLiteralConstraint<VarRef>(stateObj, var, val); }
+
+// template<typename VarRef>
+// inline pair<unsigned,unsigned> Assignment<VarRef>::getDepth() const
+// { return var.getDepth(true, val); }
+
+// template<typename VarRef>
+// inline bool Assignment<VarRef>::equals(VirtCon* other) const
+// {
+//   Assignment<VarRef>* other_da = dynamic_cast<Assignment<VarRef>*>(other);
+//   return other_da && var.getBaseVal(val) == other_da->var.getBaseVal(other_da->val) &&
+//     var.getBaseVar() == other_da->var.getBaseVar();
+// }
+
+// template<typename VarRef>
+// inline void Assignment<VarRef>::print(std::ostream& o) const
+// { o << "Assignment(var=" << var << ",val=" << val << ")"; }
+
+// template<typename VarRef>
+// inline size_t Assignment<VarRef>::hash() const
+// { return (guid + 17 * var.getBaseVal(val) + 83 * var.getBaseVar().pos()) % 16777619; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> LessConstant<VarRef>::whyT() const
@@ -277,7 +361,7 @@ inline vector<VirtConPtr> NegOfPostedCon::whyT() const
 { return con->whyF(); }
 
 inline AbstractConstraint* NegOfPostedCon::getNeg() const
-{ return con; }
+{ return con->copy(); }
 
 inline pair<unsigned,unsigned> NegOfPostedCon::getDepth() const
 { return con->whenF(); }
@@ -328,7 +412,7 @@ inline size_t DisjunctionPrun::hash() const
 
 template<typename VarRef>
 inline vector<VirtConPtr> BecauseOfAssignmentPrun<VarRef>::whyT() const
-{ return vector<VirtConPtr>(1, var.getExpl(true, var.getAssignedValue())); } //return the assignment that caused it
+{ return vector<VirtConPtr>(1, var.getExpl(true, assigned)); } //return the assignment that caused it
 
 template<typename VarRef>
 inline AbstractConstraint* BecauseOfAssignmentPrun<VarRef>::getNeg() const
@@ -374,10 +458,9 @@ inline size_t MHAV::hash() const
 
 inline vector<VirtConPtr> AssgOrPrun::whyT() const
 {
-  vector<VirtConPtr> retVal;
-  retVal.reserve(2);
-  retVal.push_back(assg);
-  retVal.push_back(prun);
+  vector<VirtConPtr> retVal = assg->whyT();
+  const vector<VirtConPtr>& prun_whyT = prun->whyT();
+  retVal.insert(retVal.end(), prun_whyT.begin(), prun_whyT.end());
   return retVal;
 }
 
@@ -391,7 +474,13 @@ inline bool AssgOrPrun::equals(VirtCon*) const
 { D_ASSERT(false); return false; }
 
 inline void AssgOrPrun::print(std::ostream& o) const
-{ o << "AssgOrPrun(assg=" << *assg << ",prun=" << *prun << ")"; }
+{ 
+  vector<VirtConPtr> cut = whyT();
+  cout << "AssgOrPrun(cut=" << "[" << *cut[0];
+  for(size_t i = 1; i < cut.size(); i++)
+    cout << "," << *cut[i];
+  cout << "]" << ")"; 
+}
 
 inline size_t AssgOrPrun::hash() const
 { D_ASSERT(false); return 0; }

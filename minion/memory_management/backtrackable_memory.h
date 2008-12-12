@@ -45,9 +45,9 @@ class BackTrackMemory
   int max_depth;
   bool locked;
   vector<unsigned> old_seq_nos; //old sequence nums from other depths
-  unsigned seq_no; //starts and 0 and counts up when generating new timestamp
+
 public:
-    
+  unsigned seq_no; //starts and 0 and counts up when generating new timestamp
   
   /// Wraps request_bytes of the internal \ref NewMemoryBlock.
   MoveablePointer request_bytes(unsigned byte_count)

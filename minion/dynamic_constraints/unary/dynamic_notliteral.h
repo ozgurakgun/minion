@@ -95,7 +95,13 @@ template<typename Var>
   { return var.getDepth(true, val); }
 
   virtual vector<VirtConPtr> whyF() const
-  { return vector<VirtConPtr>(1, VirtConPtr(new Assignment<Var>(stateObj, var, val))); }
+  { return vector<VirtConPtr>(1, var.getExpl(true, val)); }
+
+  virtual AbstractConstraint* copy() const
+  { return new WatchNotLiteralConstraint<Var>(stateObj, var, val); }
+
+  virtual void print(std::ostream& o) const
+  { o << "DynamicNotLiteral(var=" << var << ",val=" << val << ")"; }
 };
 
 struct WatchNotLiteralBoolConstraint : public AbstractConstraint
@@ -150,9 +156,6 @@ struct WatchNotLiteralBoolConstraint : public AbstractConstraint
     }
     return false;
   }
-
-  virtual void print(std::ostream& o) const
-  { o << "DynamicNotLiteral(var=" << var << ",val=" << val << ")"; }
 };
 
 inline AbstractConstraint*
