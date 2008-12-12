@@ -13,6 +13,16 @@ class NogoodConstraint : public Dynamic_OR
  public:
   vector<VirtConPtr> vcs;
 
+  //remove effects of this having been propagated
+  void cleanup()
+  {
+    DynamicTrigger* dt = dynamic_trigger_start();
+    for(int i = 0; i < assign_size * 2; ++i)
+      dt[i].remove();
+    getState(stateObj).setFailed(false);
+    getQueue(stateObj).clearQueues();
+  }
+
   vector<AbstractConstraint*> toCons(vector<VirtConPtr>& vcs)
   {
     vector<AbstractConstraint*> retVal;

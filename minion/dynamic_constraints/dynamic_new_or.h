@@ -67,6 +67,7 @@ struct Dynamic_OR : public ParentConstraint
       for(int i = 0; i < child_constraints.size(); ++i) {
         max_size = max(max_size, child_constraints[i]->get_vars_singleton()->size());
 	child_constraints[i]->disjunct = true;
+	cout << "disj " << *child_constraints[i] << endl;
       }
       assign_size = max_size * 2;
     }
@@ -161,6 +162,10 @@ struct Dynamic_OR : public ParentConstraint
     if(constraint_locked)
       return;
 
+    BigRangeVarRef w = getVars(stateObj).getBigRangevarContainer().get_var_num(0);
+    cout << "wor prop blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
+
+
     DynamicTrigger* dt = dynamic_trigger_start();
 
     P("Trig: " << trig - dt);
@@ -176,6 +181,11 @@ struct Dynamic_OR : public ParentConstraint
       D_ASSERT(tripped_constraint == 0 || tripped_constraint == 1);
       
       bool flag;
+
+    BigRangeVarRef w = getVars(stateObj).getBigRangevarContainer().get_var_num(0);
+    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
+
+
       GET_ASSIGNMENT(assignment_try, child_constraints[watched_constraint[tripped_constraint]]);
       if(flag)
       { // Found new support without having to move.

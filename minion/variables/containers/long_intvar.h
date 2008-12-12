@@ -117,6 +117,9 @@ struct BigRangeVarContainer {
    
   unsigned var_count_m;
   BOOL lock_m;
+
+  BigRangeVarRef get_var_num(int i);
+  BigRangeVarRef get_new_var(int i, int j);
   
   domain_bound_type& lower_bound(BigRangeVarRef_internal i) const
   { return static_cast<domain_bound_type*>(bound_data.get_ptr())[i.var_num*2]; }
@@ -301,6 +304,9 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
    
   void removeFromDomain(BigRangeVarRef_internal d, DomainInt i)
   {
+    BigRangeVarRef w = get_var_num(0);
+    cout << "remFrom blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
+
     cout << "removing " << i << " from " << d.var_num << endl;
 #ifdef DEBUG
     cout << "Calling removeFromDomain: " << d.var_num << " " << i << " [" 
@@ -393,12 +399,15 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
   
   void propagateAssign(BigRangeVarRef_internal d, DomainInt offset)
   {
+    BigRangeVarRef w = get_var_num(0);
+    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
+
     DomainInt lower = lower_bound(d);
     DomainInt upper = upper_bound(d);
     for(DomainInt i = lower; i <= upper; i++) //explain the values being pruned
       if(inDomain(d, i) && i != offset)
 	setExpl(d, false, i, 
-		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), i)));
+		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), i, offset)));
     if(!validAssignment(d, offset, lower, upper)) return;
     commonAssign(d, offset, lower, upper);
   }
@@ -412,7 +421,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
     for(DomainInt val = lower; val <= upper; val++) //explain the values being pruned
       if(inDomain(d, val) && val != i)
 	setExpl(d, false, val, 
-		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), val)));
+		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), val, i)));
     commonAssign(d,i, lower, upper); 
   }
 
@@ -425,7 +434,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
     for(DomainInt val = lower; val <= upper; val++) //explain the values being pruned
       if(inDomain(d, val) && val != i)
 	setExpl(d, false, val, 
-		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), val)));
+		VirtConPtr(new BecauseOfAssignmentPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(d), val, i)));
     commonAssign(d,i, lower, upper); 
   }
     
@@ -466,6 +475,9 @@ public:
   
   void setMax(BigRangeVarRef_internal d, DomainInt offset)
   {
+    BigRangeVarRef w = get_var_num(0);
+    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
+
 #ifdef DEBUG
     cout << "Calling setMax: " << d.var_num << " " << offset << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["
@@ -526,6 +538,9 @@ public:
   
   void setMin(BigRangeVarRef_internal d, DomainInt offset)
   {
+    BigRangeVarRef w = get_var_num(0);
+    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
+
 #ifdef DEBUG
     cout << "Calling setMin: " << d.var_num << " " << offset << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["
@@ -585,9 +600,6 @@ public:
 #endif
   }
   
-  BigRangeVarRef get_var_num(int i);
-  BigRangeVarRef get_new_var(int i, int j);
-
   void addTrigger(BigRangeVarRef_internal b, Trigger t, TrigType type)
   { D_ASSERT(lock_m); trigger_list.add_trigger(b.var_num, t, type);  }
   
@@ -633,16 +645,18 @@ public:
   pair<unsigned,unsigned> getDepth(const BigRangeVarRef_internal& b, bool assg, DomainInt i) const
   {
     if(!assg) {
-      D_ASSERT(!inDomain(b, i) || getState(stateObj).isFailed());
+      //D_ASSERT(!inDomain(b, i) || getState(stateObj).isFailed());
       return prun_depths[b.var_num][i - getInitialMin(b)];
     } else {
-      D_ASSERT(i == getAssignedValue(b));
+      //D_ASSERT(i == getAssignedValue(b));
       return assg_depth[b.var_num];
     }
   }
 
   void setExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i, VirtConPtr vc)
   {
+    BigRangeVarRef w = get_var_num(0);
+    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
     if(!assg) {
       prun_explns[b.var_num][i - getInitialMin(b)] = vc;
       prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
@@ -658,10 +672,10 @@ public:
   VirtConPtr getExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i) const
   {
     if(!assg) {
-      D_ASSERT(!inDomain(b, i) || getState(stateObj).isFailed());
+      //D_ASSERT(!inDomain(b, i) || getState(stateObj).isFailed());
       return prun_explns[b.var_num][i - getInitialMin(b)];
     } else {
-      D_ASSERT(i == getAssignedValue(b));
+      //D_ASSERT(i == getAssignedValue(b));
       return assg_expln[b.var_num];
     }
   }

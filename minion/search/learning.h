@@ -27,42 +27,43 @@ class VirtCon {
   friend std::ostream& operator<<(std::ostream& o, const VirtCon& vc) { if(&vc) vc.print(o); else o << "null"; return o; }
   virtual void print(std::ostream& o) const = 0;
   virtual size_t hash() const = 0;
+  virtual bool isDecision() const { return false; }
   virtual ~VirtCon() {}
 };
 
-template<typename VarRef>
-class DisAssignment : public VirtCon { //var != val
-  static const size_t guid = 0;
-  StateObj* stateObj;
-  VarRef var;
-  DomainInt val;
+/* template<typename VarRef> */
+/* class DisAssignment : public VirtCon { //var != val */
+/*   static const size_t guid = 0; */
+/*   StateObj* stateObj; */
+/*   VarRef var; */
+/*   DomainInt val; */
 
- public:
-  DisAssignment(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {}
-  virtual vector<VirtConPtr> whyT() const;
-  virtual AbstractConstraint* getNeg() const;
-  virtual pair<unsigned,unsigned> getDepth() const;
-  virtual bool equals(VirtCon* other) const;
-  virtual void print(std::ostream& o) const;
-  virtual size_t hash() const;
-};
+/*  public: */
+/*   DisAssignment(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {} */
+/*   virtual vector<VirtConPtr> whyT() const; */
+/*   virtual AbstractConstraint* getNeg() const; */
+/*   virtual pair<unsigned,unsigned> getDepth() const; */
+/*   virtual bool equals(VirtCon* other) const; */
+/*   virtual void print(std::ostream& o) const; */
+/*   virtual size_t hash() const; */
+/* }; */
 
-template<typename VarRef>
-class Assignment : public VirtCon { //var == val
-  static const size_t guid = 1000;
-  StateObj* stateObj;
-  VarRef var;
-  DomainInt val;
+/* template<typename VarRef> */
+/* class Assignment : public VirtCon { //var == val */
+/*   static const size_t guid = 1000; */
+/*   StateObj* stateObj; */
+/*   VarRef var; */
+/*   DomainInt val; */
 
- public:
-  Assignment(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {}
-  virtual vector<VirtConPtr> whyT() const;
-  virtual AbstractConstraint* getNeg() const;
-  virtual pair<unsigned,unsigned> getDepth() const;
-  virtual bool equals(VirtCon* other) const;
-  virtual void print(std::ostream& o) const;
-  virtual size_t hash() const;
-};  
+/*  public: */
+/*   Assignment(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {} */
+/*   virtual vector<VirtConPtr> whyT() const; */
+/*   virtual AbstractConstraint* getNeg() const; */
+/*   virtual pair<unsigned,unsigned> getDepth() const; */
+/*   virtual bool equals(VirtCon* other) const; */
+/*   virtual void print(std::ostream& o) const; */
+/*   virtual size_t hash() const; */
+/* };   */
 
 template<typename VarRef>
 class LessConstant : public VirtCon { //var < constant
@@ -174,8 +175,10 @@ class BecauseOfAssignmentPrun : public VirtCon {
   StateObj* stateObj;
   VarRef var;
   DomainInt pruned;
+  DomainInt assigned;
  public:
-  BecauseOfAssignmentPrun(StateObj* stateObj, VarRef _var, DomainInt _pruned) : var(_var), pruned(_pruned) {}
+  BecauseOfAssignmentPrun(StateObj* _stateObj, VarRef _var, DomainInt _pruned, DomainInt _assigned) : 
+    stateObj(_stateObj), var(_var), pruned(_pruned), assigned(_assigned) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
@@ -243,6 +246,7 @@ public:
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
+  virtual bool isDecision() const { return true; }
   virtual size_t hash() const;
 };
 

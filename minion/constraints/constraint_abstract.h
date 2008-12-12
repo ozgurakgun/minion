@@ -258,6 +258,9 @@ public:
   
   friend std::ostream& operator<<(std::ostream& o, const AbstractConstraint& c) 
   { c.print(o); return o; }
+  
+  virtual AbstractConstraint* copy() const
+  { D_ASSERT(false); return NULL; }
 };
 
 /// Constraint from which other constraints can be inherited. Extends dynamicconstraint to allow children to be dynamic.

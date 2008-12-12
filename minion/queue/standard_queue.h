@@ -36,6 +36,8 @@ class Queues
 {
   StateObj* stateObj;
   
+public:
+    
   vector<TriggerRange> propagate_trigger_list;
   vector<DynamicTrigger*> dynamic_trigger_list;
   
@@ -49,8 +51,6 @@ class Queues
   DynamicTrigger* next_queue_ptr;
 #endif
   
-public:
-    
   DynamicTrigger*& getNextQueuePtrRef() { return next_queue_ptr; }
   
   Queues(StateObj* _stateObj) : stateObj(_stateObj), next_queue_ptr(NULL)

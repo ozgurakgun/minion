@@ -31,6 +31,8 @@ namespace Controller
     if(do_checks(stateObj))
       return -2;
     
+    maybe_print_search_state(stateObj, "Node: ", v);    
+
     if(order.find_next_unassigned()) { //true iff all vars assigned
       deal_with_solution(stateObj);
       return -2;
@@ -47,33 +49,32 @@ namespace Controller
     prop(stateObj, v);
     if(getState(stateObj).isFailed()) {
       cout << "failed after prop" << endl;
-      target = firstUipLearn(stateObj, getState(stateObj).getFailure());
+      target = firstUipLearn(stateObj, getState(stateObj).getFailure(), v, prop);
+      cout << "returning straight after learned constraint" << endl;
       D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+      return target;
     } else {
       cout << "assignment succeeded - recursing" << endl;
       target = search(stateObj, order, v, prop);
     }
     while(true) {
-      getState(stateObj).setFailed(false);
+      if(getState(stateObj).isFailed()) {
+	cout << "failed on return" << endl;
+	target = firstUipLearn(stateObj, getState(stateObj).getFailure(), v, prop);
+	cout << "returning immediately after learned" << endl;
+	D_ASSERT(getQueue(stateObj).isQueuesEmpty());	
+	return target;
+      }
       if(target < getMemory(stateObj).backTrack().current_depth()) {
 	cout << "jumping beyond" << endl;
 	getQueue(stateObj).clearQueues();
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
 	world_pop(stateObj);
-	maybe_print_search_action(stateObj, "bt");
-	return target;
-      }
-      prop(stateObj, v);
-      if(getState(stateObj).isFailed()) {
-	cout << "failed on return" << endl;
-	target = firstUipLearn(stateObj, getState(stateObj).getFailure());
-	D_ASSERT(getQueue(stateObj).isQueuesEmpty());	
-	world_pop(stateObj);
+	prop(stateObj, v);
 	maybe_print_search_action(stateObj, "bt");
 	return target;
       }
       cout << "recursing on return" << endl;
-      prop(stateObj, v);
       target = search(stateObj, order, v, prop);
     }
   }
