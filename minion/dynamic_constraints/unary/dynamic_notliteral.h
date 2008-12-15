@@ -102,6 +102,17 @@ template<typename Var>
 
   virtual void print(std::ostream& o) const
   { o << "DynamicNotLiteral(var=" << var << ",val=" << val << ")"; }
+
+
+  virtual size_t hash() const
+  { return 37 * var.getBaseVar().pos() + var.getBaseVal(val); }
+
+  virtual bool equal(AbstractConstraint* other) const
+  { 
+    WatchNotLiteralConstraint* other_wnlc = dynamic_cast<WatchNotLiteralConstraint*>(other);
+    return other_wnlc && var.getBaseVar() == other_wnlc->var.getBaseVar() && 
+      var.getBaseVal(val) == other_wnlc->var.getBaseVal(other_wnlc->val);
+  }
 };
 
 struct WatchNotLiteralBoolConstraint : public AbstractConstraint
@@ -156,6 +167,8 @@ struct WatchNotLiteralBoolConstraint : public AbstractConstraint
     }
     return false;
   }
+
+  //don't put code here!
 };
 
 inline AbstractConstraint*

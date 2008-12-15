@@ -232,6 +232,16 @@ struct WatchLessConstraint : public AbstractConstraint
 
   virtual AbstractConstraint* copy() const
   { return new WatchLessConstraint<Var1,Var2>(stateObj, var1, var2); }
+
+  virtual size_t hash() const
+  { return 37 * var1.getBaseVar().pos() + var2.getBaseVar().pos(); }
+
+  virtual bool equal(AbstractConstraint* other) const
+  { 
+    WatchLessConstraint* other_wlc = dynamic_cast<WatchLessConstraint*>(other);
+    return other_wlc && var1.getBaseVar() == other_wlc->var1.getBaseVar() &&
+      var2.getBaseVar() == other_wlc->var2.getBaseVar();
+  }
 };
 
 template<typename VarArray1, typename VarArray2>
