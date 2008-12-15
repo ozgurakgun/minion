@@ -73,10 +73,6 @@ struct WatchLessConstraint : public AbstractConstraint
     
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
-    BigRangeVarRef w = getVars(stateObj).getBigRangevarContainer().get_var_num(0);
-    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
-
-
 
 	  PROP_INFO_ADDONE(WatchNEQ);
 	  DynamicTrigger* dt_start = dynamic_trigger_start();

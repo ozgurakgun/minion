@@ -144,6 +144,7 @@ namespace Controller {
       getState(stateObj).addConstraintMidsearch(firstUIP);
     } else { //if not build a first decision cut and add it
       firstUIP->cleanup(); //remove effects of propagating it before
+      D_ASSERT(getQueue(stateObj).isQueuesEmpty());
       cout << "adding lastUIP" << endl;
       getState(stateObj).addConstraintMidsearch(lastUIP);
       cout << "start trying lastUIP" << endl;

@@ -304,9 +304,6 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
    
   void removeFromDomain(BigRangeVarRef_internal d, DomainInt i)
   {
-    BigRangeVarRef w = get_var_num(0);
-    cout << "remFrom blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
-
     cout << "removing " << i << " from " << d.var_num << endl;
 #ifdef DEBUG
     cout << "Calling removeFromDomain: " << d.var_num << " " << i << " [" 
@@ -399,9 +396,6 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array.ifMember_remove(
   
   void propagateAssign(BigRangeVarRef_internal d, DomainInt offset)
   {
-    BigRangeVarRef w = get_var_num(0);
-    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
-
     DomainInt lower = lower_bound(d);
     DomainInt upper = upper_bound(d);
     for(DomainInt i = lower; i <= upper; i++) //explain the values being pruned
@@ -475,9 +469,6 @@ public:
   
   void setMax(BigRangeVarRef_internal d, DomainInt offset)
   {
-    BigRangeVarRef w = get_var_num(0);
-    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
-
 #ifdef DEBUG
     cout << "Calling setMax: " << d.var_num << " " << offset << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["
@@ -538,9 +529,6 @@ public:
   
   void setMin(BigRangeVarRef_internal d, DomainInt offset)
   {
-    BigRangeVarRef w = get_var_num(0);
-    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
-
 #ifdef DEBUG
     cout << "Calling setMin: " << d.var_num << " " << offset << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["
@@ -655,16 +643,14 @@ public:
 
   void setExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i, VirtConPtr vc)
   {
-    BigRangeVarRef w = get_var_num(0);
-    cout << "blarg" << w.getMin() << w.getMax() << w.inDomain(0) << w.inDomain(1) << w.inDomain(2) << endl;  
     if(!assg) {
       prun_explns[b.var_num][i - getInitialMin(b)] = vc;
       prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
-      cout << "stored " << *vc << "(" << vc.get() << ") for pruning " << i << " from " << b.var_num << "@" << prun_depths[b.var_num][i - getInitialMin(b)] << endl;
+      //cout << "stored " << *vc << "(" << vc.get() << ") for pruning " << i << " from " << b.var_num << "@" << prun_depths[b.var_num][i - getInitialMin(b)] << endl;
     } else {
       assg_expln[b.var_num] = vc;
       assg_depth[b.var_num] = getMemory(stateObj).backTrack().next_timestamp();
-      cout << "stored " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
+      //cout << "stored " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
     }
     //print_recursive(vector<int>(), vc->whyT());
   }

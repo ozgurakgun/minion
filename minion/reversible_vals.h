@@ -89,7 +89,7 @@ public:
 
 class BoolContainer
 {
-  static const unsigned LIMIT = 500*sizeof(int); //number of bools needed, must be divisible by sizeof(int)
+  static const unsigned LIMIT = 500*sizeof(int)*10; //number of bools needed, must be divisible by bits in an int
   StateObj* stateObj;
   MoveablePointer backtrack_ptr;
   int offset;
@@ -102,10 +102,11 @@ public:
   {
     if(offset == LIMIT) {
       cout << "Run out of backtrackable bools" << endl;
+      D_ASSERT(false);
       exit(1);
     }
-    pair<MoveablePointer,unsigned> ret(backtrack_ptr.getOffset((offset / sizeof(int)) * sizeof(int)), //byte number
-				       ((unsigned)1) << (offset % sizeof(int)));
+    pair<MoveablePointer,unsigned> ret(backtrack_ptr.getOffset(offset / (8 * sizeof(int)) * sizeof(int)), //byte number
+				       ((unsigned)1) << (offset % (8 * sizeof(int))));
     offset++;
     return ret;
   }
