@@ -112,6 +112,7 @@ namespace Controller {
       curr_d.erase(curr_d.begin()); 
       retVal = max(retVal, distribute(stateObj, curr_d, earlier, deepest->whyT()).second);
     }
+    print_cut(earlier, curr_d);
     NogoodConstraint* firstUIP = makeCon(stateObj, earlier, curr_d);
     //also make lastUIP in case it's needed, code will work if firstUIP=lastUIP
     while(true) {
@@ -370,14 +371,14 @@ inline pair<unsigned,unsigned> NegOfPostedCon::getDepth() const
 inline bool NegOfPostedCon::equals(VirtCon* other) const
 { 
   NegOfPostedCon* other_nopc = dynamic_cast<NegOfPostedCon*>(other);
-  return other_nopc && con == other_nopc->con;
+  return other_nopc && con->equal(other_nopc->con);
 }
 
 inline void NegOfPostedCon::print(std::ostream& o) const
 { o << "NegOfPostedCon(con=" << *con << ")"; }
 
 inline size_t NegOfPostedCon::hash() const
-{ return (guid + (size_t)con) % 16777619; }
+{ return (guid + con->hash()) % 16777619; }
 
 inline vector<VirtConPtr> DisjunctionPrun::whyT() const
 {

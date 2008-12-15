@@ -97,6 +97,16 @@ template<typename Var>
   
   virtual AbstractConstraint* copy() const
   { return new WatchLiteralConstraint<Var>(stateObj, var, val); }
+
+  virtual size_t hash() const
+  { return 37 * var.getBaseVar().pos() + var.getBaseVal(val); }
+
+  virtual bool equal(AbstractConstraint* other) const
+  { 
+    WatchLiteralConstraint* other_wlc = dynamic_cast<WatchLiteralConstraint*>(other);
+    return other_wlc && var.getBaseVar() == other_wlc->var.getBaseVar() && 
+      var.getBaseVal(val) == other_wlc->var.getBaseVal(other_wlc->val);
+  }
 };
 
 template<typename VarArray1>

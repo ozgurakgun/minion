@@ -261,6 +261,12 @@ public:
   
   virtual AbstractConstraint* copy() const
   { D_ASSERT(false); return NULL; }
+
+  virtual size_t hash() const
+  { D_ASSERT(false); return 0; }
+
+  virtual bool equal(AbstractConstraint* other) const
+  { D_ASSERT(false); return false; }
 };
 
 /// Constraint from which other constraints can be inherited. Extends dynamicconstraint to allow children to be dynamic.
