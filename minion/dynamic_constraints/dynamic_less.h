@@ -184,15 +184,13 @@ struct WatchLessConstraint : public AbstractConstraint
   virtual pair<unsigned,unsigned> whenF() const //max depth of pruning of x<sv and sv<y
   {
     //calculate the earliest depth for which x >= value and value >= y
-    vector<pair<unsigned,unsigned> > v1_d_max; //v1_d_max[i] is max depth of pruning from var1 < i+var2.max
-    vector<pair<unsigned,unsigned> > v2_d_max; //v2_d_max[i] is max depth of pruning from var2 > i+var2.max
     const DomainInt var2_max = var2.getMax();
     const DomainInt var2_initmax = var2.getInitialMax();
     const DomainInt var1_min = var1.getMin();
     const DomainInt var1_initmin = var1.getInitialMin();
     const size_t array_s = var1_min - var2_max + 1;
-    v1_d_max.resize(array_s);
-    v2_d_max.resize(array_s);
+    vector<pair<unsigned,unsigned> > v1_d_max(array_s); //v1_d_max[i] is max depth of pruning from var1 < i+var2.max
+    vector<pair<unsigned,unsigned> > v2_d_max(array_s); //v2_d_max[i] is max depth of pruning from var2 > i+var2.max
     //compute v1_d_max[0]
     v1_d_max[0] = make_pair(0, 0);
     for(DomainInt v = var1.getInitialMin(); v < var2_max; v++)

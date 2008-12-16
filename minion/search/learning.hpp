@@ -54,14 +54,17 @@ inline pair<bool,int> distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d
   bool something_for_curr_d = false;
   for(size_t i = 0; i < things_s; i++) {
     depth_VirtConPtr thing = make_pair(things[i]->getDepth(), things[i]);
-    things_w_depth.push_back(thing);
-    if(thing.first >= cd)
-      something_for_curr_d = true;
+    if(thing.first.first != 0) { //only include stuff that wasn't true at the root node
+      things_w_depth.push_back(thing);
+      if(thing.first >= cd)
+	something_for_curr_d = true;
+    }
   }
   if(curr_d.size() == 0 && !something_for_curr_d)
     return make_pair(false, 0);
   //now distribute the stuff as usual
-  for(size_t i = 0; i < things_s; i++) {
+  const size_t things_w_depth_s = things_w_depth.size();
+  for(size_t i = 0; i < things_w_depth_s; i++) {
     if(things_w_depth[i].first < cd) {
       earlier.insert(things_w_depth[i].second);
       retVal = max(retVal, things_w_depth[i].first.first);
@@ -112,7 +115,6 @@ namespace Controller {
       curr_d.erase(curr_d.begin()); 
       retVal = max(retVal, distribute(stateObj, curr_d, earlier, deepest->whyT()).second);
     }
-    print_cut(earlier, curr_d);
     NogoodConstraint* firstUIP = makeCon(stateObj, earlier, curr_d);
     //also make lastUIP in case it's needed, code will work if firstUIP=lastUIP
     while(true) {
