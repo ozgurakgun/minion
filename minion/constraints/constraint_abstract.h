@@ -64,7 +64,7 @@ protected:
   /// Private members of the base class.
   
   DynamicTrigger* trigs_ptr;
-  vector<AnyVarRef> singleton_vars;
+  vector<AnyVarRef>* singleton_vars;
 
 public:
 
@@ -153,7 +153,7 @@ public:
   }
 
   AbstractConstraint(StateObj* _stateObj) : 
-    singleton_vars(), stateObj(_stateObj), 
+    singleton_vars(NULL), stateObj(_stateObj), 
 #ifdef WDEG
     wdeg(1),
 #endif
@@ -181,8 +181,8 @@ public:
 
   vector<AnyVarRef>* get_vars_singleton() //piggyback singleton vector on get_vars()
   { 
-    if(singleton_vars.size() == 0) singleton_vars = get_vars(); //for efficiency: no constraint over 0 variables
-    return &singleton_vars; 
+    if(singleton_vars == NULL) singleton_vars = new vector<AnyVarRef>(get_vars()); //for efficiency: no constraint over 0 variables
+    return singleton_vars; 
   }
 
 #ifdef WDEG
