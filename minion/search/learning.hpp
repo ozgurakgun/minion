@@ -138,26 +138,26 @@ namespace Controller {
     maybe_print_search_action(stateObj, "bt");
     firstUIP->setup();
     unsigned seq_no_bef = getMemory(stateObj).backTrack().seq_no;
-    cout << "start trying firstUIP" << endl;
+    //cout << "start trying firstUIP" << endl;
     firstUIP->full_propagate();
     prop(stateObj, v);
-    cout << "end trying firstUIP" << endl;
+    //cout << "end trying firstUIP" << endl;
     if(seq_no_bef < getMemory(stateObj).backTrack().seq_no) { //did propagation occur? if so add
-      cout << "adding firstUIP" << endl;
+      //cout << "adding firstUIP" << endl;
       getState(stateObj).addConstraintMidsearch(firstUIP);
-    } else { //if not build a first decision cut and add it
+    } else { //if not use the first decision cut
       firstUIP->cleanup(); //remove effects of propagating it before
       D_ASSERT(getQueue(stateObj).isQueuesEmpty());
-      cout << "adding lastUIP" << endl;
+      //cout << "adding lastUIP" << endl;
       getState(stateObj).addConstraintMidsearch(lastUIP);
-      cout << "start trying lastUIP" << endl;
+      //cout << "start trying lastUIP" << endl;
       lastUIP->setup();
       lastUIP->full_propagate();
       prop(stateObj, v);
-      cout << "end trying lastUIP" << endl;
+      //cout << "end trying lastUIP" << endl;
       D_ASSERT(seq_no_bef < getMemory(stateObj).backTrack().seq_no);
     }
-    cout << "far BT depth=" << retVal << endl;
+    //cout << "far BT depth=" << retVal << endl;
     return retVal;
   } 
 
@@ -462,7 +462,9 @@ inline size_t MHAV::hash() const
 
 inline vector<VirtConPtr> AssgOrPrun::whyT() const
 {
-  vector<VirtConPtr> retVal = assg->whyT();
+  vector<VirtConPtr> retVal;
+  if(assg->getDepth().second != 0)
+    retVal = assg->whyT();
   const vector<VirtConPtr>& prun_whyT = prun->whyT();
   retVal.insert(retVal.end(), prun_whyT.begin(), prun_whyT.end());
   return retVal;
