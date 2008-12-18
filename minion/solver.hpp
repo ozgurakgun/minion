@@ -102,7 +102,6 @@ inline void SearchState::addConstraint(AbstractConstraint* c)
 //first until the next backtrack
 inline void SearchState::addConstraintMidsearch(AbstractConstraint* c)
 {
-  cout << "learned " << c << endl;
   addConstraint(c);
   constraints_to_propagate[Controller::get_world_depth(stateObj)].insert(c);
 }

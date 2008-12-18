@@ -76,7 +76,7 @@ public:
   { 
 	CON_INFO_ADDONE(AddDynToQueue);
     D_ASSERT(new_dynamic_trig_range->sanity_check_list());
-    D_ASSERT(new_dynamic_trig_range != 0);
+    D_ASSERT(new_dynamic_trig_range->next != 0);
     dynamic_trigger_list.push_back(new_dynamic_trig_range);   
   }
 #endif

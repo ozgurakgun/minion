@@ -18,7 +18,7 @@ class NogoodConstraint : public Dynamic_OR
   {
     DynamicTrigger* dt = dynamic_trigger_start();
     for(int i = 0; i < assign_size * 2; ++i)
-      dt[i].remove();
+      dt[i].remove(getQueue(stateObj).getNextQueuePtrRef());
     getState(stateObj).setFailed(false);
     getQueue(stateObj).clearQueues();
   }

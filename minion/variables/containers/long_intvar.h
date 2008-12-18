@@ -304,7 +304,6 @@ void addVariables(const vector<pair<int, Bounds> >& new_domains)
    
   void removeFromDomain(BigRangeVarRef_internal d, DomainInt i)
   {
-    cout << "removing " << i << " from " << d.var_num << endl;
 #ifdef DEBUG
     cout << "Calling removeFromDomain: " << d.var_num << " " << i << " [" 
          << lower_bound(d) << ":" << upper_bound(d) << "] original ["

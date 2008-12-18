@@ -16,6 +16,23 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <execinfo.h>
+
+inline void print_trace()
+{
+  void *array[10];
+  size_t size;
+  char **strings;
+  size_t i;
+  
+  size = backtrace(array, 10);
+  strings = backtrace_symbols(array, size);
+  
+  for(i = 0; i < size; i++)
+    printf("%s\n", strings[i]);
+  
+  free(strings);
+}
 
 /// This is a trigger to a constraint, which can be dynamically moved around.
 class DynamicTrigger
@@ -52,10 +69,17 @@ public:
   
  
   /// Remove from whatever list this trigger is currently stored in.
-  void remove()
+  void remove(DynamicTrigger*& next_queue_ptr)
   { 
     D_INFO(1,DI_DYNAMICTRIG,string("Trigger ") + to_string(this) + " removed from list: "
 							+ ":" + to_string(prev) + "," + to_string(next));
+
+    if(this == next_queue_ptr)
+    {
+      CON_INFO_ADDONE(DynamicMovePtr);
+      next_queue_ptr = next;
+    }
+
 	D_ASSERT(constraint != NULL);
     D_ASSERT(sanity_check == 1234);
     D_ASSERT( (prev == NULL) == (next == NULL) );
@@ -69,6 +93,7 @@ public:
 	D_ASSERT(old_next == NULL || old_next->sanity_check_list(false));
 	next = NULL;
 	prev = NULL;
+	
   }
   
   /// Add this trigger after another one in a list.
@@ -91,7 +116,7 @@ public:
 	  }
       
 #endif
-	  remove();
+	  remove(next_queue_ptr);
 	}
 	DynamicTrigger* new_next = new_prev->next;
 	prev = new_prev;

@@ -41,32 +41,31 @@ namespace Controller
     int target;
     Var& cv = v[order.pos];
 
-    maybe_print_search_state(stateObj, "Node: ", v);
     world_push(stateObj);
     cv.setExpl(true, cv.getMin(), VirtConPtr(new DecisionAssg<Var>(stateObj, cv, cv.getMin())));
     cv.decisionAssign(cv.getMin());
     maybe_print_search_assignment(stateObj, cv, cv.getMin(), true);
     prop(stateObj, v);
     if(getState(stateObj).isFailed()) {
-      cout << "failed after prop" << endl;
+      //cout << "failed after prop" << endl;
       target = firstUipLearn(stateObj, getState(stateObj).getFailure(), v, prop);
-      cout << "returning straight after learned constraint" << endl;
+      //cout << "returning straight after learned constraint" << endl;
       D_ASSERT(getQueue(stateObj).isQueuesEmpty());
       return target;
     } else {
-      cout << "assignment succeeded - recursing" << endl;
+      //cout << "assignment succeeded - recursing" << endl;
       target = search(stateObj, order, v, prop);
     }
     while(true) {
       if(getState(stateObj).isFailed()) {
-	cout << "failed on return" << endl;
+	//cout << "failed on return" << endl;
 	target = firstUipLearn(stateObj, getState(stateObj).getFailure(), v, prop);
-	cout << "returning immediately after learned" << endl;
+	//cout << "returning immediately after learned" << endl;
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());	
 	return target;
       }
       if(target < getMemory(stateObj).backTrack().current_depth()) {
-	cout << "jumping beyond" << endl;
+	//cout << "jumping beyond" << endl;
 	getQueue(stateObj).clearQueues();
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
 	world_pop(stateObj);
@@ -74,7 +73,7 @@ namespace Controller
 	maybe_print_search_action(stateObj, "bt");
 	return target;
       }
-      cout << "recursing on return" << endl;
+      //cout << "recursing on return" << endl;
       target = search(stateObj, order, v, prop);
     }
   }
