@@ -132,16 +132,15 @@ namespace Controller {
 	retVal = max(retVal, dist_res.second);
       }
     }
-    NogoodConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
     //try firstUIP
     world_pop(stateObj);
     maybe_print_search_action(stateObj, "bt");
     firstUIP->setup();
     unsigned seq_no_bef = getMemory(stateObj).backTrack().seq_no;
-    //cout << "start trying firstUIP" << endl;
+    cout << "start trying firstUIP" << endl;
     firstUIP->full_propagate();
     prop(stateObj, v);
-    //cout << "end trying firstUIP" << endl;
+    cout << "end trying firstUIP" << endl;
     if(seq_no_bef < getMemory(stateObj).backTrack().seq_no) { //did propagation occur? if so add
       //cout << "adding firstUIP" << endl;
       getState(stateObj).addConstraintMidsearch(firstUIP);
@@ -149,6 +148,7 @@ namespace Controller {
       firstUIP->cleanup(); //remove effects of propagating it before
       D_ASSERT(getQueue(stateObj).isQueuesEmpty());
       //cout << "adding lastUIP" << endl;
+      NogoodConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
       getState(stateObj).addConstraintMidsearch(lastUIP);
       //cout << "start trying lastUIP" << endl;
       lastUIP->setup();
