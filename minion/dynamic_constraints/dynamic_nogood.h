@@ -11,7 +11,6 @@
 class NogoodConstraint : public Dynamic_OR
 {
  public:
-  vector<VirtConPtr> vcs;
 
   //remove effects of this having been propagated
   void cleanup()
@@ -33,7 +32,7 @@ class NogoodConstraint : public Dynamic_OR
   }
   
   NogoodConstraint(StateObj* _stateObj, vector<VirtConPtr> _vcs) :
-    Dynamic_OR(_stateObj, toCons(_vcs)), vcs(_vcs) {}
+    Dynamic_OR(_stateObj, toCons(_vcs)) {}
 
   virtual void full_propagate()
   { 

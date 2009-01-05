@@ -320,7 +320,13 @@ struct Dynamic_OR : public ParentConstraint
   }
 
   virtual void print(std::ostream& o) const
-  { o << "WatchedOr(...)"; }
+  { 
+    o << "WatchedOr(" << *child_constraints[0];
+    for(size_t i = 0; i < child_constraints.size(); i++) {
+      cout << "," << *child_constraints[i];
+    }
+    o << ")";
+  }
 };
 
 inline AbstractConstraint*
