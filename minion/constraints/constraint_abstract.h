@@ -211,7 +211,10 @@ public:
   virtual BOOL check_assignment(DomainInt* v, int v_size) = 0;
 
   virtual ~AbstractConstraint()
-  { if(!disjunct) delete[] trigs_ptr; } //Only non-disjuncts have their own memory
+  { 
+    if(!disjunct) delete[] trigs_ptr; //Only non-disjuncts have their own memory
+    delete singleton_vars;
+  } 
 
   virtual void setup_dynamic_triggers(DynamicTrigger* ptr)
     { trigs_ptr = ptr; }

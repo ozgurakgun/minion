@@ -24,7 +24,7 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include <limits>
+#include <limits.h>
 
 #ifndef WATCH_LESS
 #define WATCH_LESS
