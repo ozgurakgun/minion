@@ -226,7 +226,7 @@ struct WatchLessConstraint : public AbstractConstraint
   }
 
   virtual void print(std::ostream& o) const
-  { o << "watchless(" << getVars(stateObj).getName(var1.getVar()) << "," << var2 << ")"; }
+  { o << "watchless(" << var1 << "," << var2 << ")"; }
 
   virtual AbstractConstraint* copy() const
   { return new WatchLessConstraint<Var1,Var2>(stateObj, var1, var2); }
