@@ -27,6 +27,15 @@ For Licence Information see file LICENSE.txt
 #ifndef WATCH_LIT_CON
 #define WATCH_LIT_CON
 
+class WLitCompData : public ConCompData
+{
+public:
+  Var var;
+  DomainInt val;
+  
+  WLitCompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
+};
+
 // Checks if a variable is equal to a value.
 template<typename Var>
   struct WatchLiteralConstraint : public AbstractConstraint
@@ -40,7 +49,7 @@ template<typename Var>
 
   template<typename T>
   WatchLiteralConstraint(StateObj* _stateObj, const Var& _var, const T& _val) :
-    AbstractConstraint(_stateObj), var(_var), val(_val) {}
+  AbstractConstraint(_stateObj, 0), var(_var), val(_val) {}
 
   int dynamic_trigger_count()
   { return 0; }
@@ -103,10 +112,28 @@ template<typename Var>
 
   virtual bool equal(AbstractConstraint* other) const
   { 
-    WatchLiteralConstraint* other_wlc = dynamic_cast<WatchLiteralConstraint*>(other);
-    return other_wlc && var.getBaseVar() == other_wlc->var.getBaseVar() && 
-      var.getBaseVal(val) == other_wlc->var.getBaseVal(other_wlc->val);
+    if(guid != other->guid) return false;
+    WLitCompData* other_data = static_cast<WLitCompData*>(other->getConCompData());
+    D_ASSERT(dynamic_cast<WLitCompData*>(other_data));
+    bool retVal = val == other_data->val && var.getBaseVar() == other_data->var;
+    delete other_data;
+    return retVal;
   }
+
+  virtual bool less(AbstractConstraint* other) const
+  { 
+    if(guid < other->guid) return true;
+    if(other->guid < guid) return false;
+    WLitCompData* other_data = static_cast<WLitCompData*>(other->getConCompData());
+    D_ASSERT(dynamic_cast<WLitCompData*>(other_data));
+    bool retVal = val < other_data->val 
+      || (val == other_data->val && var.getBaseVar() < other_data->var);
+    delete other_data;
+    return retVal;
+  }
+
+  virtual WLitCompData* getConCompData() const
+  { return new WLitCompData(var.getBaseVar(), val); }
 };
 
 template<typename VarArray1>

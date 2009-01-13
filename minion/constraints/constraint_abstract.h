@@ -55,6 +55,14 @@ class DynamicTrigger;
 struct AbstractTriggerCreator;
 typedef vector<shared_ptr<AbstractTriggerCreator> > triggerCollection;
 
+//a container for data used to compare constraints
+//used to provide a common basis for comparison between the same class
+//with different template parameters
+class ConCompData {
+ public:
+  virtual ~ConCompData() {} //not needed, just to make the class polymorphic
+}; 
+
 class ParentConstraint;
 
 /// Base type from which all constraints are derived.
@@ -78,6 +86,8 @@ public:
   Dynamic_OR* parent; //disjunction it's in, if any
 
   BOOL full_propagate_done;
+
+  char guid; //unique ID number for each constraint
 
   /// Returns a point to the first dynamic trigger of the constraint.
   DynamicTrigger* dynamic_trigger_start()
@@ -158,6 +168,14 @@ public:
     wdeg(1),
 #endif
     disjunct(false), full_propagate_done(false)
+    {}
+
+  AbstractConstraint(StateObj* _stateObj, char _guid) :
+    singleton_vars(NULL), stateObj(_stateObj), 
+#ifdef WDEG
+    wdeg(1),
+#endif
+    disjunct(false), full_propagate_done(false), guid(_guid)
     {}
 
   /// Method to get constraint name for debugging.
@@ -270,6 +288,12 @@ public:
 
   virtual bool equal(AbstractConstraint* other) const
   { D_ASSERT(false); return false; }
+
+  virtual bool less(AbstractConstraint* other) const
+  { D_ASSERT(false); return false; }
+
+  virtual ConCompData* getConCompData() const
+  { D_ASSERT(false); return new ConCompData(); }
 };
 
 /// Constraint from which other constraints can be inherited. Extends dynamicconstraint to allow children to be dynamic.
@@ -326,6 +350,22 @@ public:
 
   ParentConstraint(StateObj* _stateObj, const vector<AbstractConstraint*> _children = vector<AbstractConstraint*>()) : 
   AbstractConstraint(_stateObj), child_constraints(_children)
+  {
+    int var_count = 0;
+    for(int i = 0; i < child_constraints.size(); ++i)
+    {
+      start_of_constraint.push_back(var_count);
+      int con_size = child_constraints[i]->get_vars_singleton()->size();
+      for(int j = 0; j < con_size; ++j)
+      {
+        variable_to_constraint.push_back(i);
+      }
+      var_count += con_size;
+    }
+  }
+
+  ParentConstraint(StateObj* _stateObj, char _guid, const vector<AbstractConstraint*> _children = vector<AbstractConstraint*>()) : 
+  AbstractConstraint(_stateObj, _guid), child_constraints(_children)
   {
     int var_count = 0;
     for(int i = 0; i < child_constraints.size(); ++i)

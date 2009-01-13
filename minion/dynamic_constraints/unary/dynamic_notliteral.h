@@ -27,6 +27,15 @@ For Licence Information see file LICENSE.txt
 #ifndef WATCH_NOT_LIT_CON
 #define WATCH_NOT_LIT_CON
 
+class WNotLitCompData : public ConCompData
+{
+public:
+  Var var;
+  DomainInt val;
+  
+  WNotLitCompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
+};
+
 // Checks if a variable is equal to a value.
 template<typename Var>
   struct WatchNotLiteralConstraint : public AbstractConstraint
@@ -39,7 +48,7 @@ template<typename Var>
 
   template<typename T>
   WatchNotLiteralConstraint(StateObj* _stateObj, const Var& _var, const T& _val) :
-    AbstractConstraint(_stateObj), var(_var), val(_val) {}
+  AbstractConstraint(_stateObj, 1), var(_var), val(_val) {}
 
   int dynamic_trigger_count()
   { return 0; }
@@ -109,10 +118,28 @@ template<typename Var>
 
   virtual bool equal(AbstractConstraint* other) const
   { 
-    WatchNotLiteralConstraint* other_wnlc = dynamic_cast<WatchNotLiteralConstraint*>(other);
-    return other_wnlc && var.getBaseVar() == other_wnlc->var.getBaseVar() && 
-      var.getBaseVal(val) == other_wnlc->var.getBaseVal(other_wnlc->val);
+    if(guid != other->guid) return false;
+    WNotLitCompData* other_data = static_cast<WNotLitCompData*>(other->getConCompData());
+    D_ASSERT(dynamic_cast<WNotLitCompData*>(other_data));
+    bool retVal = val == other_data->val && var.getBaseVar() == other_data->var;
+    delete other_data;
+    return retVal;
   }
+
+  virtual bool less(AbstractConstraint* other) const
+  { 
+    if(guid < other->guid) return true;
+    if(other->guid < guid) return false;
+    WNotLitCompData* other_data = static_cast<WNotLitCompData*>(other->getConCompData());
+    D_ASSERT(dynamic_cast<WNotLitCompData*>(other_data));
+    bool retVal = val < other_data->val 
+      || (val == other_data->val && var.getBaseVar() < other_data->var);
+    delete other_data;
+    return retVal;
+  }
+
+  virtual WNotLitCompData* getConCompData() const
+  { return new WNotLitCompData(var.getBaseVar(), val); }
 };
 
 struct WatchNotLiteralBoolConstraint : public AbstractConstraint
