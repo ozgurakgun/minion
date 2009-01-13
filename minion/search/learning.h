@@ -4,6 +4,8 @@
 
 #include "../system/linked_ptr.h"
 
+#include "../CSPSpec.h"
+
 #include <tr1/unordered_set>
 using namespace std::tr1;
 
@@ -17,17 +19,26 @@ class StateObj;
 
 typedef shared_ptr<VirtCon> VirtConPtr;
 
+class VCCompData {
+public:
+  virtual ~VCCompData() {} //needed to make class polymorphic
+};
+
 class VirtCon {
  public:
+  size_t guid;
+  VirtCon(size_t _guid) : guid(_guid) {}
   virtual vector<VirtConPtr> whyT() const = 0;
   virtual AbstractConstraint* getNeg() const = 0;
   virtual pair<unsigned,unsigned> getDepth() const = 0;
   friend bool operator==(const VirtConPtr a, const VirtConPtr b) { return a->equals(b.get()); }
   virtual bool equals(VirtCon* other) const = 0;
+  virtual bool less(VirtCon* other) const = 0;
   friend std::ostream& operator<<(std::ostream& o, const VirtCon& vc) { if(&vc) vc.print(o); else o << "null"; return o; }
   virtual void print(std::ostream& o) const = 0;
   virtual size_t hash() const = 0;
   virtual bool isDecision() const { return false; }
+  virtual VCCompData* getVCCompData() const { return NULL; }
   virtual ~VirtCon() {}
 };
 
@@ -65,87 +76,125 @@ class VirtCon {
 /*   virtual size_t hash() const; */
 /* };   */
 
+class LCCompData : public VCCompData {
+public:
+  Var var;
+  DomainInt constant;
+
+  LCCompData(Var _var, DomainInt _constant) : var(_var), constant(_constant) {}
+};
+
 template<typename VarRef>
 class LessConstant : public VirtCon { //var < constant
-  static const size_t guid = 2000;
   StateObj* stateObj;
   VarRef var;
   DomainInt constant;
 
 public:
-  LessConstant(StateObj* _stateObj, VarRef _var, DomainInt _constant) : stateObj(_stateObj), var(_var), constant(_constant) {}
+ LessConstant(StateObj* _stateObj, VarRef _var, DomainInt _constant) : VirtCon(2000), stateObj(_stateObj), var(_var), constant(_constant) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
+  virtual LCCompData* getVCCompData() const;
+};
+
+class GCCompData : public VCCompData {
+public:
+  Var var;
+  DomainInt constant;
+
+  GCCompData(Var _var, DomainInt _constant) : var(_var), constant(_constant) {}
 };
 
 template<typename VarRef>
 class GreaterConstant : public VirtCon { //var > constant ie constant < var
-  static const size_t guid = 3000;
   StateObj* stateObj;
   VarRef var;
   DomainInt constant;
 
 public:
-  GreaterConstant(StateObj* _stateObj, VarRef _var, DomainInt _constant) : stateObj(_stateObj), var(_var), constant(_constant) {}
+  GreaterConstant(StateObj* _stateObj, VarRef _var, DomainInt _constant) : VirtCon(3000), stateObj(_stateObj), var(_var), constant(_constant) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
-};  
+  virtual GCCompData* getVCCompData() const;
+};
+
+class WPLCompData : public VCCompData {
+public:
+  Var var1;
+  Var var2;
+  DomainInt val;
+
+  WPLCompData(Var _var1, Var _var2, DomainInt _val) : var1(_var1), var2(_var2), val(_val) {}
+};
 
 template<typename VarRef1, typename VarRef2> //class prototype
 class WatchLessConstraint;
 
 template<typename VarRef1, typename VarRef2>
 class WatchlessPrunLeft : public VirtCon { //var1 < var2 has pruned val from var1
-  static const size_t guid = 4000;
   WatchLessConstraint<VarRef1, VarRef2>* con;
   DomainInt val;
 
 public:
   WatchlessPrunLeft(WatchLessConstraint<VarRef1, VarRef2>* _con, DomainInt _val) :
-    con(_con), val(_val) {}
+    VirtCon(4000), con(_con), val(_val) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
+  virtual WPLCompData* getVCCompData() const;
+};
+
+class WPRCompData : public VCCompData {
+public:
+  Var var1;
+  Var var2;
+  DomainInt val;
+
+  WPRCompData(Var _var1, Var _var2, DomainInt _val) : var1(_var1), var2(_var2), val(_val) {}
 };
 
 template<typename VarRef1, typename VarRef2>
 class WatchlessPrunRight : public VirtCon { //var1 < var2 has pruned val from var2
-  static const size_t guid = 5000;
   WatchLessConstraint<VarRef1, VarRef2>* con;
   DomainInt val;
 
 public:
   WatchlessPrunRight(WatchLessConstraint<VarRef1, VarRef2>* _con, DomainInt _val) :
-    con(_con), val(_val) {}
+     VirtCon(5000), con(_con), val(_val) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
+  virtual WPRCompData* getVCCompData() const;
 };
 
 class NegOfPostedCon : public VirtCon {
-  static const size_t guid = 6000;
   AbstractConstraint* con;
  
  public:
-  NegOfPostedCon(AbstractConstraint* _con) : con(_con) {}
+  NegOfPostedCon(AbstractConstraint* _con) : VirtCon(6000), con(_con) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
 };
@@ -153,135 +202,181 @@ class NegOfPostedCon : public VirtCon {
 class Dynamic_OR;
 
 class DisjunctionPrun : public VirtCon {
-  static const size_t guid = 7000;
   AbstractConstraint* doer; //the constraint that did something
   VirtConPtr done;             //what they did
   Dynamic_OR* dj;           //the disjunction it was in
 
  public:
   DisjunctionPrun(AbstractConstraint* _doer, VirtConPtr _done, Dynamic_OR* _dj) : 
-    doer(_doer), done(_done), dj(_dj) {}
+    VirtCon(7000), doer(_doer), done(_done), dj(_dj) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
 };
 
+class BOAPCompData : public VCCompData {
+public:
+  Var var;
+  DomainInt pruned;
+  DomainInt assigned;
+
+  BOAPCompData(Var _var, DomainInt _pruned, DomainInt _assigned) : var(_var), pruned(_pruned), assigned(_assigned) {}
+};
+
 template<typename VarRef>
 class BecauseOfAssignmentPrun : public VirtCon {
-  static const size_t guid = 8000;
   StateObj* stateObj;
   VarRef var;
   DomainInt pruned;
   DomainInt assigned;
  public:
   BecauseOfAssignmentPrun(StateObj* _stateObj, VarRef _var, DomainInt _pruned, DomainInt _assigned) : 
-    stateObj(_stateObj), var(_var), pruned(_pruned), assigned(_assigned) {}
+    VirtCon(8000), stateObj(_stateObj), var(_var), pruned(_pruned), assigned(_assigned) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
+  virtual BOAPCompData* getVCCompData() const;
 };
 
 class MHAV : public VirtCon {
-  static const size_t guid = 9000;
   vector<VirtConPtr>& expls; //reference to the explns in the variable type
 
  public:
-  MHAV(vector<VirtConPtr>& _expls) : expls(_expls) {}
+  MHAV(vector<VirtConPtr>& _expls) : VirtCon(9000), expls(_expls) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const; //do nothing
   virtual pair<unsigned,unsigned> getDepth() const; //do nothing
   virtual bool equals(VirtCon* other) const; //do nothing
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
 };
 
 class AssgOrPrun : public VirtCon {
-  static const size_t guid = 10000;
   VirtConPtr assg;
   VirtConPtr prun;
 
  public:
-  AssgOrPrun(VirtConPtr _assg, VirtConPtr _prun) : assg(_assg), prun(_prun) {}
+  AssgOrPrun(VirtConPtr _assg, VirtConPtr _prun) : VirtCon(10000), assg(_assg), prun(_prun) {}
   virtual vector<VirtConPtr> whyT() const; //just return the above in a vector
   virtual AbstractConstraint* getNeg() const; //do nothing
   virtual pair<unsigned,unsigned> getDepth() const; //do nothing
   virtual bool equals(VirtCon* other) const; //do nothing
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
 };
 
+class BOPACompData : public VCCompData {
+public:
+  Var var;
+  DomainInt assigned;
+
+  BOPACompData(Var _var, DomainInt _assigned) : var(_var), assigned(_assigned) {}
+};
+
 template<typename VarRef>
 class BecauseOfPruningsAssignment : public VirtCon {
-  static const size_t guid = 11000;
   StateObj* stateObj;
   VarRef var;
   DomainInt assigned;
  public:
-  BecauseOfPruningsAssignment(StateObj* stateObj, VarRef _var, DomainInt _assigned) : var(_var), assigned(_assigned) {}
+  BecauseOfPruningsAssignment(StateObj* stateObj, VarRef _var, DomainInt _assigned) : VirtCon(11000), var(_var), assigned(_assigned) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
+  virtual BOPACompData* getVCCompData() const;
+};
+
+class DACompData : public VCCompData {
+public:
+  Var var;
+  DomainInt val;
+
+  DACompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
 };
 
 template<typename VarRef>
 class DecisionAssg : public VirtCon { //decision did assignment
-  static const size_t guid = 12000;
   StateObj* stateObj;
   VarRef var;
   DomainInt val;
 
 public:
-  DecisionAssg(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {}
+  DecisionAssg(StateObj* _stateObj, VarRef _var, DomainInt _val) : VirtCon(0), stateObj(_stateObj), var(_var), val(_val) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual bool isDecision() const { return true; }
   virtual size_t hash() const;
+  virtual DACompData* getVCCompData() const;
+};
+
+class NRPCompData : public VCCompData {
+public:
+  Var var;
+  DomainInt val;
+
+  NRPCompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
 };
 
 template<typename VarRef>
 class NoReasonPrun : public VirtCon {
-  static const size_t guid = 13000;
   StateObj* stateObj;
   VarRef var;
   DomainInt val;
 
 public:
-  NoReasonPrun(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {}
+  NoReasonPrun(StateObj* _stateObj, VarRef _var, DomainInt _val) : VirtCon(12000), stateObj(_stateObj), var(_var), val(_val) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
+  virtual NRPCompData* getVCCompData() const;
+};
+
+class NRACompData : public VCCompData {
+public:
+  Var var;
+  DomainInt val;
+
+  NRACompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
 };
 
 template<typename VarRef>
 class NoReasonAssg : public VirtCon {
-  static const size_t guid = 14000;
   StateObj* stateObj;
   VarRef var;
   DomainInt val;
 
 public:
-  NoReasonAssg(StateObj* _stateObj, VarRef _var, DomainInt _val) : stateObj(_stateObj), var(_var), val(_val) {}
+  NoReasonAssg(StateObj* _stateObj, VarRef _var, DomainInt _val) : VirtCon(13000), stateObj(_stateObj), var(_var), val(_val) {}
   virtual vector<VirtConPtr> whyT() const;
   virtual AbstractConstraint* getNeg() const;
   virtual pair<unsigned,unsigned> getDepth() const;
   virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
+  virtual NRACompData* getVCCompData() const;
 };
 
 inline void print_recursive(vector<int> count_seq, vector<VirtConPtr> why) {

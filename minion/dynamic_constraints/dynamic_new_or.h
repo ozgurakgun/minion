@@ -60,7 +60,7 @@ struct Dynamic_OR : public ParentConstraint
   int watched_constraint[2];
 
   Dynamic_OR(StateObj* _stateObj, vector<AbstractConstraint*> _con) : 
-    ParentConstraint(_stateObj, _con), full_propagate_called(_stateObj, false), constraint_locked(false),
+    ParentConstraint(_stateObj, 3, _con), full_propagate_called(_stateObj, false), constraint_locked(false),
     assign_size(-1), propagated_constraint(-1)
     {
       size_t max_size = 0;
@@ -242,6 +242,8 @@ struct Dynamic_OR : public ParentConstraint
 
   virtual void full_propagate()
   {
+    full_propagate_called = false; //full prop has not been called on any child!
+
     P("Full Propagate")
     DynamicTrigger* dt = dynamic_trigger_start();
 
@@ -252,7 +254,7 @@ struct Dynamic_OR : public ParentConstraint
     int loop = 0;
 
     bool found_watch = false;
-    
+
     while(loop < child_constraints.size() && !found_watch)
     {
       bool flag;
@@ -322,10 +324,30 @@ struct Dynamic_OR : public ParentConstraint
   virtual void print(std::ostream& o) const
   { 
     o << "WatchedOr(" << *child_constraints[0];
-    for(size_t i = 0; i < child_constraints.size(); i++) {
+    for(size_t i = 1; i < child_constraints.size(); i++) {
       cout << "," << *child_constraints[i];
     }
     o << ")";
+  }
+
+  virtual bool less(AbstractConstraint* other) const
+  {
+    if(guid < other->guid) return true;
+    if(other->guid < guid) return false;
+    Dynamic_OR* other_do = dynamic_cast<Dynamic_OR*>(other);
+    D_ASSERT(other_do);
+    //order by disjunction size first
+    if(child_constraints.size() < other_do->child_constraints.size()) 
+      return true;
+    if(child_constraints.size() > other_do->child_constraints.size())
+      return false;
+    //then by the disjuncts in order
+    for(size_t i = 0; i < child_constraints.size(); i++)
+      if(child_constraints[i]->less(other_do->child_constraints[i]))
+	return true;
+      else if(other_do->child_constraints[i]->less(child_constraints[i]))
+	return false;
+    return false;
   }
 };
 

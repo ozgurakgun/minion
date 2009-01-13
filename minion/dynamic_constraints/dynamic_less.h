@@ -29,6 +29,15 @@
 #ifndef WATCH_LESS
 #define WATCH_LESS
 
+class WLCCompData : public ConCompData
+{
+public:
+  Var var1;
+  Var var2;
+  
+  WLCCompData(Var _var1, Var _var2) : var1(_var1), var2(_var2) {}
+};
+
 // var1 < var2
 template<typename Var1, typename Var2>
 struct WatchLessConstraint : public AbstractConstraint
@@ -40,7 +49,7 @@ struct WatchLessConstraint : public AbstractConstraint
   Var2 var2;
 
   WatchLessConstraint(StateObj* _stateObj, const Var1& _var1, const Var2& _var2) :
-	AbstractConstraint(_stateObj), var1(_var1), var2(_var2)
+  AbstractConstraint(_stateObj, 2), var1(_var1), var2(_var2)
   { }
   
   int dynamic_trigger_count()
@@ -236,10 +245,29 @@ struct WatchLessConstraint : public AbstractConstraint
 
   virtual bool equal(AbstractConstraint* other) const
   { 
-    WatchLessConstraint* other_wlc = dynamic_cast<WatchLessConstraint*>(other);
-    return other_wlc && var1.getBaseVar() == other_wlc->var1.getBaseVar() &&
-      var2.getBaseVar() == other_wlc->var2.getBaseVar();
+    if(guid != other->guid) return false;
+    WLCCompData* other_data = static_cast<WLCCompData*>(other->getConCompData());
+    D_ASSERT(dynamic_cast<WLCCompData*>(other_data));
+    bool retVal = var1.getBaseVar() == other_data->var1 && var2.getBaseVar() == other_data->var2;
+    delete other_data;
+    return retVal;
   }
+
+  virtual bool less(AbstractConstraint* other) const
+  { 
+    if(guid < other->guid) return true;
+    if(other->guid < guid) return false;
+    WLCCompData* other_data = static_cast<WLCCompData*>(other->getConCompData());
+    D_ASSERT(dynamic_cast<WLCCompData*>(other_data));
+    bool retVal = var1.getBaseVar() < other_data->var1 
+      || (var1.getBaseVar() == other_data->var1 &&
+	  var2.getBaseVar() < other_data->var2);
+    delete other_data;
+    return retVal;
+  }
+
+  virtual WLCCompData* getConCompData() const
+  { return new WLCCompData(var1.getBaseVar(), var2.getBaseVar()); }
 };
 
 template<typename VarArray1, typename VarArray2>

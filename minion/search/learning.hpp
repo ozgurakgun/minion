@@ -20,24 +20,14 @@ struct VirtConPtrHash : unary_function<VirtCon, size_t>
 
 typedef pair<pair<unsigned,unsigned>,VirtConPtr> depth_VirtConPtr;
 
-//NB. this comparison is carefully reasoned! The first disjunct is to make the
-//first() in the set the deepest depth. See above for definition of != for
-//VirtConPtr.
+inline bool operator<(const depth_VirtConPtr& l, const depth_VirtConPtr& r)
+{ return l.first < r.first || (l.first == r.first && l.second->less(r.second.get())); }
+
+//sort descending
 struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
 {
   bool operator()(const depth_VirtConPtr& left, const depth_VirtConPtr& right) const
-  { 
-    D_ASSERT(!(left.first.first == right.first.first && //not allowed multiple decisions at same depth
-	       left.second->isDecision() && 
-	       right.second->isDecision() &&
-	       left.second != right.second));
-    return left.first > right.first  //order by depth first
-      //then arbitrary order after that...
-      || (left.first == right.first && !left.second->isDecision() && !right.second->isDecision() && 
-	  left.second != right.second && left.second.get() < right.second.get())
-      //except that decisions always come last
-      || (left.first == right.first && right.second->isDecision() && left.second != right.second);
-  }
+  { return right < left; }
 };
 
 //Distribute things into curr_d and earlier. Do nothing and return false iff
@@ -132,15 +122,16 @@ namespace Controller {
 	retVal = max(retVal, dist_res.second);
       }
     }
+    NogoodConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
     //try firstUIP
     world_pop(stateObj);
     maybe_print_search_action(stateObj, "bt");
     firstUIP->setup();
     unsigned seq_no_bef = getMemory(stateObj).backTrack().seq_no;
-    cout << "start trying firstUIP" << endl;
+    //cout << "start trying firstUIP" << endl;
     firstUIP->full_propagate();
     prop(stateObj, v);
-    cout << "end trying firstUIP" << endl;
+    //cout << "end trying firstUIP" << endl;
     if(seq_no_bef < getMemory(stateObj).backTrack().seq_no) { //did propagation occur? if so add
       //cout << "adding firstUIP" << endl;
       getState(stateObj).addConstraintMidsearch(firstUIP);
@@ -148,7 +139,6 @@ namespace Controller {
       firstUIP->cleanup(); //remove effects of propagating it before
       D_ASSERT(getQueue(stateObj).isQueuesEmpty());
       //cout << "adding lastUIP" << endl;
-      NogoodConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
       getState(stateObj).addConstraintMidsearch(lastUIP);
       //cout << "start trying lastUIP" << endl;
       lastUIP->setup();
@@ -250,8 +240,24 @@ inline pair<unsigned,unsigned> LessConstant<VarRef>::getDepth() const //return t
 template<typename VarRef>
 inline bool LessConstant<VarRef>::equals(VirtCon* other) const
 {
-  LessConstant<VarRef>* other_lc = dynamic_cast<LessConstant<VarRef>*>(other);
-  return other_lc && constant == other_lc->constant && var.getBaseVar() == other_lc->var.getBaseVar();
+  if(guid != other->guid) return false;
+  LCCompData* other_data = reinterpret_cast<LCCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<LCCompData*>(other_data));
+  bool retVal = constant == other_data->constant && var.getBaseVar() == other_data->var;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef>
+inline bool LessConstant<VarRef>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  LCCompData* other_data = reinterpret_cast<LCCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<LCCompData*>(other_data));
+  bool retVal = constant < other_data->constant || (constant == other_data->constant && var.getBaseVar() < other_data->var);
+  delete other_data;
+  return retVal;
 }
 
 template<typename VarRef>
@@ -261,6 +267,10 @@ inline void LessConstant<VarRef>::print(std::ostream& o) const
 template<typename VarRef>
 inline size_t LessConstant<VarRef>::hash() const
 { return (guid + 13 * constant + 127 * var.getBaseVar().pos()) % 16777619; }
+
+template<typename VarRef>
+inline LCCompData* LessConstant<VarRef>::getVCCompData() const
+{ return new LCCompData(var.getBaseVar(), constant); }
 
 template<typename VarRef>
 inline vector<VirtConPtr> GreaterConstant<VarRef>::whyT() const
@@ -293,8 +303,24 @@ inline pair<unsigned,unsigned> GreaterConstant<VarRef>::getDepth() const //retur
 template<typename VarRef>
 inline bool GreaterConstant<VarRef>::equals(VirtCon* other) const
 {
-  GreaterConstant<VarRef>* other_gc = dynamic_cast<GreaterConstant<VarRef>*>(other);
-  return other_gc && constant == other_gc->constant && var.getBaseVar() == other_gc->var.getBaseVar();
+  if(guid != other->guid) return false;
+  GCCompData* other_data = reinterpret_cast<GCCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<GCCompData*>(other_data));
+  bool retVal = constant == other_data->constant && var.getBaseVar() == other_data->var;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef>
+inline bool GreaterConstant<VarRef>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  GCCompData* other_data = reinterpret_cast<GCCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<GCCompData*>(other_data));
+  bool retVal = constant < other_data->constant || (constant == other_data->constant && var.getBaseVar() < other_data->var);
+  delete other_data;
+  return retVal;
 }
 
 template<typename VarRef>
@@ -304,6 +330,10 @@ inline void GreaterConstant<VarRef>::print(std::ostream& o) const
 template<typename VarRef>
 inline size_t GreaterConstant<VarRef>::hash() const
 { return (guid + 13 * constant + 41 * var.getBaseVar().pos()) % 16777619; }
+
+template<typename VarRef>
+inline GCCompData* GreaterConstant<VarRef>::getVCCompData() const
+{ return new GCCompData(var.getBaseVar(), constant); }
 
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunLeft<VarRef1,VarRef2>::whyT() const //return var2 <= val
@@ -317,12 +347,28 @@ template<typename VarRef1, typename VarRef2>
 inline pair<unsigned,unsigned> WatchlessPrunLeft<VarRef1,VarRef2>::getDepth() const
 { return con->var1.getDepth(false, val); }
 
-//doesn't capture all equalities, e.g., different watchless with same vars
 template<typename VarRef1, typename VarRef2>
 inline bool WatchlessPrunLeft<VarRef1,VarRef2>::equals(VirtCon* other) const
 { 
-  WatchlessPrunLeft<VarRef1, VarRef2>* other_wlc = dynamic_cast<WatchlessPrunLeft<VarRef1, VarRef2>*>(other);
-  return other_wlc && val == other_wlc->val && con == other_wlc->con;
+  if(guid != other->guid) return false;
+  WPLCompData* other_data = reinterpret_cast<WPLCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<WPLCompData*>(other_data));
+  bool retVal = val == other_data->val && con->var1.getBaseVar() == other_data->var1
+    && con->var2.getBaseVar() == other_data->var2;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef1, typename VarRef2>
+inline bool WatchlessPrunLeft<VarRef1,VarRef2>::less(VirtCon* other) const
+{ 
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  WPLCompData* other_data = reinterpret_cast<WPLCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<WPLCompData*>(other_data));
+  return val < other_data->val 
+    || (val == other_data->val && con->var1.getBaseVar() < other_data->var1)
+    || (val == other_data->val && con->var1.getBaseVar() == other_data->var1 && con->var2.getBaseVar() < other_data->var2);
 }
 
 template<typename VarRef1, typename VarRef2>
@@ -331,7 +377,11 @@ inline void WatchlessPrunLeft<VarRef1,VarRef2>::print(std::ostream& o) const
 
 template<typename VarRef1, typename VarRef2>
 inline size_t WatchlessPrunLeft<VarRef1,VarRef2>::hash() const
-{ return (guid + val + (size_t)con) % 16777619; }
+{ return (guid + val + con->hash()) % 16777619; }
+
+template<typename VarRef1, typename VarRef2>
+inline WPLCompData* WatchlessPrunLeft<VarRef1,VarRef2>::getVCCompData() const
+{ return new WPLCompData(con->var1.getBaseVar(), con->var2.getBaseVar(), val); }
 
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunRight<VarRef1,VarRef2>::whyT() const //return var1 >= val 
@@ -345,12 +395,28 @@ template<typename VarRef1, typename VarRef2>
 inline pair<unsigned,unsigned> WatchlessPrunRight<VarRef1,VarRef2>::getDepth() const
 { return con->var2.getDepth(false, val); }
 
-//doesn't capture all equalities, e.g., different watchless with same vars
 template<typename VarRef1, typename VarRef2>
 inline bool WatchlessPrunRight<VarRef1,VarRef2>::equals(VirtCon* other) const
-{
-  WatchlessPrunRight<VarRef1, VarRef2>* other_wlc = dynamic_cast<WatchlessPrunRight<VarRef1, VarRef2>*>(other);
-  return other_wlc && val == other_wlc->val && con == other_wlc->con;
+{ 
+  if(guid != other->guid) return false;
+  WPRCompData* other_data = reinterpret_cast<WPRCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<WPRCompData*>(other_data));
+  bool retVal = val == other_data->val && con->var1.getBaseVar() == other_data->var1
+    && con->var2.getBaseVar() == other_data->var2;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef1, typename VarRef2>
+inline bool WatchlessPrunRight<VarRef1,VarRef2>::less(VirtCon* other) const
+{ 
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  WPRCompData* other_data = reinterpret_cast<WPRCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<WPRCompData*>(other_data));
+  return val < other_data->val 
+    || (val == other_data->val && con->var1.getBaseVar() < other_data->var1)
+    || (val == other_data->val && con->var1.getBaseVar() == other_data->var1 && con->var2.getBaseVar() < other_data->var2);
 }
 
 template<typename VarRef1, typename VarRef2>
@@ -359,7 +425,11 @@ inline void WatchlessPrunRight<VarRef1,VarRef2>::print(std::ostream& o) const
 
 template<typename VarRef1, typename VarRef2>
 inline size_t WatchlessPrunRight<VarRef1,VarRef2>::hash() const
-{ return (guid + val + (size_t)con) % 16777619; }
+{ return (guid + val + con->hash()) % 16777619; }
+
+template<typename VarRef1, typename VarRef2>
+inline WPRCompData* WatchlessPrunRight<VarRef1,VarRef2>::getVCCompData() const
+{ return new WPRCompData(con->var1.getBaseVar(), con->var2.getBaseVar(), val); }
 
 inline vector<VirtConPtr> NegOfPostedCon::whyT() const
 { return con->whyF(); }
@@ -374,6 +444,15 @@ inline bool NegOfPostedCon::equals(VirtCon* other) const
 { 
   NegOfPostedCon* other_nopc = dynamic_cast<NegOfPostedCon*>(other);
   return other_nopc && con->equal(other_nopc->con);
+}
+
+inline bool NegOfPostedCon::less(VirtCon* other) const
+{ 
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  NegOfPostedCon* other_nopc = dynamic_cast<NegOfPostedCon*>(other);
+  D_ASSERT(other_nopc);
+  return con->less(other_nopc->con);
 }
 
 inline void NegOfPostedCon::print(std::ostream& o) const
@@ -402,17 +481,31 @@ inline AbstractConstraint* DisjunctionPrun::getNeg() const
 inline pair<unsigned,unsigned> DisjunctionPrun::getDepth() const
 { return done->getDepth(); }
 
+//doesn't capture all possible equalities, e.g. an identical pruning by an
+//identical but distinct disjunction
 inline bool DisjunctionPrun::equals(VirtCon* other) const
 {
   DisjunctionPrun* other_dp = dynamic_cast<DisjunctionPrun*>(other);
   return other_dp && dj == other_dp->dj && doer == other_dp->doer && done->equals(other_dp->done.get());
 }
+ 
+inline bool DisjunctionPrun::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  DisjunctionPrun* other_dp = dynamic_cast<DisjunctionPrun*>(other);
+  D_ASSERT(other_dp);
+  return done->less(other_dp->done.get())
+    || (done->equals(other_dp->done.get()) && doer->less(other_dp->doer))
+    || (done->equals(other_dp->done.get()) && doer->equal(other_dp->doer) && dj->less(other_dp->dj));
+}
 
 inline void DisjunctionPrun::print(std::ostream& o) const
 { o << "DisjunctionPrun(done=" << *done << ",doer=" << doer << ",dj=" << dj << ")"; }
 
+//TODO: might like to make the hash function include the disjunction as well as the disjunct
 inline size_t DisjunctionPrun::hash() const
-{ return (guid + (size_t)dj + (size_t)doer) % 16777619; }
+{ return (guid + doer->hash()) % 16777619; }
 
 template<typename VarRef>
 inline vector<VirtConPtr> BecauseOfAssignmentPrun<VarRef>::whyT() const
@@ -429,9 +522,27 @@ inline pair<unsigned,unsigned> BecauseOfAssignmentPrun<VarRef>::getDepth() const
 template<typename VarRef>
 inline bool BecauseOfAssignmentPrun<VarRef>::equals(VirtCon* other) const
 {
-  BecauseOfAssignmentPrun* other_boap = dynamic_cast<BecauseOfAssignmentPrun*>(other);
-  return other_boap && var.getBaseVar() == other_boap->var.getBaseVar() &&
-    var.getBaseVal(pruned) == other_boap->var.getBaseVal(other_boap->pruned);
+  if(guid != other->guid) return false;
+  BOAPCompData* other_data = reinterpret_cast<BOAPCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<BOAPCompData*>(other_data));
+  bool retVal = var.getBaseVar() == other_data->var &&
+    pruned == other_data->pruned && assigned == other_data->assigned;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef>
+inline bool BecauseOfAssignmentPrun<VarRef>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  BOAPCompData* other_data = reinterpret_cast<BOAPCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<BOAPCompData*>(other_data));
+  bool retVal = var.getBaseVar() < other_data->var
+    || (var.getBaseVar() == other_data->var && pruned < other_data->pruned)
+    || (var.getBaseVar() == other_data->var && pruned == other_data->pruned && assigned < other_data->assigned);
+  delete other_data;
+  return retVal;
 }
 
 template<typename VarRef>
@@ -441,6 +552,10 @@ inline void BecauseOfAssignmentPrun<VarRef>::print(std::ostream& o) const
 template<typename VarRef>
 inline size_t BecauseOfAssignmentPrun<VarRef>::hash() const
 { return (guid + 17 * var.getBaseVar().pos() + 141 * var.getBaseVal(pruned)) % 16777619; }
+
+template<typename VarRef>
+inline BOAPCompData* BecauseOfAssignmentPrun<VarRef>::getVCCompData() const
+{ return new BOAPCompData(var.getBaseVar(), pruned, assigned); }
 
 inline vector<VirtConPtr> MHAV::whyT() const
 { return expls; } //just return all the virtcons for the prunings to the variable
@@ -454,8 +569,15 @@ inline pair<unsigned,unsigned> MHAV::getDepth() const
 inline bool MHAV::equals(VirtCon*) const
 { D_ASSERT(false); return false; }
 
+inline bool MHAV::less(VirtCon*) const
+{ D_ASSERT(false); return false; }
+
 inline void MHAV::print(std::ostream& o) const
-{ o << "MHAV"; }
+{ 
+  o << "MHAV(" << *expls[0]; 
+  for(size_t i = 1; i < expls.size(); i++)
+    o << "," << *expls[i];
+}
 
 inline size_t MHAV::hash() const
 { D_ASSERT(false); return 0; }
@@ -477,6 +599,9 @@ inline pair<unsigned,unsigned> AssgOrPrun::getDepth() const
 { D_ASSERT(false); return make_pair(-1, -1); }
 
 inline bool AssgOrPrun::equals(VirtCon*) const
+{ D_ASSERT(false); return false; }
+
+inline bool AssgOrPrun::less(VirtCon*) const
 { D_ASSERT(false); return false; }
 
 inline void AssgOrPrun::print(std::ostream& o) const
@@ -516,9 +641,25 @@ inline pair<unsigned,unsigned> BecauseOfPruningsAssignment<VarRef>::getDepth() c
 template<typename VarRef>
 inline bool BecauseOfPruningsAssignment<VarRef>::equals(VirtCon* other) const
 {
-  BecauseOfPruningsAssignment<VarRef>* other_bopa = dynamic_cast<BecauseOfPruningsAssignment<VarRef>*>(other);
-  return other_bopa && var.getBaseVar() == other_bopa->var.getBaseVar() &&
-    var.getBaseVal(assigned) == other_bopa->var.getBaseVal(other_bopa->assigned);
+  if(guid != other->guid) return false;
+  BOPACompData* other_data = reinterpret_cast<BOPACompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<BOPACompData*>(other_data));
+  bool retVal = var.getBaseVar() == other_data->var && assigned == other_data->assigned;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef>
+inline bool BecauseOfPruningsAssignment<VarRef>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  BOPACompData* other_data = reinterpret_cast<BOPACompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<BOPACompData*>(other_data));
+  bool retVal = var.getBaseVar() < other_data->var
+    || (var.getBaseVar() == other_data->var && assigned < other_data->assigned);
+  delete other_data;
+  return retVal;
 }
 
 template<typename VarRef>
@@ -528,6 +669,10 @@ inline void BecauseOfPruningsAssignment<VarRef>::print(std::ostream& o) const
 template<typename VarRef>
 inline size_t BecauseOfPruningsAssignment<VarRef>::hash() const
 { return (guid + 13 * var.getBaseVar().pos() + 127 * var.getBaseVal(assigned)) % 16777619; }
+
+template<typename VarRef>
+inline BOPACompData* BecauseOfPruningsAssignment<VarRef>::getVCCompData() const
+{ return new BOPACompData(var.getBaseVar(), assigned); }
 
 template<typename VarRef>
 inline vector<VirtConPtr> DecisionAssg<VarRef>::whyT() const
@@ -547,8 +692,25 @@ inline pair<unsigned, unsigned> DecisionAssg<VarRef>::getDepth() const
 template<typename VarRef>
 inline bool DecisionAssg<VarRef>::equals(VirtCon* other) const
 {
-  DecisionAssg<VarRef>* other_da = dynamic_cast<DecisionAssg<VarRef>*>(other);
-  return other_da && val == other_da->val && var.getBaseVar() == other_da->var.getBaseVar();
+  if(guid != other->guid) return false;
+  DACompData* other_data = reinterpret_cast<DACompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<DACompData*>(other_data));
+  bool retVal = var.getBaseVar() == other_data->var && val == other_data->val;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef>
+inline bool DecisionAssg<VarRef>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  DACompData* other_data = reinterpret_cast<DACompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<DACompData*>(other_data));
+  bool retVal = var.getBaseVar() < other_data->var
+    || (var.getBaseVar() == other_data->var && val < other_data->val);
+  delete other_data;
+  return retVal;
 }
 
 template<typename VarRef>
@@ -558,6 +720,10 @@ inline void DecisionAssg<VarRef>::print(std::ostream& o) const
 template<typename VarRef>
 inline size_t DecisionAssg<VarRef>::hash() const
 { return (guid + 7 * val + 17 * var.getBaseVar().pos()) % 16777619; }
+
+template<typename VarRef>
+inline DACompData* DecisionAssg<VarRef>::getVCCompData() const
+{ return new DACompData(var.getBaseVar(), val); }
 
 template<typename VarRef>
 inline vector<VirtConPtr> NoReasonPrun<VarRef>::whyT() const
@@ -574,9 +740,25 @@ inline pair<unsigned, unsigned> NoReasonPrun<VarRef>::getDepth() const
 template<typename VarRef>
 inline bool NoReasonPrun<VarRef>::equals(VirtCon* other) const
 {
-  NoReasonPrun<VarRef>* other_nrp = dynamic_cast<NoReasonPrun<VarRef>*>(other);
-  return other_nrp && var.getBaseVal(val) == other_nrp->var.getBaseVal(other_nrp->val) && 
-    var.getBaseVar() == other_nrp->var.getBaseVar();
+  if(guid != other->guid) return false;
+  NRPCompData* other_data = reinterpret_cast<NRPCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<NRPCompData*>(other_data));
+  bool retVal = var.getBaseVar() == other_data->var && val == other_data->val;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef>
+inline bool NoReasonPrun<VarRef>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  NRPCompData* other_data = reinterpret_cast<NRPCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<NRPCompData*>(other_data));
+  bool retVal = var.getBaseVar() < other_data->var
+    || (var.getBaseVar() == other_data->var && val < other_data->val);
+  delete other_data;
+  return retVal;
 }
 
 template<typename VarRef>
@@ -586,6 +768,10 @@ inline void NoReasonPrun<VarRef>::print(std::ostream& o) const
 template<typename VarRef>
 inline size_t NoReasonPrun<VarRef>::hash() const
 { return (guid + 7 * val + 17 * var.getBaseVar().pos()) % 16777619; }
+
+template<typename VarRef>
+inline NRPCompData* NoReasonPrun<VarRef>::getVCCompData() const
+{ return new NRPCompData(var.getBaseVar(), val); }
 
 template<typename VarRef>
 inline vector<VirtConPtr> NoReasonAssg<VarRef>::whyT() const
@@ -602,9 +788,25 @@ inline pair<unsigned, unsigned> NoReasonAssg<VarRef>::getDepth() const
 template<typename VarRef>
 inline bool NoReasonAssg<VarRef>::equals(VirtCon* other) const
 {
-  NoReasonAssg<VarRef>* other_nra = dynamic_cast<NoReasonAssg<VarRef>*>(other);
-  return other_nra && var.getBaseVal(val) == other_nra->var.getBaseVal(other_nra->val) && 
-    var.getBaseVar() == other_nra->var.getBaseVar();
+  if(guid != other->guid) return false;
+  NRACompData* other_data = reinterpret_cast<NRACompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<NRACompData*>(other_data));
+  bool retVal = var.getBaseVar() == other_data->var && val == other_data->val;
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarRef>
+inline bool NoReasonAssg<VarRef>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  NRACompData* other_data = reinterpret_cast<NRACompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<NRACompData*>(other_data));
+  bool retVal = var.getBaseVar() < other_data->var
+    || (var.getBaseVar() == other_data->var && val < other_data->val);
+  delete other_data;
+  return retVal;
 }
 
 template<typename VarRef>
@@ -614,5 +816,9 @@ inline void NoReasonAssg<VarRef>::print(std::ostream& o) const
 template<typename VarRef>
 inline size_t NoReasonAssg<VarRef>::hash() const
 { return (guid + 7 * val + 17 * var.getBaseVar().pos()) % 16777619; }
+
+template<typename VarRef>
+inline NRACompData* NoReasonAssg<VarRef>::getVCCompData() const
+{ return new NRACompData(var.getBaseVar(), val); }
 
 #endif
