@@ -13,7 +13,7 @@ class NogoodConstraint : public Dynamic_OR
  public:
 
   //remove effects of this having been propagated
-  void cleanup()
+  virtual void cleanup()
   {
     DynamicTrigger* dt = dynamic_trigger_start();
     for(int i = 0; i < assign_size * 2; ++i)

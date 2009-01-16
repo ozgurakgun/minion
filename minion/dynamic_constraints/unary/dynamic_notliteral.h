@@ -140,6 +140,8 @@ template<typename Var>
 
   virtual WNotLitCompData* getConCompData() const
   { return new WNotLitCompData(var.getBaseVar(), val); }
+
+  virtual void cleanup() {} //no triggers => do nothing
 };
 
 struct WatchNotLiteralBoolConstraint : public AbstractConstraint
