@@ -294,6 +294,9 @@ public:
 
   virtual ConCompData* getConCompData() const
   { D_ASSERT(false); return new ConCompData(); }
+
+  virtual void cleanup()
+  { D_ASSERT(false); } //do nothing
 };
 
 /// Constraint from which other constraints can be inherited. Extends dynamicconstraint to allow children to be dynamic.

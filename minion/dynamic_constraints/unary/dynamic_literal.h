@@ -134,6 +134,8 @@ template<typename Var>
 
   virtual WLitCompData* getConCompData() const
   { return new WLitCompData(var.getBaseVar(), val); }
+
+  virtual void cleanup() {} //no triggers => do nothing
 };
 
 template<typename VarArray1>

@@ -35,6 +35,7 @@ struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
 inline pair<bool,int> distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d_VCP>& curr_d, 
 				 unordered_set<VirtConPtr,VirtConPtrHash>& earlier, const vector<VirtConPtr>& things)
 {
+  if(things.size() == 0) return make_pair(true, -1000); //can distribute nothing
   D_ASSERT(things.size() != 0);
   const size_t things_s = things.size();
   const pair<unsigned,unsigned> cd = make_pair(getMemory(stateObj).backTrack().current_depth(), 0);
@@ -64,11 +65,12 @@ inline pair<bool,int> distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d
   return make_pair(true,(int)retVal);
 }
 
-inline NogoodConstraint* makeCon(StateObj* stateObj,
+inline AbstractConstraint* makeCon(StateObj* stateObj,
 				 const unordered_set<VirtConPtr,VirtConPtrHash>& earlier,
 				 const set<depth_VirtConPtr,comp_d_VCP>& curr_d) {
   vector<VirtConPtr> earlier_vec;
   const size_t earlier_s = earlier.size();
+  if(earlier_s == 0) return curr_d.begin()->second->getNeg(); //unary disjunction special case
   earlier_vec.reserve(earlier_s + 1);
   for(unordered_set<VirtConPtr,VirtConPtrHash>::const_iterator curr = earlier.begin(); curr != earlier.end(); curr++)
     earlier_vec.push_back(*curr);
@@ -105,7 +107,7 @@ namespace Controller {
       curr_d.erase(curr_d.begin()); 
       retVal = max(retVal, distribute(stateObj, curr_d, earlier, deepest->whyT()).second);
     }
-    NogoodConstraint* firstUIP = makeCon(stateObj, earlier, curr_d);
+    AbstractConstraint* firstUIP = makeCon(stateObj, earlier, curr_d);
     //also make lastUIP in case it's needed, code will work if firstUIP=lastUIP
     while(true) {
       depth_VirtConPtr deepest = *curr_d.begin();
@@ -122,7 +124,7 @@ namespace Controller {
 	retVal = max(retVal, dist_res.second);
       }
     }
-    NogoodConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
+    AbstractConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
     //try firstUIP
     world_pop(stateObj);
     maybe_print_search_action(stateObj, "bt");
