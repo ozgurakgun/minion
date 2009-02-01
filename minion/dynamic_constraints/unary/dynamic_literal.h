@@ -102,7 +102,10 @@ template<typename Var>
   { return vector<VirtConPtr>(1, var.getExpl(false, val)); }
 
   virtual void print(std::ostream& o) const
-  { o << "DynamicLiteral(var=" << var << ",val=" << val << ")"; }
+  { 
+    o << "w-literal("; inputPrint(o, stateObj, var.getBaseVar());
+    o << "," << val << ")"; 
+  }
   
   virtual AbstractConstraint* copy() const
   { return new WatchLiteralConstraint<Var>(stateObj, var, val); }
