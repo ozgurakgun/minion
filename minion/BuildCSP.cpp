@@ -27,6 +27,7 @@ void BuildCSP(StateObj* stateObj, CSPInstance& instance)
         
   // Set up variables
   BuildCon::build_variables(stateObj, instance.vars);
+  getState(stateObj).setVarContainer(&instance.vars);
   
   // Horrible hack 
   getMemory(stateObj).monotonic_set = & getVars(stateObj).getBigRangevarContainer().bms_array;

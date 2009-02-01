@@ -115,4 +115,6 @@ namespace Controller
 
 #include "search/learning.hpp"
 
+#include "CSPSpec.hpp"
+
 #endif

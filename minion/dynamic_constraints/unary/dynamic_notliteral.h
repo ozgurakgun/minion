@@ -110,8 +110,10 @@ template<typename Var>
   { return new WatchNotLiteralConstraint<Var>(stateObj, var, val); }
 
   virtual void print(std::ostream& o) const
-  { o << "DynamicNotLiteral(var=" << var << ",val=" << val << ")"; }
-
+  { 
+    o << "w-notliteral("; inputPrint(o, stateObj, var.getBaseVar());
+    o << "," << val << ")"; 
+  }
 
   virtual size_t hash() const
   { return 37 * var.getBaseVar().pos() + var.getBaseVal(val); }

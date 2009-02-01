@@ -313,6 +313,11 @@ struct ConstraintBlob
   
   string getName(const Var& var) const
   {
+    if(var.type() == VAR_CONSTANT) {
+      std::stringstream out;
+      out << var.pos();
+      return out.str();
+    }
     map<Var, string>::const_iterator it = name_table.find(var);
     if(it == name_table.end())
       throw parse_exception("Undefined Var");

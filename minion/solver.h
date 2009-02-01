@@ -36,6 +36,10 @@ class AbstractConstraint;
 class AnyVarRef;
 class StateObj;
 
+namespace ProbSpec {
+  class VarContainer;
+}
+
 class SearchState
 {
   StateObj* stateObj;
@@ -72,8 +76,14 @@ class SearchState
     
   VirtConPtr failure; //expect to be able to call whyT() to get why it's T, getDepth(), getNeg(), etc. needn't work
 
+  ProbSpec::VarContainer* vc;
+
 public:
 
+  ProbSpec::VarContainer* getVarContainer() { return vc; }
+  
+  void setVarContainer(ProbSpec::VarContainer* _vc) { vc = _vc; }
+ 
   vector<set<AbstractConstraint*> >& getConstraintsToPropagate()
   { return constraints_to_propagate; }
   
