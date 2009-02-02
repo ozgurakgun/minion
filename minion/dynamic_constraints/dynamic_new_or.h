@@ -330,6 +330,15 @@ struct Dynamic_OR : public ParentConstraint
     o << ")";
   }
 
+  virtual void printNeg(std::ostream& o) const
+  {
+    o << "WatchedAnd("; child_constraints[0]->printNeg(o);
+    for(size_t i = 1; i < child_constraints.size(); i++) {
+      o << ","; child_constraints[i]->printNeg(o);
+    }
+    o << ")";
+  }
+
   virtual bool less(AbstractConstraint* other) const
   {
     if(guid < other->guid) return true;

@@ -115,6 +115,12 @@ template<typename Var>
     o << "," << val << ")"; 
   }
 
+  virtual void printNeg(std::ostream& o) const
+  { 
+    o << "w-literal("; inputPrint(o, stateObj, var.getBaseVar());
+    o << "," << val << ")"; 
+  }
+
   virtual size_t hash() const
   { return 37 * var.getBaseVar().pos() + var.getBaseVal(val); }
 
