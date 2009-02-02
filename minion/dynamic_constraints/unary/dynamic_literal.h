@@ -106,6 +106,12 @@ template<typename Var>
     o << "w-literal("; inputPrint(o, stateObj, var.getBaseVar());
     o << "," << val << ")"; 
   }
+
+  virtual void printNeg(std::ostream& o) const
+  {
+    o << "w-notliteral("; inputPrint(o, stateObj, var.getBaseVar());
+    o << "," << val << ")";
+  }
   
   virtual AbstractConstraint* copy() const
   { return new WatchLiteralConstraint<Var>(stateObj, var, val); }

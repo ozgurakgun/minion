@@ -279,6 +279,8 @@ public:
   
   friend std::ostream& operator<<(std::ostream& o, const AbstractConstraint& c) 
   { c.print(o); return o; }
+
+  virtual void printNeg(std::ostream& o) const { o << "UnknownNegatedConstraint"; }
   
   virtual AbstractConstraint* copy() const
   { D_ASSERT(false); return NULL; }
