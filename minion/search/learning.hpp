@@ -30,13 +30,25 @@ struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
   { return right < left; }
 };
 
+typedef int state_cert;
+
+inline state_cert state_start(StateObj* stateObj)
+{
+  getVars(stateObj).getBigRangevarContainer().bound_changed = false;
+  return getVars(stateObj).getBigRangevarContainer().bms_array.get_local_depth();
+}
+
+inline bool state_changed(StateObj* stateObj, state_cert cert)
+{
+  return getVars(stateObj).getBigRangevarContainer().bound_changed
+    || cert != getVars(stateObj).getBigRangevarContainer().bms_array.get_local_depth();
+}
+  
 //Distribute things into curr_d and earlier. Do nothing and return false iff
 //this would mean curr_d is empty.
 inline pair<bool,int> distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d_VCP>& curr_d, 
 				 unordered_set<VirtConPtr,VirtConPtrHash>& earlier, const vector<VirtConPtr>& things)
 {
-  if(things.size() == 0) return make_pair(true, -1000); //can distribute nothing
-  D_ASSERT(things.size() != 0);
   const size_t things_s = things.size();
   const pair<unsigned,unsigned> cd = make_pair(getMemory(stateObj).backTrack().current_depth(), 0);
   unsigned retVal = 0;
@@ -93,6 +105,11 @@ namespace Controller {
   inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure, vector<Var>& v,
 			   Propagator prop)
   {
+    //cout << *failure << endl;
+    if(getMemory(stateObj).backTrack().current_depth() == 0) {
+      //cout << "failed at root node" << endl;
+      return -2;
+    }
     getState(stateObj).setFailed(false);
     set<depth_VirtConPtr,comp_d_VCP> curr_d; 
     unordered_set<VirtConPtr,VirtConPtrHash> earlier; 
@@ -109,8 +126,9 @@ namespace Controller {
     }
     AbstractConstraint* firstUIP = makeCon(stateObj, earlier, curr_d);
     //also make lastUIP in case it's needed, code will work if firstUIP=lastUIP
+    depth_VirtConPtr deepest;
     while(true) {
-      depth_VirtConPtr deepest = *curr_d.begin();
+      deepest = *curr_d.begin();
       curr_d.erase(curr_d.begin());
       if(deepest.first.second == 0) { //can't resolve a decision, so replace shallowest and stop
 	curr_d.insert(deepest);
@@ -129,12 +147,12 @@ namespace Controller {
     world_pop(stateObj);
     maybe_print_search_action(stateObj, "bt");
     firstUIP->setup();
-    unsigned seq_no_bef = getMemory(stateObj).backTrack().seq_no;
+    state_cert cert = state_start(stateObj);
     //cout << "start trying firstUIP" << endl;
     firstUIP->full_propagate();
     prop(stateObj, v);
     //cout << "end trying firstUIP" << endl;
-    if(seq_no_bef < getMemory(stateObj).backTrack().seq_no) { //did propagation occur? if so add
+    if(state_changed(stateObj, cert)) { //did propagation occur? if so add
       //cout << "adding firstUIP" << endl;
       getState(stateObj).addConstraintMidsearch(firstUIP);
     } else { //if not use the first decision cut
@@ -147,7 +165,7 @@ namespace Controller {
       lastUIP->full_propagate();
       prop(stateObj, v);
       //cout << "end trying lastUIP" << endl;
-      D_ASSERT(seq_no_bef < getMemory(stateObj).backTrack().seq_no);
+      D_ASSERT(state_changed(stateObj, cert));
     }
     //cout << "far BT depth=" << retVal << endl;
     return retVal;
@@ -579,6 +597,7 @@ inline void MHAV::print(std::ostream& o) const
   o << "MHAV(" << *expls[0]; 
   for(size_t i = 1; i < expls.size(); i++)
     o << "," << *expls[i];
+  cout << ")" << endl;
 }
 
 inline size_t MHAV::hash() const
@@ -612,7 +631,7 @@ inline void AssgOrPrun::print(std::ostream& o) const
   cout << "AssgOrPrun(cut=" << "[" << *cut[0];
   for(size_t i = 1; i < cut.size(); i++)
     cout << "," << *cut[i];
-  cout << "]" << ")"; 
+  cout << "]" << ",assg=" << *assg << ",prun=" << *prun << ")"; 
 }
 
 inline size_t AssgOrPrun::hash() const
@@ -822,5 +841,38 @@ inline size_t NoReasonAssg<VarRef>::hash() const
 template<typename VarRef>
 inline NRACompData* NoReasonAssg<VarRef>::getVCCompData() const
 { return new NRACompData(var.getBaseVar(), val); }
+
+inline vector<VirtConPtr> AMOV::whyT() const
+{
+  vector<VirtConPtr> retVal;
+  retVal.reserve(2);
+  retVal.push_back(assg_first);
+  retVal.push_back(assg_last);
+  return retVal;
+}
+
+inline AbstractConstraint* AMOV::getNeg() const 
+{ D_ASSERT(false); return NULL; }
+
+inline pair<unsigned,unsigned> AMOV::getDepth() const
+{ D_ASSERT(false); return make_pair(-1, -1); }
+
+inline bool AMOV::equals(VirtCon*) const
+{ D_ASSERT(false); return false; }
+
+inline bool AMOV::less(VirtCon*) const
+{ D_ASSERT(false); return false; }
+
+inline void AMOV::print(std::ostream& o) const
+{ 
+  vector<VirtConPtr> cut = whyT();
+  cout << "AMOV(cut=" << "[" << *cut[0];
+  for(size_t i = 1; i < cut.size(); i++)
+    cout << "," << *cut[i];
+  cout << "]" << ",assg_first=" << *assg_first << ",assg_last=" << *assg_last << ")";
+}
+
+inline size_t AMOV::hash() const
+{ D_ASSERT(false); return 0; }
 
 #endif

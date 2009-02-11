@@ -271,8 +271,13 @@ public:
   template<typename VarRef>
   void storeExpl(bool assg, VarRef& var, DomainInt i, VirtConPtr vcp)
   {
-    if(!disjunct) var.setExpl(assg, i, vcp);
-    else var.setExpl(assg, i, VirtConPtr(new DisjunctionPrun(this, vcp, parent)));
+    VirtConPtr vcp_t;
+    if(disjunct) 
+      vcp_t = VirtConPtr(new DisjunctionPrun(this, vcp, parent));
+    else
+      vcp_t = vcp;
+    
+    var.setExpl(assg, i, vcp_t);
   }
 
   virtual void print(std::ostream& o) const { o << "UnknownConstraint"; }

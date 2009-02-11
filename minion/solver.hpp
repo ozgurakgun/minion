@@ -105,4 +105,5 @@ inline void SearchState::addConstraintMidsearch(AbstractConstraint* c)
   addConstraint(c);
   cout << "ADDEDNEG="; c->printNeg(cout); cout << endl;
   constraints_to_propagate[Controller::get_world_depth(stateObj)].insert(c);
+  cout << "ADDEDCON=" << *c << endl;
 }

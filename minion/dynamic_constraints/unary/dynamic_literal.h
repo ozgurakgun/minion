@@ -27,6 +27,8 @@ For Licence Information see file LICENSE.txt
 #ifndef WATCH_LIT_CON
 #define WATCH_LIT_CON
 
+#include "../dynamic_new_or.h"
+
 class WLitCompData : public ConCompData
 {
 public:
@@ -56,8 +58,7 @@ template<typename Var>
 
   virtual void full_propagate()
   { 
-    if(!var.isAssigned())
-      storeExpl(true, var, val, VirtConPtr(new NoReasonAssg<Var>(stateObj, var, val)));
+    storeExpl(true, var, val, VirtConPtr(new NoReasonAssg<Var>(stateObj, var, val)));
     var.propagateAssign(val); 
   }
 
@@ -65,8 +66,7 @@ template<typename Var>
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
-    if(!var.isAssigned())
-      storeExpl(true, var, val, VirtConPtr(new NoReasonAssg<Var>(stateObj, var, val)));
+    storeExpl(true, var, val, VirtConPtr(new NoReasonAssg<Var>(stateObj, var, val)));
     var.propagateAssign(val);
   }
 

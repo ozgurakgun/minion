@@ -52,6 +52,8 @@ class TrailedMonotonicSet
   }
 
 public:
+  int get_local_depth() { return _local_depth; }
+
   // following allows external types destructive changes to array 
   // but we probably do not want to allow this to force them to use set()
   value_type& array(DomainInt i)

@@ -379,6 +379,21 @@ public:
   virtual NRACompData* getVCCompData() const;
 };
 
+class AMOV : public VirtCon { //assign two values for same var
+  VirtConPtr assg_first;
+  VirtConPtr assg_last;
+  
+ public:
+  AMOV(VirtConPtr _assg_first, VirtConPtr _assg_last) : VirtCon(14000), assg_first(_assg_first), assg_last(_assg_last) {}
+  virtual vector<VirtConPtr> whyT() const;
+  virtual AbstractConstraint* getNeg() const; //do nothing
+  virtual pair<unsigned,unsigned> getDepth() const; //do nothing
+  virtual bool equals(VirtCon* other) const; //do nothing
+  virtual bool less(VirtCon* other) const;
+  virtual void print(std::ostream& o) const;
+  virtual size_t hash() const;
+};
+
 inline void print_recursive(vector<int> count_seq, vector<VirtConPtr> why) {
   for(size_t i = 0; i < why.size(); i++) {
     cout << count_seq << endl;
