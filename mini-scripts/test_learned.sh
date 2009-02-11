@@ -1,4 +1,4 @@
-#!/bin/bash
+ #!/bin/bash
 
 #Given a reference solver (1st param) and a learning solver (2nd param), read
 #out constraints from the output of the learning solver and check that each one
@@ -8,12 +8,14 @@
 #minion input format. The lines should be ADDEDNEG=X where X is the negative of
 #the learned constraint.
 
+TIMEOUT=100; #timeout in seconds
 REFSOLVER=$1;
 LEARNSOLVER=$2;
 INSTANCE=$3;
 TMPFILE=test.minion
 LEARNOUTPUT=/tmp/rubbish
 LEARNCONS=/tmp/rubbish2
+INSTRUN=/tmp/rubbish3
 
 echo "Sanity checking the instance:";
 if $REFSOLVER $INSTANCE | grep "Problem solvable?: no" > /dev/null; then
@@ -47,11 +49,14 @@ cat $LEARNCONS | while read line; do
     head -n $(($eofline-1)) $INSTANCE > $TMPFILE;
     echo $con >> $TMPFILE;
     echo "**EOF**" >> $TMPFILE;
-    if $REFSOLVER $TMPFILE | grep "Problem solvable?: yes" > /dev/null; then
+    $REFSOLVER -timelimit $TIMEOUT $TMPFILE > $INSTRUN;
+    if cat $INSTRUN | grep "Problem solvable?: yes" > /dev/null; then
 	echo "WARNING! The negative of the following constraint is not implied";
 	echo;
 	echo $con;
 	echo;
+    elif cat $INSTRUN | grep "Time out." > /dev/null; then
+	echo "Unknown - timed out at $TIMEOUT seconds";
     else
 	echo "Success!";
     fi

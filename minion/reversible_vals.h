@@ -89,7 +89,7 @@ public:
 
 class BoolContainer
 {
-  static const unsigned LIMIT = 500*sizeof(int)*10; //number of bools needed, must be divisible by bits in an int
+  static const unsigned LIMIT = 1000*sizeof(int)*8; //number of bools needed, must be divisible by bits in an int
   StateObj* stateObj;
   MoveablePointer backtrack_ptr;
   int offset;
