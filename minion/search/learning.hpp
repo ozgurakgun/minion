@@ -114,6 +114,7 @@ namespace Controller {
     set<depth_VirtConPtr,comp_d_VCP> curr_d; 
     unordered_set<VirtConPtr,VirtConPtrHash> earlier; 
     int retVal = 0; //the deepest thing that ends up in earlier
+    cout << "Failure:" << *failure;
     //make firstUip cut
     pair<bool,int> dist = distribute(stateObj, curr_d, earlier, failure->whyT());
     retVal = dist.second;
@@ -125,6 +126,8 @@ namespace Controller {
       retVal = max(retVal, distribute(stateObj, curr_d, earlier, deepest->whyT()).second);
     }
     AbstractConstraint* firstUIP = makeCon(stateObj, earlier, curr_d);
+    cout << "firstUIP:" << *firstUIP << endl;
+    
     //also make lastUIP in case it's needed, code will work if firstUIP=lastUIP
     depth_VirtConPtr deepest;
     while(true) {
@@ -144,6 +147,10 @@ namespace Controller {
     }
     AbstractConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
     //try firstUIP
+#ifdef LASTUIP
+    NogoodConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
+    cout << "lastUIP:" << *lastUIP << endl;
+#endif
     world_pop(stateObj);
     maybe_print_search_action(stateObj, "bt");
     firstUIP->setup();
@@ -158,7 +165,10 @@ namespace Controller {
     } else { //if not use the first decision cut
       firstUIP->cleanup(); //remove effects of propagating it before
       D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+#ifndef LASTUIP
       //cout << "adding lastUIP" << endl;
+      cout << "lastUIP:" << *lastUIP << endl;
+#endif
       getState(stateObj).addConstraintMidsearch(lastUIP);
       //cout << "start trying lastUIP" << endl;
       lastUIP->setup();
