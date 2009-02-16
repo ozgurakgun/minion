@@ -170,7 +170,7 @@ namespace Controller {
   inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure, vector<Var>& v,
 			   Propagator prop)
   {
-#ifdef IGPRINT
+#ifdef IG_PRINT
     writeVIG("/tmp/graph", failure, make_pair(getMemory(stateObj).backTrack().current_depth(), 0));
 #endif
     //cout << *failure << endl;
