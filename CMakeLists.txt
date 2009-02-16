@@ -210,6 +210,13 @@ if(WTRIG)
 	set(CFLAGS "${CFLAGS} -DWEIGHTED_TRIGGERS")
 endif()
 
+option(IG_PRINT "" OFF)
+if(IG_PRINT)
+	message(STATUS "Enabling VIG printing")
+	set(BINARY "${BINARY}-igprint")
+	set(CFLAGS "${CFLAGS} -DIG_PRINT")
+endif()
+
 option(INFO "" OFF)
 if(INFO)
 	message(STATUS "Enabling INFO")
