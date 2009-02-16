@@ -9,6 +9,8 @@
 
 #include "common_search.h"
 
+#include <utility>
+
 inline bool operator!=(const VirtConPtr& l, const VirtConPtr& r)
 { return !(l->equals(r.get())); }
 
@@ -28,6 +30,12 @@ struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
 {
   bool operator()(const depth_VirtConPtr& left, const depth_VirtConPtr& right) const
   { return right < left; }
+};
+
+struct comp_VCP : binary_function<VirtConPtr,VirtConPtr,bool>
+{ 
+  bool operator()(const VirtConPtr& left, const VirtConPtr& right) const
+  { return left->less(right.get()); }
 };
 
 typedef int state_cert;
@@ -99,12 +107,72 @@ inline void print_cut(const unordered_set<VirtConPtr,VirtConPtrHash>& earlier,
     cout << *(curr->second) << "=" << curr->second->hash() << "@" << curr->second->getDepth() << endl;
 }  
 
+#ifdef IG_PRINT
+
+#include <fstream>
+
+inline void traverse_display(unsigned parent,
+			     vector<VirtConPtr> children,
+			     map<VirtConPtr,unsigned,comp_VCP>& mapping,
+			     ofstream& output,
+			     unsigned& next_key,
+			     pair<unsigned,unsigned> cd) {
+  for(vector<VirtConPtr>::const_iterator it = children.begin(); it != children.end(); it++) {
+    unsigned curr_key;
+    if(mapping.find(*it) != mapping.end()) { //reuse old number
+      curr_key = mapping[*it];
+    } else {
+      curr_key = next_key;
+      next_key++;
+      mapping.insert(make_pair(*it, curr_key));
+      if((*it)->getDepth() == cd) {
+	output << curr_key << "[label=\"" << **it << "\\n" << (*it)->getDepth() << "\",fillcolor=\"orange\",style=\"filled\"]" << endl;
+      } else if((*it)->getDepth().second == 0) { //decisions
+	output << curr_key << "[label=\"" << **it << "\\n" << (*it)->getDepth() << "\",fillcolor=\"lightgreen\",style=\"filled\"]" << endl;
+      } else if((*it)->getDepth() >= cd) { //curr depth stuff
+	output << curr_key << "[label=\"" << **it << "\\n" << (*it)->getDepth() << "\",fillcolor=\"yellow\",style=\"filled\"]" << endl;
+	traverse_display(curr_key, (*it)->whyT(), mapping, output, next_key, cd);
+      } else { //everything else
+	output << curr_key << "[label=\"" << **it << "\\n@" << (*it)->getDepth() << "\"]" << endl;
+	traverse_display(curr_key, (*it)->whyT(), mapping, output, next_key, cd);
+      }
+    }
+    output << parent << " -> " << curr_key << endl;
+  }
+}
+
+inline void writeVIG(string filename, VirtConPtr failure, pair<unsigned,unsigned> cd) {
+  //ask for user input to see if they want to see VIG
+  //open file
+  ofstream fileout(filename.c_str());
+  //write header
+  fileout << "digraph IG {" << endl;
+  fileout << "rankdir=RL" << endl;
+  //print failure
+  fileout << "0[label=\"" << *failure << "\"]" << endl;
+  //create mapping
+  map<VirtConPtr,unsigned,comp_VCP> mapping;
+  //start recursion
+  unsigned next_key = 1;
+  traverse_display(0, failure->whyT(), mapping, fileout, next_key, cd);
+  //print footer
+  fileout << "}" << endl;
+  //build and display using system in stdlib.h
+  system(("dot -Tsvg -o " + filename + ".svg " + filename).c_str());
+  system(("eog " + filename + ".svg").c_str());
+}
+
+#endif
+
 namespace Controller {
 
   template<typename Propagator, typename Var>
   inline int firstUipLearn(StateObj* stateObj, const VirtConPtr& failure, vector<Var>& v,
 			   Propagator prop)
   {
+#ifdef IGPRINT
+    writeVIG("/tmp/graph", failure, make_pair(getMemory(stateObj).backTrack().current_depth(), 0));
+#endif
     //cout << *failure << endl;
     if(getMemory(stateObj).backTrack().current_depth() == 0) {
       //cout << "failed at root node" << endl;

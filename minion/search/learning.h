@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include <cctype>
+
 #include "../system/linked_ptr.h"
 
 #include "../CSPSpec.h"
@@ -36,6 +38,20 @@ class VirtCon {
   virtual bool less(VirtCon* other) const = 0;
   friend std::ostream& operator<<(std::ostream& o, const VirtCon& vc) { if(&vc) vc.print(o); else o << "null"; return o; }
   virtual void print(std::ostream& o) const = 0;
+  virtual void simplePrint(std::ostream& o) const //a function that prints a unique string per node, but removes funny characters
+  {
+    stringstream output;
+    print(output);
+    string outputStr = output.str();
+    string::iterator it = outputStr.begin();
+    while(it != outputStr.end()) {
+      if(!isalnum(*it))
+	it = outputStr.erase(it);
+      else
+	it++;
+    }
+    o << outputStr;
+  }
   virtual size_t hash() const = 0;
   virtual bool isDecision() const { return false; }
   virtual VCCompData* getVCCompData() const { return NULL; }
