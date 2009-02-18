@@ -435,7 +435,18 @@ inline GCCompData* GreaterConstant<VarRef>::getVCCompData() const
 
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunLeft<VarRef1,VarRef2>::whyT() const //return var2 <= val
-{ return vector<VirtConPtr>(1, VirtConPtr(new LessConstant<VarRef2>(con->stateObj, con->var2, val + 1))); }
+{ 
+#ifdef GLEARN
+  vector<VirtConPtr> retVal;
+  const DomainInt var2_initmax = con->var2.getInitialMax();
+  retVal.reserve(var2_initmax - val);
+  for(int i = val + 1; i <= var2_initmax; i++)
+    retVal.push_back(con->var2.getExpl(false, i));
+  return retVal;
+#else
+  return vector<VirtConPtr>(1, VirtConPtr(new LessConstant<VarRef2>(con->stateObj, con->var2, val + 1))); 
+#endif
+}
 
 template<typename VarRef1, typename VarRef2>
 inline AbstractConstraint* WatchlessPrunLeft<VarRef1,VarRef2>::getNeg() const
@@ -483,7 +494,17 @@ inline WPLCompData* WatchlessPrunLeft<VarRef1,VarRef2>::getVCCompData() const
 
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunRight<VarRef1,VarRef2>::whyT() const //return var1 >= val 
-{ return vector<VirtConPtr>(1, VirtConPtr(new GreaterConstant<VarRef1>(con->stateObj, con->var1, val - 1))); }
+{ 
+#ifdef GLEARN
+  vector<VirtConPtr> retVal;
+  retVal.reserve(val - con->var1.getInitialMin());
+  for(int i = con->var1.getInitialMin(); i < val; i++)
+    retVal.push_back(con->var1.getExpl(false, i));
+  return retVal;
+#else
+  return vector<VirtConPtr>(1, VirtConPtr(new GreaterConstant<VarRef1>(con->stateObj, con->var1, val - 1))); 
+#endif
+}
 
 template<typename VarRef1, typename VarRef2>
 inline AbstractConstraint* WatchlessPrunRight<VarRef1,VarRef2>::getNeg() const
@@ -564,10 +585,18 @@ inline vector<VirtConPtr> DisjunctionPrun::whyT() const
   vector<VirtConPtr> retVal;
   vector<AbstractConstraint*>& child_cons = dj->child_constraints;
   const size_t child_cons_s = child_cons.size();
+#ifdef GLEARN
+  for(size_t i = 0; i < child_cons_s; i++)
+    if(child_cons[i] != doer) {
+      vector<VirtConPtr> whyF = child_cons[i]->whyF();
+      retVal.insert(retVal.end(), whyF.begin(), whyF.end());
+    }
+#else
   retVal.reserve(child_cons.size() - 1);
   for(size_t i = 0; i < child_cons_s; i++)
     if(child_cons[i] != doer)
       retVal.push_back(VirtConPtr(new NegOfPostedCon(child_cons[i])));
+#endif
   const vector<VirtConPtr>& pruning_reason = done->whyT();
   retVal.insert(retVal.end(), pruning_reason.begin(), pruning_reason.end());
   return retVal;
