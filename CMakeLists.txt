@@ -210,6 +210,13 @@ if(WTRIG)
 	set(CFLAGS "${CFLAGS} -DWEIGHTED_TRIGGERS")
 endif()
 
+option(GLEARN "" OFF)
+if(GLEARN)
+	message(STATUS "Enabling g-learning")
+	set(BINARY "${BINARY}-glearn")
+	set(CFLAGS "${CFLAGS} -DGLEARN")
+endif()
+
 option(IG_PRINT "" OFF)
 if(IG_PRINT)
 	message(STATUS "Enabling VIG printing")

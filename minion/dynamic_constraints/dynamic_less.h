@@ -184,9 +184,17 @@ struct WatchLessConstraint : public AbstractConstraint
     best_i += var2_max;
     //now built VCs
     vector<VirtConPtr> retVal;
+#ifdef GLEARN
+    retVal.reserve(var2.getInitialMax() - var1.getInitialMin());
+    for(int i = var1.getInitialMin(); i < best_i; i++)
+      retVal.push_back(var1.getExpl(false, i));
+    for(int i = var2.getInitialMax(); i > best_i; i--)
+      retVal.push_back(var2.getExpl(false, i));
+#else
     retVal.reserve(2);
     retVal.push_back(VirtConPtr(new GreaterConstant<Var1>(stateObj, var1, best_i - 1))); //x>=best_i
     retVal.push_back(VirtConPtr(new LessConstant<Var2>(stateObj, var2, best_i + 1))); //y<=best_i
+#endif
     return retVal; 
   }
 
