@@ -44,6 +44,29 @@ class VirtCon {
   virtual ~VirtCon() {}
 };
 
+#ifdef GLEARN
+#ifdef EAGER
+class VCEagerWrapper : public VirtCon {
+ public:
+  
+  VirtConPtr b;
+  vector<VirtConPtr> expl;
+
+  VCEagerWrapper(VirtConPtr _b) : VirtCon(_b->guid), b(_b)
+  { expl = _b->whyT(); } //store expln eagerly
+  
+  virtual vector<VirtConPtr> whyT() const { return expl; }
+  virtual AbstractConstraint* getNeg() const { return b->getNeg(); }
+  virtual pair<unsigned,unsigned> getDepth() const { return b->getDepth(); }
+  virtual bool equals(VirtCon* other) const { return b->equals(other); }
+  virtual bool less(VirtCon* other) const { return b->less(other); }
+  virtual void print(std::ostream& o) const { o << "Eager("; b->print(o); o << ")"; }
+  virtual size_t hash() const { return b->hash(); }
+  virtual VCCompData* getVCCompData() const { return b->getVCCompData(); }
+};
+#endif
+#endif
+
 /* template<typename VarRef> */
 /* class DisAssignment : public VirtCon { //var != val */
 /*   static const size_t guid = 0; */

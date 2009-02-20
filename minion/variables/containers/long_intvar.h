@@ -663,7 +663,11 @@ public:
   void setExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i, VirtConPtr vc)
   {
     if(!assg) {
+#ifndef EAGER
       prun_explns[b.var_num][i - getInitialMin(b)] = vc;
+#else
+      prun_explns[b.var_num][i - getInitialMin(b)] = VirtConPtr(new VCEagerWrapper(vc));
+#endif
       prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
       //cout << "stored " << *vc << "(" << vc.get() << ") for pruning " << i << " from " << b.var_num << "@" << prun_depths[b.var_num][i - getInitialMin(b)] << endl;
     } else {
@@ -675,17 +679,27 @@ public:
       //an explanation for i, or if the first slot holds an explanation for i irrespective of the phase
       if((!assg_expln_phase[b.var_num] && assg_expln_vals[b.var_num].second != i)
 	 || (assg_expln_vals[b.var_num].first == i)) {
+#ifndef EAGER
 	assg_expln[b.var_num].first = vc;
+#else
+	assg_expln[b.var_num].first = VirtConPtr(new VCEagerWrapper(vc));
+#endif
 	assg_depth[b.var_num].first = getMemory(stateObj).backTrack().next_timestamp();
 	assg_expln_vals[b.var_num].first = i;
 	assg_expln_phase[b.var_num] = true;
       } else {
+#ifndef EAGER
 	assg_expln[b.var_num].second = vc;
+#else
+	assg_expln[b.var_num].second = VirtConPtr(new VCEagerWrapper(vc));
+#endif
 	assg_depth[b.var_num].second = getMemory(stateObj).backTrack().next_timestamp();
 	assg_expln_vals[b.var_num].second = i;
 	assg_expln_phase[b.var_num] = false;
       }
+#ifndef EAGER
       D_ASSERT(getExpl(b, assg, i).get() == vc.get());
+#endif
       //cout << "stored " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
     }
     //print_recursive(vector<int>(), vc->whyT());
@@ -700,17 +714,27 @@ public:
     //an explanation for i, or if the first slot holds an explanation for i irrespective of the phase
     if((!assg_expln_phase[b.var_num] && assg_expln_vals[b.var_num].second != i)
        || (assg_expln_vals[b.var_num].first == i)) {
+#ifndef EAGER
       assg_expln[b.var_num].first = vc;
+#else
+      assg_expln[b.var_num].first = VirtConPtr(new VCEagerWrapper(vc));
+#endif
       assg_depth[b.var_num].first = getMemory(stateObj).backTrack().next_timestamp();
       assg_expln_vals[b.var_num].first = i;
       assg_expln_phase[b.var_num] = true;
     } else {
+#ifndef EAGER
       assg_expln[b.var_num].second = vc;
+#else
+      assg_expln[b.var_num].second = VirtConPtr(new VCEagerWrapper(vc));
+#endif
       assg_depth[b.var_num].second = getMemory(stateObj).backTrack().next_timestamp();
       assg_expln_vals[b.var_num].second = i;
       assg_expln_phase[b.var_num] = false;
     }
+#ifndef EAGER
     D_ASSERT(getExpl(b, true, i).get() == vc.get());
+#endif
     //cout << "stored unchecked " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
     //print_recursive(vector<int>(), vc->whyT());
   }
