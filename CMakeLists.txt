@@ -217,6 +217,13 @@ if(GLEARN)
 	set(CFLAGS "${CFLAGS} -DGLEARN")
 endif()
 
+option(EAGER "" OFF)
+if(EAGER)
+	message(STATUS "Enabling eager learning")
+	set(BINARY "${BINARY}-eager")
+	set(CFLAGS "${CFLAGS} -DEAGER")
+endif()
+
 option(IG_PRINT "" OFF)
 if(IG_PRINT)
 	message(STATUS "Enabling VIG printing")

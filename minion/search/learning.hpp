@@ -51,7 +51,7 @@ inline bool state_changed(StateObj* stateObj, state_cert cert)
   return getVars(stateObj).getBigRangevarContainer().bound_changed
     || cert != getVars(stateObj).getBigRangevarContainer().bms_array.get_local_depth();
 }
-  
+
 //Distribute things into curr_d and earlier. Do nothing and return false iff
 //this would mean curr_d is empty.
 inline pair<bool,int> distribute(StateObj* stateObj, set<depth_VirtConPtr,comp_d_VCP>& curr_d, 
@@ -612,7 +612,11 @@ inline pair<unsigned,unsigned> DisjunctionPrun::getDepth() const
 //identical but distinct disjunction
 inline bool DisjunctionPrun::equals(VirtCon* other) const
 {
+#ifndef EAGER
   DisjunctionPrun* other_dp = dynamic_cast<DisjunctionPrun*>(other);
+#else
+  DisjunctionPrun* other_dp = dynamic_cast<DisjunctionPrun*>(static_cast<VCEagerWrapper*>(other)->b.get());
+#endif
   return other_dp && dj == other_dp->dj && doer == other_dp->doer && done->equals(other_dp->done.get());
 }
  
@@ -620,7 +624,11 @@ inline bool DisjunctionPrun::less(VirtCon* other) const
 {
   if(guid < other->guid) return true;
   if(other->guid < guid) return false;
+#ifndef EAGER
   DisjunctionPrun* other_dp = dynamic_cast<DisjunctionPrun*>(other);
+#else
+  DisjunctionPrun* other_dp = dynamic_cast<DisjunctionPrun*>(static_cast<VCEagerWrapper*>(other)->b.get());
+#endif
   D_ASSERT(other_dp);
   return done->less(other_dp->done.get())
     || (done->equals(other_dp->done.get()) && doer->less(other_dp->doer))
@@ -805,7 +813,9 @@ inline BOPACompData* BecauseOfPruningsAssignment<VarRef>::getVCCompData() const
 template<typename VarRef>
 inline vector<VirtConPtr> DecisionAssg<VarRef>::whyT() const
 {
+#ifndef EAGER //it's OK just to call this for eager, because the vector won't be used
   D_ASSERT(false); //shouldn't be called
+#endif
   return vector<VirtConPtr>(1, VirtConPtr(NULL));
 }
 
