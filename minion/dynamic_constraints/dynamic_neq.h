@@ -25,6 +25,15 @@
 */
 
 
+class WNCCompData : public ConCompData
+{
+public:
+  Var var1;
+  Var var2;
+  
+  WNCCompData(Var _var1, Var _var2) : var1(_var1), var2(_var2) {}
+};
+
 template<typename Var1, typename Var2>
 struct WatchNeqConstraint : public AbstractConstraint
 {
@@ -47,20 +56,26 @@ struct WatchNeqConstraint : public AbstractConstraint
 	
 	  if(var1.isAssigned() && var2.isAssigned() && var1.getAssignedValue() == var2.getAssignedValue())
 	  {
-      getState(stateObj).setFailed(true);
-      return;
+	    //the following will cause a DWO
+	    storeExpl(false, var2, var1.getAssignedValue(), VirtConPtr(new WatchNeqPrunRight<Var1,Var2>(this, var1.getAssignedValue())));
+	    var1.removeFromDomain(var1.getAssignedValue());
+	    return;
 	  }
 	  
 	  if(var1.isAssigned())
 	  {
-      var2.removeFromDomain(var1.getAssignedValue());
-      return;
+	    if(var2.inDomain(var1.getAssignedValue()))
+	      storeExpl(false, var2, var1.getAssignedValue(), VirtConPtr(new WatchNeqPrunRight<Var1,Var2>(this, var1.getAssignedValue())));
+	    var2.removeFromDomain(var1.getAssignedValue());
+	    return;
 	  }
 	  
 	  if(var2.isAssigned())
 	  {
-      var1.removeFromDomain(var2.getAssignedValue());
-      return;
+	    if(var1.inDomain(var2.getAssignedValue()))
+	      storeExpl(false, var1, var2.getAssignedValue(), VirtConPtr(new WatchNeqPrunLeft<Var1,Var2>(this, var2.getAssignedValue())));
+	    var1.removeFromDomain(var2.getAssignedValue());
+	    return;
 	  }
 	  
     var1.addDynamicTrigger(dt    , Assigned);
@@ -77,13 +92,17 @@ struct WatchNeqConstraint : public AbstractConstraint
     
 	  if(dt == dt_start)
 	  {
-      D_ASSERT(var1.isAssigned());
-      var2.removeFromDomain(var1.getAssignedValue());
+	    D_ASSERT(var1.isAssigned());
+	    if(var2.inDomain(var1.getAssignedValue()))
+	      storeExpl(false, var2, var1.getAssignedValue(), VirtConPtr(new WatchNeqPrunRight<Var1,Var2>(this, var1.getAssignedValue())));
+	    var2.removeFromDomain(var1.getAssignedValue());
 	  }
 	  else
 	  {
-      D_ASSERT(var2.isAssigned());
-      var1.removeFromDomain(var2.getAssignedValue());
+	    D_ASSERT(var2.isAssigned());
+	    if(var1.inDomain(var2.getAssignedValue()))
+	      storeExpl(false, var1, var2.getAssignedValue(), VirtConPtr(new WatchNeqPrunLeft<Var1,Var2>(this, var2.getAssignedValue())));
+	    var1.removeFromDomain(var2.getAssignedValue());
 	  }
   }
   
@@ -125,6 +144,66 @@ struct WatchNeqConstraint : public AbstractConstraint
     }
     return true;
   }
+
+  virtual vector<VirtConPtr> whyF() const
+  {
+    D_ASSERT(var1.getAssignedValue() == var2.getAssignedValue());
+    const DomainInt var1_av = var1.getAssignedValue();
+    vector<VirtConPtr> retval;
+    retval.reserve(2);
+    retval.push_back(var1.getExpl(true, var1_av));
+    retval.push_back(var2.getExpl(true, var1_av));
+    return retval;
+  }
+
+  virtual pair<unsigned,unsigned> whenF() const
+  { 
+    const DomainInt var1_av = var1.getAssignedValue();
+    return max(var1.getDepth(true, var1_av), var2.getDepth(true, var1_av)); 
+  }
+
+  virtual void print(std::ostream& o) const
+  { 
+    o << "watchneq("; inputPrint(o, stateObj, var1.getBaseVar());
+    o << ","; inputPrint(o, stateObj, var2.getBaseVar()); o << ")"; 
+  }
+
+  virtual void printNeg(std::ostream& o) const
+  {
+    o << "eq("; inputPrint(o, stateObj, var2.getBaseVar());
+    o << ","; inputPrint(o, stateObj, var1.getBaseVar()); o << ",0)";
+  }
+
+  virtual AbstractConstraint* copy() const
+  { return new WatchNeqConstraint<Var1,Var2>(stateObj, var1, var2); }
+
+  virtual size_t hash() const
+  { return 57 * var1.getBaseVar().pos() + var2.getBaseVar().pos(); }
+
+  virtual bool equal(AbstractConstraint* other) const
+  { 
+    if(guid != other->guid) return false;
+    WNCCompData* other_data = static_cast<WNCCompData*>(other->getConCompData());
+    D_ASSERT(dynamic_cast<WNCCompData*>(other_data));
+    bool retVal = var1.getBaseVar() == other_data->var1 && var2.getBaseVar() == other_data->var2;
+    delete other_data;
+    return retVal;
+  }
+
+  virtual bool less(AbstractConstraint* other) const
+  { 
+    if(guid < other->guid) return true;
+    if(other->guid < guid) return false;
+    WNCCompData* other_data = static_cast<WNCCompData*>(other->getConCompData());
+    D_ASSERT(dynamic_cast<WNCCompData*>(other_data));
+    bool retVal = var1.getBaseVar() < other_data->var1 
+      || (var1.getBaseVar() == other_data->var1 && var2.getBaseVar() < other_data->var2);
+    delete other_data;
+    return retVal;
+  }
+
+  virtual WNCCompData* getConCompData() const
+  { return new WNCCompData(var1.getBaseVar(), var2.getBaseVar()); }
 };
 
 template<typename VarArray1, typename VarArray2>

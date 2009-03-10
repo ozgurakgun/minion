@@ -1,6 +1,7 @@
 #ifndef CONSTRAINT_ENUM_H_BLARG
 #define CONSTRAINT_ENUM_H_BLARG
 enum ConstraintType {
+CT_WATCHED_NEQ ,
 CT_DISEQ ,
 CT_DISEQ_REIFY ,
 CT_EQ ,

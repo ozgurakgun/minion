@@ -1,3 +1,4 @@
+DYNAMIC_CT "watchneq"                   CT_WATCHED_NEQ          read_var read_var 
 STATIC_CT  "diseq"   			CT_DISEQ   		read_var read_var  
 STATIC_CT  "__reify_diseq"		CT_DISEQ_REIFY		read_var read_var read_bool_var
 STATIC_CT  "eq"     			CT_EQ      		read_var read_var  
