@@ -419,6 +419,52 @@ class AMOV : public VirtCon { //assign two values for same var
   virtual size_t hash() const;
 };
 
+class WNPCompData : public VCCompData {
+public:
+  Var var1;
+  Var var2;
+  DomainInt val;
+
+  WNPCompData(Var _var1, Var _var2, DomainInt _val) : var1(_var1), var2(_var2), val(_val) {}
+};
+
+template<typename VarRef1, typename VarRef2> //class prototype
+class WatchNeqConstraint;
+
+template<typename Var1, typename Var2>
+class WatchNeqPrunLeft : public VirtCon {
+  WatchNeqConstraint<Var1,Var2>* con;
+  DomainInt val; //the value pruned from var1 and assigned to var2
+
+ public:
+  WatchNeqPrunLeft(WatchNeqConstraint<Var1,Var2>* _con, DomainInt _val) : VirtCon(15000), con(_con), val(_val) {}
+  virtual vector<VirtConPtr> whyT() const;
+  virtual AbstractConstraint* getNeg() const;
+  virtual pair<unsigned,unsigned> getDepth() const;
+  virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
+  virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
+  virtual WNPCompData* getVCCompData() const;
+};
+
+template<typename Var1, typename Var2>
+class WatchNeqPrunRight : public VirtCon {
+  WatchNeqConstraint<Var1,Var2>* con;
+  DomainInt val; //the value pruned from var2 and assigned to var1
+
+ public:
+  WatchNeqPrunRight(WatchNeqConstraint<Var1,Var2>* _con, DomainInt _val) : VirtCon(16000), con(_con), val(_val) {}
+  virtual vector<VirtConPtr> whyT() const;
+  virtual AbstractConstraint* getNeg() const;
+  virtual pair<unsigned,unsigned> getDepth() const;
+  virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
+  virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
+  virtual WNPCompData* getVCCompData() const;
+};
+
 inline void print_recursive(vector<int> count_seq, vector<VirtConPtr> why) {
   for(size_t i = 0; i < why.size(); i++) {
     cout << count_seq << endl;

@@ -1,6 +1,7 @@
 #include "BuildStart.h"
 AbstractConstraint* build_constraint(StateObj* stateObj, ConstraintBlob& b) {
 switch(b.constraint->type) {
+case CT_WATCHED_NEQ : return build_constraint_CT_WATCHED_NEQ(stateObj, b);
 case CT_DISEQ : return build_constraint_CT_DISEQ(stateObj, b);
 case CT_DISEQ_REIFY : return build_constraint_CT_DISEQ_REIFY(stateObj, b);
 case CT_EQ : return build_constraint_CT_EQ(stateObj, b);

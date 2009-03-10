@@ -1,5 +1,6 @@
 
 ConstraintDef constraint_list[] = {
+{ "watchneq" , CT_WATCHED_NEQ, 2,{ read_var , read_var }, DYNAMIC_CT },
 { "diseq" , CT_DISEQ, 2,{ read_var , read_var }, STATIC_CT },
 { "__reify_diseq" , CT_DISEQ_REIFY, 3,{ read_var , read_var , read_bool_var }, STATIC_CT },
 { "eq" , CT_EQ, 2,{ read_var , read_var }, STATIC_CT },
