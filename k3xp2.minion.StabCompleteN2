@@ -1,0 +1,28 @@
+MINION 3
+
+**VARIABLES**
+
+DISCRETE Nodes[6] {0..9}
+DISCRETE Edges[9] {1..9}
+
+**CONSTRAINTS**
+
+difference(Nodes[0], Nodes[1], Edges[0])
+difference(Nodes[0], Nodes[2], Edges[1])
+difference(Nodes[1], Nodes[2], Edges[2])
+
+difference(Nodes[3], Nodes[4], Edges[3])
+difference(Nodes[3], Nodes[5], Edges[4])
+difference(Nodes[4], Nodes[5], Edges[5])
+
+difference(Nodes[0], Nodes[3], Edges[6])
+difference(Nodes[1], Nodes[4], Edges[7])
+difference(Nodes[2], Nodes[5], Edges[8])
+
+alldiff(Nodes)
+alldiff(Edges)
+
+lexleq( [], [] )
+lexleq( [Nodes_0__,Nodes_3__,Edges_0__,Edges_3__,Edges_6__,], [Nodes_2__,Nodes_5__,Edges_2__,Edges_5__,Edges_8__,] )
+lexleq( [Nodes_1__,Nodes_4__,Edges_0__,Edges_3__,Edges_7__,], [Nodes_2__,Nodes_5__,Edges_1__,Edges_4__,Edges_8__,] )
+**EOF**
