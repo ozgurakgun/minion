@@ -1,0 +1,57 @@
+MINION 3
+
+**VARIABLES**
+DISCRETE w {1..10}
+DISCRETE v[8] {1..8}
+#DISCRETE v[9] {1..9}
+
+**CONSTRAINTS**
+#checkexpln([v])
+watchneq(w,v[0])
+watchneq(w,v[1])
+watchneq(w,v[2])
+watchneq(w,v[3])
+watchneq(w,v[4])
+watchneq(w,v[5])
+watchneq(w,v[6])
+watchneq(w,v[7])
+#watchneq(w,v[8])
+watchneq(v[0],v[1])
+watchneq(v[0],v[2])
+watchneq(v[0],v[3])
+watchneq(v[0],v[4])
+watchneq(v[0],v[5])
+watchneq(v[0],v[6])
+watchneq(v[0],v[7])
+#watchneq(v[0],v[8])
+watchneq(v[1],v[2])
+watchneq(v[1],v[3])
+watchneq(v[1],v[4])
+watchneq(v[1],v[5])
+watchneq(v[1],v[6])
+watchneq(v[1],v[7])
+#watchneq(v[1],v[8])
+watchneq(v[2],v[3])
+watchneq(v[2],v[4])
+watchneq(v[2],v[5])
+watchneq(v[2],v[6])
+watchneq(v[2],v[7])
+#watchneq(v[2],v[8])
+watchneq(v[3],v[4])
+watchneq(v[3],v[5])
+watchneq(v[3],v[6])
+watchneq(v[3],v[7])
+#watchneq(v[3],v[8])
+watchneq(v[4],v[5])
+watchneq(v[4],v[6])
+watchneq(v[4],v[7])
+#watchneq(v[4],v[8])
+watchneq(v[5],v[6])
+watchneq(v[5],v[7])
+#watchneq(v[5],v[8])
+watchneq(v[6],v[7])
+#watchneq(v[6],v[8])
+#watchneq(v[7],v[8])
+
+
+**EOF**
