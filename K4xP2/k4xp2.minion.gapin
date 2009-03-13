@@ -1,3 +1,73 @@
+varnames := ["Nodes_0__", "Nodes_1__", "Nodes_2__", "Nodes_3__", "Nodes_4__", "Nodes_5__", "Nodes_6__", "Nodes_7__", "Edges_0__", "Edges_1__", "Edges_2__", "Edges_3__", "Edges_4__", "Edges_5__", "Edges_6__", "Edges_7__", "Edges_8__", "Edges_9__", "Edges_10__", "Edges_11__", "Edges_12__", "Edges_13__", "Edges_14__", "Edges_15__", ];
+generators := [()
+, PermList([4, 3, 2, 1, 8, 7, 6, 5, 11, 10, 9, 12, 15, 14, 13, 16, 18, 17, 20, 19, 22, 21, 24, 23])
+, PermList([4, 2, 3, 1, 8, 6, 7, 5, 17, 10, 18, 12, 19, 14, 20, 16, 9, 11, 13, 15, 22, 21, 23, 24])
+, PermList([5, 8, 7, 6, 1, 4, 3, 2, 16, 15, 14, 13, 12, 11, 10, 9, 19, 20, 17, 18, 24, 22, 23, 21])
+];
+## AD 07/08
+#############################################################################
+##
+## INPUT two literal vectors, i.e. list of integers between 1 and n^3
+##
+## OUTPUT two shortened literal vectors where the least significant pair
+##        of every cycle is removed
+##
+## METHOD the two vectors represent bit-vectors and these will be ordered 
+##        using lex. For example ABC compared with CAB. Here the third
+##        position is least significant and will thus never decide about the
+##        ordering of the two vectors. A pair of literals will be removed 
+##        if everything other pair of the same cycle appeared before.
+##
+
+rule1 := function( v1, v2 )
+    local i, newv1, newv2, pos, elm;
+
+    newv1 := [ ];
+    newv2 := [ ];
+
+    for i in [ 1..Length( v1 ) ] do
+        if v1[i] <> v2[i] then
+            elm := v2[i];
+            pos := Position( newv1, elm );
+            while pos <> fail do
+                elm := newv2[pos];
+                pos := Position( newv1, elm );
+            od;
+            if elm <> v1[i] then
+                Add( newv1, v1[i] );
+                Add( newv2, v2[i] );
+            fi;
+        fi;
+    od;
+
+    return [ newv1, newv2 ];
+end;
+
+gen_constraints := function(list, varnames, a)
+  local perm, i, j, vecs, set;
+
+  set := [];
+  for i in list do
+    perm := ListPerm(i);
+    perm := perm{[1..Minimum(Size(perm), Size(varnames))]};
+    vecs := rule1([1..Size(perm)], perm);
+    Append(set, [vecs]);
+  od;
+
+  set := Set(set);
+
+  for vecs in set do
+    PrintTo(a, "lexleq( [");
+    for j in vecs[1] do
+      PrintTo(a, varnames[j], ",");
+    od;
+    PrintTo(a, "], [");
+    for j in vecs[2] do
+      PrintTo(a, varnames[j], ",");
+    od;
+    PrintTo(a, "] )\n");
+  od;
+end;
 GeneratorsBasic := function(GeneratorsList)
 
         return GeneratorsList;
@@ -118,19 +188,7 @@ StabChainME := function(GeneratorsList)
         NewGeneratorsList := DuplicateFreeList(NewGeneratorsListDup);
         return NewGeneratorsList;
 end;
-
-RandomElem := function(n, GeneratorsList)
-        local NewGeneratorsList, NewGeneratorsListDup i, RepElem;
-
-        NewGeneratorsListDup := [];
-        g := Group(GeneratorsList);
-
-        for i in [1..n] do
-            RepElem := Random(g);
-            Add(NewGeneratorsListDup, RepElem);
-        od;
-
-        NewGeneratorsList := DuplicateFreeList(NewGeneratorsListDup);
-        return NewGeneratorsList;
-end;
-
+a := OutputTextFile("k4xp2.minion.gapout", false);;
+H :=StabChainME(generators);;
+gen_constraints(H, varnames, a);
+quit;

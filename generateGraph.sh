@@ -3,7 +3,7 @@ case $3 in
 GeneratorsBasic|FullGroup|StabChainGap|StabComplete|OrbitComplete|StabChainME)
   GAPCOMMAND="$3(generators)";;
 
-StabCompleteN|OrbitCompleteN)
+StabCompleteN|OrbitCompleteN|RandomElem)
   GAPCOMMAND="$3($4,generators)";;
 *)
   echo 'Invalid symmetyr braeking method'
@@ -22,4 +22,4 @@ grep -v "**EOF**" $2 > $2.$3$4
 cat $2.gapout >> $2.$3$4
 echo '**EOF**' >> $2.$3$4
 # cleanup
-rm $2.gapin $2.gapout
+#rm $2.gapin $2.gapout
