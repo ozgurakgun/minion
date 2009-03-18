@@ -1089,4 +1089,77 @@ template<typename Var1, typename Var2>
 inline WNPCompData* WatchNeqPrunRight<Var1,Var2>::getVCCompData() const
 { return new WNPCompData(con->var1.getBaseVar(), con->var2.getBaseVar(), val); }
 
+#include "../constraints/tries.h"
+
+template<typename VarArray>
+inline vector<VirtConPtr> TablePosPrun<VarArray>::whyT() const
+{
+  set<VirtConPtr,comp_VCP> expln;
+  TupleTrie& trie = con->data->tupleTrieArrayptr->getTrie(var_num);
+  TrieObj* start = trie.get_next_ptr(trie.trie_data, val); //node for the pruned value
+  if(!start) //if pruned value is not in any tuple, just say there was no reason for the pruning
+    return vector<VirtConPtr>();
+  trie.getPosExpl(con->vars,
+		  start->offset_ptr, //the value for the child
+		  1, //at depth 1 in the trie
+		  expln, //where to build the expln into
+#ifdef EAGER
+		  getMemory(con->stateObj).backTrack().current_depth()); //the max depth of pruning to allow
+#else
+		  con->vars[var_num].getDepth(false, val).first);
+#endif
+#ifdef TRIE_PRINT
+  trie.show_trie(con->vars, start->offset_ptr, expln, con->vars[var_num].getDepth(false, val).first);
+#endif
+//   cout << "var=" << var_num << ",val=" << val << "(" << expln.size() << ") ,";
+//   for(set<VirtConPtr,comp_VCP>::iterator curr = expln.begin(); curr != expln.end(); curr++)
+//     cout << **curr << ",";
+//   cout << endl;
+  return vector<VirtConPtr>(expln.begin(), expln.end());
+}
+
+template<typename VarArray>
+inline AbstractConstraint* TablePosPrun<VarArray>::getNeg() const
+{ return new WatchLiteralConstraint<typename VarArray::value_type>(con->stateObj, con->vars[var_num], val); }
+
+template<typename VarArray>
+inline pair<unsigned,unsigned> TablePosPrun<VarArray>::getDepth() const
+{ return con->vars[var_num].getDepth(false, val); }
+
+template<typename VarArray>
+inline bool TablePosPrun<VarArray>::equals(VirtCon* other) const
+{
+  if(guid != other->guid) return false;
+  TPCompData* other_data = reinterpret_cast<TPCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<TPCompData*>(other_data));
+  bool retVal = val == other_data->val && con->vars[var_num].getBaseVar() == other_data->var;
+  delete other_data;
+  return retVal;
+}
+ 
+template<typename VarArray>
+inline bool TablePosPrun<VarArray>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  TPCompData* other_data = reinterpret_cast<TPCompData*>(other->getVCCompData());
+  D_ASSERT(dynamic_cast<TPCompData*>(other_data));
+  bool retVal = val < other_data->val
+    || (val == other_data->val && con->vars[var_num].getBaseVar() < other_data->var);
+  delete other_data;
+  return retVal;
+}
+
+template<typename VarArray>
+inline void TablePosPrun<VarArray>::print(std::ostream& o) const
+{ o << "TablePosPrun(var=" << con->vars[var_num] << ",val=" << val << ")"; }
+
+template<typename VarArray>
+inline size_t TablePosPrun<VarArray>::hash() const
+{ return (val + 17 * con->vars[var_num].getBaseVar().pos()) % 16777619; }
+
+template<typename VarArray>
+inline TPCompData* TablePosPrun<VarArray>::getVCCompData() const
+{ return new TPCompData(con->vars[var_num].getBaseVar(), val); }
+
 #endif

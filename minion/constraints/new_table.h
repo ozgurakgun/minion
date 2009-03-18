@@ -257,6 +257,8 @@ struct NewTableConstraint : public AbstractConstraint
     else
     {
       P("Failed to find new support");
+      D_ASSERT(vars[lit.var].inDomain(lit.val));
+      storeExpl(false, vars[lit.var], lit.val, VirtConPtr(new TablePosPrun<VarArray>(this, (size_t)lit.var, lit.val)));
       vars[lit.var].removeFromDomain(lit.val);
     }
   }  
@@ -290,6 +292,15 @@ struct NewTableConstraint : public AbstractConstraint
     for(unsigned i = 0; i < vars.size(); ++i)
     {
       pair<DomainInt, DomainInt> bounds = data->getDomainBounds(i);
+      //TODO fill these prunings up with NoReasonPruns
+      DomainInt min = vars[i].getMin();
+      DomainInt max = vars[i].getMax();
+      for(DomainInt val = min; val < bounds.first; val++)
+	if(vars[i].inDomain(val))
+	  storeExpl(false, vars[i], val, VirtConPtr(new NoReasonPrun<typename VarArray::value_type>(stateObj, vars[i], val)));
+      for(DomainInt val = bounds.second + 1; val <= max; val++)
+	if(vars[i].inDomain(val))
+	  storeExpl(false, vars[i], val, VirtConPtr(new NoReasonPrun<typename VarArray::value_type>(stateObj, vars[i], val)));
       vars[i].setMin(bounds.first);
       vars[i].setMax(bounds.second);
 
@@ -304,6 +315,8 @@ struct NewTableConstraint : public AbstractConstraint
         }
         else
         {
+	  if(vars[i].inDomain(x))
+	    storeExpl(false, vars[i], x, VirtConPtr(new TablePosPrun<VarArray>(this, i, x)));
           vars[i].removeFromDomain(x);
         }
       }
@@ -323,6 +336,9 @@ struct NewTableConstraint : public AbstractConstraint
     return anyvars;
   }
 
+  virtual void print(std::ostream& o) const { o << "Table"; }
+  
+  virtual void printNeg(std::ostream& o) const { o << "NegativeTable"; }
 };
 
 inline TupleTrieArray* TupleList::getTries()

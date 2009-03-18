@@ -231,6 +231,13 @@ if(IG_PRINT)
 	set(CFLAGS "${CFLAGS} -DIG_PRINT")
 endif()
 
+option(TRIE_PRINT "" OFF)
+if(TRIE_PRINT)
+	message(STATUS "Enabling trie printing")
+	set(BINARY "${BINARY}-trieprint")
+	set(CFLAGS "${CFLAGS} -DTRIE_PRINT")
+endif()
+
 option(INFO "" OFF)
 if(INFO)
 	message(STATUS "Enabling INFO")
