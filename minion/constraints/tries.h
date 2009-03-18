@@ -126,6 +126,27 @@ struct TupleTrie
   vector<EarlyTrieObj> initial_trie;
   
   TrieObj* trie_data;  // This is the actual trie used during search.
+
+  //Takes as input node curr_pos in the trie, the child of the pruned value whose
+  //removal is being explained.
+  //Do an inorder traverse of the trie, but stop whenever a node is found that was pruned no deeper
+  //than the max depth and add it to the explanation being build. The max depth
+  //is the depth at which the value whose removal we're explaining was pruned.
+  //The reason for this limit is to avoid producing an explanation involving a value pruned subsequently
+  //when doing lazy learning.
+  template<typename VarArray,typename Set>
+  void getPosExpl(VarArray& vars, TrieObj* curr_pos, int depth, Set& pruns, int maxDepth)
+  {
+    if(depth == arity) { D_ASSERT(false); return; } //shouldn't run out of values without finding a pruned node
+    int mapped_d = map_depth(depth);
+    while(curr_pos->val != MAXINT) {
+      if(vars[mapped_d].inDomain(curr_pos->val) || vars[mapped_d].getDepth(false, curr_pos->val).first > maxDepth)
+	getPosExpl(vars, curr_pos->offset_ptr, depth + 1, pruns, maxDepth);
+      else
+	pruns.insert(vars[mapped_d].getExpl(false, curr_pos->val));
+      curr_pos++;
+    }
+  }
   
   void build_final_trie()
   {
@@ -144,6 +165,54 @@ struct TupleTrie
 	vector<EarlyTrieObj> v;
 	initial_trie.swap(v);
   }
+
+#ifdef TRIE_PRINT
+
+#include <fstream>
+
+  template<typename VarArray,typename Set>
+  void show_trie_recursive(const VarArray& vars, TrieObj* curr_pos, const int depth, const Set& pruns, 
+			   const int maxDepth, const unsigned parent, unsigned& next_key, ofstream& fileout)
+  {
+    if(depth == arity) return;
+    int mapped_d = map_depth(depth);
+    while(curr_pos->val != MAXINT) {
+      unsigned curr_key = next_key++;
+      if(!vars[mapped_d].inDomain(curr_pos->val)) 
+	if(pruns.find(vars[mapped_d].getExpl(false, curr_pos->val)) != pruns.end())
+	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "\",style=\"filled\",fillcolor=\"green\"]" << endl;
+	else if(vars[mapped_d].getDepth(false, curr_pos->val).first <= maxDepth)
+	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "\",style=\"filled\",fillcolor=\"orange\"]" << endl;
+	else
+	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "\",style=\"filled\",fillcolor=\"red\"]" << endl;
+      else
+	fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "\"]" << endl;	
+      fileout << parent << " -> " << curr_key << endl;
+      show_trie_recursive(vars, curr_pos->offset_ptr, depth + 1, pruns, maxDepth, curr_key, next_key, fileout);
+      curr_pos++;
+    }
+  }
+
+  template<typename VarArray,typename Set>
+  void show_trie(const VarArray& vars, TrieObj* start_pos, const Set& pruns, int maxDepth)
+  {
+    //open file
+    ofstream fileout("/tmp/graph");
+    //write header
+    fileout << "digraph trie {" << endl;
+    //print root
+    fileout << "0[label=\"root\"]" << endl;
+    //start recursion
+    unsigned next_key = 1;
+    show_trie_recursive(vars, start_pos, 1, pruns, maxDepth, 0, next_key, fileout);
+    //print footer
+    fileout << "}" << endl;
+    //build and display using system in stdlib.h
+    int rubbish = system("dot -Tsvg -o /tmp/graph.svg /tmp/graph");
+    rubbish = system("eog /tmp/graph.svg");
+  }
+
+#endif
   
   void print_trie()
   {

@@ -465,6 +465,41 @@ class WatchNeqPrunRight : public VirtCon {
   virtual WNPCompData* getVCCompData() const;
 };
 
+//Compare by variable and value only, since only one such pruning can ever happen we needn't
+//include the constraint in the comparison. This observation applies to other comparisons above,
+//but it took me until now to realise.
+class TPCompData : public VCCompData {
+ public: 
+  Var var;
+  DomainInt val;
+
+  TPCompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
+};
+
+class TrieData;
+class TrieState;
+template<typename VarArray, typename TableDataType, typename TableStateType>
+struct NewTableConstraint;
+
+template<typename VarArray>
+class TablePosPrun : public VirtCon {
+  NewTableConstraint<VarArray,TrieData,TrieState>* con;
+  size_t var_num;
+  DomainInt val;
+
+ public:
+ TablePosPrun(NewTableConstraint<VarArray,TrieData,TrieState>* _con, size_t _var_num, DomainInt _val) : 
+   VirtCon(17000), con(_con), var_num(_var_num), val(_val) {}
+  virtual vector<VirtConPtr> whyT() const;
+  virtual AbstractConstraint* getNeg() const;
+  virtual pair<unsigned,unsigned> getDepth() const;
+  virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
+  virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
+  virtual TPCompData* getVCCompData() const;
+};
+
 inline void print_recursive(vector<int> count_seq, vector<VirtConPtr> why) {
   for(size_t i = 0; i < why.size(); i++) {
     cout << count_seq << endl;
