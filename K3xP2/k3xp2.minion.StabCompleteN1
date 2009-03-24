@@ -22,5 +22,6 @@ difference(Nodes[2], Nodes[5], Edges[8])
 alldiff(Nodes)
 alldiff(Edges)
 
+lexleq( [], [] )
 lexleq( [Nodes_1__,Nodes_4__,Edges_0__,Edges_3__,Edges_7__,], [Nodes_2__,Nodes_5__,Edges_1__,Edges_4__,Edges_8__,] )
 **EOF**
