@@ -120,7 +120,7 @@ StabChainME := function(GeneratorsList)
 end;
 
 RandomElem := function(n, GeneratorsList)
-        local NewGeneratorsList, NewGeneratorsListDup i, RepElem;
+        local NewGeneratorsList, NewGeneratorsListDup, i, g, RepElem;
 
         NewGeneratorsListDup := [];
         g := Group(GeneratorsList);
