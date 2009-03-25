@@ -1,7 +1,0 @@
-lexleq( [], [] )
-lexleq( [Nodes_0__,Nodes_1__,Nodes_2__,Nodes_3__,Nodes_4__,Edges_0__,Edges_1__,Edges_2__,Edges_3__,Edges_4__,Edges_6__,Edges_7__,], [Nodes_4__,Nodes_5__,Nodes_3__,Nodes_1__,Nodes_2__,Edges_5__,Edges_3__,Edges_4__,Edges_2__,Edges_0__,Edges_7__,Edges_8__,] )
-lexleq( [Nodes_0__,Nodes_1__,Nodes_2__,Nodes_3__,Nodes_4__,Edges_0__,Edges_1__,Edges_2__,Edges_3__,Edges_4__,Edges_6__,Edges_7__,], [Nodes_5__,Nodes_3__,Nodes_4__,Nodes_2__,Nodes_0__,Edges_4__,Edges_5__,Edges_3__,Edges_1__,Edges_2__,Edges_8__,Edges_6__,] )
-lexleq( [Nodes_0__,Nodes_1__,Nodes_2__,Edges_0__,Edges_1__,Edges_2__,], [Nodes_3__,Nodes_4__,Nodes_5__,Edges_3__,Edges_4__,Edges_5__,] )
-lexleq( [Nodes_0__,Nodes_1__,Nodes_3__,Nodes_4__,Edges_0__,Edges_1__,Edges_3__,Edges_4__,Edges_6__,Edges_7__,], [Nodes_1__,Nodes_2__,Nodes_4__,Nodes_5__,Edges_2__,Edges_0__,Edges_5__,Edges_3__,Edges_7__,Edges_8__,] )
-lexleq( [Nodes_0__,Nodes_1__,Nodes_3__,Nodes_4__,Edges_0__,Edges_1__,Edges_3__,Edges_4__,Edges_6__,Edges_7__,], [Nodes_2__,Nodes_0__,Nodes_5__,Nodes_3__,Edges_1__,Edges_2__,Edges_4__,Edges_5__,Edges_8__,Edges_6__,] )
-lexleq( [Nodes_1__,Nodes_4__,Edges_0__,Edges_3__,Edges_7__,], [Nodes_2__,Nodes_5__,Edges_1__,Edges_4__,Edges_8__,] )
