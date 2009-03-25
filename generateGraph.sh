@@ -1,4 +1,10 @@
 #!/bin/bash
+
+if [ "$#" = "0" ]; then
+	 echo './generateGraph <minion> <instance> <method> <method parameter (optional)>'
+	 exit 1
+fi
+
 case $3 in
 GeneratorsBasic|FullGroup|StabChainGap|StabComplete|OrbitComplete|StabChainME)
   GAPCOMMAND="$3(generators)";;
@@ -6,7 +12,7 @@ GeneratorsBasic|FullGroup|StabChainGap|StabComplete|OrbitComplete|StabChainME)
 StabCompleteN|OrbitCompleteN|RandomElem)
   GAPCOMMAND="$3($4,generators)";;
 *)
-  echo 'Invalid symmetyr braeking method'
+  echo 'Invalid symmetry braeking method'
   exit;;
 esac
 $1 -Xgraph $2 > $2.gapin
