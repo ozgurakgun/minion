@@ -182,7 +182,7 @@ namespace Controller {
     set<depth_VirtConPtr,comp_d_VCP> curr_d; 
     unordered_set<VirtConPtr,VirtConPtrHash> earlier; 
     int retVal = 0; //the deepest thing that ends up in earlier
-    cout << "Failure:" << *failure;
+    //cout << "Failure:" << *failure;
     //make firstUip cut
     pair<bool,int> dist = distribute(stateObj, curr_d, earlier, failure->whyT());
     retVal = dist.second;
@@ -719,11 +719,15 @@ inline size_t MHAV::hash() const
 
 inline vector<VirtConPtr> AssgOrPrun::whyT() const
 {
-  vector<VirtConPtr> retVal;
-  if(assg->getDepth().second != 0)
-    retVal = assg->whyT();
-  const vector<VirtConPtr>& prun_whyT = prun->whyT();
-  retVal.insert(retVal.end(), prun_whyT.begin(), prun_whyT.end());
+  vector<VirtConPtr> retVal = prun->whyT();
+  //when the assignment is a decision, just return the nogood label for the pruning
+  if(assg->getDepth().second == 0) { 
+    retVal.reserve(retVal.size() + 1);
+    retVal.push_back(assg); 
+  } else { //otherwise resolve explanations for assignment and pruning (effectively)
+    const vector<VirtConPtr> assg_whyT = assg->whyT();
+    retVal.insert(retVal.end(), assg_whyT.begin(), assg_whyT.end());
+  }
   return retVal;
 }
 
@@ -1099,17 +1103,18 @@ inline vector<VirtConPtr> TablePosPrun<VarArray>::whyT() const
   TrieObj* start = trie.get_next_ptr(trie.trie_data, val); //node for the pruned value
   if(!start) //if pruned value is not in any tuple, just say there was no reason for the pruning
     return vector<VirtConPtr>();
+#ifdef EAGER
+  pair<unsigned,unsigned> maxDepth = getMemory(con->stateObj).backTrack().next_timestamp();
+#else
+  pair<unsigned,unsigned> maxDepth = con->vars[var_num].getDepth(false, val);
+#endif
   trie.getPosExpl(con->vars,
 		  start->offset_ptr, //the value for the child
 		  1, //at depth 1 in the trie
 		  expln, //where to build the expln into
-#ifdef EAGER
-		  getMemory(con->stateObj).backTrack().current_depth()); //the max depth of pruning to allow
-#else
-		  con->vars[var_num].getDepth(false, val).first);
-#endif
+		  maxDepth);
 #ifdef TRIE_PRINT
-  trie.show_trie(con->vars, start->offset_ptr, expln, con->vars[var_num].getDepth(false, val).first);
+  trie.show_trie(con->vars, start->offset_ptr, expln, maxDepth, var_num, val);
 #endif
 //   cout << "var=" << var_num << ",val=" << val << "(" << expln.size() << ") ,";
 //   for(set<VirtConPtr,comp_VCP>::iterator curr = expln.begin(); curr != expln.end(); curr++)

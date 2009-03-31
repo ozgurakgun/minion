@@ -135,15 +135,17 @@ struct TupleTrie
   //The reason for this limit is to avoid producing an explanation involving a value pruned subsequently
   //when doing lazy learning.
   template<typename VarArray,typename Set>
-  void getPosExpl(VarArray& vars, TrieObj* curr_pos, int depth, Set& pruns, int maxDepth)
+  void getPosExpl(VarArray& vars, TrieObj* curr_pos, int depth, Set& pruns, pair<unsigned,unsigned> maxDepth)
   {
     if(depth == arity) { D_ASSERT(false); return; } //shouldn't run out of values without finding a pruned node
     int mapped_d = map_depth(depth);
     while(curr_pos->val != MAXINT) {
-      if(vars[mapped_d].inDomain(curr_pos->val) || vars[mapped_d].getDepth(false, curr_pos->val).first > maxDepth)
+      if(vars[mapped_d].inDomain(curr_pos->val) || vars[mapped_d].getDepth(false, curr_pos->val) > maxDepth)
 	getPosExpl(vars, curr_pos->offset_ptr, depth + 1, pruns, maxDepth);
-      else
+      else {
+	D_ASSERT(vars[mapped_d].getDepth(false, curr_pos->val) != maxDepth);
 	pruns.insert(vars[mapped_d].getExpl(false, curr_pos->val));
+      }
       curr_pos++;
     }
   }
@@ -172,7 +174,7 @@ struct TupleTrie
 
   template<typename VarArray,typename Set>
   void show_trie_recursive(const VarArray& vars, TrieObj* curr_pos, const int depth, const Set& pruns, 
-			   const int maxDepth, const unsigned parent, unsigned& next_key, ofstream& fileout)
+			   const pair<unsigned,unsigned> maxDepth, const unsigned parent, unsigned& next_key, ofstream& fileout)
   {
     if(depth == arity) return;
     int mapped_d = map_depth(depth);
@@ -180,11 +182,11 @@ struct TupleTrie
       unsigned curr_key = next_key++;
       if(!vars[mapped_d].inDomain(curr_pos->val)) 
 	if(pruns.find(vars[mapped_d].getExpl(false, curr_pos->val)) != pruns.end())
-	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "\",style=\"filled\",fillcolor=\"green\"]" << endl;
-	else if(vars[mapped_d].getDepth(false, curr_pos->val).first <= maxDepth)
-	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "\",style=\"filled\",fillcolor=\"orange\"]" << endl;
+	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "@" << vars[mapped_d].getDepth(false, curr_pos->val) << "\",style=\"filled\",fillcolor=\"green\"]" << endl;
+	else if(vars[mapped_d].getDepth(false, curr_pos->val) <= maxDepth)
+	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "@" << vars[mapped_d].getDepth(false, curr_pos->val)  << "\",style=\"filled\",fillcolor=\"orange\"]" << endl;
 	else
-	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "\",style=\"filled\",fillcolor=\"red\"]" << endl;
+	  fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "@" << vars[mapped_d].getDepth(false, curr_pos->val)  << "\",style=\"filled\",fillcolor=\"red\"]" << endl;
       else
 	fileout << curr_key << "[label=\"v" << vars[mapped_d].getBaseVar().pos() << "=" << curr_pos->val << "\"]" << endl;	
       fileout << parent << " -> " << curr_key << endl;
@@ -194,14 +196,15 @@ struct TupleTrie
   }
 
   template<typename VarArray,typename Set>
-  void show_trie(const VarArray& vars, TrieObj* start_pos, const Set& pruns, int maxDepth)
+    void show_trie(const VarArray& vars, TrieObj* start_pos, const Set& pruns, pair<unsigned,unsigned> maxDepth,
+		   size_t var_num, DomainInt val)
   {
     //open file
     ofstream fileout("/tmp/graph");
     //write header
     fileout << "digraph trie {" << endl;
     //print root
-    fileout << "0[label=\"root\"]" << endl;
+    fileout << "0[label=\"root=v" << vars[var_num].getBaseVar().pos() << "=" << val << "@" << vars[var_num].getDepth(false,val) << "\"]" << endl;
     //start recursion
     unsigned next_key = 1;
     show_trie_recursive(vars, start_pos, 1, pruns, maxDepth, 0, next_key, fileout);
