@@ -669,7 +669,7 @@ public:
       prun_explns[b.var_num][i - getInitialMin(b)] = VirtConPtr(new VCEagerWrapper(vc));
 #endif
       prun_depths[b.var_num][i - getInitialMin(b)] = getMemory(stateObj).backTrack().next_timestamp();
-      cout << "stored " << *vc << "(" << vc.get() << ") for pruning " << i << " from " << b.var_num << "@" << prun_depths[b.var_num][i - getInitialMin(b)] << endl;
+      //cout << "stored " << *vc << "(" << vc.get() << ") for pruning " << i << " from " << b.var_num << "@" << prun_depths[b.var_num][i - getInitialMin(b)] << endl;
     } else {
       //don't overwrite an explanation for the current assignment
       if(isAssigned(b) && i == getAssignedValue(b)) {
@@ -700,7 +700,7 @@ public:
 #ifndef EAGER
       D_ASSERT(getExpl(b, assg, i).get() == vc.get());
 #endif
-      cout << "stored " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
+      //cout << "stored " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
     }
     //print_recursive(vector<int>(), vc->whyT());
   }
@@ -735,7 +735,7 @@ public:
 #ifndef EAGER
     D_ASSERT(getExpl(b, true, i).get() == vc.get());
 #endif
-    cout << "stored unchecked " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
+    //cout << "stored unchecked " << *vc << "(" << vc.get() << ") for assigned " << b.var_num << " to " << i << "@" << assg_depth[b.var_num] << endl;
     //print_recursive(vector<int>(), vc->whyT());
   }
   

@@ -57,8 +57,8 @@ struct WatchNeqConstraint : public AbstractConstraint
 	  if(var1.isAssigned() && var2.isAssigned() && var1.getAssignedValue() == var2.getAssignedValue())
 	  {
 	    //the following will cause a DWO
-	    storeExpl(false, var2, var1.getAssignedValue(), VirtConPtr(new WatchNeqPrunRight<Var1,Var2>(this, var1.getAssignedValue())));
-	    var1.removeFromDomain(var1.getAssignedValue());
+	    storeExpl(false, var2, var2.getAssignedValue(), VirtConPtr(new WatchNeqPrunRight<Var1,Var2>(this, var2.getAssignedValue())));
+	    var2.removeFromDomain(var2.getAssignedValue());
 	    return;
 	  }
 	  
