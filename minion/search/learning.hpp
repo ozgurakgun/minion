@@ -194,7 +194,7 @@ namespace Controller {
       retVal = max(retVal, distribute(stateObj, curr_d, earlier, deepest->whyT()).second);
     }
     AbstractConstraint* firstUIP = makeCon(stateObj, earlier, curr_d);
-    cout << "firstUIP:" << *firstUIP << endl;
+    //cout << "firstUIP:" << *firstUIP << endl;
     
     //also make lastUIP in case it's needed, code will work if firstUIP=lastUIP
     depth_VirtConPtr deepest;
@@ -215,10 +215,6 @@ namespace Controller {
     }
     AbstractConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
     //try firstUIP
-#ifdef LASTUIP
-    NogoodConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
-    cout << "lastUIP:" << *lastUIP << endl;
-#endif
     world_pop(stateObj);
     maybe_print_search_action(stateObj, "bt");
     firstUIP->setup();
@@ -233,10 +229,6 @@ namespace Controller {
     } else { //if not use the first decision cut
       firstUIP->cleanup(); //remove effects of propagating it before
       D_ASSERT(getQueue(stateObj).isQueuesEmpty());
-#ifndef LASTUIP
-      //cout << "adding lastUIP" << endl;
-      cout << "lastUIP:" << *lastUIP << endl;
-#endif
       getState(stateObj).addConstraintMidsearch(lastUIP);
       //cout << "start trying lastUIP" << endl;
       lastUIP->setup();
@@ -310,6 +302,7 @@ namespace Controller {
 template<typename VarRef>
 inline vector<VirtConPtr> LessConstant<VarRef>::whyT() const
 {
+  PROP_INFO_ADDONE(WhyTLessConstant);
   D_ASSERT(var.getInitialMax() >= constant); //make sure hasn't been true since the start
   vector<VirtConPtr> retVal;
   retVal.reserve(var.getInitialMax() - constant + 1);
@@ -373,6 +366,7 @@ inline LCCompData* LessConstant<VarRef>::getVCCompData() const
 template<typename VarRef>
 inline vector<VirtConPtr> GreaterConstant<VarRef>::whyT() const
 {
+  PROP_INFO_ADDONE(WhyTGreaterConstant);
   D_ASSERT(constant >= var.getInitialMin()); //shouldn't ask why true- been true since start
   vector<VirtConPtr> retVal;
   retVal.reserve(constant - var.getInitialMin() + 1);
@@ -436,6 +430,7 @@ inline GCCompData* GreaterConstant<VarRef>::getVCCompData() const
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunLeft<VarRef1,VarRef2>::whyT() const //return var2 <= val
 { 
+  PROP_INFO_ADDONE(WhyTWatchlessPrunLeft);
 #ifdef GLEARN
   vector<VirtConPtr> retVal;
   const DomainInt var2_initmax = con->var2.getInitialMax();
@@ -495,6 +490,7 @@ inline WPLCompData* WatchlessPrunLeft<VarRef1,VarRef2>::getVCCompData() const
 template<typename VarRef1, typename VarRef2>
 inline vector<VirtConPtr> WatchlessPrunRight<VarRef1,VarRef2>::whyT() const //return var1 >= val 
 { 
+  PROP_INFO_ADDONE(WhyTWatchlessPrunRight);
 #ifdef GLEARN
   vector<VirtConPtr> retVal;
   retVal.reserve(val - con->var1.getInitialMin());
@@ -551,7 +547,10 @@ inline WPRCompData* WatchlessPrunRight<VarRef1,VarRef2>::getVCCompData() const
 { return new WPRCompData(con->var1.getBaseVar(), con->var2.getBaseVar(), val); }
 
 inline vector<VirtConPtr> NegOfPostedCon::whyT() const
-{ return con->whyF(); }
+{ 
+  PROP_INFO_ADDONE(WhyTNegOfPostedCon);
+  return con->whyF(); 
+}
 
 inline AbstractConstraint* NegOfPostedCon::getNeg() const
 { return con->copy(); }
@@ -582,6 +581,7 @@ inline size_t NegOfPostedCon::hash() const
 
 inline vector<VirtConPtr> DisjunctionPrun::whyT() const
 {
+  PROP_INFO_ADDONE(WhyTDisjunctionPrun);
   vector<VirtConPtr> retVal;
   vector<AbstractConstraint*>& child_cons = dj->child_constraints;
   const size_t child_cons_s = child_cons.size();
@@ -644,7 +644,10 @@ inline size_t DisjunctionPrun::hash() const
 
 template<typename VarRef>
 inline vector<VirtConPtr> BecauseOfAssignmentPrun<VarRef>::whyT() const
-{ return vector<VirtConPtr>(1, var.getExpl(true, assigned)); } //return the assignment that caused it
+{ 
+  PROP_INFO_ADDONE(WhyTBecauseOfAssignmentPrun);
+  return vector<VirtConPtr>(1, var.getExpl(true, assigned)); //return the assignment that caused it
+} 
 
 template<typename VarRef>
 inline AbstractConstraint* BecauseOfAssignmentPrun<VarRef>::getNeg() const
@@ -692,7 +695,10 @@ inline BOAPCompData* BecauseOfAssignmentPrun<VarRef>::getVCCompData() const
 { return new BOAPCompData(var.getBaseVar(), pruned, assigned); }
 
 inline vector<VirtConPtr> MHAV::whyT() const
-{ return expls; } //just return all the virtcons for the prunings to the variable
+{ 
+  PROP_INFO_ADDONE(WhyTMHAV);
+  return expls; //just return all the virtcons for the prunings to the variable
+}
 
 inline AbstractConstraint* MHAV::getNeg() const 
 { D_ASSERT(false); return NULL; }
@@ -719,6 +725,7 @@ inline size_t MHAV::hash() const
 
 inline vector<VirtConPtr> AssgOrPrun::whyT() const
 {
+  PROP_INFO_ADDONE(WhyTAssgOrPrun);
   vector<VirtConPtr> retVal = prun->whyT();
   //when the assignment is a decision, just return the nogood label for the pruning
   if(assg->getDepth().second == 0) { 
@@ -758,6 +765,7 @@ inline size_t AssgOrPrun::hash() const
 template<typename VarRef>
 inline vector<VirtConPtr> BecauseOfPruningsAssignment<VarRef>::whyT() const
 {
+  PROP_INFO_ADDONE(WhyTBecauseOfPruningsAssignment);
   vector<VirtConPtr> retVal;
   const DomainInt var_initmin = var.getInitialMin();
   const DomainInt var_initmax = var.getInitialMax();
@@ -816,6 +824,7 @@ inline BOPACompData* BecauseOfPruningsAssignment<VarRef>::getVCCompData() const
 template<typename VarRef>
 inline vector<VirtConPtr> DecisionAssg<VarRef>::whyT() const
 {
+  PROP_INFO_ADDONE(WhyTDecisionAssg);
 #ifndef EAGER //it's OK just to call this for eager, because the vector won't be used
   D_ASSERT(false); //shouldn't be called
 #endif
@@ -868,7 +877,10 @@ inline DACompData* DecisionAssg<VarRef>::getVCCompData() const
 
 template<typename VarRef>
 inline vector<VirtConPtr> NoReasonPrun<VarRef>::whyT() const
-{ return vector<VirtConPtr>(); }
+{ 
+  PROP_INFO_ADDONE(WhyTNoReasonPrun);
+  return vector<VirtConPtr>(); 
+}
 
 template<typename VarRef>
 inline AbstractConstraint* NoReasonPrun<VarRef>::getNeg() const
@@ -916,7 +928,10 @@ inline NRPCompData* NoReasonPrun<VarRef>::getVCCompData() const
 
 template<typename VarRef>
 inline vector<VirtConPtr> NoReasonAssg<VarRef>::whyT() const
-{ return vector<VirtConPtr>(); }
+{
+  PROP_INFO_ADDONE(WhyTNoReasonAssg);
+  return vector<VirtConPtr>(); 
+}
 
 template<typename VarRef>
 inline AbstractConstraint* NoReasonAssg<VarRef>::getNeg() const
@@ -964,6 +979,7 @@ inline NRACompData* NoReasonAssg<VarRef>::getVCCompData() const
 
 inline vector<VirtConPtr> AMOV::whyT() const
 {
+  PROP_INFO_ADDONE(WhyTAMOV);
   vector<VirtConPtr> retVal;
   retVal.reserve(2);
   retVal.push_back(assg_first);
@@ -997,7 +1013,10 @@ inline size_t AMOV::hash() const
 
 template<typename Var1, typename Var2>
 inline vector<VirtConPtr> WatchNeqPrunLeft<Var1,Var2>::whyT() const
-{ return vector<VirtConPtr>(1, con->var2.getExpl(true, val)); }
+{ 
+  PROP_INFO_ADDONE(WhyTWatchNeqPrunLeft);
+  return vector<VirtConPtr>(1, con->var2.getExpl(true, val)); 
+}
 
 template<typename Var1, typename Var2>
 inline AbstractConstraint* WatchNeqPrunLeft<Var1,Var2>::getNeg() const
@@ -1046,7 +1065,10 @@ inline WNPCompData* WatchNeqPrunLeft<Var1,Var2>::getVCCompData() const
 
 template<typename Var1, typename Var2>
 inline vector<VirtConPtr> WatchNeqPrunRight<Var1,Var2>::whyT() const
-{ return vector<VirtConPtr>(1, con->var1.getExpl(true, val)); }
+{ 
+  PROP_INFO_ADDONE(WhyTWatchNeqPrunRight);
+  return vector<VirtConPtr>(1, con->var1.getExpl(true, val)); 
+}
 
 template<typename Var1, typename Var2>
 inline AbstractConstraint* WatchNeqPrunRight<Var1,Var2>::getNeg() const
@@ -1098,13 +1120,14 @@ inline WNPCompData* WatchNeqPrunRight<Var1,Var2>::getVCCompData() const
 template<typename VarArray>
 inline vector<VirtConPtr> TablePosPrun<VarArray>::whyT() const
 {
+  PROP_INFO_ADDONE(WhyTTablePosPrun);
   set<VirtConPtr,comp_VCP> expln;
   TupleTrie& trie = con->data->tupleTrieArrayptr->getTrie(var_num);
   TrieObj* start = trie.get_next_ptr(trie.trie_data, val); //node for the pruned value
   if(!start) //if pruned value is not in any tuple, just say there was no reason for the pruning
     return vector<VirtConPtr>();
 #ifdef EAGER
-  pair<unsigned,unsigned> maxDepth = getMemory(con->stateObj).backTrack().next_timestamp();
+  pair<unsigned,unsigned> maxDepth = getMemory(con->stateObj).backTrack().check_next_timestamp();
 #else
   pair<unsigned,unsigned> maxDepth = con->vars[var_num].getDepth(false, val);
 #endif
