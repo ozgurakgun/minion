@@ -23,7 +23,13 @@ typedef shared_ptr<VirtCon> VirtConPtr;
 
 class VCCompData {
 public:
-  virtual ~VCCompData() {} //needed to make class polymorphic
+  Var var1;
+  Var var2;
+  DomainInt val1;
+  DomainInt val2;
+
+  VCCompData(Var _var1, Var _var2, DomainInt _val1, DomainInt _val2)
+    : var1(_var1), var2(_var2), val1(_val1), val2(_val2) {}
 };
 
 class VirtCon {
@@ -40,7 +46,7 @@ class VirtCon {
   virtual void print(std::ostream& o) const = 0;
   virtual size_t hash() const = 0;
   virtual bool isDecision() const { return false; }
-  virtual VCCompData* getVCCompData() const { return NULL; }
+  virtual VCCompData getVCCompData() const { return VCCompData(Var(), Var(), 0, 0); }
   virtual ~VirtCon() {}
 };
 
@@ -62,7 +68,7 @@ class VCEagerWrapper : public VirtCon {
   virtual bool less(VirtCon* other) const { return b->less(other); }
   virtual void print(std::ostream& o) const { o << "Eager("; b->print(o); o << ")"; }
   virtual size_t hash() const { return b->hash(); }
-  virtual VCCompData* getVCCompData() const { return b->getVCCompData(); }
+  virtual VCCompData getVCCompData() const { return b->getVCCompData(); }
 };
 #endif
 #endif
@@ -101,14 +107,6 @@ class VCEagerWrapper : public VirtCon {
 /*   virtual size_t hash() const; */
 /* };   */
 
-class LCCompData : public VCCompData {
-public:
-  Var var;
-  DomainInt constant;
-
-  LCCompData(Var _var, DomainInt _constant) : var(_var), constant(_constant) {}
-};
-
 template<typename VarRef>
 class LessConstant : public VirtCon { //var < constant
   StateObj* stateObj;
@@ -124,15 +122,7 @@ public:
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
-  virtual LCCompData* getVCCompData() const;
-};
-
-class GCCompData : public VCCompData {
-public:
-  Var var;
-  DomainInt constant;
-
-  GCCompData(Var _var, DomainInt _constant) : var(_var), constant(_constant) {}
+  virtual VCCompData getVCCompData() const;
 };
 
 template<typename VarRef>
@@ -150,16 +140,7 @@ public:
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
-  virtual GCCompData* getVCCompData() const;
-};
-
-class WPLCompData : public VCCompData {
-public:
-  Var var1;
-  Var var2;
-  DomainInt val;
-
-  WPLCompData(Var _var1, Var _var2, DomainInt _val) : var1(_var1), var2(_var2), val(_val) {}
+  virtual VCCompData getVCCompData() const;
 };
 
 template<typename VarRef1, typename VarRef2> //class prototype
@@ -180,16 +161,7 @@ public:
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
-  virtual WPLCompData* getVCCompData() const;
-};
-
-class WPRCompData : public VCCompData {
-public:
-  Var var1;
-  Var var2;
-  DomainInt val;
-
-  WPRCompData(Var _var1, Var _var2, DomainInt _val) : var1(_var1), var2(_var2), val(_val) {}
+  virtual VCCompData getVCCompData() const;
 };
 
 template<typename VarRef1, typename VarRef2>
@@ -207,7 +179,7 @@ public:
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
-  virtual WPRCompData* getVCCompData() const;
+  virtual VCCompData getVCCompData() const;
 };
 
 class NegOfPostedCon : public VirtCon {
@@ -243,15 +215,6 @@ class DisjunctionPrun : public VirtCon {
   virtual size_t hash() const;
 };
 
-class BOAPCompData : public VCCompData {
-public:
-  Var var;
-  DomainInt pruned;
-  DomainInt assigned;
-
-  BOAPCompData(Var _var, DomainInt _pruned, DomainInt _assigned) : var(_var), pruned(_pruned), assigned(_assigned) {}
-};
-
 template<typename VarRef>
 class BecauseOfAssignmentPrun : public VirtCon {
   StateObj* stateObj;
@@ -268,7 +231,7 @@ class BecauseOfAssignmentPrun : public VirtCon {
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
-  virtual BOAPCompData* getVCCompData() const;
+  virtual VCCompData getVCCompData() const;
 };
 
 class MHAV : public VirtCon {
@@ -300,14 +263,6 @@ class AssgOrPrun : public VirtCon {
   virtual size_t hash() const;
 };
 
-class BOPACompData : public VCCompData {
-public:
-  Var var;
-  DomainInt assigned;
-
-  BOPACompData(Var _var, DomainInt _assigned) : var(_var), assigned(_assigned) {}
-};
-
 template<typename VarRef>
 class BecauseOfPruningsAssignment : public VirtCon {
   StateObj* stateObj;
@@ -322,15 +277,7 @@ class BecauseOfPruningsAssignment : public VirtCon {
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
-  virtual BOPACompData* getVCCompData() const;
-};
-
-class DACompData : public VCCompData {
-public:
-  Var var;
-  DomainInt val;
-
-  DACompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
+  virtual VCCompData getVCCompData() const;
 };
 
 template<typename VarRef>
@@ -349,15 +296,7 @@ public:
   virtual void print(std::ostream& o) const;  
   virtual bool isDecision() const { return true; }
   virtual size_t hash() const;
-  virtual DACompData* getVCCompData() const;
-};
-
-class NRPCompData : public VCCompData {
-public:
-  Var var;
-  DomainInt val;
-
-  NRPCompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
+  virtual VCCompData getVCCompData() const;
 };
 
 template<typename VarRef>
@@ -375,15 +314,7 @@ public:
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
-  virtual NRPCompData* getVCCompData() const;
-};
-
-class NRACompData : public VCCompData {
-public:
-  Var var;
-  DomainInt val;
-
-  NRACompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
+  virtual VCCompData getVCCompData() const;
 };
 
 template<typename VarRef>
@@ -401,7 +332,7 @@ public:
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
-  virtual NRACompData* getVCCompData() const;
+  virtual VCCompData getVCCompData() const;
 };
 
 class AMOV : public VirtCon { //assign two values for same var
@@ -417,15 +348,6 @@ class AMOV : public VirtCon { //assign two values for same var
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;
   virtual size_t hash() const;
-};
-
-class WNPCompData : public VCCompData {
-public:
-  Var var1;
-  Var var2;
-  DomainInt val;
-
-  WNPCompData(Var _var1, Var _var2, DomainInt _val) : var1(_var1), var2(_var2), val(_val) {}
 };
 
 template<typename VarRef1, typename VarRef2> //class prototype
@@ -445,7 +367,7 @@ class WatchNeqPrunLeft : public VirtCon {
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
-  virtual WNPCompData* getVCCompData() const;
+  virtual VCCompData getVCCompData() const;
 };
 
 template<typename Var1, typename Var2>
@@ -462,18 +384,7 @@ class WatchNeqPrunRight : public VirtCon {
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
-  virtual WNPCompData* getVCCompData() const;
-};
-
-//Compare by variable and value only, since only one such pruning can ever happen we needn't
-//include the constraint in the comparison. This observation applies to other comparisons above,
-//but it took me until now to realise.
-class TPCompData : public VCCompData {
- public: 
-  Var var;
-  DomainInt val;
-
-  TPCompData(Var _var, DomainInt _val) : var(_var), val(_val) {}
+  virtual VCCompData getVCCompData() const;
 };
 
 class TrieData;
@@ -497,7 +408,7 @@ class TablePosPrun : public VirtCon {
   virtual bool less(VirtCon* other) const;
   virtual void print(std::ostream& o) const;  
   virtual size_t hash() const;
-  virtual TPCompData* getVCCompData() const;
+  virtual VCCompData getVCCompData() const;
 };
 
 inline void print_recursive(vector<int> count_seq, vector<VirtConPtr> why) {
