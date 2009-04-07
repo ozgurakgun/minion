@@ -27,7 +27,7 @@
 #ifndef _SYS_CONSTANTS_H
 #define _SYS_CONSTANTS_H
 
-#ifdef USE_GMP
+#if 0
 #include <gmpxx.h>
 typedef mpz_class BigInt;
 #else
