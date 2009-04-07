@@ -126,6 +126,13 @@ public:
     D_ASSERT(current_depth_m >= 0);
     return make_pair((unsigned)current_depth_m, seq_no++); 
   }
+
+  pair<unsigned,unsigned> check_next_timestamp() //don't increment
+  {
+    D_ASSERT(current_depth_m >= 0);
+    return make_pair((unsigned)current_depth_m, seq_no); 
+  }
+    
 };
 
 #endif
