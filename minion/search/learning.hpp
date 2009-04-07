@@ -1121,7 +1121,7 @@ template<typename VarArray>
 inline vector<VirtConPtr> TablePosPrun<VarArray>::whyT() const
 {
   PROP_INFO_ADDONE(WhyTTablePosPrun);
-  set<VirtConPtr,comp_VCP> expln;
+  unordered_set<VirtConPtr,VirtConPtrHash> expln;
   TupleTrie& trie = con->data->tupleTrieArrayptr->getTrie(var_num);
   TrieObj* start = trie.get_next_ptr(trie.trie_data, val); //node for the pruned value
   if(!start) //if pruned value is not in any tuple, just say there was no reason for the pruning
