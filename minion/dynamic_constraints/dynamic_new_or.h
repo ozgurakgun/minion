@@ -189,20 +189,39 @@ struct Dynamic_OR : public ParentConstraint
       }
       
       const size_t cons_s = child_constraints.size();
-      for(int i = 0; i < cons_s; ++i)
-      {
-        if(i != watched_constraint[0] && i != watched_constraint[1])
+
+       int loop_start = watched_constraint[tripped_constraint] + 1;
+        int skip_pos = watched_constraint[other_constraint];
+
+        for(int i = loop_start; i < cons_s; ++i)
         {
-          GET_ASSIGNMENT(assignment, child_constraints[i]);
-          if(flag)
+          if(i != skip_pos)
           {
-            watch_assignment(child_constraints[i], dt + tripped_constraint * assign_size, assignment);
-            watched_constraint[tripped_constraint] = i;
-            P("New support. Switch " << tripped_constraint << " to " << i);
-            return;
+            GET_ASSIGNMENT(assignment, child_constraints[i]);
+            if(flag)
+            {
+              watch_assignment(child_constraints[i], dt + tripped_constraint * assign_size, assignment);
+              watched_constraint[tripped_constraint] = i;
+              P("New support. Switch " << tripped_constraint << " to " << i);
+              return;
+            }
           }
         }
-      }
+
+        for(int i = 0; i < loop_start; ++i)
+          {
+            if(i != skip_pos)
+            {
+              GET_ASSIGNMENT(assignment, child_constraints[i]);
+              if(flag)
+              {
+                watch_assignment(child_constraints[i], dt + tripped_constraint * assign_size, assignment);
+                watched_constraint[tripped_constraint] = i;
+                P("New support. Switch " << tripped_constraint << " to " << i);
+                return;
+              }
+            }
+          }
       
       P("Start propagating " << watched_constraint[other_constraint]);
       // Need to propagate!
