@@ -22,8 +22,15 @@ struct VirtConPtrHash : unary_function<VirtCon, size_t>
 
 typedef pair<pair<unsigned,unsigned>,VirtConPtr> depth_VirtConPtr;
 
+#ifndef GLEARN
 inline bool operator<(const depth_VirtConPtr& l, const depth_VirtConPtr& r)
 { return l.first < r.first || (l.first == r.first && l.second->less(r.second.get())); }
+#else
+inline bool operator<(const depth_VirtConPtr& l, const depth_VirtConPtr& r)
+{ return l.first < r.first; }
+inline bool operator==(const depth_VirtConPtr& l, const depth_VirtConPtr& r)
+{ return l.first == r.first; }
+#endif
 
 //sort descending
 struct comp_d_VCP : binary_function<depth_VirtConPtr,depth_VirtConPtr,bool>
