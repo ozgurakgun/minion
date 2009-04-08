@@ -134,8 +134,8 @@ struct TupleTrie
   //is the depth at which the value whose removal we're explaining was pruned.
   //The reason for this limit is to avoid producing an explanation involving a value pruned subsequently
   //when doing lazy learning.
-  template<typename VarArray,typename Set>
-  void getPosExpl(VarArray& vars, TrieObj* curr_pos, int depth, Set& pruns, pair<unsigned,unsigned> maxDepth)
+  template<typename VarArray,typename Vec>
+  void getPosExpl(VarArray& vars, TrieObj* curr_pos, int depth, Vec& pruns, pair<unsigned,unsigned> maxDepth)
   {
     if(depth == arity) { D_ASSERT(false); return; } //shouldn't run out of values without finding a pruned node
     int mapped_d = map_depth(depth);
@@ -144,7 +144,7 @@ struct TupleTrie
 	getPosExpl(vars, curr_pos->offset_ptr, depth + 1, pruns, maxDepth);
       else {
 	D_ASSERT(vars[mapped_d].getDepth(false, curr_pos->val) != maxDepth);
-	pruns.insert(vars[mapped_d].getExpl(false, curr_pos->val));
+	pruns.push_back(vars[mapped_d].getExpl(false, curr_pos->val));
       }
       curr_pos++;
     }
