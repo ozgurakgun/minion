@@ -220,7 +220,9 @@ namespace Controller {
 	retVal = max(retVal, dist_res.second);
       }
     }
+#ifndef GLEARN
     AbstractConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
+#endif
     //try firstUIP
     world_pop(stateObj);
     maybe_print_search_action(stateObj, "bt");
@@ -236,6 +238,9 @@ namespace Controller {
     } else { //if not use the first decision cut
       firstUIP->cleanup(); //remove effects of propagating it before
       D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+#ifdef GLEARN
+      AbstractConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
+#endif
       getState(stateObj).addConstraintMidsearch(lastUIP);
       //cout << "start trying lastUIP" << endl;
       lastUIP->setup();
