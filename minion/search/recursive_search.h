@@ -69,11 +69,11 @@ namespace Controller
 	getQueue(stateObj).clearQueues();
 	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
 	world_pop(stateObj);
-	prop(stateObj, v);
 	maybe_print_search_action(stateObj, "bt");
 	return target;
       }
       //cout << "recursing on return" << endl;
+      prop(stateObj, v); //now we've reached the target, propagate all cons (incl. learned ones)
       target = search(stateObj, order, v, prop);
     }
   }
