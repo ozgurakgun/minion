@@ -628,24 +628,44 @@ template<typename EqualVarRef1, typename EqualVarRef2, typename BoolVarRef>
 AbstractConstraint*
 ReifiedEqualCon(StateObj* stateObj, const light_vector<EqualVarRef1>& var1, 
                                     const light_vector<EqualVarRef2>& var2, const light_vector<BoolVarRef> var3)
-{ return new ReifiedEqualConstraint<EqualVarRef1, EqualVarRef2, BoolVarRef>(stateObj,var1[0],var2[0],var3[0]); }
+{ 
+  cout << "----------------------------------" << endl;
+  cout << "DANGER using reified eq constraint" << endl;
+  cout << "----------------------------------" << endl;
+  return new ReifiedEqualConstraint<EqualVarRef1, EqualVarRef2, BoolVarRef>(stateObj,var1[0],var2[0],var3[0]); 
+}
 
 template<typename EqualVarRef1, typename EqualVarRef2>
 AbstractConstraint*
 EqualCon(StateObj* stateObj, EqualVarRef1 var1, EqualVarRef2 var2)
-{ return new EqualConstraint<EqualVarRef1, EqualVarRef2>(stateObj, var1,var2); }
+{ 
+  cout << "--------------------------" << endl;
+  cout << "DANGER using eq constraint" << endl;
+  cout << "--------------------------" << endl;
+  return new EqualConstraint<EqualVarRef1, EqualVarRef2>(stateObj, var1,var2); 
+}
 
 
 template<typename EqualVarRef1, typename EqualVarRef2, typename BoolVarRef>
 AbstractConstraint*
 ReifiedEqualMinusCon(StateObj* stateObj, const light_vector<EqualVarRef1>& var1, 
                                          const light_vector<EqualVarRef2>& var2, const light_vector<BoolVarRef> var3)
-{ return new ReifiedEqualConstraint<EqualVarRef1, VarNeg<EqualVarRef2>, BoolVarRef>(stateObj, var1[0],VarNegRef(var2[0]),var3[0]); }
+{ 
+  cout << "----------------------------------------" << endl;
+  cout << "DANGER using reified minus eq constraint" << endl;
+  cout << "----------------------------------------" << endl;
+  return new ReifiedEqualConstraint<EqualVarRef1, VarNeg<EqualVarRef2>, BoolVarRef>(stateObj, var1[0],VarNegRef(var2[0]),var3[0]); 
+}
 
 template<typename EqualVarRef1, typename EqualVarRef2>
 AbstractConstraint*
 EqualMinusCon(StateObj* stateObj, EqualVarRef1 var1, EqualVarRef2 var2)
-{ return new EqualConstraint<EqualVarRef1, VarNeg<EqualVarRef2> >(stateObj, var1,VarNegRef(var2)); }
+{ 
+  cout << "--------------------------------" << endl;
+  cout << "DANGER using minus eq constraint" << endl;
+  cout << "--------------------------------" << endl;
+  return new EqualConstraint<EqualVarRef1, VarNeg<EqualVarRef2> >(stateObj, var1,VarNegRef(var2)); 
+}
 
 
 template<typename T1, typename T2>
@@ -674,13 +694,21 @@ template<typename VarRef1, typename VarRef2, typename BoolVarRef>
 AbstractConstraint*
 ReifiedNeqConBinary(StateObj* stateObj, const light_vector<VarRef1>& var1, 
                                         const light_vector<VarRef2>& var2, const light_vector<BoolVarRef> var3)
-{ return new ReifiedEqualConstraint<VarRef1, VarRef2, VarNot<BoolVarRef> >
-                                   (stateObj,var1[0],var2[0], VarNotRef(var3[0])); }
+{ 
+  cout << "-------------------------------------" << endl;
+  cout << "DANGER using reified diseq constraint" << endl;
+  cout << "-------------------------------------" << endl;
+  return new ReifiedEqualConstraint<VarRef1, VarRef2, VarNot<BoolVarRef> >
+    (stateObj,var1[0],var2[0], VarNotRef(var3[0])); 
+}
 
 template<typename Var1, typename Var2>
 AbstractConstraint*
 NeqConBinary(StateObj* stateObj, const Var1& var1, const Var2& var2)
 {
+  cout << "-----------------------------" << endl;
+  cout << "DANGER using diseq constraint" << endl;
+  cout << "-----------------------------" << endl;
   return new NeqConstraintBinary<Var1, Var2>(stateObj, var1, var2); 
 }
 

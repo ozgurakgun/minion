@@ -172,7 +172,12 @@ struct GadgetConstraint : public AbstractConstraint
 template<typename VarArray>
 GadgetConstraint<VarArray>*
 gadgetCon(StateObj* stateObj, const VarArray& vars, ConstraintBlob& blob)
-{ return new GadgetConstraint<VarArray>(stateObj, vars, blob.gadget, blob.gadget_prop_type); }
+{ 
+  cout << "------------------------------" << endl;
+  cout << "DANGER using gadget constraint" << endl;
+  cout << "------------------------------" << endl;
+  return new GadgetConstraint<VarArray>(stateObj, vars, blob.gadget, blob.gadget_prop_type); 
+}
 
 #ifdef REENTER
 

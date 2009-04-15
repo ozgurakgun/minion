@@ -1172,6 +1172,11 @@ void MinionThreeInputReader<FileReader>::readVars(FileReader* infile) {
       && var_type != "DISCRETE" && var_type != "ALIAS")
       throw parse_exception(string("Unknown variable type: '") + var_type + "'");
 
+
+    if(var_type == "BOOL" || var_type=="BOUND" || var_type == "SPARSEBOUND" || var_type=="ALIAS")
+      throw parse_exception(string("unsupported variable type"));
+    
+
     string varname = infile->get_string();
     parser_info("Name:" + varname);
 
