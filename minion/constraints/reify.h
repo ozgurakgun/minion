@@ -601,6 +601,9 @@ inline AbstractConstraint*
 BuildCT_REIFY(StateObj* stateObj, const VarArray& vars, BOOL reify, 
                           const BoolVarRef& reifyVar, ConstraintBlob& bl)
 { 
+  cout << "-----------------------------" << endl;
+  cout << "DANGER using reify constraint" << endl;
+  cout << "-----------------------------" << endl;
   switch(bl.internal_constraints[0].constraint->type)
   {
     case CT_EQ:
