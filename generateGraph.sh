@@ -28,4 +28,4 @@ grep -v "**EOF**" $2 > $2.$3$4
 cat $2.gapout >> $2.$3$4
 echo '**EOF**' >> $2.$3$4
 # cleanup
-rm $2.gapin $2.gapout
+#rm $2.gapin $2.gapout
