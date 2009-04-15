@@ -1,0 +1,43 @@
+MINION 3
+
+**VARIABLES**
+
+DISCRETE Nodes[10] {0..25}
+DISCRETE Edges[25] {1..25}
+
+**CONSTRAINTS**
+
+difference(Nodes[0], Nodes[1], Edges[0])
+difference(Nodes[1], Nodes[2], Edges[1])
+difference(Nodes[2], Nodes[3], Edges[2])
+difference(Nodes[3], Nodes[4], Edges[3])
+difference(Nodes[0], Nodes[4], Edges[4])
+
+difference(Nodes[5], Nodes[6], Edges[5])
+difference(Nodes[6], Nodes[7], Edges[6])
+difference(Nodes[7], Nodes[8], Edges[7])
+difference(Nodes[8], Nodes[9], Edges[8])
+difference(Nodes[5], Nodes[9], Edges[9])
+
+difference(Nodes[0], Nodes[3], Edges[10])
+difference(Nodes[1], Nodes[4], Edges[11])
+difference(Nodes[2], Nodes[4], Edges[12])
+difference(Nodes[1], Nodes[3], Edges[13])
+difference(Nodes[0], Nodes[2], Edges[14])
+
+difference(Nodes[5], Nodes[8], Edges[15])
+difference(Nodes[6], Nodes[9], Edges[16])
+difference(Nodes[7], Nodes[9], Edges[17])
+difference(Nodes[6], Nodes[8], Edges[18])
+difference(Nodes[5], Nodes[7], Edges[19])
+
+difference(Nodes[0], Nodes[5], Edges[20])
+difference(Nodes[4], Nodes[9], Edges[21])
+difference(Nodes[1], Nodes[6], Edges[22])
+difference(Nodes[3], Nodes[8], Edges[23])
+difference(Nodes[2], Nodes[7], Edges[24])
+
+alldiff(Nodes)
+alldiff(Edges)
+
+**EOF**
