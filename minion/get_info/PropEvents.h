@@ -98,6 +98,7 @@ PROP_EVENT(WhyTAMOV)
 PROP_EVENT(WhyTWatchNeqPrunLeft)
 PROP_EVENT(WhyTWatchNeqPrunRight)
 PROP_EVENT(WhyTTablePosPrun)
+PROP_EVENT(WhyTTableNegPrun)
 
 #undef VAR_EVENT
 #undef PROP_EVENT

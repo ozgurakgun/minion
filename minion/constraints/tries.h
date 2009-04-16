@@ -122,6 +122,19 @@ struct TupleTrie
 	int depth;
 	int offset_ptr;
   };
+
+  struct varvalprun 
+  {
+    size_t var;
+    DomainInt val;
+    bool isPrun;
+    varvalprun(size_t _var, DomainInt _val, bool _isPrun) : var(_var), val(_val), isPrun(_isPrun) {}
+    bool operator<(const varvalprun& other) const {
+      return var < other.var 
+	|| (var == other.var && val < other.val) 
+	|| (var == other.var && val == other.val && !isPrun && other.isPrun);
+    }
+  };
   
   vector<EarlyTrieObj> initial_trie;
   
@@ -148,6 +161,36 @@ struct TupleTrie
       }
       curr_pos++;
     }
+  }
+  
+  //collect all prunings to vars in the scope other than exclude_var (which is presumably the
+  //variable that has been pruned or assigned)
+  template<typename VarArray,typename Set>
+  void gacGenericExpln(Set& expln, const VarArray& vars, const size_t exclude_var, pair<unsigned,unsigned> maxDepth)
+  {
+    expln.clear();
+    for(size_t var_num = 0; var_num < vars.size(); var_num++) {
+      if(var_num != exclude_var) {
+	typename VarArray::value_type var = vars[var_num];
+	const DomainInt var_init_max = var.getInitialMax();
+	for(DomainInt curr = var.getInitialMin(); curr <= var_init_max; curr++)
+	  if(!var.inDomain(curr) && var.getDepth(false, curr) <= maxDepth) {
+	    D_ASSERT(var.getExpl(false, curr).get() != NULL);
+	    expln.insert(varvalprun(var_num, curr, true));
+	  }
+      }
+    }
+  }
+
+  template<typename VarArray,typename Vec>
+  void getNegExpl(VarArray& vars, TrieObj* curr_pos, int depth, Vec& pruns, pair<unsigned,unsigned> maxDepth,
+                  size_t pruned_var, DomainInt pruned_val)
+  {
+    set<varvalprun> expln;
+    gacGenericExpln(expln, vars, pruned_var, maxDepth);
+    pruns.reserve(expln.size());
+    for(typename set<varvalprun>::const_iterator curr = expln.begin(); curr != expln.end(); curr++)
+      pruns.push_back(vars[curr->var].getExpl(!curr->isPrun, curr->val));
   }
   
   void build_final_trie()

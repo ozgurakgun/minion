@@ -1156,4 +1156,65 @@ template<typename VarArray>
 inline VCCompData TablePosPrun<VarArray>::getVCCompData() const
 { return VCCompData(con->vars[var_num].getBaseVar(), Var(), val, 0); }
 
+template<typename VarArray>
+inline vector<VirtConPtr> TableNegPrun<VarArray>::whyT() const
+{
+  PROP_INFO_ADDONE(WhyTTableNegPrun);
+  vector<VirtConPtr> expln;
+  TupleTrie& trie = con->tupleTrieArrayptr->getTrie(var_num); //doesn't matter which trie is used
+#ifdef EAGER
+  pair<unsigned,unsigned> maxDepth = getMemory(con->stateObj).backTrack().check_next_timestamp();
+#else
+  pair<unsigned,unsigned> maxDepth = con->vars[var_num].getDepth(false, val);
+#endif
+  trie.getNegExpl(con->vars,
+		  trie.trie_data, //the value for the child
+		  0, //at depth 1 in the trie
+		  expln, //where to build the expln into
+		  maxDepth,
+		  var_num, //the var the pruning is from
+		  val); //the val removed
+  return expln;
+}
+
+template<typename VarArray>
+inline AbstractConstraint* TableNegPrun<VarArray>::getNeg() const
+{ return new WatchLiteralConstraint<typename VarArray::value_type>(con->stateObj, con->vars[var_num], val); }
+
+template<typename VarArray>
+inline pair<unsigned,unsigned> TableNegPrun<VarArray>::getDepth() const
+{ return con->vars[var_num].getDepth(false, val); }
+
+template<typename VarArray>
+inline bool TableNegPrun<VarArray>::equals(VirtCon* other) const
+{
+  if(guid != other->guid) return false;
+  VCCompData other_data = other->getVCCompData();
+  bool retVal = val == other_data.val1 && con->vars[var_num].getBaseVar() == other_data.var1;
+  return retVal;
+}
+ 
+template<typename VarArray>
+inline bool TableNegPrun<VarArray>::less(VirtCon* other) const
+{
+  if(guid < other->guid) return true;
+  if(other->guid < guid) return false;
+  VCCompData other_data = other->getVCCompData();
+  bool retVal = val < other_data.val1
+    || (val == other_data.val1 && con->vars[var_num].getBaseVar() < other_data.var1);
+  return retVal;
+}
+
+template<typename VarArray>
+inline void TableNegPrun<VarArray>::print(std::ostream& o) const
+{ o << "TableNegPrun(var=" << con->vars[var_num] << ",val=" << val << ")"; }
+
+template<typename VarArray>
+inline size_t TableNegPrun<VarArray>::hash() const
+{ return (val + 23 * con->vars[var_num].getBaseVar().pos()) % 16777619; }
+
+template<typename VarArray>
+inline VCCompData TableNegPrun<VarArray>::getVCCompData() const
+{ return VCCompData(con->vars[var_num].getBaseVar(), Var(), val, 0); }
+
 #endif

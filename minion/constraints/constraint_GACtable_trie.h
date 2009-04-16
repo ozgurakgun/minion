@@ -110,6 +110,7 @@ struct GACTableConstraint : public AbstractConstraint
   
   DYNAMIC_PROPAGATE_FUNCTION(DynamicTrigger* propagated_trig)
   {
+    D_ASSERT(negative);
 	PROP_INFO_ADDONE(DynGACTable);
 	D_INFO(1, DI_TABLECON, "Propagation Triggered: " + to_string(propagated_trig));
 	DynamicTrigger* dt = dynamic_trigger_start();
@@ -130,6 +131,8 @@ struct GACTableConstraint : public AbstractConstraint
 	else
 	{
 	  D_INFO(1, DI_TABLECON, "Failed to find new support");
+	  if(vars[varIndex].inDomain(val))
+	    storeExpl(false, vars[varIndex], val, VirtConPtr(new TableNegPrun<VarArray>(this, (size_t)varIndex, val)));
 	  vars[varIndex].removeFromDomain(val);
 	}
   }
@@ -163,6 +166,7 @@ struct GACTableConstraint : public AbstractConstraint
   
   virtual void full_propagate()
   {
+    D_ASSERT(negative);
       D_INFO(2, DI_TABLECON, "Full prop");
       if(negative==0 && tuples->size()==0)
       {   // it seems to work without this explicit check, but I put it in anyway.
@@ -207,6 +211,8 @@ struct GACTableConstraint : public AbstractConstraint
                   //cout <<"No valid support for " + to_string(i) + " in var " + to_string(varIndex) << endl;
                   //volatile int * myptr=NULL;
                   //int crashit=*(myptr);
+		  if(vars[varIndex].inDomain(i))
+		    storeExpl(false, vars[varIndex], i, VirtConPtr(new TableNegPrun<VarArray>(this, (size_t)varIndex, i)));
                   vars[varIndex].removeFromDomain(i);
                 }
                 else
