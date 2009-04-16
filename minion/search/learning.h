@@ -411,6 +411,28 @@ class TablePosPrun : public VirtCon {
   virtual VCCompData getVCCompData() const;
 };
 
+template<typename VarArray, int Negative>
+struct GACTableConstraint;
+
+template<typename VarArray>
+class TableNegPrun : public VirtCon {
+  GACTableConstraint<VarArray, 1>* con;
+  size_t var_num;
+  DomainInt val;
+
+ public:
+ TableNegPrun(GACTableConstraint<VarArray,1>* _con, size_t _var_num, DomainInt _val) : 
+   VirtCon(18000), con(_con), var_num(_var_num), val(_val) {}
+  virtual vector<VirtConPtr> whyT() const;
+  virtual AbstractConstraint* getNeg() const;
+  virtual pair<unsigned,unsigned> getDepth() const;
+  virtual bool equals(VirtCon* other) const;
+  virtual bool less(VirtCon* other) const;
+  virtual void print(std::ostream& o) const;  
+  virtual size_t hash() const;
+  virtual VCCompData getVCCompData() const;
+};
+
 inline void print_recursive(vector<int> count_seq, vector<VirtConPtr> why) {
   for(size_t i = 0; i < why.size(); i++) {
     cout << count_seq << endl;
