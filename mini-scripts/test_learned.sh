@@ -1,4 +1,4 @@
- #!/bin/bash
+#!/bin/bash
 
 #Given a reference solver (1st param) and a learning solver (2nd param), read
 #out constraints from the output of the learning solver and check that each one
@@ -15,10 +15,10 @@ TIMEOUT=100; #timeout in seconds
 REFSOLVER=$1;
 LEARNSOLVER=$2;
 INSTANCE=$3;
-TMPFILE=test.minion
-LEARNOUTPUT=/tmp/rubbish
-LEARNCONS=/tmp/rubbish2
-INSTRUN=/tmp/rubbish3
+TMPFILE=`mktemp`;
+LEARNOUTPUT=`mktemp`;
+LEARNCONS=`mktemp`;
+INSTRUN=`mktemp`;
 if [ $# -eq 4 ]; then #work out where to start
     FIRST=$4
 else
