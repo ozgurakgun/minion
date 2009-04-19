@@ -129,11 +129,16 @@ struct TupleTrie
     DomainInt val;
     bool isPrun;
     varvalprun(size_t _var, DomainInt _val, bool _isPrun) : var(_var), val(_val), isPrun(_isPrun) {}
+    varvalprun() : var(0), val(0), isPrun(false) {}
     bool operator<(const varvalprun& other) const {
       return var < other.var 
 	|| (var == other.var && val < other.val) 
 	|| (var == other.var && val == other.val && !isPrun && other.isPrun);
     }
+    bool operator==(const varvalprun& other) const {
+      return var == other.var && val == other.val && isPrun == other.isPrun;
+    }
+    bool operator!=(const varvalprun& other) const { return !operator==(other); }
   };
   
   vector<EarlyTrieObj> initial_trie;
@@ -166,7 +171,7 @@ struct TupleTrie
   //collect all prunings to vars in the scope other than exclude_var (which is presumably the
   //variable that has been pruned or assigned)
   template<typename VarArray,typename Set>
-  void gacGenericExpln(Set& expln, const VarArray& vars, const size_t exclude_var, pair<unsigned,unsigned> maxDepth)
+  static void gacGenericExpln(Set& expln, const VarArray& vars, const size_t exclude_var, pair<unsigned,unsigned> maxDepth)
   {
     expln.clear();
     for(size_t var_num = 0; var_num < vars.size(); var_num++) {
@@ -182,12 +187,169 @@ struct TupleTrie
     }
   }
 
+  template<typename CountMap>
+  static unsigned getCount(CountMap& cm, const varvalprun what)
+  { D_ASSERT(what.isPrun); return cm[what]; }
+
+  template<typename CountMap>
+  static void addCount(CountMap& cm, const varvalprun what)
+  { D_ASSERT(what.isPrun); cm[what]++; }
+
+  //this code takes an explanation (consisting of prunings only) and number of
+  //explanations (consisting of assignments only) that conform to it
+  template<typename ExplnSet, typename VarVec>
+    static unsigned size(const ExplnSet& expln, const VarVec& vars, const size_t exclude_var)
+  {
+    size_t curr_var_num = 0;
+    unsigned count = 0;
+    unsigned product = 1;
+    typename VarVec::value_type curr_var = vars[curr_var_num];
+    typename ExplnSet::const_iterator curr_prun = expln.begin();
+    while(curr_var_num < vars.size() && curr_prun != expln.end()) {
+      if(curr_var_num < curr_prun->var) { //process the var, which has no prunings for it
+	if(curr_var_num == exclude_var) {
+	  ++curr_var_num;
+	} else {
+	  curr_var = vars[curr_var_num];
+	  product *= curr_var.getInitialMax() - curr_var.getInitialMin() + 1;
+	  curr_var_num++;
+	}
+      } else { //process the prunings for the var in the set
+	D_ASSERT(curr_var_num == curr_prun->var);
+	D_ASSERT(curr_prun->var != exclude_var);
+	while(curr_prun != expln.end() && curr_prun->var == curr_var_num) {
+	  D_ASSERT(curr_prun->isPrun);
+	  count++;
+	  curr_prun++;
+	}
+	curr_var = vars[curr_var_num];
+	product *= curr_var.getInitialMax() - curr_var.getInitialMin() + 1 - count;
+	curr_var_num++;
+	count = 0;
+      }
+    }
+    //mop up unprocessed vars
+    while(curr_var_num < vars.size()) {
+      if(curr_var_num == exclude_var) {
+	curr_var_num++;
+      } else {
+	curr_var = vars[curr_var_num];
+	product += curr_var.getInitialMax() - curr_var.getInitialMin() + 1;
+	curr_var_num++;
+      }
+    }
+    return product;
+  }  
+  template<typename ExplnSet, typename VarVec>
+    static unsigned size(ExplnSet expln, const varvalprun ignore, const VarVec& vars, const size_t exclude_var)
+  {
+    expln.erase(ignore);
+    return size(expln, vars, exclude_var);
+  }
+  
+  static varvalprun notvvp(varvalprun vvp) { vvp.isPrun = !vvp.isPrun; return vvp; }
+
+  template<typename ExplnSet, typename ConflictVec>
+  static bool conflict_not_in_sexpln(const ConflictVec& conflict, const ExplnSet& expln)
+  {
+    for(typename ConflictVec::const_iterator curr = conflict.begin(); curr != conflict.end(); curr++) {
+      D_ASSERT(!curr->isPrun);
+      if(expln.find(notvvp(*curr)) != expln.end())
+	return true;
+    }
+    return false;
+  }
+
+  template<typename ExplnSet, typename ConflictVec>
+  static bool conflict_in_sexpln(const ConflictVec& conflict, const ExplnSet& expln, const varvalprun& exclude_from_expln)
+  {
+    for(typename ConflictVec::const_iterator curr = conflict.begin(); curr != conflict.end(); curr++) {
+      D_ASSERT(!curr->isPrun);
+      if(notvvp(*curr) != exclude_from_expln)
+	if(expln.find(notvvp(*curr)) != expln.end())
+	  return false;
+    }
+    return true;
+  }
+
+  template<typename ConflictVec, typename CountMap, typename ExplnSet, typename VarVec>
+    void build_counts(ConflictVec& conflict, CountMap& counts, const ExplnSet& expln, TrieObj* curr_pos, int depth,
+		      const VarVec& vars, const pair<unsigned,unsigned> maxDepth)
+  {
+    D_ASSERT(depth > 0);
+    if(depth == arity) {
+      D_ASSERT(conflict.size() == arity - 1);
+      if(conflict_not_in_sexpln(conflict, expln)) {
+	if(maxDepth == pair<unsigned,unsigned>(15,32))
+	  D_ASSERT(false);
+	const size_t c_s = conflict.size();
+	for(size_t i = 0; i < c_s; i++) {
+	  D_ASSERT(!(conflict[i].isPrun));
+	  //first test is "don't consider removing something that's not therex1
+	  if(expln.find(notvvp(conflict[i])) != expln.end() && conflict_in_sexpln(conflict, expln, notvvp(conflict[i]))) {
+	    addCount(counts, notvvp(conflict[i]));
+	  }
+	}
+      }
+    } else {
+      while(curr_pos->val != MAXINT) {
+	conflict.push_back(varvalprun(map_depth(depth), curr_pos->val, false));
+	build_counts(conflict, counts, expln, curr_pos->offset_ptr, depth + 1, vars, maxDepth);
+	conflict.pop_back();
+	curr_pos++;
+      }
+    }
+  }
+  
+  template<typename SetExpln, typename VarVec>
+    vector<varvalprun> inner(const SetExpln& expln, TrieObj* trie, const VarVec& vars, const pair<unsigned,unsigned> maxDepth, const size_t pruned_var)
+  {
+    vector<varvalprun> retVal;
+    map<varvalprun,unsigned> counts;
+    vector<varvalprun> conflict;
+    conflict.reserve(arity);
+    build_counts(conflict, counts, expln, trie, 1, vars, maxDepth);
+    bool foundVar = false;
+    unsigned explnSSize = size(expln, vars, pruned_var);
+    size_t prev_var = expln.begin()->var;
+    size_t prev_var_SSize = size(expln, *expln.begin(), vars, pruned_var);
+    for(typename SetExpln::const_iterator curr = expln.begin(); curr != expln.end(); curr++) {
+      D_ASSERT(prev_var <= curr->var);
+      if(prev_var != curr->var) {
+	if(foundVar) return retVal;
+	else {
+	  prev_var = curr->var;
+	  prev_var_SSize = size(expln, *curr, vars, pruned_var);
+	}
+      }
+      if(getCount(counts, *curr) == prev_var_SSize - explnSSize) {
+	foundVar = true;
+	retVal.push_back(*curr);
+      }
+    }
+    return retVal;
+  }
+
+#define MINIMAL_NEG_TABLE_EXPLANATIONS
+
   template<typename VarArray,typename Vec>
-  void getNegExpl(VarArray& vars, TrieObj* curr_pos, int depth, Vec& pruns, pair<unsigned,unsigned> maxDepth,
+    void getNegExpl(VarArray& vars, TrieObj* trie, Vec& pruns, pair<unsigned,unsigned> maxDepth,
                   size_t pruned_var, DomainInt pruned_val)
   {
+    D_ASSERT(pruns.empty());
     set<varvalprun> expln;
     gacGenericExpln(expln, vars, pruned_var, maxDepth);
+#ifdef MINIMAL_NEG_TABLE_EXPLANATIONS
+    while(!expln.empty()) {
+      vector<varvalprun> removals = inner(expln, trie, vars, maxDepth, pruned_var);
+      if(removals.empty())
+	break;
+      else {
+	for(vector<varvalprun>::const_iterator curr = removals.begin(); curr != removals.end(); curr++)
+	  expln.erase(*curr);
+      }
+    }
+#endif
     pruns.reserve(expln.size());
     for(typename set<varvalprun>::const_iterator curr = expln.begin(); curr != expln.end(); curr++)
       pruns.push_back(vars[curr->var].getExpl(!curr->isPrun, curr->val));

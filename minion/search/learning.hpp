@@ -1161,15 +1161,15 @@ inline vector<VirtConPtr> TableNegPrun<VarArray>::whyT() const
 {
   PROP_INFO_ADDONE(WhyTTableNegPrun);
   vector<VirtConPtr> expln;
-  TupleTrie& trie = con->tupleTrieArrayptr->getTrie(var_num); //doesn't matter which trie is used
+  TupleTrie& trie = con->tupleTrieArrayptr->getTrie(var_num);
+  TrieObj* start = trie.get_next_ptr(trie.trie_data, val); //node for the pruned value
 #ifdef EAGER
   pair<unsigned,unsigned> maxDepth = getMemory(con->stateObj).backTrack().check_next_timestamp();
 #else
   pair<unsigned,unsigned> maxDepth = con->vars[var_num].getDepth(false, val);
 #endif
   trie.getNegExpl(con->vars,
-		  trie.trie_data, //the value for the child
-		  0, //at depth 1 in the trie
+		  start->offset_ptr, //conflict tuples that have the pruning in them
 		  expln, //where to build the expln into
 		  maxDepth,
 		  var_num, //the var the pruning is from
