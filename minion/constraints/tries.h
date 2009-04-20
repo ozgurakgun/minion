@@ -280,8 +280,6 @@ struct TupleTrie
     if(depth == arity) {
       D_ASSERT(conflict.size() == arity - 1);
       if(conflict_not_in_sexpln(conflict, expln)) {
-	if(maxDepth == pair<unsigned,unsigned>(15,32))
-	  D_ASSERT(false);
 	const size_t c_s = conflict.size();
 	for(size_t i = 0; i < c_s; i++) {
 	  D_ASSERT(!(conflict[i].isPrun));
