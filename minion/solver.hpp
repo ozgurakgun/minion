@@ -103,7 +103,7 @@ inline void SearchState::addConstraint(AbstractConstraint* c)
 inline void SearchState::addConstraintMidsearch(AbstractConstraint* c)
 {
   addConstraint(c);
-#ifdef MORE_SEARCH_INFO
+#ifdef NOGOOD_PRINT
   cout << "ADDEDNEG="; c->printNeg(cout); cout << endl;
   cout << "ADDEDCON=" << *c << endl;
 #endif
