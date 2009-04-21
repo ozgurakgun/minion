@@ -224,6 +224,13 @@ if(EAGER)
 	set(CFLAGS "${CFLAGS} -DEAGER")
 endif()
 
+option(NOGOOD_PRINT "" OFF)
+if(NOGOOD_PRINT)
+	message(STATUS "Enabling nogood printing")
+        set(BINARY "${BINARY}-nogoodprint")
+        set(CFLAGS "${CFLAGS} -DNOGOOD_PRINT")
+endif()
+
 option(IG_PRINT "" OFF)
 if(IG_PRINT)
 	message(STATUS "Enabling VIG printing")
