@@ -773,7 +773,7 @@ public:
       return prun_explns[b.var_num][i - getInitialMin(b)];
     } else {
       D_ASSERT(i == assg_expln_vals[b.var_num].first || i == assg_expln_vals[b.var_num].second);
-#ifdef MINION_DEBUG
+#ifdef NOGOOD_PRINT
       if(i == assg_expln_vals[b.var_num].first)
 	printExplNogood(b, assg, i, assg_expln[b.var_num].first);
       else
