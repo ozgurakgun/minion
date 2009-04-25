@@ -660,6 +660,31 @@ public:
     }
   }
 
+#ifdef NOGOOD_PRINT
+  void printExplNogood(const BigRangeVarRef_internal& b, const bool assg, const DomainInt i, const VirtConPtr vc) const
+  {
+    vector<VirtConPtr> whyT = vc->whyT();
+    if(!assg)
+      whyT.push_back(VirtConPtr(new NoReasonAssg<BigRangeVarRef>(stateObj, BigRangeVarRef(b), i)));
+    else
+      whyT.push_back(VirtConPtr(new NoReasonPrun<BigRangeVarRef>(stateObj, BigRangeVarRef(b), i)));
+    vector<AbstractConstraint*> whyT_cons;
+    for(size_t curr = 0; curr < whyT.size(); curr++)
+      whyT_cons.push_back(whyT[curr]->getNeg());
+    cout << "ADDEDCON=watched-or({" << *whyT_cons[0];
+    for(size_t curr = 1; curr < whyT.size(); curr++) {
+      cout << "," << *whyT_cons[curr];
+    }
+    cout << "})" << endl;
+    cout << "ADDEDNEG=watched-and({"; whyT_cons[0]->printNeg(cout);
+    for(size_t j = 1; j < whyT.size(); j++) {
+      cout << ","; 
+      whyT_cons[j]->printNeg(cout);
+    }
+    cout << "})" << endl;
+  }
+#endif
+
   void setExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i, VirtConPtr vc)
   {
     if(!assg) {
@@ -742,10 +767,18 @@ public:
   VirtConPtr getExpl(const BigRangeVarRef_internal& b, bool assg, DomainInt i) const
   {
     if(!assg) {
-      //D_ASSERT(!inDomain(b, i) || getState(stateObj).isFailed());
+#ifdef NOGOOD_PRINT
+      printExplNogood(b, assg, i, prun_explns[b.var_num][i - getInitialMin(b)]);
+#endif      
       return prun_explns[b.var_num][i - getInitialMin(b)];
     } else {
       D_ASSERT(i == assg_expln_vals[b.var_num].first || i == assg_expln_vals[b.var_num].second);
+#ifdef MINION_DEBUG
+      if(i == assg_expln_vals[b.var_num].first)
+	printExplNogood(b, assg, i, assg_expln[b.var_num].first);
+      else
+	printExplNogood(b, assg, i, assg_expln[b.var_num].second);
+#endif      
       return i == assg_expln_vals[b.var_num].first 
 	? assg_expln[b.var_num].first
 	: assg_expln[b.var_num].second;
