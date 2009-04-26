@@ -224,7 +224,12 @@ namespace Controller {
     AbstractConstraint* lastUIP = makeCon(stateObj, earlier, curr_d);
 #endif
     //try firstUIP
-    world_pop(stateObj);
+    while(retVal < getMemory(stateObj).backTrack().current_depth()) {
+      getQueue(stateObj).clearQueues();
+      D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+      world_pop(stateObj);
+      maybe_print_search_action(stateObj, "bt");
+    }
     maybe_print_search_action(stateObj, "bt");
     firstUIP->setup();
     state_cert cert = state_start(stateObj);
