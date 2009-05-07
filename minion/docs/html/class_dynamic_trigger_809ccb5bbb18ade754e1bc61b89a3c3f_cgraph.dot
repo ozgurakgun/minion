@@ -1,9 +1,0 @@
-digraph G
-{
-  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
-  node [fontname="FreeSans",fontsize="10",shape=record];
-  rankdir=LR;
-  Node1 [label="DynamicTrigger::add_after",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
-  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
-  Node2 [label="DynamicTrigger::sanity_check_list",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$class_dynamic_trigger.html#4baaf5389121454471b3fd92569c6a19"];
-}
