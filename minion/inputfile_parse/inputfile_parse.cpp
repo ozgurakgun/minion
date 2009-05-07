@@ -55,30 +55,36 @@ CSPInstance readInput(InputReader* infile, bool parser_verbose)
     }  
 }
 
-CSPInstance readInputFromFile(string fname, bool parser_verbose)
+CSPInstance readInputFromStream(ParsingObject& parse_obj, string fname, bool parser_verbose)
 {
-    ParsingObject parse_obj(fname, parser_verbose);
- 
     ConcreteFileReader<filtering_istream> infile(parse_obj.in, fname.c_str());
 
     if (infile.failed_open() || infile.eof()) {
-      INPUT_ERROR("Can't open given input file '" + fname + "'.");
+        INPUT_ERROR("Can't open given input file '" + fname + "'.");
     }   
-    
+
     try
     {
-      return readInput(&infile, parser_verbose);
-      // delete file;
+        return readInput(&infile, parser_verbose);
+          // delete file;
     }
     catch(parse_exception s)
     {
-      cerr << "Error in input!" << endl;
-      cerr << s.what() << endl;
-      
+        cerr << "Error in input!" << endl;
+        cerr << s.what() << endl;
+
         cerr << "Error occurred on line " << parse_obj.e_count.lines_prev << ", around character " << parse_obj.e_count.chars_prev << endl;
-#ifdef GET_STRING         
+    #ifdef GET_STRING         
         cerr << "The parser gave up around: '" << parse_obj.e_count.current_line_prev << "'" << endl;
-#endif
+    #endif
         exit(1);
     }
+
 }
+
+CSPInstance readInputFromFile(string fname, bool parser_verbose)
+{
+    ParsingObject parse_obj(fname, parser_verbose);
+    return readInputFromStream(parse_obj, fname, parser_verbose);
+}
+

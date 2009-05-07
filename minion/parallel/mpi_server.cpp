@@ -60,7 +60,7 @@ struct MinionMPIServer
 };
 
 
-void minion_mpi_server_start(StateObj* stateObj)
+void minion_mpi_server_start(StateObj* stateObj, SearchMethod& args)
 {
     ParsingObject po(getOptions(stateObj).instance_name,
                      getOptions(stateObj).parser_verbose);

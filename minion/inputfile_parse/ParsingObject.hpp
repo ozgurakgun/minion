@@ -43,7 +43,13 @@ struct ParsingObject
     error_counter e_count;
     filtering_istream in;
     auto_ptr<istream> file;
-    
+     
+    template<typename Stream>
+    ParsingObject(Stream& stream, bool parser_verbose = false)
+    {
+        in.push(stream);
+    }
+
     ParsingObject(std::string fname, bool parser_verbose = false)
     {
         const char* filename = fname.c_str();
@@ -87,3 +93,6 @@ private:
     ParsingObject(const ParsingObject&);
     ParsingObject();
 };
+
+CSPInstance readInputFromStream(ParsingObject& parse_obj, string fname, bool parser_verbose);
+
