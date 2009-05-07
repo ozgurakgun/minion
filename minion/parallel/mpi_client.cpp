@@ -1,4 +1,5 @@
 #include "protocol.h"
+#include "../minion.h"
 
 #include <iostream>
 using namespace std;
@@ -39,7 +40,7 @@ struct MinionMPIClient
 };
 
 
-void minion_mpi_client_start()
+void minion_mpi_client_start(StateObj* stateObj)
 {
     cout << "Starting client" << endl;
     MinionMPIClient client;
