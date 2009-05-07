@@ -338,7 +338,7 @@ void print_default_help(char** argv)
   print_constraints();
 }
 
-void go_parallel(int argc, char* argv[], StateObj* stateObj);
+void go_parallel(StateObj* stateObj, SearchMethod& args, int argc, char* argv[]);
 
 int main(int argc, char** argv) {
 // Wrap main in a try/catch just to stop exceptions leaving main,
@@ -375,7 +375,7 @@ try {
   
   if(getOptions(stateObj).parallel)
   {
-      go_parallel(argc, argv, stateObj);
+      go_parallel(stateObj, args, argc, argv);
       exit(0);
   }
 
@@ -420,8 +420,6 @@ try {
     cout << printer.getInstance();
     exit(0);
   }
-
-  getState(stateObj).setTupleListContainer(instance.tupleListContainer);
 
   // Copy args into tableout
   getTableOut().set("RandomSeed", to_string(args.random_seed));

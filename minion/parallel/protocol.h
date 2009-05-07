@@ -49,7 +49,7 @@
   enum MessageType
   {
       // This just provides something to initialise a message object to.
-      // It should never be sent or recieved.
+      // It should never be sent or received.
       INVALID_MESSAGE,
       
       // Clients send this when search starts.
@@ -60,7 +60,7 @@
       // responding with the correct protocol version.
       WELCUM,
       
-      // A general error state. Whenever the server or client recieves this, it
+      // A general error state. Whenever the server or client receives this, it
       // should abort quickly. Something has gone badly wrong.
       NO_WAI,
       
@@ -72,7 +72,7 @@
       // end of search.
       OUT_PLZ,
       
-      // Passes work, either server->client or client->server. If a client recieves 
+      // Passes work, either server->client or client->server. If a client receives 
       // this while it is already working it should return NO_WAI and abort. 
       // After this, a Branch object will be sent describing the branch to take
       HAVE_WURK,
