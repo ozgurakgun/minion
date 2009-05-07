@@ -1,6 +1,0 @@
-digraph G {
-  compound=true
-  node [ fontsize="10", fontname="FreeSans"];
-  edge [ labelfontsize="10", labelfontname="FreeSans"];
-  dir_ca77e71e0c23c815b58ecc0fddf2d4c1 [shape=box, label="memory_management", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_ca77e71e0c23c815b58ecc0fddf2d4c1.html"];
-}
