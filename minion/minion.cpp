@@ -338,7 +338,7 @@ void print_default_help(char** argv)
   print_constraints();
 }
 
-void go_parallel(int argc, char* argv[]);
+void go_parallel(int argc, char* argv[], StateObj* stateObj);
 
 int main(int argc, char** argv) {
 // Wrap main in a try/catch just to stop exceptions leaving main,
@@ -375,7 +375,7 @@ try {
   
   if(getOptions(stateObj).parallel)
   {
-      go_parallel(argc, argv);
+      go_parallel(argc, argv, stateObj);
       exit(0);
   }
 

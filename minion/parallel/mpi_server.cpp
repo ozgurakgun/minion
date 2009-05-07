@@ -1,6 +1,10 @@
 #include "protocol.h"
+#include "../minion.h"
 
 #include <iostream>
+#include "../inputfile_parse/ParsingObject.hpp"
+
+#include <boost/iostreams/copy.hpp>
 using namespace std;
 
 struct MinionMPIServer
@@ -12,7 +16,7 @@ struct MinionMPIServer
     MinionMPIServer() : world_size(world.size())
     { ProtocolAssert(world.rank() == 0); }
     
-    void init_world()
+    void init_world(string instance)
     {
         MinionMessage m;
         bool versions_consistent = true;
@@ -39,7 +43,7 @@ struct MinionMPIServer
         {
             MINION_MPI_SEND(world, i, MinionMessage(WELCUM));
             MINION_MPI_SEND(world, i, MinionMessage(HAVE_FILEZ));
-            MINION_MPI_SEND(world, i, std::string("Instance"));
+            MINION_MPI_SEND(world, i, instance);
         }
         
     }
@@ -56,11 +60,22 @@ struct MinionMPIServer
 };
 
 
-void minion_mpi_server_start()
+void minion_mpi_server_start(StateObj* stateObj)
 {
+    ParsingObject po(getOptions(stateObj).instance_name,
+                     getOptions(stateObj).parser_verbose);
+                     
+    ostringstream oss;
+    boost::iostreams::copy(po.in, oss);
+    
     cout << "Starting Server" << endl;
     MinionMPIServer server;
-    server.init_world();
+    server.init_world(oss.str());
     cout << "Server setup!" << endl;
     server.world.barrier();
+    
+
+    
+    
+    
 }

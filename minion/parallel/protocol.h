@@ -6,34 +6,37 @@
  * and is designed to be quite fragile, but optimised.
  *
  * A basic outline of the protocol:
- * MPI machine '0' is the 'server'. It does not do any solving, but only
- * deals with giving out work. All other machines are clients.
  *
- * 1) Every client sends a 'O_HAI' message to the server with the
- * version of the protocol it supports.
- * 2) If the protocols disagree, the server will send 'NO_WAI' to all clients
- * and abort. Else, it will send 'WELCUM' and then enter the setup phase.
+ * One machine is the server. On MPI this is machine '0'. It does not do 
+ * any solving, but only deals with giving out work. All other machines 
+ * are clients.
  *
- * 3) The server sends a 'HAVE_FILEZ' message, which provides the instance.
+ * We assume we will only solve 1 minion instance per execution.
+ *
+ *
+ *
+ * An outline of the protocol is as follows. The details of how to message pass
+ * are further down, or in the code!
+ *
+ * 1) All clients -> Server. 'O_HAI' + version number.
+ * 2) If version numbers conflict, Server -> all clients 'NO_WAI', abort
+ * 3) If version numbers OK, Server -> all clients 'WELCUM'
+ * 4) Server -> all clients 'HAVE_FILEZ' message, which provides the instance.
  *
  * The clients then enter the following cycle.
  *
- * Wait until a 'HAVE_WURK' message arrives, and begin the search.
- * While working, a 'IZ_IN_UR_BASE_STEALIN_UR_WURK' may arrive. This should be 
- * replied to with a 'GIVEZ_TREEZ', providing a partial search, or 'NO_WURK' if
- * this instance has no work.
+ * 1) Wait until a 'HAVE_WURK' message arrives, providing a search, then do it.
+ * 2) While working, any of the following messages may arrive:
+ *   'IZ_IN_UR_BASE_STEALIN_UR_WURK' may arrive - pass back to server either:
+ *       'GIVEZ_TREEZ', some work another machine could do.
+         'PLZ_SEND_WURK' if there is no work (because the client has finished).
+         'OUT_PLZ' if search is finished. Exit gracefully.
+         
+ * 3) If a solution is found, send 'HAS_SOLUTIONZ' to the server.
+ * 4) If the client runs out of work, send 'PLZ_SEND_WURK' to the server.
  *
- * When a solution is found, a 'HAS_SOLUTIONZ' message should be sent to the server.
- * When the client has no more work, it sends 'NO_WURK' to the server (note that
- * this might get sent multiple times, if a GIVEZ_TREEZ was sent before. This is not
- * a problem).
- *
- * If a client ever recieved 'HAVE_WURK' message which it is already operating,
- * it should reply 'NO_WAI' and abort. This should never happen.
- *
- * Finally, 'OUT_PLZ' denotes the end of search. At this point clients should exit
- * gracefully.
- *
+ * Clients should never recieve 'HAVE_WURK' while already operating. If they do
+ * they should send 'NO_WAI' and abort. 
  *
  * A server's task is more complicated, but basically it sends HAS_WORKZ messages
  * to get work for clients which currently have nothing to do.
@@ -76,13 +79,13 @@
       
       // Asks a client for work, to which it should (generally) return it's top-most
       // branch, which it will then not search. If it is already out of work, it should
-      // return NO_WURK
+      // return PLZ_SEND_WURK
       IZ_IN_UR_BASE_STEALIN_UR_WURK,
       
       // Denotes a client has no work. Can be sent at any time, in particular in reply
       // to IZ_IN_UR_BASE_STEALIN_UR_WORK. Sending this multiple times is not a mistake,
       // but not encourage.
-      NO_WURK,
+      PLZ_SEND_WURK,
             
       // Denotes a client has found a solution. After this a vector<int> is sent
       // containing the solution
