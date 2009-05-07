@@ -338,11 +338,12 @@ void print_default_help(char** argv)
   print_constraints();
 }
 
+void go_parallel(int argc, char* argv[]);
 
 int main(int argc, char** argv) {
 // Wrap main in a try/catch just to stop exceptions leaving main,
 // as windows gets really annoyed when that happens.
-
+    
 try {
   StateObj* stateObj = new StateObj();
 
@@ -371,6 +372,12 @@ try {
   SearchMethod args;
 
   parse_command_line(stateObj, args, argc, argv);
+  
+  if(getOptions(stateObj).parallel)
+  {
+      go_parallel(argc, argv);
+      exit(0);
+  }
 
   if(getOptions(stateObj).outputType != -1)
     getState(stateObj).getOldTimer().setOutputType(getOptions(stateObj).outputType);

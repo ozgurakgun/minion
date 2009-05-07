@@ -116,6 +116,8 @@ foreach(ct ${SRCS})
 #    add_definitions(-D${ct_name}_ABC)
 endforeach()
 
+
+
 list(APPEND SRCS ${PROJECT_SOURCE_DIR}/minion/BuildVariables.cpp
                  ${PROJECT_SOURCE_DIR}/minion/BuildCSP.cpp
                  ${PROJECT_SOURCE_DIR}/minion/commandline_parse.cpp
@@ -144,6 +146,18 @@ endif()
 
 if(WINCYGWIN)
     set(CFLAGS "${CFLAGS} -enable-auto-import")
+endif()
+
+set(BOOST_COMPONENTS iostreams)
+option(PARALLEL "" OFF)
+if(PARALLEL)
+  add_definitions(-DUSE_MPL)
+  list(APPEND SRCS ${PROJECT_SOURCE_DIR}/minion/parallel/mpi_server.cpp
+                   ${PROJECT_SOURCE_DIR}/minion/parallel/mpi_client.cpp
+                   ${PROJECT_SOURCE_DIR}/minion/parallel/mpi_singletons.cpp
+                   ${PROJECT_SOURCE_DIR}/minion/parallel/mpi_startup.cpp)
+  list(APPEND BOOST_COMPONENTS mpi serialization)
+  set(CMAKE_CXX_COMPILER mpic++)
 endif()
 
 find_program(CCONTROL ccontrol)
@@ -202,7 +216,7 @@ if(STATIC)
     endif()
 endif()
 
-find_package(Boost 1.33.0 COMPONENTS iostreams)
+find_package(Boost 1.38.0 COMPONENTS ${BOOST_COMPONENTS})
 if(Boost_FOUND)
     set(CFLAGS "${CFLAGS} -I${Boost_INCLUDE_DIRS}")
     find_package(ZLIB)
