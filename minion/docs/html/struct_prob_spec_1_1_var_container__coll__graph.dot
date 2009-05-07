@@ -1,0 +1,41 @@
+digraph G
+{
+  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
+  node [fontname="FreeSans",fontsize="10",shape=record];
+  rankdir=LR;
+  Node1 [label="ProbSpec::VarContainer",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node2 -> Node1 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="discrete\nbound",fontname="FreeSans"];
+  Node2 [label="std::vector\< pair\< int, Bounds \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node3 -> Node2 [dir=back,color="orange",fontsize="10",style="dashed",label="\< pair\< int, Bounds \> \>",fontname="FreeSans"];
+  Node3 [label="std::vector\< T \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip="STL class."];
+  Node4 -> Node3 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="elements",fontname="FreeSans"];
+  Node4 [label="T",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node5 -> Node1 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="matrix_table",fontname="FreeSans"];
+  Node5 [label="std::map\< string, vector\< int \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node6 -> Node5 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="keys",fontname="FreeSans"];
+  Node6 [label="std::string",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip="STL class."];
+  Node7 -> Node6 [dir=back,color="midnightblue",fontsize="10",style="solid",fontname="FreeSans"];
+  Node7 [label="std::basic_string\<char\>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip="STL class."];
+  Node8 -> Node5 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="elements",fontname="FreeSans"];
+  Node8 [label="std::vector\< int \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node3 -> Node8 [dir=back,color="orange",fontsize="10",style="dashed",label="\< int \>",fontname="FreeSans"];
+  Node9 -> Node5 [dir=back,color="orange",fontsize="10",style="dashed",label="\< string, vector\< int \> \>",fontname="FreeSans"];
+  Node9 [label="std::map\< K, T \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip="STL class."];
+  Node10 -> Node9 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="keys",fontname="FreeSans"];
+  Node10 [label="K",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node4 -> Node9 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="elements",fontname="FreeSans"];
+  Node11 -> Node1 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="sparse_discrete\nsparse_bound",fontname="FreeSans"];
+  Node11 [label="std::vector\< pair\< int, vector\< int \> \> \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node3 -> Node11 [dir=back,color="orange",fontsize="10",style="dashed",label="\< pair\< int, vector\< int \> \> \>",fontname="FreeSans"];
+  Node12 -> Node1 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="name_table",fontname="FreeSans"];
+  Node12 [label="std::map\< Var, string \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node6 -> Node12 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="elements",fontname="FreeSans"];
+  Node13 -> Node12 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="keys",fontname="FreeSans"];
+  Node13 [label="ProbSpec::Var",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node9 -> Node12 [dir=back,color="orange",fontsize="10",style="dashed",label="\< Var, string \>",fontname="FreeSans"];
+  Node14 -> Node1 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="symbol_table",fontname="FreeSans"];
+  Node14 [label="std::map\< string, Var \>",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node6 -> Node14 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="keys",fontname="FreeSans"];
+  Node13 -> Node14 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="elements",fontname="FreeSans"];
+  Node9 -> Node14 [dir=back,color="orange",fontsize="10",style="dashed",label="\< string, Var \>",fontname="FreeSans"];
+}
