@@ -26,7 +26,9 @@ void parse_command_line(StateObj* stateObj, SearchMethod& args, int argc, char**
  for(int i = 1; i < argc; ++i)
   {
     const string command(argv[i]);
-    if(command == string("-findallsols"))
+    if(command == string("-parallel"))
+    { getOptions(stateObj).parallel = true; }
+    else if(command == string("-findallsols"))
     { getOptions(stateObj).findAllSolutions(); }
     else if(command == string("-findgenerators"))
     { getOptions(stateObj).find_generators = true; }

@@ -170,6 +170,9 @@ public:
   /// Denotes if only generators for group should be found (only makes sense for groups)
   bool find_generators;
 
+  /// Denotes if parallel search should be used
+  bool parallel;
+  
   /// Denotes if we should output in a compatable way to the solver competition.
   bool cspcomp;
   
@@ -228,7 +231,7 @@ public:
   bool noTimers;
   
   SearchOptions() : 
-    wdeg_on(false), find_generators(false), 
+    wdeg_on(false), find_generators(false), parallel(false),
     cspcomp(false), silent(false), dumptree(false), sollimit(1), fullpropagate(false), 
 #ifdef NO_DEBUG
     nocheck(true),
