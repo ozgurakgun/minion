@@ -1,0 +1,14 @@
+digraph G
+{
+  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
+  node [fontname="FreeSans",fontsize="10",shape=record];
+  Node1 [label="Reversible\< Type \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node1 -> Node2 [dir=back,color="orange",fontsize="10",style="dashed",label="\< int \>",fontname="FreeSans"];
+  Node2 [label="Reversible\< int \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$class_reversible.html"];
+  Node1 -> Node3 [dir=back,color="orange",fontsize="10",style="dashed",label="\< size_t \>",fontname="FreeSans"];
+  Node3 [label="Reversible\< size_t \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$class_reversible.html"];
+  Node1 -> Node4 [dir=back,color="orange",fontsize="10",style="dashed",label="\< DomainInt \>",fontname="FreeSans"];
+  Node4 [label="Reversible\< DomainInt \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$class_reversible.html"];
+  Node1 -> Node5 [dir=back,color="orange",fontsize="10",style="dashed",label="\< bool \>",fontname="FreeSans"];
+  Node5 [label="Reversible\< bool \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$class_reversible.html"];
+}

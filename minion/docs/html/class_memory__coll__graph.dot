@@ -1,0 +1,15 @@
+digraph G
+{
+  edge [fontname="FreeSans",fontsize="10",labelfontname="FreeSans",labelfontsize="10"];
+  node [fontname="FreeSans",fontsize="10",shape=record];
+  Node1 [label="Memory",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled" fontcolor="black"];
+  Node2 -> Node1 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="nonbacktrack_memory",fontname="FreeSans"];
+  Node2 [label="NewMemoryBlock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$class_new_memory_block.html",tooltip="Looks after all MoveablePointer to a block of memory, and also the memory itself..."];
+  Node3 -> Node1 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="monotonic_set",fontname="FreeSans"];
+  Node3 [label="TrailedMonotonicSet",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node4 -> Node3 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="_backtrack_depth_ptr\n_undo_indexes\n_array",fontname="FreeSans"];
+  Node4 [label="MoveablePointer",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$class_moveable_pointer.html",tooltip="Class which represents a moveable pointer."];
+  Node5 -> Node1 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="backtrack_memory",fontname="FreeSans"];
+  Node5 [label="BackTrackMemory",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$class_back_track_memory.html",tooltip="Provides a wrapper around NewMemoryBlock for backtrackable memory."];
+  Node2 -> Node5 [dir=back,color="darkorchid3",fontsize="10",style="dashed",label="new_memory_block",fontname="FreeSans"];
+}
