@@ -17,26 +17,7 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include "inputfile_parse.h"
-
-#include "MinionInputReader.hpp"
-#include "MinionThreeInputReader.hpp"
-
-#include "counter.hpp"
-
-#include <fstream>
-#include <iostream>
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
-
-using boost::iostreams::filtering_istream;
-using boost::iostreams::gzip_decompressor;
-using boost::iostreams::bzip2_decompressor;
-
-using boost::iostreams::error_counter;
+#include "ParsingObject.hpp"
 
 template<typename Reader, typename Stream>
     void ReadCSP(Reader& reader, ConcreteFileReader<Stream>* infile)
@@ -74,55 +55,11 @@ CSPInstance readInput(InputReader* infile, bool parser_verbose)
     }  
 }
 
-
 CSPInstance readInputFromFile(string fname, bool parser_verbose)
 {
-    const char* filename = fname.c_str();
-    string extension;
-    if(fname.find_last_of(".") < fname.size())
-      extension = fname.substr(fname.find_last_of("."), fname.size());
-  
-    filtering_istream in;
-    
-    error_counter e_count;
-    in.push(boost::ref(e_count));
-    
-    if(extension == ".gz" || extension == ".gzip" || extension == ".z" || extension == ".gzp" ||
-        extension == ".bz2" || extension == ".bz" || extension == ".bzip2" || extension == ".bzip")
-    {  
-      if(extension == ".gz" || extension == ".gzip" || extension == ".z" || extension == ".gzp")
-      {
-        if(parser_verbose)
-          cout << "# Using gzip uncompression" << endl;
-        in.push(gzip_decompressor());
-      }    
-  
-      if(extension == ".bz2" || extension == ".bz" || extension == ".bzip2" || extension == ".bzip")
-      {
-        if(parser_verbose)
-          cout << "# Using bzip2 uncompression" << endl;
-        in.push(bzip2_decompressor());
-      }
-      
-    }
-    
-    // We need to use a pointer here, as we want to declare the object inside a for loop,
-    // and we need it to live until after we've finished parsing.
-    // We use an auto_ptr because it will auto-delete on exit.
-    auto_ptr<ifstream> file;
-    
-    if(fname != "--")
-    {
-      file = auto_ptr<ifstream>(new ifstream(filename, ios_base::in | ios_base::binary));
-      if (!(*file)) {
-        INPUT_ERROR("Can't open given input file '" + fname + "'.");
-      }
-      in.push(*file);
-    }
-    else
-      in.push(cin);
-
-    ConcreteFileReader<filtering_istream> infile(in, filename);
+    ParsingObject parse_obj(fname, parser_verbose);
+ 
+    ConcreteFileReader<filtering_istream> infile(parse_obj.in, fname.c_str());
 
     if (infile.failed_open() || infile.eof()) {
       INPUT_ERROR("Can't open given input file '" + fname + "'.");
@@ -138,9 +75,9 @@ CSPInstance readInputFromFile(string fname, bool parser_verbose)
       cerr << "Error in input!" << endl;
       cerr << s.what() << endl;
       
-        cerr << "Error occurred on line " << e_count.lines_prev << ", around character " << e_count.chars_prev << endl;
+        cerr << "Error occurred on line " << parse_obj.e_count.lines_prev << ", around character " << parse_obj.e_count.chars_prev << endl;
 #ifdef GET_STRING         
-        cerr << "The parser gave up around: '" << e_count.current_line_prev << "'" << endl;
+        cerr << "The parser gave up around: '" << parse_obj.e_count.current_line_prev << "'" << endl;
 #endif
         exit(1);
     }
