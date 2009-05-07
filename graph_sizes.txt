@@ -1,0 +1,78 @@
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC1000.1.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC1000.5.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC1000.9.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC125.1.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC125.5.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC125.9.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC250.1.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC250.5.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC250.9.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC500.1.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC500.5.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJC500.9.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJR500.1.col.minion 4718592
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJR500.1c.col.minion 12582912
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/DSJR500.5.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/anna.col.minion 5650532794368000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/david.col.minion 668860416000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/flat1000_50_0.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/flat1000_60_0.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/flat1000_76_0.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/flat300_20_0.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/flat300_26_0.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/flat300_28_0.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/fpsol2.i.1.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/fpsol2.i.2.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/fpsol2.i.3.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/games120.col.minion 2
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/homer.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/huck.col.minion 4815794995200
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/inithx.i.1.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/inithx.i.2.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/inithx.i.3.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/jean.col.minion 20065812480000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/latin_square_10.col.minion 435456000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_15b.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_15c.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_15d.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_25a.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_25b.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_25c.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_25d.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_5a.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_5b.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_5c.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/le450_5d.col.minion 1
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/miles1000.col.minion 72
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/miles1500.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/miles250.col.minion 2654208
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/miles500.col.minion 829440
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/miles750.col.minion 96
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/mulsol.i.1.col.minion 873569058445305322849228572755212810361541416378298675384027762211835304758920\ 554007756800000000000000000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/mulsol.i.2.col.minion 142336732967296971174110999819059200000000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/mulsol.i.3.col.minion 65830804828179677347703685120000000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/mulsol.i.4.col.minion 197492414484539032043111055360000000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/mulsol.i.5.col.minion 526646438625437418781629480960000000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/myciel3.col.minion 10
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/myciel4.col.minion 10
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/myciel5.col.minion 10
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/myciel6.col.minion 10
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/myciel7.col.minion 10
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen10_10.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen11_11.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen12_12.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen13_13.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen14_14.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen15_15.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen16_16.col.minion 
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen5_5.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen6_6.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen7_7.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen8_12.col.minion 4
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen8_8.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/queen9_9.col.minion 8
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/school1.col.minion 589824
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/school1_nsh.col.minion 49152
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/zeroin.i.1.col.minion 472612446563942424876972568846417574249597948164254215617941622657170083138650\ 662980686102695530289693595879957529194106191872000000000000000000000000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/zeroin.i.2.col.minion 188843021477666845733466569907133831692141458482969852935006250322679930499891\ 2000000000000000
+graph_colouring/mat.gsia.cmu.edu/COLOR/instances/zeroin.i.3.col.minion 447847646673844934245583183706455865022106155750424155816913425544930918400000\ 00000000
