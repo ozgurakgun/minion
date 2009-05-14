@@ -66,10 +66,12 @@ namespace Controller
       }
       if(target < getMemory(stateObj).backTrack().current_depth()) {
 	//cout << "jumping beyond" << endl;
-	getQueue(stateObj).clearQueues();
-	D_ASSERT(getQueue(stateObj).isQueuesEmpty());
-	world_pop(stateObj);
-	maybe_print_search_action(stateObj, "bt");
+	if(target != -2) {
+	  getQueue(stateObj).clearQueues();
+	  D_ASSERT(getQueue(stateObj).isQueuesEmpty());
+	  world_pop(stateObj);
+	  maybe_print_search_action(stateObj, "bt");
+	}
 	return target;
       }
       //cout << "recursing on return" << endl;
