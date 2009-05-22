@@ -269,7 +269,7 @@ public:
     return MoveableArray<T>(ptr, size);
   }
 
-
+private:
   /// Enlarges (or reduces) memory block and moves all \ref MoveablePointer to point to the new block.
   void reallocate(unsigned byte_count)
   {
@@ -290,7 +290,8 @@ public:
     current_data = new_data;
     maximum_bytes = byte_count;
   }
-
+public:
+    
   /// Checks if vp points inside this memoryblock and if so registers it and returns true.
   bool checkAddToTracker(MoveablePointer* vp)
   {
