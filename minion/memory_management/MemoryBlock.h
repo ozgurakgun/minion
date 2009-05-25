@@ -155,6 +155,7 @@ typedef MoveablePointer BackTrackOffset;
 
 class NewMemoryBlock;
 
+#ifndef BLOCK_CHAIN
 /// Singleton type which tracks all occurrences of \ref NewMemoryBlock.
 /** This class is the only singleton global variable in Minion when in reenterant
  *  mode. It keeps track of all the occurrences of \ref NewMemoryBlock so when a
@@ -208,7 +209,7 @@ public:
 };
 
 VARDEF(MemBlockCache memBlockCache);
-
+#endif
 
 /// Looks after all \ref MoveablePointer to a block of memory, and also the memory itself.
 /** A NewMemoryBlock is basically an extendable, moveable block of memory which
@@ -301,11 +302,17 @@ public:
                   total_stored_bytes(0),
 #endif
                   lock_m(false), final_lock_m(false)
-  { memBlockCache.registerNewMemoryBlock(this);}
+  {
+#ifndef BLOCK_CHAIN
+    memBlockCache.registerNewMemoryBlock(this);
+#endif
+  }
   
   ~NewMemoryBlock()
   { 
+#ifndef BLOCK_CHAIN
     memBlockCache.unregisterNewMemoryBlock(this);
+#endif
     free(current_data);
   }
   
@@ -511,11 +518,10 @@ inline void* MoveablePointer::get_ptr() const
 
 #endif
 
+
+#ifndef BLOCK_CHAIN
 inline void MemBlockCache::addPointerToNewMemoryBlock(MoveablePointer* vp)
   {
-#ifdef BLOCK_CHAIN
-    D_FATAL_ERROR("Fatal Exception");
-#endif
     LOCK(m);
     if(vp->get_ptr_noCheck() == NULL)
       return;
@@ -532,9 +538,6 @@ inline void MemBlockCache::addPointerToNewMemoryBlock(MoveablePointer* vp)
 
   inline void MemBlockCache::removePointerFromNewMemoryBlock(MoveablePointer* vp)
   {
-#ifdef BLOCK_CHAIN
-    D_FATAL_ERROR("Fatal Exception");
-#endif
     LOCK(m);
     for(vector<NewMemoryBlock*>::iterator it = NewMemoryBlockCache.begin();
         it != NewMemoryBlockCache.end();
@@ -561,5 +564,6 @@ inline void MemBlockCache::addPointerToNewMemoryBlock(MoveablePointer* vp)
     ;
     D_FATAL_ERROR("Fatal Memory Error - invalid Pointer deferenced!");
   }
+#endif
 
 #endif
