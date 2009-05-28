@@ -628,18 +628,9 @@ class testalldiff:
     def runtest(self, options=dict()):
         return runtestgeneral("alldiff", True, options, [5], ["quitesmallnum"], self, False)
 
-class testalldiffgacslow(testalldiff):
-    def runtest(self, options=dict()):
-        return runtestgeneral("alldiffgacslow", False, options, [5], ["quitesmallnum"], self, not options['reify'])
-
 class testgacalldiff(testalldiff):
     def runtest(self, options=dict()):
-        return runtestgeneral("gacalldiff", False, options, [5], ["quitesmallnum"], self, not options['reify'])
-
-
-class testwatchedalldiff(testalldiff):
-    def runtest(self, options=dict()):
-        return runtestgeneral("watchedalldiff", False, options, [5], ["quitesmallnum"], self, not options['reify'])
+        return runtestgeneral("gacalldiff", False, options, [5], ["quitesmallnum"], self, True)
 
 class testdiseq(testalldiff):
     def runtest(self, options=dict()):
@@ -662,10 +653,9 @@ class testeq:
         return out
         
     def runtest(self, options=dict()):
-        return runtestgeneral("eq", True, options, [1,1], ["num", "num"], self, True)
+        return runtestgeneral("eq", True, options, [1,1], ["num", "num"], self, False)
 
 class testwatchneq:
-    # printtable essentially sets up pairsame constraint. negation of alldiff.
     def printtable(self, domains):
         cross=[]
         out=[]
@@ -752,8 +742,8 @@ class testlitsumgeq:
         return out
         
     def runtest(self, options=dict()):
-        return runtestgeneral("litsumgeq", False, options, [6,6,1], ["smallnum", "const", "smallconst"], self, True)
-
+        return runtestgeneral("litsumgeq", False, options, [6,6,1], ["smallnum", "const", "smallconst"], self, False)
+        # Supposed to be GAC except when a variable occurs more than once in the list of literals.
 
 class testlexleq:
     def printtable(self, domains, less=False):
