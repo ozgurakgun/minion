@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.4.7 FATAL_ERROR)
+#foo
 
 project(minion)
 
@@ -172,15 +173,6 @@ else()
     endif()
 endif()
 
-#find_package(GMP)
-#if(GMP_FOUND)
-#    set(CFLAGS "${CFLAGS} -I${GMP_INCLUDE_DIR}")
-#    message(STATUS "GMP found")
-#    add_definitions(-DUSE_GMP)
-#else()
-#    message(STATUS "GMP not found, no bounds checking")
-#endif()
-
 #check_cxx_compiler_flag("-std=c++0x" CheckForCXX)
 #if(CheckForCXX)
 #   message(STATUS "Compiler supports C++0x!")
@@ -315,18 +307,6 @@ if(QUICK)
     message(STATUS "Enabling quick compilation")
     set(BINARY "${BINARY}-quick")
     add_definitions(-DQUICK_COMPILE)
-endif()
-
-option(BACK_VEC "" OFF)
-option(CACHE_MALLOC "" OFF)
-if(BACK_VEC)
-    message(STATUS "Enabling backtrack memory in vector")
-    set(BINARY "${BINARY}-backtrack-vec")
-    add_definitions(-DBACKTRACK_VEC)
-    if(CACHE_MALLOC)
-        message(STATUS "Enabling Caching Malloc")
-        add_definitions(-DMALLOC_CACHE)
-    endif()
 endif()
 
 option(REENTER "" OFF)
