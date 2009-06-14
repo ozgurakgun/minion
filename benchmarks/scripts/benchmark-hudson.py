@@ -15,8 +15,8 @@ class BThread (Thread):
 
   def run (self):
     for name in self.benchmarks:
-      print 'Running ' + name
-      if name.find('.minion'): #also matches .minion.bzip2 etc.
+      if name.endswith('.minion') or name.endswith('.minion.bz2') or name.endswith('.minion.gz'):
+        print 'Running ' + name
         timer = timeit.Timer('os.system("'+program+' '+name+' > '+name+'.benchmark.out")','import os')
         time = timer.timeit(1)
         if(time < 5.0):
