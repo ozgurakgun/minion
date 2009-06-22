@@ -18,7 +18,7 @@
 */
 
 
-/** @help constraints;gcc Description 
+/** @help constraints;gccweak Description 
 The Generalized Cardinality Constraint (GCC) constrains the number of each value
 that a set of variables can take.
 
