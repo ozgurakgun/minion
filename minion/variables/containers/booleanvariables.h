@@ -179,6 +179,12 @@ struct BoolVarContainer
   /// When false, no variable can be altered. When true, no variables can be created.
   BOOL lock_m;
   
+  int numRealBools;
+  int numBounds;
+  int numSparsebounds;
+  int numDiscrete;
+  int numTotal;
+  
   data_type* value_ptr()
   { return static_cast<data_type*>(values_mem.get_ptr()); }
   
@@ -219,7 +225,8 @@ struct BoolVarContainer
   
   /// Returns a reference to the ith Boolean variable which was previously created.
   BoolVarRef get_var_num(int i);
-  
+
+  BoolVarRef getDiseqBool(Var v1, Var v2);
   
   void setMax(const BoolVarRef_internal& d, DomainInt i) 
   {
@@ -364,8 +371,62 @@ struct BoolVarContainer
 
 inline BoolVarRef BoolVarContainer::get_var_num(int i)
 {
+  D_ASSERT(i >= 0);
   D_ASSERT(i < (int)var_count_m);
   return BoolVarRef(BoolVarRef_internal(i, this));
+}
+
+inline BoolVarRef BoolVarContainer::getDiseqBool(Var v1, Var v2)
+{
+  //D_ASSERT(v1.pos() != v2.pos || v1.type() != v2.type());
+  int v1_num;
+  switch(v1.type()) {
+  case VAR_BOOL:
+    v1_num = v1.pos();
+    break;
+  case VAR_BOUND:
+    v1_num = numRealBools + v1.pos();
+    break;
+  case VAR_SPARSEBOUND:
+    v1_num = numRealBools + numBounds + v1.pos();
+    break;
+  case VAR_DISCRETE:
+    v1_num = numRealBools + numBounds + numSparsebounds + v1.pos();
+    break;
+  default:
+    D_ASSERT(false);
+    v1_num = 0;
+    break;
+  }
+  
+  int v2_num;
+  switch(v2.type()) {
+  case VAR_BOOL:
+    v2_num = v2.pos();
+    break;
+  case VAR_BOUND:
+    v2_num = numRealBools + v2.pos();
+    break;
+  case VAR_SPARSEBOUND:
+    v2_num = numRealBools + numBounds + v2.pos();
+    break;
+  case VAR_DISCRETE:
+    v2_num = numRealBools + numBounds + numSparsebounds + v2.pos();
+    break;
+  default:
+    D_ASSERT(false);
+    v2_num = 0;
+    break;
+  }
+
+  //bools are arranged with a fixed offset, depending on how many real bools there are
+  //then the variable for 
+  int small = min(v1_num, v2_num);
+  int large = max(v1_num, v2_num);
+
+  //first skip normal bools, then skip pairs involving 1,...,small - 1, then
+  //skip to the correct pair involving both small and large
+  return get_var_num(numRealBools + (small * (2 * numTotal - small - 1) / 2) + (large - small - 1));
 }
 
 inline BoolVarRef_internal::BoolVarRef_internal(int value, BoolVarContainer* b_con) : 
