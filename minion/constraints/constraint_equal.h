@@ -88,14 +88,15 @@ struct ReifiedEqualConstraint : public AbstractConstraint
     t.push_back(make_trigger(var1, Trigger(this, 11), UpperBound));
     t.push_back(make_trigger(var2, Trigger(this, 20), LowerBound));
     t.push_back(make_trigger(var2, Trigger(this, 21), UpperBound));
-    t.push_back(make_trigger(var3, Trigger(this, 3), LowerBound));
-    t.push_back(make_trigger(var3, Trigger(this, -3), UpperBound));
+    t.push_back(make_trigger(var3, Trigger(this, 3), Assigned));
     return t;
   }
   
   // rewrite the following two functions.
   virtual void full_propagate()
   {
+      var3.setMin(0);
+      var3.setMax(1);
     if(var3.isAssigned())
     {
       if(var3.getAssignedValue() == 1)
@@ -200,22 +201,15 @@ struct ReifiedEqualConstraint : public AbstractConstraint
           break;
           
       case 3:
-        D_ASSERT(var3.isAssigned() && var3.getAssignedValue()==1);
-        // reifyvar==1
-        eqprop();
-        break;
-        
-      case -3:
-        D_ASSERT(var3.isAssigned() && var3.getAssignedValue()==0);
-        if(var1.isAssigned())
-        {
-            diseqvar1assigned();
-        }
-        if(var2.isAssigned())
-        {
-            diseqvar2assigned();
-        }
-        break;
+          if(var3.getAssignedValue()==1)
+          {
+              eqprop();
+          }
+          else
+          {
+              diseq();
+          }
+          break;
     }
   }
   
@@ -519,7 +513,7 @@ struct NeqConstraintBinary : public AbstractConstraint
           vars[1] = var2;
       return vars;
     }
-  };
+};
 
 
 template<typename EqualVarRef1, typename EqualVarRef2>

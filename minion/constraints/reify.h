@@ -474,6 +474,9 @@ struct reify : public ParentConstraint
     P("Full prop");
     P("reify " << child_constraints[0]->constraint_name());
     P("negation: " << child_constraints[1]->constraint_name());
+    reify_var.setMin(0);
+    reify_var.setMax(1);
+    
     if(reify_var.isAssigned())
     {
         if(reify_var.getAssignedValue() > 0)

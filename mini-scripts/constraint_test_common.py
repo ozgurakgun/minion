@@ -474,6 +474,29 @@ class testgacelement__minus__deprecated:
     def runtest(self, options=dict()):
         return runtestgeneral("gacelement-deprecated", False, options, [4,1,1], ["smallnum", "num", "num"], self, not options['reify'])
 
+class testgac2delement:
+    def printtable(self, domains): 
+        const=self.constants[0]
+        if (const not in [1,2,4]) or len(domains) != 7:
+            return False
+        out=[]
+        # given a list of lists for the domains, generate the table for gacelement 
+        numvars=len(domains)
+        vectordoms=domains[:-2]
+        otherdoms=domains[-2:]
+        tocross=domains[:-1]
+        cross=[]
+        crossprod(tocross, [], cross)
+        for l in cross:
+            if l[-1] >=0 and l[-1]<(len(l)-1):
+                if l[l[-1]] in otherdoms[1]:
+                    out.append(l+[l[l[-1]]])
+                    
+        return out
+    
+    def runtest(self, options=dict()):
+        return runtestgeneral("gac2delement", False, options, [4,2,1,1], ["smallnum", "num", "num", "const"], self, True)
+
 class testwatchelement(testgacelement__minus__deprecated):
     def runtest(self, options=dict()):
         return runtestgeneral("watchelement", False, options, [4,1,1], ["smallnum", "num", "num"], self, not options['reify'])
@@ -1134,13 +1157,12 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
     reify=options['reify']
     fullprop=options['fullprop']
     
-    isvector=[a>1 for a in varnums]  # Is it to be printed as a vector. This seems to suffice at the moment.
-    
     if reify or reifyimply:
         # add extra bool variable.
         varnums=[1]+varnums
-        vartypes=["boolean"]+vartypes
-        isvector=[False]+isvector
+        vartypes=["num"]+vartypes # no longer bool since all var types now allowed.
+    
+    isvector=[a>1 for a in varnums]  # Is it to be printed as a vector. This seems to suffice at the moment.
     
     # sometimes (1/4) test very short constraints to find edge cases
     shortvector=random.randint(0,3)
@@ -1246,9 +1268,11 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
         crossprod(domlists[1:], [], cross)
         for c in cross:
             if c in tuplelist:
-                tuplelist2.append([1]+c)
+                if 1 in domlists[0]:
+                    tuplelist2.append([1]+c)
             else:
-                tuplelist2.append([0]+c)
+                if 0 in domlists[0]:
+                    tuplelist2.append([0]+c)
         tuplelist=tuplelist2
     if reifyimply:
         tuplelist2=[]
@@ -1256,10 +1280,13 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
         crossprod(domlists[1:], [], cross)
         for c in cross:
             if c in tuplelist:
-                tuplelist2.append([1]+c)
-                tuplelist2.append([0]+c)   # compatible with both values of the reification var.
+                if 1 in domlists[0]:
+                    tuplelist2.append([1]+c)
+                if 0 in domlists[0]:
+                    tuplelist2.append([0]+c)   # compatible with both values of the reification var.
             else:
-                tuplelist2.append([0]+c)
+                if 0 in domlists[0]:
+                    tuplelist2.append([0]+c)
         tuplelist=tuplelist2
     
     # now convert tuplelist into a string.

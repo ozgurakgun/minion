@@ -122,10 +122,12 @@ template<typename BoolVar, bool DoWatchAssignment>
 
     if(i == -1)
     {
-      P("rarvar assigned - Do full propagate");
-      constraint_locked = true;
-      getQueue(stateObj).pushSpecialTrigger(this);
-      return;
+        if(!rar_var.isAssigned() || rar_var.getAssignedValue()==0 )
+            return;
+        P("rarvar assigned to 1- Do full propagate");
+        constraint_locked = true;
+        getQueue(stateObj).pushSpecialTrigger(this);
+        return;
     }
 
     if(full_propagate_called)
@@ -202,31 +204,35 @@ template<typename BoolVar, bool DoWatchAssignment>
   virtual void full_propagate()
   {
     P("Full prop");
+    rar_var.setMin(0);
+    rar_var.setMax(1);
+    
     P(child_constraints[0]->constraint_name());
-    if(rar_var.isAssigned() && rar_var.getAssignedValue() > 0)
+    if(rar_var.isAssigned() && rar_var.getAssignedValue() == 1)
     {
       child_constraints[0]->full_propagate();
       full_propagate_called = true;
       return;
     }
-
+    
     DynamicTrigger* dt = dynamic_trigger_start();
     int dt_count = dynamic_trigger_count();
     // Clean up triggers
     for(int i = 0; i < dt_count; ++i)
-      releaseTrigger(stateObj, dt);
-
+        releaseTrigger(stateObj, dt);
+    
     if(DoWatchAssignment && !rar_var.isAssigned()) //don't place when rar_var=0
     {
-      bool flag;
-      GET_ASSIGNMENT(assignment, child_constraints[0]);
-      PROP_INFO_ADDONE(ReifyImplyGetSatAssg);
-      if(!flag)
-      { // No satisfying assignment to constraint
-        rar_var.propagateAssign(0);
-        return;
-      }
-      watch_assignment(assignment, *(child_constraints[0]->get_vars_singleton()), dt);
+        bool flag;
+        GET_ASSIGNMENT(assignment, child_constraints[0]);
+        PROP_INFO_ADDONE(ReifyImplyGetSatAssg);
+        if(!flag)
+        {   // No satisfying assignment to constraint
+            P("Assigning reifyvar to 0");
+            rar_var.propagateAssign(0);
+            return;
+        }
+        watch_assignment(assignment, *(child_constraints[0]->get_vars_singleton()), dt);
     }
   }
 };
