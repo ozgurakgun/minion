@@ -151,7 +151,6 @@ public:
 
 typedef MoveablePointer BackTrackOffset;
 
-#ifndef BLOCK_CHAIN
 /// Looks after all \ref MoveablePointer to a block of memory, and also the memory itself.
 /** A NewMemoryBlock is basically an extendable, moveable block of memory which
  * keeps track of all pointers into it, and moves them when approriate.
@@ -235,15 +234,9 @@ public:
   NewMemoryBlock() : current_data(NULL), allocated_bytes(0), maximum_bytes(0),
                   total_stored_bytes(0)
   {  }
-#ifndef BLOCK_CHAIN
-    memBlockCache.registerNewMemoryBlock(this);
-#endif
-  }
   
   ~NewMemoryBlock()
   { 
-#ifndef BLOCK_CHAIN
-#endif
     free(current_data);
   }
   
@@ -320,7 +313,4 @@ inline void* MoveablePointer::get_ptr() const
 { return ptr; }
 #endif
 
-
-#ifndef BLOCK_CHAIN
-#endif
 #endif
