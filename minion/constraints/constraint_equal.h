@@ -79,7 +79,10 @@ struct ReifiedEqualConstraint : public AbstractConstraint
   BoolVarRef var3;
   ReifiedEqualConstraint(StateObj* _stateObj, EqualVarRef1 _var1, EqualVarRef2 _var2, BoolVarRef _var3) :
     AbstractConstraint(_stateObj), var1(_var1), var2(_var2), var3(_var3)
-  {}
+  {
+      CHECK(var3.getInitialMin() >= 0, "Reification variables must have domain within {0,1}");
+      CHECK(var3.getInitialMin() <= 1, "Reification variables must have domain within {0,1}");
+  }
   
   virtual triggerCollection setup_internal()
   {
@@ -88,8 +91,7 @@ struct ReifiedEqualConstraint : public AbstractConstraint
     t.push_back(make_trigger(var1, Trigger(this, 11), UpperBound));
     t.push_back(make_trigger(var2, Trigger(this, 20), LowerBound));
     t.push_back(make_trigger(var2, Trigger(this, 21), UpperBound));
-    t.push_back(make_trigger(var3, Trigger(this, 3), LowerBound));
-    t.push_back(make_trigger(var3, Trigger(this, -3), UpperBound));
+    t.push_back(make_trigger(var3, Trigger(this, 3), Assigned));
     return t;
   }
   
@@ -200,22 +202,15 @@ struct ReifiedEqualConstraint : public AbstractConstraint
           break;
           
       case 3:
-        D_ASSERT(var3.isAssigned() && var3.getAssignedValue()==1);
-        // reifyvar==1
-        eqprop();
-        break;
-        
-      case -3:
-        D_ASSERT(var3.isAssigned() && var3.getAssignedValue()==0);
-        if(var1.isAssigned())
-        {
-            diseqvar1assigned();
-        }
-        if(var2.isAssigned())
-        {
-            diseqvar2assigned();
-        }
-        break;
+          if(var3.getAssignedValue()==1)
+          {
+              eqprop();
+          }
+          else
+          {
+              diseq();
+          }
+          break;
     }
   }
   
@@ -519,7 +514,7 @@ struct NeqConstraintBinary : public AbstractConstraint
           vars[1] = var2;
       return vars;
     }
-  };
+};
 
 
 template<typename EqualVarRef1, typename EqualVarRef2>

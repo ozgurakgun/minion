@@ -313,14 +313,7 @@ int main (int argc, char * const argv[]) {
     {
       CSP.constraintReify(transition_vars[i][j], Eq, Var(Discrete, i), Var(Constant, j));
     }
-  //CSP.constraint(Eq, transition_vars[1][getTransitionNum(3,3,3,5)], Var(Constant, 1));
 
-  CSP.constraint(Eq, Var(Discrete, 0), Var(Constant, 68));
-  CSP.constraint(Eq, Var(Discrete, 1), Var(Constant, 62));
-  CSP.constraint(Eq, Var(Discrete, 2), Var(Constant, 24));
-  CSP.constraint(Eq, Var(Discrete, 3), Var(Constant, 15));
-  CSP.constraint(Eq, Var(Discrete, 4), Var(Constant, 51));
-  
   
   
 
