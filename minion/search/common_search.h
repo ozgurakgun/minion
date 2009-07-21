@@ -95,11 +95,11 @@ namespace Controller
     if(getOptions(stateObj).solCallBack)
       getOptions(stateObj).solCallBack(stateObj);
 
-    vector<vector<AnyVarRef> > print_matrix = getState(stateObj).getPrintMatrix();
-    
+
     getState(stateObj).incrementSolutionCount();
     if(getOptions(stateObj).solsoutWrite)
     {
+      vector<vector<AnyVarRef> > print_matrix = getState(stateObj).getPrintMatrix();
       for(unsigned i = 0; i < print_matrix.size(); ++i)
         for(unsigned j = 0; j < print_matrix[i].size(); ++j)
         {
@@ -112,6 +112,7 @@ namespace Controller
     
     if(getOptions(stateObj).print_solution)
     {
+      vector<vector<AnyVarRef> > print_matrix = getState(stateObj).getPrintMatrix();  
       if(getOptions(stateObj).cspcomp)
       {
         cout << "v ";
@@ -170,6 +171,7 @@ namespace Controller
   template<typename VarOrder>
     inline void generateRestartFile(StateObj* stateObj, VarOrder& order)
   {
+    getState(stateObj).getInstance()->add_variable_names();
     string filename = string("minion-resume-") + to_string(getpid());
     cout << "Output resume file to \"" << filename << "\"" << endl;
     ofstream fileout(filename.c_str());
