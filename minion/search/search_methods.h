@@ -19,35 +19,75 @@
 
 #include <cfloat>
 
-struct StaticBranch
+struct VariableOrder
 {
-  template<typename VarType>
-  int operator()(vector<VarType>& var_order, int pos)
-  {
-    unsigned v_size = var_order.size();
-    while(pos < v_size && var_order[pos].isAssigned())
-      ++pos;
-    return pos;
-  }
+    vector<AnyVarRef>& var_order;  // can assume this is anyvarref? May need to template
+    
+    VariableOrder(vector<AnyVarRef>& _var_order) : var_order(_var_order) 
+    {
+    }
+    
+    // returns a pair of variable index, domain value.
+    // blimey, old-fashioned polymorphism in Minion. Who would have thought it.
+    // returning the variable index == -1 means no branch possible.
+    virtual pair<int, DomainInt> pickVarVal();
 };
 
-struct SlowStaticBranch
+struct StaticBranch : public VariableOrder
 {
-  template<typename VarType>
-  int operator()(vector<VarType>& var_order, int pos)
-  {
-    unsigned v_size = var_order.size();
-    pos = 0;
-    while(pos < v_size && var_order[pos].isAssigned())
-      ++pos;
-    return pos;
-  }
+    reversible<int> pos;
+    vector<int>& val_order;
+    
+    pair<int, DomainInt> pickVarVal(vector<VarType>& var_order, int pos)
+    {
+        unsigned v_size = var_order.size();
+        while(pos < v_size && var_order[pos].isAssigned())
+            ++pos;
+        
+        if(pos == v_size)
+            return make_pair(-1, 0);
+        
+        DomainInt val=0;
+        if(val_order[pos])
+            val=var_order[pos].getMin();
+        else
+            val=var_order[pos].getMax();
+        
+        return make_pair(pos, val);
+    }
+};
+
+struct SlowStaticBranch : public VariableOrder
+{
+    vector<AnyVarRef>& var_order;
+    vector<int>& val_order;
+    
+    pair<int, DomainInt> pickVarVal(vector<VarType>& var_order, int pos)
+    {
+        unsigned v_size = var_order.size();
+        unsigned pos = 0;
+        while(pos < v_size && var_order[pos].isAssigned())
+            ++pos;
+        
+        if(pos == v_size)
+            return make_pair(-1, 0);
+        
+        DomainInt val=0;
+        if(val_order[pos])
+            val=var_order[pos].getMin();
+        else
+            val=var_order[pos].getMax();
+        
+        return make_pair(pos, val);
+    }
 };
 
 #ifdef WDEG
 //see Boosting Systematic Search by Weighting Constraints by Boussemart et al
 struct WdegBranch
 {
+    
+    
   template<typename VarType>
   int operator()(vector<VarType>& var_order, int pos)
   {

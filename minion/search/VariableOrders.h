@@ -34,116 +34,188 @@ void inline maybe_print_search_assignment(StateObj* stateObj, T& var, DomainInt 
     }
 }
 
-template<typename VarType = AnyVarRef, typename BranchType = StaticBranch>
-struct VariableOrder
+// instead of carrying around the pos everywhere, the VariableOrder object has pos in it as a reversible<int>. 
+
+// replace find_next_unassigned with all_vars_assigned (which maybe uses something like a watch).
+
+// Need a ceiling which comes down as work is stolen, and a steal_work function.
+
+// remove template on branchtype. make virtual.
+
+template<typename Propagator, typename VarType = AnyVarRef>   // for the time being vartype  must be anyvarref.
+struct SearchManager 
 {
   StateObj* stateObj;
-  vector<VarType> var_order;
-  vector<int> val_order;
+  vector<VarType> var_array;
+  VariableOrder var_order;
+  
   vector<triple> branches; //L & R branches so far (isLeftBranch?,var,value)
-  vector<int> first_unassigned_variable;
-  unsigned pos;
+  //vector<int> first_unassigned_variable;
+  
   unsigned depth; //number of left branches
-  
-  BranchType branch_method;
-  
-  
-  VariableOrder(StateObj* _stateObj, vector<VarType>& _varorder, vector<int>& _valorder)
-  : stateObj(_stateObj), var_order(_varorder), val_order(_valorder)
+  unsigned ceiling; // index into branches, it is the lowest LB which has been stolen.
+    
+  SearchManager(StateObj* _stateObj, vector<VarType> _var_array, VariableOrder _var_order)
+  : stateObj(_stateObj), var_order(_var_order), var_array(_var_array), depth(0), ceiling(-1)
   {
     // if this isn't enough room, the vector will autoresize. While that can be slow,
     // it only has to happen at most the log of the maximum search depth.
     branches.reserve(var_order.size());
-    first_unassigned_variable.reserve(var_order.size());
-    pos = 0; 
-    depth = 0;
   }
   
   void reset()
   {
     branches.clear();
-    first_unassigned_variable.clear();
-    pos = 0;
     depth = 0;
   }
-      
+  
   // Returns true if all variables assigned
-  bool find_next_unassigned()
+  bool all_vars_assigned()
   {
-    pos = branch_method(var_order, pos);
-    return pos == var_order.size();
+    pair<int, DomainInt> picked = var_order.pickVarVal();
+    return picked.first == -1;
   }
-  
-  bool finished_search()
-  { return depth == 0; }
-  
-  int search_depth()
-  { return depth; }
-  
-  void branch_left()
-  {
-    D_ASSERT(!var_order[pos].isAssigned()) 
-    DomainInt assign_val;
-    if(val_order[pos])
-      assign_val = var_order[pos].getMin();
-    else
-      assign_val = var_order[pos].getMax();
-    var_order[pos].decisionAssign(assign_val);
-    maybe_print_search_assignment(stateObj, var_order[pos], assign_val, true);
-    branches.push_back(triple(true, pos, assign_val));
-    depth++;
-    first_unassigned_variable.push_back(pos);
-  }
-  
-  int get_current_pos()
-  { return pos; }
-  
-  void force_branch_left(int new_pos)
-  {
-    D_ASSERT(new_pos >= 0 && new_pos < var_order.size()); 
-    D_ASSERT(!var_order[new_pos].isAssigned()) 
-    DomainInt assign_val;
-    if(val_order[new_pos])
-      assign_val = var_order[new_pos].getMin();
-    else
-      assign_val = var_order[new_pos].getMax();
-    var_order[new_pos].uncheckedAssign(assign_val);
-    maybe_print_search_assignment(stateObj, var_order[new_pos], assign_val, true, true);
-    branches.push_back(triple(true, new_pos, assign_val));
-    depth++;
-    // The first unassigned variable could still be much earlier.
-    first_unassigned_variable.push_back(pos);
-  }
-  
-  void branch_right()
-  {  
-     while(!branches.back().isLeft) { //pop off all the RBs
-       branches.pop_back();
-     }
-     int other_branch = branches.back().var; //then the LB is the next to branch on
-     branches.pop_back();
-     depth--;
-
-     if(val_order[other_branch])
-     {
-       D_ASSERT(var_order[other_branch].getMax() >= var_order[other_branch].getMin() + 1);
-       const DomainInt var_min = var_order[other_branch].getMin();
-       maybe_print_search_assignment(stateObj, var_order[other_branch], var_min, false);
-       var_order[other_branch].setMin(var_min + 1);
-       branches.push_back(triple(false, other_branch, var_min));
-     }
-     else
-     {
-       D_ASSERT(var_order[other_branch].getMax() >= var_order[other_branch].getMin() + 1);
-       const DomainInt var_max = var_order[other_branch].getMax();
-       maybe_print_search_assignment(stateObj, var_order[other_branch], var_max, false);
-       var_order[other_branch].setMax(var_max - 1);
-       branches.push_back(triple(false, other_branch, var_max));
-     }
-
-    pos = first_unassigned_variable.back();
-    first_unassigned_variable.pop_back();
-  }
+    
+    // this is weird: what if we just started search, or only have right-branches above?
+    bool finished_search()
+    { return depth == 0; }
+    
+    int search_depth()
+    { return depth; }
+    
+    // returns false if left branch not possible.
+    bool branch_left()
+    {
+        pair<int, DomainInt> picked = var_order.pickVarVal();
+        if(picked.first == -1)
+        {
+            return false;
+        }
+        D_ASSERT(!var_order[picked.first].isAssigned())
+        var_order[picked.first].decisionAssign(picked.second);
+        maybe_print_search_assignment(stateObj, var_order[pos], assign_val, true);
+        branches.push_back(triple(true, picked.first, picked.second));
+        depth++;
+        return true;
+    }
+    
+    // Only for conflict search?
+    void force_branch_left(int new_pos)
+    {
+        D_ASSERT(new_pos >= 0 && new_pos < var_order.size()); 
+        D_ASSERT(!var_order[new_pos].isAssigned()) 
+        
+        DomainInt assign_val;
+        //if(val_order[new_pos])
+        assign_val = var_order[new_pos].getMin();
+        //else
+        //assign_val = var_order[new_pos].getMax();
+        
+        var_order[new_pos].uncheckedAssign(assign_val);
+        maybe_print_search_assignment(stateObj, var_order[new_pos], assign_val, true, true);
+        branches.push_back(triple(true, new_pos, assign_val));
+        depth++;
+    }
+    
+    bool branch_right()
+    {
+        while(!branches.empty() && !branches.back().isLeft) { //pop off all the RBs
+            branches.pop_back();
+        }
+        if((branches.size()-1)<=ceiling)
+        {   // if idx of last element is less than or equal the ceiling. 
+            // Also catches the empty case.
+            return false;
+        }
+        
+        int var = branches.back().var
+        DomainInt val = branches.back().val
+        branches.pop_back();
+        depth--;
+        D_ASSERT(var_array[var].inDomain(val));
+        
+        // special case the upper and lower bounds to make it work for bound variables
+        if(var_array[var].getMin() == val)
+        {
+            var_array[var].setMin(val+1);
+        }
+        else if(var_array[var].getMax() == val)
+        {
+            var_array[var].setMax(val-1);
+        }
+        else
+        {
+            var_array[var].removeFromDomain(val);
+        }
+        maybe_print_search_assignment(stateObj, var_array[var], val, false);
+        branches.push_back(triple(false, other_branch, var_min));
+    }
+    
+    pair<int, DomainInt> steal_work()
+    {   // steal the topmost left branch from this search.
+        unsigned newceiling=ceiling+1;
+        unsigned b_size=branches.size();
+        
+        while(newceiling<b_size)
+        {
+            if(branches[newceiling].isLeft)
+            {
+                ceiling=newceiling;
+                break;
+            }
+            newceiling++;
+        }
+        if(newceiling==b_size)
+            return make_pair(-1, 0);
+        else
+            return make_pair(branches[ceiling].var, branches[ceiling].val);
+    }
+    
+    // Most basic search procedure
+    virtual void search(Propagator prop, )
+    {
+        maybe_print_search_state(stateObj, "Node: ", v);
+        while(true)
+        {
+            getState(stateObj).incrementNodeCount();
+            if(do_checks(stateObj, order))
+                return;
+            
+            pair<int, DomainInt> varval= var_order.pickVarVal();
+            
+            if(varval.first==-1)
+            {
+                // fail here to force backtracking.
+                getState(stateObj).setFailed(true);
+            }
+            else
+            {
+                maybe_print_search_state(stateObj, "Node: ", v);
+                world_push(stateObj);
+                branch_left();
+                prop(stateObj, v);
+            }
+            
+            if(getState(stateObj).isFailed())
+            {
+                // Either search failed, or a solution was found.
+                while(getState(stateObj).isFailed())
+                {
+                    getState(stateObj).setFailed(false);
+                    
+                    if(finished_search())
+                        return;
+                    
+                    world_pop(stateObj);
+                    maybe_print_search_action(stateObj, "bt");
+                    
+                    branch_right();
+                    
+                    set_optimise_and_propagate_queue(stateObj);
+                }
+            }
+        }
+    }
 };
 
 #endif

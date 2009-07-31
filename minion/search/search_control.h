@@ -21,12 +21,11 @@
 using boost::bind;
 
 #include "../system/system.h"
-#include "common_search.h"
-#include "standard_search.h"
+#include "SearchManager.h"
 
-template<typename SearchAlgorithm, typename Vars, typename Propogator>
+template<typename SearchAlgorithm, typename Vars, typename Propagator>
   function<void (void)> solve_select_search(StateObj* stateObj, const function<void (void)>& next_search, SearchOrder order_in, 
-                                                 SearchAlgorithm& order, Vars& vars, CSPInstance& instance, Propogator prop)
+                                                 SearchAlgorithm& order, Vars& vars, CSPInstance& instance, Propagator prop)
 {
   switch(order_in.order)
   {
@@ -40,20 +39,22 @@ template<typename SearchAlgorithm, typename Vars, typename Propogator>
     if(getOptions(stateObj).find_generators)
     {
       vector<AnyVarRef> perm = get_AnyVarRef_from_Var(stateObj, instance.permutation);
-      return bind(Controller::group_solve_loop<SearchAlgorithm, Vars, vector<AnyVarRef>, Propogator>, stateObj, next_search, order, vars, perm, prop);
+      return bind(Controller::group_solve_loop<SearchAlgorithm, Vars, vector<AnyVarRef>, Propagator>, stateObj, next_search, order, vars, perm, prop);
     }
     else
-      return bind(Controller::solve_loop<SearchAlgorithm, Vars, Propogator>, stateObj, next_search, order, vars, prop, order_in.find_one_assignment);
+      return bind(Controller::parallel_solve_loop<SearchAlgorithm, Vars, Propagator>, stateObj, next_search, order, vars, prop, order_in.find_one_assignment);
     case ORDER_CONFLICT:
-      return bind(Controller::conflict_solve_loop<SearchAlgorithm, Vars, Propogator>, stateObj, next_search, order, vars, prop);
+      return bind(Controller::conflict_solve_loop<SearchAlgorithm, Vars, Propagator>, stateObj, next_search, order, vars, prop);
     default:
     abort();
   }
 }
 
-  template<typename VarValOrder, typename Propogator>
+
+
+  template<typename VarValOrder, typename Propagator>
 function<void (void)> solve(StateObj* stateObj, const function<void (void)>& next_search, SearchOrder order_in, 
-                                 VarValOrder& search_order, CSPInstance& instance, Propogator prop)
+                                 VarValOrder& search_order, CSPInstance& instance, Propagator prop)
 {
   typedef typename VarValOrder::first_type::value_type VarType;
 
