@@ -19,35 +19,132 @@
 
 #include <cfloat>
 
-struct StaticBranch
+struct VariableOrder
 {
-  template<typename VarType>
-  int operator()(vector<VarType>& var_order, int pos)
-  {
-    unsigned v_size = var_order.size();
-    while(pos < v_size && var_order[pos].isAssigned())
-      ++pos;
-    return pos;
-  }
+    vector<AnyVarRef>& var_order;  // can assume this is anyvarref? May need to template
+    
+    VariableOrder(vector<AnyVarRef>& _var_order) : var_order(_var_order) 
+    {
+    }
+    
+    // returns a pair of variable index, domain value.
+    // returning the variable index == -1 means no branch possible.
+    virtual pair<int, DomainInt> pickVarVal();
 };
 
-struct SlowStaticBranch
+struct StaticBranch : public VariableOrder
 {
-  template<typename VarType>
-  int operator()(vector<VarType>& var_order, int pos)
-  {
-    unsigned v_size = var_order.size();
-    pos = 0;
-    while(pos < v_size && var_order[pos].isAssigned())
-      ++pos;
-    return pos;
-  }
+    reversible<int> pos;
+    vector<int>& val_order;
+    
+    StaticBranch(vector<AnyVarRef>& _var_order, vector<char>& _val_order, StateObj* _stateObj) : VariableOrder(_var_order), 
+        val_order(_val_order), pos(_stateObj)
+    {
+    }
+    
+    pair<int, DomainInt> pickVarVal()
+    {
+        unsigned v_size = var_order.size();
+        while(pos < v_size && var_order[pos].isAssigned())
+            ++pos;
+        
+        if(pos == v_size)
+            return make_pair(-1, 0);
+        
+        DomainInt val=0;
+        if(val_order[pos])
+            val=var_order[pos].getMin();
+        else
+            val=var_order[pos].getMax();
+        
+        return make_pair(pos, val);
+    }
+};
+
+struct SDFBranch : public VariableOrder
+{
+    reversible<int> pos;
+    vector<int>& val_order;
+    
+    SDFBranch(vector<AnyVarRef>& _var_order, vector<char>& _val_order, StateObj* _stateObj) : 
+        VariableOrder(_var_order), val_order(_val_order), pos(_stateObj)
+    {
+    }
+    
+    // THIS DOES NOT DO SDF -- just an approximation with the bounds.
+    
+    pair<int, DomainInt> pickVarVal()
+    {
+        int length = var_order.size();
+        int smallest_dom = -1;
+        DomainInt dom_size = DomainInt_Max;
+        
+        for(int i = 0; i < length; ++i)
+        {
+            DomainInt maxval = var_order[i].getMax();
+            DomainInt minval = var_order[i].getMin();
+            
+            if((maxval != minval) && ((maxval - minval) < dom_size) )
+            {
+                dom_size = maxval - minval;
+                smallest_dom = i;
+                if( maxval - minval == 1)
+                { // Binary domain, must be smallest
+                    break;
+                }
+            }
+        }
+        
+        if(smallest_dom==-1)
+        {   // all assigned
+            return make_pair(-1, 0);
+        }
+        
+        DomainInt val=0;
+        if(val_order[smallest_dom])
+            val=var_order[smallest_dom].getMin();
+        else
+            val=var_order[smallest_dom].getMax();
+        
+        return make_pair(smallest_dom, val);
+    }
+};
+
+struct SlowStaticBranch : public VariableOrder
+{
+    vector<int>& val_order;
+    
+    SDFBranch(vector<AnyVarRef>& _var_order, vector<char>& _val_order, StateObj* _stateObj) : 
+        VariableOrder(_var_order), val_order(_val_order)
+    {
+    }
+    
+    pair<int, DomainInt> pickVarVal()
+    {
+        unsigned v_size = var_order.size();
+        unsigned pos = 0;
+        while(pos < v_size && var_order[pos].isAssigned())
+            ++pos;
+        
+        if(pos == v_size)
+            return make_pair(-1, 0);
+        
+        DomainInt val=0;
+        if(val_order[pos])
+            val=var_order[pos].getMin();
+        else
+            val=var_order[pos].getMax();
+        
+        return make_pair(pos, val);
+    }
 };
 
 #ifdef WDEG
 //see Boosting Systematic Search by Weighting Constraints by Boussemart et al
 struct WdegBranch
 {
+    
+    
   template<typename VarType>
   int operator()(vector<VarType>& var_order, int pos)
   {
@@ -175,34 +272,7 @@ struct DomOverWdegBranch
 };
 #endif
 
-struct SDFBranch
-{
-  template<typename VarType>
-  int operator()(vector<VarType>& var_order, int pos)
-  {
-    int length = var_order.size();
-    int smallest_dom = length;
-    DomainInt dom_size = DomainInt_Max;
-    
-    
-    for(int i = 0; i < length; ++i)
-    {
-      DomainInt maxval = var_order[i].getMax();
-      DomainInt minval = var_order[i].getMin();
-      
-      if((maxval != minval) && ((maxval - minval) < dom_size) )
-      {
-        dom_size = maxval - minval;
-        smallest_dom = i;
-        if( maxval - minval == 1)
-        { // Binary domain, must be smallest
-          return i;
-        }
-      }
-    }
-    return smallest_dom;
-  }
-};
+
 
 struct SRFBranch
 {

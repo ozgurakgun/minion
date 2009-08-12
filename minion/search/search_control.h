@@ -17,123 +17,54 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include <boost/bind.hpp>
-using boost::bind;
+//#include <boost/bind.hpp>
+//using boost::bind;
 
 #include "../system/system.h"
-#include "common_search.h"
-#include "standard_search.h"
+#include "SearchManager.h"
+#include "variable_orderings.h"
 
-template<typename SearchAlgorithm, typename Vars, typename Propogator>
-  function<void (void)> solve_select_search(StateObj* stateObj, const function<void (void)>& next_search, SearchOrder order_in, 
-                                                 SearchAlgorithm& order, Vars& vars, CSPInstance& instance, Propogator prop)
+// returns an instance of SearchManager with the required variable ordering, propagator etc.
+SearchManager& make_search_manager(StateObj* stateObj, PropagationLevel prop_method, SearchOrder order)
 {
-  switch(order_in.order)
-  {
+    VariableOrder* vo;
+    
+    switch(order.order)  // get the VarOrderEnum
+    {
     case ORDER_STATIC:
+        vo=new StaticBranch(order.var_order, order.val_order, stateObj);
+        break;
     case ORDER_SDF:
-    case ORDER_SRF:
-    case ORDER_LDF:
-    case ORDER_ORIGINAL:
-    case ORDER_WDEG:
-    case ORDER_DOMOVERWDEG:
-    if(getOptions(stateObj).find_generators)
-    {
-      vector<AnyVarRef> perm = get_AnyVarRef_from_Var(stateObj, instance.permutation);
-      return bind(Controller::group_solve_loop<SearchAlgorithm, Vars, vector<AnyVarRef>, Propogator>, stateObj, next_search, order, vars, perm, prop);
-    }
-    else
-      return bind(Controller::solve_loop<SearchAlgorithm, Vars, Propogator>, stateObj, next_search, order, vars, prop, order_in.find_one_assignment);
-    case ORDER_CONFLICT:
-      return bind(Controller::conflict_solve_loop<SearchAlgorithm, Vars, Propogator>, stateObj, next_search, order, vars, prop);
+        vo=new SDFBranch(order.var_order, order.val_order, stateObj);
+        break;
     default:
-    abort();
-  }
-}
-
-  template<typename VarValOrder, typename Propogator>
-function<void (void)> solve(StateObj* stateObj, const function<void (void)>& next_search, SearchOrder order_in, 
-                                 VarValOrder& search_order, CSPInstance& instance, Propogator prop)
-{
-  typedef typename VarValOrder::first_type::value_type VarType;
-
-  switch(order_in.order)
-  {
-    case ORDER_STATIC:
-    {
-      Controller::VariableOrder<VarType, Controller::SlowStaticBranch> 
-        order(stateObj, search_order.first, search_order.second);
-
-      return solve_select_search(stateObj, next_search, order_in, order, search_order.first, instance, prop);
+        abort();
     }
-    break;
-    case ORDER_SDF:
-    {
-      Controller::VariableOrder<VarType, Controller::SDFBranch> 
-        order(stateObj, search_order.first, search_order.second);
-
-      return solve_select_search(stateObj, next_search, order_in, order, search_order.first, instance, prop);
-    }
-    break;
-    case ORDER_SRF:
-    {
-      Controller::VariableOrder<VarType, Controller::SRFBranch> 
-        order(stateObj, search_order.first, search_order.second);
-
-      return solve_select_search(stateObj, next_search, order_in, order, search_order.first, instance, prop); 
-    }
-    break;
-    case ORDER_LDF:
-    {
-      Controller::VariableOrder<VarType, Controller::LDFBranch> 
-        order(stateObj, search_order.first, search_order.second);
-
-      return solve_select_search(stateObj, next_search, order_in, order, search_order.first, instance, prop);
-    }
-    break;
-
-    case ORDER_ORIGINAL:
-    {  
-      Controller::VariableOrder<VarType, Controller::StaticBranch>
-        order(stateObj, search_order.first, search_order.second);
-      return solve_select_search(stateObj, next_search, order_in, order, search_order.first, instance, prop);
-    }
-    break;
-    case ORDER_CONFLICT:
-    {
-      Controller::VariableOrder<VarType, Controller::StaticBranch>
-        order(stateObj, search_order.first, search_order.second);
-      return solve_select_search(stateObj, next_search, order_in, order, search_order.first, instance, prop); 
-    }
-    break;
-
-    case ORDER_WDEG:
-    {
-#ifdef WDEG
-      Controller::VariableOrder<VarType, Controller::WdegBranch>
-        order(stateObj, search_order.first, search_order.second);
-      return solve_select_search(stateObj, next_search, order_in, order, search_order.first, instance, prop); 
-#else
-    FAIL_EXIT("This copy of Minion compiled without 'WDEG' support");
-#endif
-    }
-    break;
-      
-
-    case ORDER_DOMOVERWDEG:
-    {
-#ifdef WDEG
-      Controller::VariableOrder<VarType, Controller::DomOverWdegBranch>
-        order(stateObj, search_order.first, search_order.second);
-      return solve_select_search(stateObj, next_search, order_in, order, search_order.first, instance, prop);
-#else
-    FAIL_EXIT("This copy of Minion compiled without 'WDEG' support");
-#endif
-    }
-    break;
-      
+    
+    Propagator* p;
+    switch(prop_method)
+    {   // doesn't cover the PropLevel_None case.
+    case PropLevel_GAC:
+        p= new PropGAC();
+        break;
+    case PropLevel_SAC:
+        p= new PropSAC();
+        break;
+    case PropLevel_SSAC:
+        p=new PropSSAC();
+        break;
+    case PropLevel_SACBounds:
+        p=new PropSAC_Bounds();
+        break;
+    case PropLevel_SSACBounds:
+        p=new PropSSAC_Bounds();
+        break;
     default:
-    FAIL_EXIT();
-  } 
+        abort();
+    }
+    
+    // need to switch here for different search algorthms. plain, parallel, group or conflict
+    SearchManager& sm=new SearchManager(stateObj, order.var_array, vo, p);
+    return sm;
 }
 
