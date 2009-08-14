@@ -12,9 +12,6 @@ if(TINY_TEST)
     set(CONSTRAINTS "reify;reifyimply;watchelement;eq;sumgeq;true;watched-or")
 endif()
 
-include(constraints)
-include(CheckIncludeFiles)
-
 set(BUILD_DEF_FILE "${PROJECT_SOURCE_DIR}/minion/BuildDefines.h")
 file(REMOVE ${BUILD_DEF_FILE})
 
