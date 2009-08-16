@@ -22,21 +22,21 @@
 #include "MinionInputReader.hpp"
 #include "MinionThreeInputReader.hpp"
 
-#include "counter.hpp"
-
 #include <fstream>
 #include <iostream>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
 
 using boost::iostreams::filtering_istream;
+
+#ifdef USE_BOOST_STREAMS
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
 using boost::iostreams::gzip_decompressor;
 using boost::iostreams::bzip2_decompressor;
+#endif
 
-using boost::iostreams::error_counter;
 
 template<typename Reader, typename Stream>
     void ReadCSP(Reader& reader, ConcreteFileReader<Stream>* infile)
@@ -47,8 +47,8 @@ template<typename Reader, typename Stream>
 
 void readInputFromFiles(CSPInstance& instance, vector<string> fnames, bool parser_verbose)
 {
-  MinionThreeInputReader<ConcreteFileReader<filtering_istream> > readerThree(parser_verbose);
-  MinionInputReader<ConcreteFileReader<filtering_istream> > reader(parser_verbose);
+  MinionThreeInputReader<ConcreteFileReader<CheapStream> > readerThree(parser_verbose);
+  MinionInputReader<ConcreteFileReader<CheapStream> > reader(parser_verbose);
   bool needs_finalise_three = false;
   for(vector<string>::const_iterator fname = fnames.begin(); fname != fnames.end(); fname++) {
     const char* filename = fname->c_str();
@@ -57,10 +57,7 @@ void readInputFromFiles(CSPInstance& instance, vector<string> fnames, bool parse
       extension = fname->substr(fname->find_last_of("."), fname->size());
   
     filtering_istream in;
-    
-    error_counter e_count;
-    in.push(boost::ref(e_count));
-    
+        
     if(extension == ".gz" || extension == ".gzip" || extension == ".z" || extension == ".gzp" ||
         extension == ".bz2" || extension == ".bz" || extension == ".bzip2" || extension == ".bzip")
     {  
@@ -68,14 +65,25 @@ void readInputFromFiles(CSPInstance& instance, vector<string> fnames, bool parse
       {
         if(parser_verbose)
           cout << "# Using gzip uncompression" << endl;
+#ifdef USE_BOOST_STREAMS
         in.push(gzip_decompressor());
+#else
+        cerr << "Error: Built without gzip support" << endl;
+        exit(0);
+#endif
       }    
   
       if(extension == ".bz2" || extension == ".bz" || extension == ".bzip2" || extension == ".bzip")
       {
         if(parser_verbose)
           cout << "# Using bzip2 uncompression" << endl;
+#ifdef USE_BOOST_STREAMS
         in.push(bzip2_decompressor());
+#else
+        cerr << "Error: Built without bzip2 support" << endl;
+        exit(0);
+#endif
+
       }
       
     }
@@ -96,9 +104,10 @@ void readInputFromFiles(CSPInstance& instance, vector<string> fnames, bool parse
     else
       in.push(cin);
 
-    ConcreteFileReader<filtering_istream> infile(in, filename);
+    CheapStream cs(in);
+    ConcreteFileReader<CheapStream> infile(cs, filename);
 
-    if (infile.failed_open() || infile.eof()) {
+    if (infile.eof()) {
       INPUT_ERROR("Can't open given input file '" + *fname + "'.");
     }   
     
@@ -127,6 +136,9 @@ void readInputFromFiles(CSPInstance& instance, vector<string> fnames, bool parse
         reader.instance = MOVE(instance);
         ReadCSP(reader, &infile);
         instance = MOVE(reader.instance);
+        // fix variable names in case we want to write a resume file (which is
+        // in Minion 3 format)
+        instance.add_variable_names();
       }
     }
     catch(parse_exception s)
@@ -134,10 +146,29 @@ void readInputFromFiles(CSPInstance& instance, vector<string> fnames, bool parse
       cerr << "Error in input!" << endl;
       cerr << s.what() << endl;
       
-        cerr << "Error occurred on line " << e_count.lines_prev << ", around character " << e_count.chars_prev << endl;
-#ifdef GET_STRING         
-        cerr << "The parser gave up around: '" << e_count.current_line_prev << "'" << endl;
-#endif
+      int pos = cs.get_raw_pos();
+      cs.reset_stream();
+      
+      string current_line;
+      int start_of_line = 0;
+      int line_count = -1;
+      
+      do
+      {
+          line_count++;
+          start_of_line = cs.get_raw_pos();
+          char buf[10000];
+          cs.getline(buf, 9999);
+          current_line = buf;
+      }
+      while(cs.get_raw_pos() < pos);
+      
+      cerr << "Error occurred on line " << line_count << endl;
+      cerr << "Parser gave up around:" << endl;
+      cerr << current_line << endl;
+      for(int i = 0; i < pos - start_of_line - 1; ++i)
+          cerr << "-";
+      cerr << "^" << endl;
         exit(1);
     }
   }

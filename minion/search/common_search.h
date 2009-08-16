@@ -95,11 +95,11 @@ namespace Controller
     if(getOptions(stateObj).solCallBack)
       getOptions(stateObj).solCallBack(stateObj);
 
-    vector<vector<AnyVarRef> > print_matrix = getState(stateObj).getPrintMatrix();
-    
+
     getState(stateObj).incrementSolutionCount();
     if(getOptions(stateObj).solsoutWrite)
     {
+      vector<vector<AnyVarRef> > print_matrix = getState(stateObj).getPrintMatrix();
       for(unsigned i = 0; i < print_matrix.size(); ++i)
         for(unsigned j = 0; j < print_matrix[i].size(); ++j)
         {
@@ -112,6 +112,7 @@ namespace Controller
     
     if(getOptions(stateObj).print_solution)
     {
+      vector<vector<AnyVarRef> > print_matrix = getState(stateObj).getPrintMatrix();  
       if(getOptions(stateObj).cspcomp)
       {
         cout << "v ";
@@ -170,6 +171,9 @@ namespace Controller
   template<typename VarOrder>
     inline void generateRestartFile(StateObj* stateObj, VarOrder& order)
   {
+    if(getOptions(stateObj).noresumefile) {
+        return;
+    }
     string filename = string("minion-resume-") + to_string(getpid());
     cout << "Output resume file to \"" << filename << "\"" << endl;
     ofstream fileout(filename.c_str());
@@ -200,7 +204,7 @@ namespace Controller
    
   /// Check if timelimit has been exceeded.
   template<typename VarOrder>
-    inline bool do_checks(StateObj* stateObj, VarOrder& order)
+  inline bool do_checks(StateObj* stateObj, VarOrder& order)
   {
     if(getState(stateObj).getNodeCount() == getOptions(stateObj).nodelimit) {
       generateRestartFile(stateObj, order);
@@ -222,25 +226,25 @@ namespace Controller
       
       getOptions(stateObj).printLine("Time out.");
       getTableOut().set("TimeOut", 1);
-        return true;
+      return true;
     }
     return false;
   }
   
-  
-template<typename T>
-void inline maybe_print_search_state(StateObj* stateObj, const char* name, T& vars)
-{
-  if(getOptions(stateObj).dumptree)
-    cout << name << getState(stateObj).getNodeCount() << "," << get_dom_as_string(vars) << endl;
-}
 
-void inline maybe_print_search_action(StateObj* stateObj, const char* action)
-{
-    // used to print "bt" usually
+  template<typename T>
+  void inline maybe_print_search_state(StateObj* stateObj, const char* name, T& vars)
+  {
     if(getOptions(stateObj).dumptree)
-        cout << "SearchAction:" << action << endl;
-}
+      cout << name << getState(stateObj).getNodeCount() << "," << get_dom_as_string(vars) << endl;
+  }
+
+  void inline maybe_print_search_action(StateObj* stateObj, const char* action)
+  {
+      // used to print "bt" usually
+      if(getOptions(stateObj).dumptree)
+          cout << "SearchAction:" << action << endl;
+  }
 
   void inline deal_with_solution(StateObj* stateObj)
   {
