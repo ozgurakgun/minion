@@ -395,6 +395,7 @@ inline BoolVarRef BoolVarContainer::getDiseqBool(Var v1, Var v2)
     break;
   default:
     D_ASSERT(false);
+    exit(1); //we really don't want these flying around in this version of minion
     v1_num = 0;
     break;
   }
