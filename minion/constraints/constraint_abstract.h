@@ -61,7 +61,7 @@ protected:
   StateObj* stateObj;
   MemOffset _DynamicTriggerCache;
   vector<AnyVarRef> singleton_vars;
-
+  vector<AnyVarRef> singleton_sat_assg_vars;
 
 public:
 
@@ -158,6 +158,20 @@ public:
   {
     if(singleton_vars.size() == 0) singleton_vars = get_vars(); //for efficiency: no constraint over 0 variables
     return &singleton_vars;
+  }
+
+  //when get_sat_assg_vars is called for the first time, this function should append any extra
+  //needed vars to singleton_sat_assg_vars
+  virtual void append_sat_assg_vars_firsttime() {}
+
+  //returns the vars used to make a sat. assg. by get_satisfying_assignment
+  virtual vector<AnyVarRef>* get_sat_assg_vars()
+  {
+    if(singleton_sat_assg_vars.size() == 0) { 
+      singleton_sat_assg_vars = *get_vars_singleton();
+      append_sat_assg_vars_firsttime();
+    }
+    return &singleton_sat_assg_vars;
   }
 
 #ifdef WDEG
