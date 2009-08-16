@@ -94,6 +94,11 @@ do { \
 BoolVarRef c = getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2); \
 t.push_back(make_trigger(c, Trigger(this, num), UpperBound)); \
 } while(false)
+#define PUSH_DISEQ_OR_EQ_TRIGGER(t, v1, v2, con, num) \
+do { \
+BoolVarRef c = getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2); \
+t.push_back(make_trigger(c, Trigger(this, num), Assigned)); \
+} while(false)
 #define GET_DISEQ_BOOL(stateObj, v1, v2) (getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2))
 #define TRIGGER_ON_EQUALITY(v1, v2, trigger) \
 do { \
