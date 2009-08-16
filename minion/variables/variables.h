@@ -65,44 +65,44 @@ public:
 };
 
 //NB use of comma operator to produce one statement from the macro!
-#define ARE_EQUAL(stateObj, v1, v2) (getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2).getMin() == 1)
-#define ARE_DISEQUAL(stateObj, v1, v2) (getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2).getMax() == 0)
-#define ARE_DISEQ_UNKNOWN(stateObj, v1, v2) (!getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2).isAssigned())
-#define ARE_DISEQ_OR_EQ(stateObj, v1, v2) (getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2).isAssigned())
+#define ARE_EQUAL(stateObj, v1, v2) (getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2).getMin() == 1)
+#define ARE_DISEQUAL(stateObj, v1, v2) (getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2).getMax() == 0)
+#define ARE_DISEQ_UNKNOWN(stateObj, v1, v2) (!getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2).isAssigned())
+#define ARE_DISEQ_OR_EQ(stateObj, v1, v2) (getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2).isAssigned())
 #define SET_EQUAL(stateObj, v1, v2) \
 do { \
 D_ASSERT(!getState(stateObj).isFailed()); \
-getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2).propagateAssign(1); \
+getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2).propagateAssign(1); \
 } while(false)
 #define SET_DISEQUAL(stateObj, v1, v2) \
 do { \
 D_ASSERT(!getState(stateObj).isFailed()); \
-getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2).propagateAssign(0); \
+getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2).propagateAssign(0); \
 } while(false)
 #define PUSH_EQUALITY_TRIGGER(t, v1, v2, con, num) \
 do { \
-BoolVarRef b = getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2); \
+BoolVarRef b = getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2); \
 t.push_back(make_trigger(b, Trigger(this, num), LowerBound)); \
 } while(false)
 #define PUSH_DISEQUALITY_TRIGGER(t, v1, v2, con, num) \
 do { \
-BoolVarRef c = getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2); \
+BoolVarRef c = getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2); \
 t.push_back(make_trigger(c, Trigger(this, num), UpperBound)); \
 } while(false)
 #define PUSH_DISEQ_OR_EQ_TRIGGER(t, v1, v2, con, num) \
 do { \
-BoolVarRef c = getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2); \
+BoolVarRef c = getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2); \
 t.push_back(make_trigger(c, Trigger(this, num), Assigned)); \
 } while(false)
-#define GET_DISEQ_BOOL(stateObj, v1, v2) (getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2))
+#define GET_DISEQ_BOOL(stateObj, v1, v2) (getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2))
 #define TRIGGER_ON_EQUALITY(v1, v2, trigger) \
 do { \
-BoolVarRef c = getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2); \
+BoolVarRef c = getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2); \
 c.addDynamicTrigger(trigger, DomainRemoval, 0); \
 } while(false)
 #define TRIGGER_ON_DISEQUALITY(v1, v2, trigger)	\
 do { \
-BoolVarRef c = getVars(stateObj).getBoolVarContainer().getDiseqBool(v1, v2); \
+BoolVarRef c = getVars(stateObj).boolVarContainer.getDiseqBool(v1, v2); \
 c.addDynamicTrigger(trigger, DomainRemoval, 1); \
 } while(false)
 
