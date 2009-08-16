@@ -122,9 +122,9 @@ struct reify : public ParentConstraint
     AbstractConstraint* _negcon = _poscon->reverse_constraint();
     child_constraints.push_back(_negcon);
     // assume for the time being that the two child constraints have the same number of vars.
-    reify_var_num=child_constraints[0]->get_vars_singleton()->size()+child_constraints[1]->get_vars_singleton()->size();
+    reify_var_num=child_constraints[0]->get_sat_assg_vars()->size()+child_constraints[1]->get_sat_assg_vars()->size();
     //dtcount=dynamic_trigger_count();
-    dtcount=child_constraints[0]->get_vars_singleton()->size()*2 + child_constraints[1]->get_vars_singleton()->size()*2;
+    dtcount=child_constraints[0]->get_sat_assg_vars()->size()*2 + child_constraints[1]->get_sat_assg_vars()->size()*2;
     c0vars=child_constraints[0]->get_vars_singleton()->size();
     bool hasbound=false;
     vector<AnyVarRef>& t1=*(child_constraints[0]->get_vars_singleton());
@@ -159,9 +159,9 @@ struct reify : public ParentConstraint
     child_constraints.push_back(_poscon);
     child_constraints.push_back(_negcon);
     // assume for the time being that the two child constraints have the same number of vars.
-    reify_var_num=child_constraints[0]->get_vars_singleton()->size()+child_constraints[1]->get_vars_singleton()->size();
+    reify_var_num=child_constraints[0]->get_sat_assg_vars()->size()+child_constraints[1]->get_sat_assg_vars()->size();
     dtcount=dynamic_trigger_count();
-    dtcount=child_constraints[0]->get_vars_singleton()->size()*2 + child_constraints[1]->get_vars_singleton()->size()*2;
+    dtcount=child_constraints[0]->get_sat_assg_vars()->size()*2 + child_constraints[1]->get_sat_assg_vars()->size()*2;
     c0vars=child_constraints[0]->get_vars_singleton()->size();
     D_DATA(triggerpairs.resize(2));
   }
@@ -174,8 +174,8 @@ struct reify : public ParentConstraint
 
   virtual int dynamic_trigger_count()
   {
-    return child_constraints[0]->get_vars_singleton()->size()*2
-        +child_constraints[1]->get_vars_singleton()->size()*2;  // *2 for each child constraint.
+    return child_constraints[0]->get_sat_assg_vars()->size()*2
+        +child_constraints[1]->get_sat_assg_vars()->size()*2;  // *2 for each child constraint.
   }
 
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
@@ -200,6 +200,18 @@ struct reify : public ParentConstraint
         }
     }
     return false;
+  }
+  
+  virtual vector<AnyVarRef>* get_sat_assg_vars()
+  {
+    if(singleton_sat_assg_vars.size() == 0) {
+      singleton_sat_assg_vars = *(child_constraints[0]->get_sat_assg_vars());
+      vector<AnyVarRef>* other_vars = child_constraints[1]->get_sat_assg_vars();
+      singleton_sat_assg_vars.insert(singleton_sat_assg_vars.end(), other_vars->begin(), other_vars->end());
+      singleton_sat_assg_vars.reserve(singleton_sat_assg_vars.size() + 1);
+      singleton_sat_assg_vars.push_back(reify_var);
+    }
+    return &singleton_sat_assg_vars;
   }
 
   virtual BOOL check_assignment(DomainInt* vals, int v_size)
@@ -332,7 +344,7 @@ struct reify : public ParentConstraint
             #ifdef MINION_DEBUG
             // make sure that some WL has been lost.
             bool wllost=false;
-            vector<AnyVarRef> t1=*(child_constraints[0]->get_vars_singleton());
+            vector<AnyVarRef> t1=*(child_constraints[0]->get_sat_assg_vars());
 
             for(int i=0; i<triggerpairs[0].size(); i++)
             {
@@ -360,7 +372,7 @@ struct reify : public ParentConstraint
               return;
             }
             P("Found new assignment");
-            watch_assignment(assignment, *(child_constraints[0]->get_vars_singleton()), dt, dt+(c0vars*2));
+            watch_assignment(assignment, *(child_constraints[0]->get_sat_assg_vars()), dt, dt+(c0vars*2));
 
             return;
         }
@@ -370,7 +382,7 @@ struct reify : public ParentConstraint
             #ifdef MINION_DEBUG
             // make sure that some WL has been lost.
             bool wllost=false;
-            vector<AnyVarRef> t1=*(child_constraints[1]->get_vars_singleton());
+            vector<AnyVarRef> t1=*(child_constraints[1]->get_sat_assg_vars());
 
             for(int i=0; i<triggerpairs[1].size(); i++)
             {
@@ -398,7 +410,7 @@ struct reify : public ParentConstraint
               return;
             }
             P("Found new assignment");
-            watch_assignment(assignment, *(child_constraints[1]->get_vars_singleton()), dt+(c0vars*2), dt+dtcount);
+            watch_assignment(assignment, *(child_constraints[1]->get_sat_assg_vars()), dt+(c0vars*2), dt+dtcount);
             return;
         }
         else
@@ -524,8 +536,8 @@ struct reify : public ParentConstraint
       return;
     }
 
-    watch_assignment(assignment0, *(child_constraints[0]->get_vars_singleton()), dt, dt+(c0vars*2));
-    watch_assignment(assignment1, *(child_constraints[1]->get_vars_singleton()), dt+(c0vars*2), dt+dtcount);
+    watch_assignment(assignment0, *(child_constraints[0]->get_sat_assg_vars()), dt, dt+(c0vars*2));
+    watch_assignment(assignment1, *(child_constraints[1]->get_sat_assg_vars()), dt+(c0vars*2), dt+dtcount);
   }
 };
 

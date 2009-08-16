@@ -94,10 +94,18 @@ get_AnyVarRef_from_Var(StateObj* stateObj, Var v)
   /// Create all the variables used in the CSP.
   void build_variables(StateObj* stateObj, const ProbSpec::VarContainer& vars)
   {
-    getVars(stateObj).boolVarContainer.setVarCount(vars.BOOLs);
-    getVars(stateObj).boundVarContainer.addVariables(vars.bound);
-    getVars(stateObj).sparseBoundVarContainer.addVariables(vars.sparse_bound);
-    getVars(stateObj).bigRangeVarContainer.addVariables(vars.discrete);
+    int countVars = vars.BOOLs + vars.bound.size() + vars.sparse_bound.size() + vars.discrete.size();
+    getVars(stateObj).getBoolVarContainer().numTotal = countVars;
+    cout << "adding " << ((countVars - 1) * countVars / 2) << " extra bools" << endl;
+    //add an extra boolean variable per pair of other variables
+    getVars(stateObj).getBoolVarContainer().setVarCount(vars.BOOLs + ((countVars - 1) * countVars / 2));
+    getVars(stateObj).getBoolVarContainer().numRealBools = vars.BOOLs;
+    getVars(stateObj).getBoundVarContainer().addVariables(vars.bound);
+    getVars(stateObj).getBoolVarContainer().numBounds = vars.bound.size();
+    getVars(stateObj).getSparseBoundVarContainer().addVariables(vars.sparse_bound);
+    getVars(stateObj).getBoolVarContainer().numSparsebounds = vars.sparse_bound.size();
+    getVars(stateObj).getBigRangeVarContainer().addVariables(vars.discrete);
+    getVars(stateObj).getBoolVarContainer().numDiscrete = vars.discrete.size();
     
     for(unsigned int i = 0; i < vars.sparse_discrete.size(); ++i)
     { INPUT_ERROR("Sparse discrete disabled at present due to bugs. Sorry."); }
