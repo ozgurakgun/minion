@@ -10,24 +10,21 @@
 #The first parameter is the file to be processed. The second parameter should be
 #the output file. They can be the same file.
 
-tempfile=`mktemp /tmp/tfile.XXXXXXXXXX`; #make a named pipe where the output can be put
-#first, scan the file to work out what all the numbers are:
-#do this by replacing non-digits with spaces and then squeezing the spaces together
-nums=`cat $1 | tr --complement '[:digit:]' ' ' | tr --squeeze-repeats ' ' | sed 's/^ //' | tr ' ' '\n' | sort -n | uniq`;
-#NB these are an overestimate of the constants that are needed, some may never be used
-#sed 's/[\,\ \(\)]\+\([0-9]\+\)/ n\1 /gp' -n - ABORTED attempted improvement
-
-header_pos=`grep 'MINION' $1 -n | cut -f1 -d:`;
-
-head -n $header_pos $1; #replicate the file up to and including the header
-
-#now output the constant variables
-echo "**VARIABLES**";
-for i in $nums; do
-    echo "DISCRETE constant$i{$i..$i}";
+cat $1 | while read line; do
+    #if a constant is found on a line, output the line in a special format to be specially processed
+    #format is "~constant~conwithconstantreplaced"
+    res=`echo $line | sed 's/\(.*\)eq(\([^,]*\),\s*\([0-9]\+\))\(.*\)/~\3~\1eq(\2,constant\3)\4/' \
+       | sed 's/ineq(\([0-9]\+\),\(.*\)/~\1~ineq(constant\1,\2/'`;
+    if [ "${res:0:1}" == "~" ]; then
+	constant=`echo $res | cut -f2 -d'~' | sed 's/0*\([0-9]\+\)/\1/'`;
+	if [ "${used[constant]}" == "" ]; then
+	    echo "**VARIABLES**";
+	    echo "DISCRETE constant$constant{$constant..$constant}";
+	    echo "**CONSTRAINTS**";
+	    used[constant]=1;
+	fi;
+	echo $res | cut -f3 -d'~';
+    else
+	echo $res;
+    fi;
 done;
-
-#now replicate from after the header except replacing certain constants by constant variables
-cat $1 | tail -n +$(($header_pos+1)) \
-       | sed 's/eq(\([^,]*\),\s*\([0-9]\+\))/eq(\1,constant\2)/' \
-       | sed 's/ineq(\([0-9]\+\),\(.*\)/ineq(constant\1,\2/';
