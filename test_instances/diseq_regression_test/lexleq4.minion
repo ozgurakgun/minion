@@ -1,0 +1,26 @@
+MINION 3
+#TEST SOLCOUNT 1
+#TEST NODECOUNT 6
+
+**VARIABLES**
+DISCRETE x0 {1..5}
+DISCRETE x1 {1..5}
+DISCRETE x2 {1..5}
+DISCRETE x3 {1..5}
+DISCRETE x4 {1..5}
+DISCRETE y0 {1..5}
+DISCRETE y1 {1..5}
+DISCRETE y2 {1..5}
+DISCRETE y3 {1..5}
+DISCRETE y4 {1..5}
+**CONSTRAINTS**
+#indices 0 to 2 equal
+#index 4 tail violated
+#expect propagate disequality at index 3
+eq(x0,y0)
+eq(x1,y1)
+eq(x2,y2)
+eq(x3,y3)
+eq(x4,y4)
+lexleq([x0,x1,x2,x3,x4],[y0,y1,y2,y3,y4])
+**EOF**

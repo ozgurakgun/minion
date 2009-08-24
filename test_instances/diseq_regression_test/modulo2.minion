@@ -1,0 +1,13 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+#variation on modulo1.minion
+**VARIABLES**
+DISCRETE x {0..10}
+DISCRETE y {1..10}
+DISCRETE z {0..10}
+**CONSTRAINTS**
+modulo(x,y,z)
+eq(x,z)
+**EOF**

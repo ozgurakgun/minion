@@ -1,0 +1,17 @@
+MINION 3
+#TEST SOLCOUNT 1
+#TEST NODECOUNT 1
+
+#designed to branch on z=1 first, so that incremental trigger on x!=y is tested
+#find all solutions on this as well
+**VARIABLES**
+DISCRETE x {-5..5}
+DISCRETE y {-5..5}
+DISCRETE z {0..1}
+**CONSTRAINTS**
+difference(x,y,z)
+table([x,y],{<-5,-5>,<-4,-4>,<-3,-3>,<-2,-2>,<-1,-1>,<0,0>,<1,1>,<2,2>,<3,3>,<4,4>,<5,5>,<1,2>})
+**SEARCH**
+VARORDER [z,x,y]
+VALORDER [d,d,d]
+**EOF**

@@ -1,0 +1,11 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+**VARIABLES**
+DISCRETE x {-10..10}
+DISCRETE y {0..10}
+**CONSTRAINTS**
+abs(x,y)
+diseq(x,y)
+**EOF**
