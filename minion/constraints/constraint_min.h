@@ -67,6 +67,9 @@ struct MinConstraint : public AbstractConstraint
   MinConstraint(StateObj* _stateObj, const VarArray& _var_array, const MinVarRef& _min_var) :
     AbstractConstraint(_stateObj), var_array(_var_array), min_var(_min_var)
   { }
+
+  int dynamic_trigger_count() //watching 2 diseq vars between v_a[i] and min_var s.t. !(v_a[i]=min_var)
+  { return 1; }
   
   virtual triggerCollection setup_internal()
   {
@@ -79,6 +82,9 @@ struct MinConstraint : public AbstractConstraint
     }
     t.push_back(make_trigger(min_var, Trigger(this, var_array.size() + 1 ),LowerBound));
     t.push_back(make_trigger(min_var, Trigger(this, -((int)var_array.size() + 1) ),UpperBound));
+    Var min_var_v = min_var.getBaseVar();
+    for(int i = 0; i < var_array.size(); i++)
+      PUSH_DISEQUALITY_TRIGGER(t, var_array[i].getBaseVar(), min_var_v, this, var_array.size() + 2 + i);
     
     return t;
   }
@@ -88,7 +94,7 @@ struct MinConstraint : public AbstractConstraint
   virtual void propagate(int prop_val, DomainDelta)
   {
     PROP_INFO_ADDONE(Min);
-    if(prop_val > 0)
+    if(prop_val > 0 && prop_val < var_array.size() + 2)
     {// Lower Bound Changed
 
     //Had to add 1 to fix "0th array" problem.
@@ -116,7 +122,7 @@ struct MinConstraint : public AbstractConstraint
         min_var.setMin(min);
       }
     }
-    else
+    else if(prop_val < 0)
     {// Upper Bound Changed
       // See above for reason behind "-1".
       prop_val = -prop_val - 1;
@@ -146,10 +152,47 @@ struct MinConstraint : public AbstractConstraint
       {
         min_var.setMax(var_array[prop_val].getMax());
       }
+    } else {
+      //trigger on disequality has fired
+      int pos = 0;
+      Var min_var_v = min_var.getBaseVar();
+      while(pos < var_array.size() && ARE_DISEQUAL(stateObj, var_array[pos].getBaseVar(), min_var_v))
+	pos++;
+      int first_notdisequal;
+      if(pos == var_array.size()) {
+	cout << "min DP: everything is disequal so fail" << endl;
+	getState(stateObj).setFailed(true);
+	return;
+      } else
+	first_notdisequal = pos;
+      pos++;
+      while(pos < var_array.size() && ARE_DISEQUAL(stateObj, var_array[pos].getBaseVar(), min_var_v))
+	pos++;
+      if(pos == var_array.size()) {
+	//found exactly one vars_array[i] not known to be disequal to min_var
+	cout << "min DP: only one possible v_a=min_var - var_array[" << first_notdisequal << "] = min_var)" << endl;
+	SET_EQUAL(stateObj, var_array[first_notdisequal].getBaseVar(), min_var_v);
+      }
     }
 
   }
-  
+
+  //function that returns the next index i after start_pos st. var_array[i] and var_array[i+1]
+  //are not known to be equal
+  //it will wrap around from index n-2 to 0 and will return -1 if none is found
+  int find_not_equal_pos(StateObj* stateObj, int start_pos)
+  {
+    int v_a_s = var_array.size();
+    int i = start_pos;
+    while(i + 1 < v_a_s && ARE_EQUAL(stateObj, var_array[i].getBaseVar(), var_array[i+1].getBaseVar()))
+      i++;
+    if(i + 1 != v_a_s) return i; //found pos, return it
+    i = 0;
+    while(i < start_pos && ARE_EQUAL(stateObj, var_array[i].getBaseVar(), var_array[i+1].getBaseVar()))
+      i++;
+    if(i != start_pos) return i;
+    else return -1;
+  }
     
   virtual void full_propagate()
   {
@@ -160,11 +203,42 @@ struct MinConstraint : public AbstractConstraint
     }
     else
     {
+      cout << "in min FP" << endl;
+      propagate(array_size + 2, 0); //check if all but one v[i] is disequal to min_val
+      cout << "min FP: finished diseq check" << endl;
+      if(getState(stateObj).isFailed()) return;
+      int n_e_watch_pos = find_not_equal_pos(stateObj, 0);
+      if(n_e_watch_pos == -1) {
+	cout << "min FP: all var_array equal - setting all equal to min_var" << endl;
+	Var min_var_v = min_var.getBaseVar();
+	for(int i = 0; i < array_size; i++)
+	  SET_EQUAL(stateObj, var_array[i].getBaseVar(), min_var_v);
+      } else {
+	DynamicTrigger* dt = dynamic_trigger_start();
+	dt->trigger_info() = n_e_watch_pos;
+	TRIGGER_ON_EQUALITY(var_array[n_e_watch_pos].getBaseVar(), var_array[n_e_watch_pos+1].getBaseVar(), dt);
+      }
       for(int i = 1;i <= array_size + 1; ++i)
       {
         propagate(i,0);
         propagate(-i,0);
       }
+    }
+  }
+
+  virtual void propagate(DynamicTrigger* dt)
+  {
+    D_ASSERT(dt == dynamic_trigger_start());
+    int array_size = var_array.size();
+    int n_e_watch_pos = find_not_equal_pos(stateObj, dt->trigger_info());
+    if(n_e_watch_pos == -1) {
+      cout << "min DP: all var_array equal - setting all equal to min_var" << endl;
+      Var min_var_v = min_var.getBaseVar();
+      for(int i = 0; i < array_size; i++)
+	SET_EQUAL(stateObj, var_array[i].getBaseVar(), min_var_v);
+    } else {
+      dt->trigger_info() = n_e_watch_pos;
+      TRIGGER_ON_EQUALITY(var_array[n_e_watch_pos].getBaseVar(), var_array[n_e_watch_pos+1].getBaseVar(), dt);
     }
   }
   

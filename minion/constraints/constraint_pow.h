@@ -68,7 +68,7 @@ struct PowConstraint : public AbstractConstraint
           FAIL_EXIT("The 'pow' constraint (x^y = z) does not allow y to contain 0, to avoid the case 0^0.");
       }
   }
-  
+
   virtual triggerCollection setup_internal()
   {
     triggerCollection t;
@@ -78,6 +78,11 @@ struct PowConstraint : public AbstractConstraint
     t.push_back(make_trigger(var1, Trigger(this, 1), UpperBound));
     t.push_back(make_trigger(var2, Trigger(this, 2), UpperBound));
     t.push_back(make_trigger(var3, Trigger(this, 3), UpperBound));
+
+    PUSH_EQUALITY_TRIGGER(t, var1.getBaseVar(), var3.getBaseVar(), this, 10);
+    PUSH_DISEQUALITY_TRIGGER(t, var1.getBaseVar(), var3.getBaseVar(), this, 11);
+    t.push_back(make_trigger(var2, Trigger(this, 12), Assigned));
+
     return t;
   }
   
@@ -116,7 +121,7 @@ struct PowConstraint : public AbstractConstraint
   
   double my_x(DomainInt y, DomainInt z)
   { return exp(log(checked_cast<double>(z)) / checked_cast<double>(y)); }
-  
+
   virtual void propagate(int flag, DomainDelta)
   {
     PROP_INFO_ADDONE(Pow);
@@ -167,11 +172,46 @@ struct PowConstraint : public AbstractConstraint
           var2.setMax(LRINT(my_y(var1_min, var3.getMax())));
         break;
       }
+      case 10:
+      {
+	cout << "pow DP: var2=0 or 1 because var1 and var3 are equal" << endl;
+	var2.setMin(0);
+	var2.setMax(1);
+	break;
+      }
+      case 11:
+      {
+	cout << "pow DP: var2=/=1 because var1 and var3 are disequal" << endl;
+	var2.removeFromDomain(1);
+	break;
+      }
+      case 12:
+      {
+	D_ASSERT(var2.isAssigned());
+	if(var2.getAssignedValue() == 1) {
+	  cout << "pow DP: var2=1 setting vars 1 and 3 equal" << endl;
+	  SET_EQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar());
+	}
+	break;
+      }
     }
   }
   
   virtual void full_propagate()
   { 
+    if(var2.isAssigned() && var2.getAssignedValue() == 1) {
+      cout << "pow FP: var2=1 setting vars 1 and 3 equal" << endl;
+      SET_EQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar());
+    } else if(ARE_EQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar())) {
+      cout << "pow FP: var2=0 or 1 because var1 and var3 are equal" << endl;
+      var2.setMin(0);
+      var2.setMax(1);
+    } else if(ARE_DISEQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar())) {
+      cout << "pow FP: var2=/=1 because var1 and var3 are disequal" << endl;
+      var2.removeFromDomain(1);
+    }
+
+
     propagate(1,0); 
     propagate(2,0);
     propagate(3,0);

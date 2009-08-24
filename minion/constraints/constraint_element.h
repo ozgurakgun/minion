@@ -118,8 +118,10 @@ struct ElementConstraint : public AbstractConstraint
   {
     triggerCollection t;
     int array_size = var_array.size();
-    for(int i = 0; i < array_size; ++i)
-      t.push_back(make_trigger(var_array[i], Trigger(this, i), Assigned));
+    for(int i = 0; i < array_size; ++i) {
+      t.push_back(make_trigger(var_array[i], Trigger(this, 2 * i), Assigned));
+      PUSH_DISEQUALITY_TRIGGER(t, var_array[i].getBaseVar(), result_var.getBaseVar(), this, 2 * i + 1);
+    }
     
     t.push_back(make_trigger(index_ref, Trigger(this, -1), Assigned));
     t.push_back(make_trigger(result_var, Trigger(this, -2), Assigned));
@@ -128,12 +130,18 @@ struct ElementConstraint : public AbstractConstraint
   
   virtual void propagate(int prop_val, DomainDelta)
   {
+    cout << "element prop DD=" << prop_val << endl;
+
     PROP_INFO_ADDONE(NonGACElement);
     if(index_ref.isAssigned())
     {
+      D_ASSERT(index_ref.isAssigned());
       int index = checked_cast<int>(index_ref.getAssignedValue());
+      SET_EQUAL(stateObj, var_array[index].getBaseVar(), result_var.getBaseVar());
+      cout << "setting v[" << index << "] equal to result_var in dynamic prop" << endl;
       if(index < 0 || index >= (int)var_array.size())
       {
+	cout << "failing" << endl;
         getState(stateObj).setFailed(true);
         return;
       }
@@ -143,55 +151,78 @@ struct ElementConstraint : public AbstractConstraint
       var_array[index].setMin(val_min);
       result_var.setMax(val_max);
       var_array[index].setMax(val_max);
+      cout << "failed=" << getState(stateObj).isFailed() << endl;
+    }
+    else if(prop_val>=0 && prop_val % 2 == 0)
+    {
+      int var = prop_val / 2;
+      DomainInt assigned_val = var_array[var].getAssignedValue();
+      if(index_ref.inDomain(var) && !result_var.inDomain(assigned_val))  //perhaps the check if var is indomain of index_ref is not necessary.
+      {
+	if(index_ref.isBound())
+	{
+	  if(var==index_ref.getMax()) index_ref.setMax(var-1);
+	  if(var==index_ref.getMin()) index_ref.setMin(var+1);
+	}
+	else
+	{
+	  index_ref.removeFromDomain(var);
+	}
+      }
+      
+    }
+    else if(prop_val>=0 && prop_val % 2 == 1)
+    {
+      int var = prop_val / 2;
+      D_ASSERT(ARE_DISEQUAL(stateObj, var_array[var].getBaseVar(), result_var.getBaseVar()));
+      index_ref.removeFromDomain(var);
+      cout << "removed " << var << " from index in dynamic prop for element" << endl;
     }
     else
     {
-      if(prop_val>=0)
+      D_ASSERT(prop_val == -2);
+      DomainInt assigned_val = result_var.getAssignedValue();
+      int array_size = var_array.size();
+      for(int i = 0; i < array_size; ++i)
       {
-        DomainInt assigned_val = var_array[prop_val].getAssignedValue();
-        if(index_ref.inDomain(prop_val) && !result_var.inDomain(assigned_val))  //perhaps the check if prop_val is indomain of index_ref is not necessary.
+	if(index_ref.inDomain(i) && !var_array[i].inDomain(assigned_val)) // fixed here.
         {
-            if(index_ref.isBound())
-            {
-                if(prop_val==index_ref.getMax()) index_ref.setMax(prop_val-1);
-                if(prop_val==index_ref.getMin()) index_ref.setMin(prop_val+1);
-            }
-            else
-            {
-                index_ref.removeFromDomain(prop_val);
-            }
-        }
-        
-      }
-      else
-      {
-        D_ASSERT(prop_val == -2);
-        DomainInt assigned_val = result_var.getAssignedValue();
-        int array_size = var_array.size();
-        for(int i = 0; i < array_size; ++i)
-        {
-          if(index_ref.inDomain(i) && !var_array[i].inDomain(assigned_val)) // fixed here.
-          {
-              if(index_ref.isBound())
-              {
-                  if(i==index_ref.getMax()) index_ref.setMax(i-1);
-                  if(i==index_ref.getMin()) index_ref.setMin(i+1);
-              }
-              else
-              {
-                  index_ref.removeFromDomain(i);
-              }
-          }
-        }
+	  if(index_ref.isBound())
+	  {
+	    if(i==index_ref.getMax()) index_ref.setMax(i-1);
+	    if(i==index_ref.getMin()) index_ref.setMin(i+1);
+	  }
+	  else
+	  {
+	    index_ref.removeFromDomain(i);
+	  }
+	}
       }
     }
   }
-
+  
   virtual void full_propagate()
   {
+    cout << "element prop FP" << endl;
+
+    int array_size = var_array.size();
+
+    for(int i = 0; i < array_size; i++)
+      if(ARE_DISEQUAL(stateObj, var_array[i].getBaseVar(), result_var.getBaseVar())) {
+	index_ref.removeFromDomain(i);
+	cout << "removed " << i << " from index in full prop for element" << endl;
+      }
+
+    if(getState(stateObj).isFailed())
+      return;
+
     if(index_ref.isAssigned())
     {
       int index = checked_cast<int>(index_ref.getAssignedValue());
+      cout << "setting var[i]=res in full prop" << endl;
+      SET_EQUAL(stateObj, var_array[index].getBaseVar(), result_var.getBaseVar());
+      if(getState(stateObj).isFailed())
+	return;
       if(index < 0 || index >= (int)var_array.size())
       {
         getState(stateObj).setFailed(true);
@@ -205,7 +236,6 @@ struct ElementConstraint : public AbstractConstraint
       var_array[index].setMax(val_max);
     }
     
-    int array_size = var_array.size();
     // Constrain the index variable to have only indices in range.
     if(index_ref.getMin()<0)
     {
@@ -350,6 +380,13 @@ struct ElementConstraint : public AbstractConstraint
     return array;
   }
   
+  virtual void append_sat_assg_vars_firsttime() 
+  { 
+    const size_t var_array_s = var_array.size();
+    for(int i = 0; i < var_array_s; i++)
+      singleton_sat_assg_vars.push_back(GET_DISEQ_BOOL(stateObj, var_array[i].getBaseVar(), result_var.getBaseVar())); //positions size+2..2*size+1
+  }
+
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
   {  
     int array_start = max(DomainInt(0), index_ref.getMin());
@@ -371,6 +408,8 @@ struct ElementConstraint : public AbstractConstraint
             assignment.push_back(make_pair(var_array.size() + 1, domval));
             // vararray[i] = domval
             assignment.push_back(make_pair(i, domval));
+	    // equality of vararray[i] and result
+	    assignment.push_back(make_pair(var_array.size() + 2 + i, 1));
             return true;
           }
         }

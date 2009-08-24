@@ -52,6 +52,7 @@ struct AbsConstraint : public AbstractConstraint
     t.push_back(make_trigger(var1, Trigger(this, 2), LowerBound));
     t.push_back(make_trigger(var2, Trigger(this, 3), UpperBound));
     t.push_back(make_trigger(var2, Trigger(this, 4), LowerBound));
+    PUSH_DISEQUALITY_TRIGGER(t, var1.getBaseVar(), var2.getBaseVar(), this, 5);
     return t;
   }
 
@@ -60,6 +61,10 @@ struct AbsConstraint : public AbstractConstraint
     var1.setMin(0);
     for(int i = 0; i < 4 && !getState(stateObj).isFailed(); ++i)
       propagate(i, 0);
+    if(ARE_DISEQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar()))
+      var2.setMax(-1);
+    if(var2.getMin() >= 0)
+      SET_EQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar());
   }
   
   // Assume values passed in in order.
@@ -111,14 +116,18 @@ struct AbsConstraint : public AbstractConstraint
       else
         var2.setMin(-var1.getMax());
       return;
-    case 3: //var 2 upper
     case 4: //var 2 lower
+      if(var2.getMin() >= 0)
+	SET_EQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar());
+    case 3: //var 2 upper
       var1.setMax(absmax(var2.getMin(), var2.getMax()));
       var1.setMin(absmin(var2.getMin(), var2.getMax()));  
       if(var2.getMin() > -var1.getMin())
         var2.setMin(var1.getMin());
       return;
-
+    case 5:
+      var2.setMax(-1);
+      return;
     }
   }
   
@@ -160,7 +169,6 @@ struct AbsConstraint : public AbstractConstraint
     }
     return false;
   }
-  
   
   virtual vector<AnyVarRef> get_vars()
   { 

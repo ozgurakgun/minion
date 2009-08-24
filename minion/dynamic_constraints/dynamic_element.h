@@ -105,8 +105,9 @@ struct ElementConstraintDynamic : public AbstractConstraint
     int count = var_array.size() * 2 + 
     checked_cast<int>(initial_result_dom_max - initial_result_dom_min + 1) * 2 
     + 1 
-    + 1; 
-    current_support.resize(count / 2);           // is int the right type?
+    + 1
+    + var_array.size(); //for triggers that var_array[i] disequals resultvar
+    current_support.resize(count / 2);
     return count;
   }
   
@@ -206,8 +207,12 @@ struct ElementConstraintDynamic : public AbstractConstraint
   {
     D_ASSERT(indexvar.isAssigned());
     int indexval = checked_cast<int>(indexvar.getAssignedValue());
+
     VarRef& var = var_array[indexval];
     
+    cout << "setting equal var[i] and result in dynamicelement" << endl;
+    SET_EQUAL(stateObj, var.getBaseVar(), resultvar.getBaseVar());
+
     DomainInt lower = resultvar.getMin(); 
     if( lower > var.getMin() ) 
     {
@@ -243,6 +248,12 @@ struct ElementConstraintDynamic : public AbstractConstraint
     
     int array_size = var_array.size(); 
     DomainInt result_dom_size = initial_result_dom_max - initial_result_dom_min + 1;
+
+    for(size_t i = 0; i < array_size; i++)
+      if(ARE_DISEQUAL(stateObj, var_array[i].getBaseVar(), resultvar.getBaseVar())) {
+	cout << "detected equality in FP, pruning idx" << endl;
+	indexvar.removeFromDomain(i);
+      }
     
     // Setup SupportLostForIndexValue(i,j)
     // Here we are supporting values in the index variable
@@ -287,6 +298,11 @@ struct ElementConstraintDynamic : public AbstractConstraint
     ++dt;
     
     indexvar.addDynamicTrigger(dt, Assigned);
+    ++dt;
+
+    for(size_t i = 0; i < array_size; i++) {
+      TRIGGER_ON_DISEQUALITY(var_array[i].getBaseVar(), resultvar.getBaseVar(), dt++);
+    }
   }
   
   
@@ -322,11 +338,14 @@ struct ElementConstraintDynamic : public AbstractConstraint
         deal_with_assigned_index();
       }
       return;
+    } else if(pos == 1) {
+      // index has become assigned.
+      deal_with_assigned_index();
+    } else {
+      D_ASSERT(ARE_DISEQUAL(stateObj, var_array[pos - 2].getBaseVar(), resultvar.getBaseVar()));
+      cout << "recieved trigger for pair involving var" << (pos - 2) << endl;
+      indexvar.removeFromDomain(pos - 2);
     }
-    
-    D_ASSERT(pos == 1);
-    // index has become assigned.
-    deal_with_assigned_index();
   }
   
     virtual BOOL check_assignment(DomainInt* v, int v_size)

@@ -56,7 +56,7 @@ struct NotModConstraint : public AbstractConstraint
       FAIL_EXIT("The negated 'modulo' constraint only supports nonnegative numbers, and positive bases, at present.");
       }
   }
-  
+
   virtual triggerCollection setup_internal()
   {
     triggerCollection t;
@@ -240,6 +240,9 @@ struct ModConstraint : public AbstractConstraint
       }
   }
   
+  int dynamic_trigger_count()
+  { return 1; }
+  
   virtual triggerCollection setup_internal()
   {
     triggerCollection t;
@@ -249,67 +252,90 @@ struct ModConstraint : public AbstractConstraint
     t.push_back(make_trigger(var1, Trigger(this, 1), UpperBound));
     t.push_back(make_trigger(var2, Trigger(this, 2), UpperBound));
     t.push_back(make_trigger(var3, Trigger(this, 3), UpperBound));
+
+    PUSH_EQUALITY_TRIGGER(t, var2.getBaseVar(), var3.getBaseVar(), this, 10);
+    PUSH_EQUALITY_TRIGGER(t, var1.getBaseVar(), var3.getBaseVar(), this, 11);
+    PUSH_EQUALITY_TRIGGER(t, var1.getBaseVar(), var2.getBaseVar(), this, 12);
+
     return t;
+  }
+
+  virtual void propagate(DynamicTrigger*)
+  {
+    D_ASSERT(!var3.inDomain(0));
+    cout << "mod DP: var3 missing 0 -> var1 and var2 are not equal" << endl;
+    SET_DISEQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar());
   }
   
   virtual void propagate(int flag, DomainDelta)
   {
     PROP_INFO_ADDONE(Mod);
-    // aiming at bounds(D)-consistency. 
-    // Not achieved because we don't trigger on the supporting values, only bounds.
-    
-    // var1 upperbound
-    DomainInt var1val=var1.getMax();
-    while(!testsupport_var1(var1val))
-    {
-        // While no support for upperbound, reduce upperbound
-        var1.setMax(var1val-1);
-        var1val=var1.getMax();
-        if(getState(stateObj).isFailed()) return;
-    }
-    
-    var1val=var1.getMin();
-    while(!testsupport_var1(var1val))
-    {
+
+    if(flag >= 10) { //diseq stuff
+      if(flag == 12) {
+	cout << "DP mod: vars 1 and 2 equal -> var3=0" << endl;
+	var3.propagateAssign(0);
+      } else {
+	D_ASSERT(flag == 11 || flag == 12);
+	cout << "mod FP; failing" << endl;
+	getState(stateObj).setFailed(true);
+      }
+    } else {
+      // aiming at bounds(D)-consistency. 
+      // Not achieved because we don't trigger on the supporting values, only bounds.
+      
+      // var1 upperbound
+      DomainInt var1val=var1.getMax();
+      while(!testsupport_var1(var1val))
+      {
+	// While no support for upperbound, reduce upperbound
+	var1.setMax(var1val-1);
+	var1val=var1.getMax();
+	if(getState(stateObj).isFailed()) return;
+      }
+      
+      var1val=var1.getMin();
+      while(!testsupport_var1(var1val))
+      {
         var1.setMin(var1val+1);
         var1val=var1.getMin();
         if(getState(stateObj).isFailed()) return;
-    }
+      }
     
-    DomainInt var2val=var2.getMax();
-    while(!testsupport_var2(var2val))
-    {
+      DomainInt var2val=var2.getMax();
+      while(!testsupport_var2(var2val))
+      {
         // While no support for upperbound, reduce upperbound
         var2.setMax(var2val-1);  // Is this the right function for pruning the upperbound?
         var2val=var2.getMax();
         if(getState(stateObj).isFailed()) return;
-    }
+      }
     
-    var2val=var2.getMin();
-    while(!testsupport_var2(var2val))
-    {
+      var2val=var2.getMin();
+      while(!testsupport_var2(var2val))
+      {
         var2.setMin(var2val+1);
         var2val=var2.getMin();
         if(getState(stateObj).isFailed()) return;
-    }
-    
-    DomainInt var3val=var3.getMax();
-    while(!testsupport_var3(var3val))
-    {
+      }
+      
+      DomainInt var3val=var3.getMax();
+      while(!testsupport_var3(var3val))
+      {
         // While no support for upperbound, reduce upperbound
         var3.setMax(var3val-1);  // Is this the right function for pruning the upperbound?
         var3val=var3.getMax();
         if(getState(stateObj).isFailed()) return;
-    }
+      }
     
-    var3val=var3.getMin();
-    while(!testsupport_var3(var3val))
-    {
+      var3val=var3.getMin();
+      while(!testsupport_var3(var3val))
+      {
         var3.setMin(var3val+1);
         var3val=var3.getMin();
         if(getState(stateObj).isFailed()) return;
-    }
-    
+      }	
+    }    
   }
   
   // next step is to modify the following three functions to store the supporting tuple,
@@ -387,6 +413,32 @@ struct ModConstraint : public AbstractConstraint
   
   virtual void full_propagate()
   { 
+    Var v1 = var1.getBaseVar();
+    Var v2 = var2.getBaseVar();
+    Var v3 = var3.getBaseVar();
+
+    if(ARE_EQUAL(stateObj, v1, v3) || ARE_EQUAL(stateObj, v2, v3)) {
+      cout << "FP mod: var1 or var2 equals var3, need to fail" << endl;
+      getState(stateObj).setFailed(true);
+      return;
+    }
+
+    if(var3.inDomain(0)) {
+      var3.addDynamicTrigger(dynamic_trigger_start(), DomainRemoval, 0);
+    }
+    cout << "in mod FP: var2 not equal var3" << endl;
+    SET_DISEQUAL(stateObj, v2, v3);
+    cout << "in mod FP: var1 not equal var3" << endl;
+    SET_DISEQUAL(stateObj, v1, v3);
+
+    if(ARE_EQUAL(stateObj, v1, v2)) {
+      cout << "mod FP: var1 and var2 are equal -> var3 = 0" << endl;
+      var3.propagateAssign(0);
+    } else if(!var3.inDomain(0)) {
+      cout << "mod FP: var3 missing 0 -> var1 and var2 are not equal" << endl;
+      SET_DISEQUAL(stateObj, v1, v2);
+    }
+
     propagate(1,0); 
     /*propagate(2,0);
     propagate(3,0);

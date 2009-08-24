@@ -55,6 +55,8 @@ struct DifferenceConstraint : public AbstractConstraint
   DifferenceConstraint(StateObj* _stateObj, VarRef1 _var1, VarRef2 _var2, VarRef3 _var3) :
     AbstractConstraint(_stateObj), var1(_var1), var2(_var2), var3(_var3)
   {  }
+    
+  int dynamic_trigger_count() { return 1; }
   
   virtual triggerCollection setup_internal()
   {
@@ -65,6 +67,10 @@ struct DifferenceConstraint : public AbstractConstraint
     t.push_back(make_trigger(var1, Trigger(this, 1), UpperBound));
     t.push_back(make_trigger(var2, Trigger(this, 2), UpperBound));
     t.push_back(make_trigger(var3, Trigger(this, 3), UpperBound));
+
+    t.push_back(make_trigger(var3, Trigger(this, 10), Assigned));
+    PUSH_EQUALITY_TRIGGER(t, var1.getBaseVar(), var2.getBaseVar(), this, -1);
+    PUSH_DISEQUALITY_TRIGGER(t, var1.getBaseVar(), var2.getBaseVar(), this, -2);
     return t;
   }
   
@@ -88,58 +94,86 @@ struct DifferenceConstraint : public AbstractConstraint
     }
   }
     
-  virtual void propagate(int, DomainDelta)
+  virtual void propagate(int i, DomainDelta)
   {
-      PROP_INFO_ADDONE(Difference);
-    
+    PROP_INFO_ADDONE(Difference);
+
+    if(i == 10 && var3.getAssignedValue() == 0) {
+      D_ASSERT(var3.isAssigned());
+      cout << "prop: diff set equal" << endl;
+      SET_EQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar());
+    } else if(i == -1) {
+      cout << "prop: diff assign 0" << endl;
+      var3.propagateAssign(0);
+    } else if(i == -2) {
+      cout << "prop: diff remove 0" << endl;
+      var3.removeFromDomain(0);
+    } else {
       DomainInt var1_min = var1.getMin();
       DomainInt var1_max = var1.getMax();
       DomainInt var2_min = var2.getMin();
       DomainInt var2_max = var2.getMax();
-
-    P(var1_min << var1_max << var2_min << var2_max << var3.getMin() << var3.getMax());
-
-    var3.setMax(max(var2_max, var1_max) - min(var1_min, var2_min));
-
-    var1.setMin(var2.getMin() - var3.getMax());
-    var2.setMin(var1.getMin() - var3.getMax());
-    var1.setMax(var2.getMax() + var3.getMax());
-    P(var2.getMax());
-    var2.setMax(var1.getMax() + var3.getMax());
-    P(var2.getMax());
-        
-    if(var1_max < var2_min)
-    {
-      var3.setMin(var2_min - var1_max);
-      var2.setMin(var1.getMin() + var3.getMin());
-      var1.setMax(var2.getMax() - var3.getMin());
-    }
-
-    if(var2_max < var1_min)
-    {
-      var3.setMin(var1_min - var2_max);
-      var1.setMin(var2.getMin() + var3.getMin());
-    P(var2.getMax());
-          var2.setMax(var1.getMax() - var3.getMin());
-              P(var2.getMax());
-    }
       
-    if(var1_max - var1_min < var3.getMin())
-    {
-      remove_range(var1_max - var3.getMin(), var1_min + var3.getMin(), var2);
+      P(var1_min << var1_max << var2_min << var2_max << var3.getMin() << var3.getMax());
+      
+      var3.setMax(max(var2_max, var1_max) - min(var1_min, var2_min));
+      
+      var1.setMin(var2.getMin() - var3.getMax());
+      var2.setMin(var1.getMin() - var3.getMax());
+      var1.setMax(var2.getMax() + var3.getMax());
+      P(var2.getMax());
+      var2.setMax(var1.getMax() + var3.getMax());
+      P(var2.getMax());
+      
+      if(var1_max < var2_min)
+      {
+	var3.setMin(var2_min - var1_max);
+	var2.setMin(var1.getMin() + var3.getMin());
+	var1.setMax(var2.getMax() - var3.getMin());
+      }
+      
+      if(var2_max < var1_min)
+      {
+	var3.setMin(var1_min - var2_max);
+	var1.setMin(var2.getMin() + var3.getMin());
+	P(var2.getMax());
+	var2.setMax(var1.getMax() - var3.getMin());
+	P(var2.getMax());
+      }
+      
+      if(var1_max - var1_min < var3.getMin())
+      {
+	remove_range(var1_max - var3.getMin(), var1_min + var3.getMin(), var2);
+      }
+      
+      if(var2_max - var2_min < var3.getMin())
+      {
+	remove_range(var2_max - var3.getMin(), var2_min + var3.getMin(), var1);
+      }
     }
-    
-    if(var2_max - var2_min < var3.getMin())
-    {
-      remove_range(var2_max - var3.getMin(), var2_min + var3.getMin(), var1);
-    }
-    
-    
-    
   }
   
   virtual void full_propagate()
-  { 
+  {     
+    if(var3.inDomain(0))
+      var3.addDynamicTrigger(dynamic_trigger_start(), DomainRemoval, 0);
+    
+    if(!var3.inDomain(0)) {
+      cout << "diff FP: setting diseq" << endl;
+      SET_DISEQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar());
+    } else if(ARE_DISEQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar())) {
+      cout << "diff FP: remove 0" << endl;
+      var3.removeFromDomain(0);
+    }
+    
+    if(var3.isAssigned() && var3.getAssignedValue() == 0) {
+      cout << "diff FP: setting equal" << endl;
+      SET_EQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar());
+    } else if(ARE_EQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar())) {
+      cout << "diff FP: set to 0" << endl;
+      var3.propagateAssign(0);
+    }
+
     var3.setMin(0);
     propagate(0,0);
   }
@@ -150,6 +184,13 @@ struct DifferenceConstraint : public AbstractConstraint
     int abs_val = v[0] - v[1];
     if(abs_val < 0) abs_val = - abs_val;
       return abs_val == v[2];
+  }
+  
+  virtual void propagate(DynamicTrigger* dt)
+  {
+    D_ASSERT(dt == dynamic_trigger_start());
+    cout << "in diff prop: var3 missing 0, setting disequal" << endl;
+    SET_DISEQUAL(stateObj, var1.getBaseVar(), var2.getBaseVar());
   }
   
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)

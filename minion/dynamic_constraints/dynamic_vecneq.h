@@ -188,7 +188,7 @@ struct NeqIterated
   template<typename Var1, typename Var2>
   static AbstractConstraint* reverse_constraint(StateObj* stateObj, const Var1& var1, const Var2& var2)
   {
-      EqualConstraint<Var1, Var2>* t=new EqualConstraint<Var1, Var2>(stateObj, var1, var2);
+    EqualConstraint<Var1, Var2, false>* t=new EqualConstraint<Var1, Var2, false>(stateObj, var1, var2);
       return (AbstractConstraint*) t;
   }
   

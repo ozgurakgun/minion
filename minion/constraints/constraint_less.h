@@ -60,6 +60,7 @@ struct LeqConstraint : public AbstractConstraint
     triggerCollection t;
     t.push_back(make_trigger(x, Trigger(this, 0), LowerBound));
     t.push_back(make_trigger(y, Trigger(this, 1), UpperBound));
+    PUSH_EQUALITY_TRIGGER(t, x.getBaseVar(), y.getBaseVar(), this, 2);
     return t;
     
   }
@@ -69,14 +70,23 @@ struct LeqConstraint : public AbstractConstraint
   
   virtual void propagate(int prop_val,DomainDelta)
   {
+    cout << "ineq prop DD" << endl;
+
     PROP_INFO_ADDONE(BinaryLeq);
-    if(prop_val)
+    if(prop_val == 1)
     {// y changed
       x.setMax(y.getMax() + offset);
     }
-    else
+    else if(prop_val == 0)
     {// x changed
       y.setMin(x.getMin() - offset);
+    }
+    else if(prop_val == 2) {
+      D_ASSERT(ARE_EQUAL(stateObj, x.getBaseVar(), y.getBaseVar()));
+      if(offset < 0) {
+	getState(stateObj).setFailed(true);
+	cout << "DP: in ineq failing because of equality and negative k" << endl;
+      }
     }
   }
   
@@ -88,8 +98,17 @@ struct LeqConstraint : public AbstractConstraint
   
   virtual void full_propagate()
   {
+    cout << "FP ineq" << endl;
+    if(offset >= 0 && ARE_EQUAL(stateObj, x.getBaseVar(), y.getBaseVar())) {
+      propagate(2, 0);
+    }
+    if(offset < 0) {
+      SET_DISEQUAL(stateObj, x.getBaseVar(), y.getBaseVar());
+      cout << "in ineq setting disequal because of negative k" << endl;
+    }
     propagate(0,0);
     propagate(1,0);
+    cout << "end FP ineq" << endl;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
@@ -98,15 +117,24 @@ struct LeqConstraint : public AbstractConstraint
     return v[0] <= (v[1] + offset);
   }
   
+  virtual void append_sat_assg_vars_firsttime() 
+  { singleton_sat_assg_vars.push_back(GET_DISEQ_BOOL(stateObj, x.getBaseVar(), y.getBaseVar())); } //idx 2
+    
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
   {
     int x_min = x.getMin();
     int y_max = y.getMax();
     
+    if(offset < 0 && ARE_EQUAL(stateObj, x.getBaseVar(), y.getBaseVar())) {
+      cout << "refusing to return sat assg in ineq failing because of equality and negative k" << endl;
+      return false;
+    }
+
     if(x_min <= y_max + offset)
     {
       assignment.push_back(make_pair(0, x_min));
       assignment.push_back(make_pair(1, y_max));
+      assignment.push_back(make_pair(2, 1));
       return true;
     } 
     return false;

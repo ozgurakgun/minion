@@ -49,13 +49,11 @@ class TupleList
   int tuple_length;
   int number_of_tuples;
   bool tuples_locked;
- 
   
   public:
-  
+ 
   LiteralSpecificLists* getLitLists();
   Nightingale* getNightingale();
-  TupleTrieArray* getTries();
   Regin* getRegin();
   
   /// Get raw pointer to the tuples.

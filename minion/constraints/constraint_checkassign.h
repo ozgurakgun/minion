@@ -39,7 +39,9 @@ struct CheckAssignConstraint : public AbstractConstraint
   
   CheckAssignConstraint(StateObj* _stateObj, VarArray& vars, OriginalConstraint& con)
   : AbstractConstraint(_stateObj), originalcon(con),variables(vars), assigned_vars(stateObj), assignment(variables.size())
-  { }
+  {
+    cout << "WARNING: using checker somewhere, these lose propagation" << endl;
+  }
   
   virtual triggerCollection setup_internal()
   {

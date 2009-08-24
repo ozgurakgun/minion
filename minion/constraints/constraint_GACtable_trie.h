@@ -56,7 +56,7 @@ struct GACTableConstraint : public AbstractConstraint
   GACTableConstraint(StateObj* _stateObj,const VarArray& _vars, TupleList* _tuples) :
     AbstractConstraint(_stateObj), vars(_vars), tuples(_tuples)
   { 
-    tupleTrieArrayptr = tuples->getTries();
+    tupleTrieArrayptr = new TupleTrieArray(tuples, stateObj);
     int arity = tuples->tuple_size();     
     D_ASSERT(_vars.size() == arity);
 
