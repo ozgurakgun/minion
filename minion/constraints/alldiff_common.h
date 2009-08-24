@@ -116,6 +116,8 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   D_DATA(MoveablePointer SCCSplit2);
   
   vector<int> varToSCCIndex;  // Mirror of the SCCs array.
+
+  int first_equality_trigger;
   
   GacAlldiffConstraint(StateObj* _stateObj, const VarArray& _var_array) : FlowConstraint<VarArray, UseIncGraph>(_stateObj, _var_array),
     SCCSplit(_stateObj, _var_array.size())
@@ -183,6 +185,10 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
     #ifdef DYNAMICALLDIFF
     numtrigs+= numvars+numvars*numvals;
     #endif
+
+    //also a trigger per pair of variables, to implement (dis-)equality propagation
+    first_equality_trigger = numtrigs;
+    numtrigs += numvars * (numvars - 1) / 2;
     
     // Dynamic alldiff triggers go first, incgraph triggers are after that
     // so places which access incgraph triggers must check if DYNAMICALLDIFF is defined.
@@ -222,16 +228,16 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
       /// solely for reify exps
       return new CheckAssignConstraint<VarArray, GacAlldiffConstraint>(stateObj, var_array, *this);
       
-      vector<AbstractConstraint*> con;
-      for(int i=0; i<var_array.size(); i++)
-      {
-          for(int j=i+1; j<var_array.size(); j++)
-          {
-              EqualConstraint<VarRef, VarRef>* t=new EqualConstraint<VarRef, VarRef>(stateObj, var_array[i], var_array[j]);
-              con.push_back((AbstractConstraint*) t);
-          }
-      }
-      return new Dynamic_OR(stateObj, con);
+/*       vector<AbstractConstraint*> con; */
+/*       for(int i=0; i<var_array.size(); i++) */
+/*       { */
+/*           for(int j=i+1; j<var_array.size(); j++) */
+/*           { */
+/*               EqualConstraint<VarRef, VarRef>* t=new EqualConstraint<VarRef, VarRef>(stateObj, var_array[i], var_array[j]); */
+/*               con.push_back((AbstractConstraint*) t); */
+/*           } */
+/*       } */
+/*       return new Dynamic_OR(stateObj, con); */
   }
   
   smallset to_process;  // set of vars to process.
@@ -255,6 +261,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   
   virtual void propagate(int prop_var, DomainDelta)
   {
+    cout << "alldiff prop DD" << endl;
     D_ASSERT(prop_var>=0 && prop_var<var_array.size());
     
     // return if all the watches are still in place.
@@ -343,7 +350,15 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   }
   
   virtual void propagate(DynamicTrigger* trig)
-  {
+  {    cout << "alldiff prop DT" << endl;
+
+    //recieving any equality trigger means we should fail immediately
+    if(trig - dynamic_trigger_start() > first_equality_trigger) {
+      D_ASSERT((int)(trig - dynamic_trigger_count()) <= numvars * (numvars - 1) / 2);
+      getState(stateObj).setFailed(true);
+      return;
+    }
+
       #ifdef INCGRAPH
       DynamicTrigger* dtstart=dynamic_trigger_start();
       #ifdef DYNAMICALLDIFF
@@ -984,7 +999,27 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   }
   
   virtual void full_propagate()
-  { 
+  {
+    cout << "FP alldiff" << endl;
+    //do (dis-)equality propagation first
+    //0) check for existing equality
+    //1) generate all disequalities
+    //2) place equality triggers on each pair of vars, we can fail if any of them fire
+    DynamicTrigger* next_trig = dynamic_trigger_start() + first_equality_trigger;
+    for(int i = 0; i < numvars - 1; i++) {
+      for(int j = i + 1; j < numvars; j++) {
+	Var vi = var_array[i].getBaseVar();
+	Var vj = var_array[j].getBaseVar();
+	if(ARE_EQUAL(stateObj, vi, vj)) {
+	  getState(stateObj).setFailed(true);
+	  return;
+	}
+	SET_DISEQUAL(stateObj, vi, vj);
+	TRIGGER_ON_EQUALITY(vi, vj, next_trig++);
+      }
+    }
+    
+
       #ifdef INCGRAPH
         {
             // update the adjacency lists. and place dts

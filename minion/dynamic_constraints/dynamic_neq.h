@@ -124,6 +124,6 @@ struct WatchNeqConstraint : public AbstractConstraint
   }
 
   virtual AbstractConstraint* reverse_constraint()
-  { return new EqualConstraint<Var1,Var2>(stateObj, var1, var2); }
+  { return new EqualConstraint<Var1,Var2,false>(stateObj, var1, var2); }
 };
 #endif

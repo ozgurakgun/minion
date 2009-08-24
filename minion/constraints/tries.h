@@ -70,6 +70,7 @@ struct TupleTrie
   // A temporary tuple to store the most recently found
   // complete assignment.
   int current_tuple[max_arity];
+  StateObj* stateObj;
   
   vector<vector<int> > tuples_vector;
   
@@ -80,12 +81,19 @@ struct TupleTrie
     return depth;
   }
   
+  int map_varno(int varno) //inverse of map_depth (varno->depth in trie)
+  {
+    if(varno == sigIndex) return 0;
+    if(varno < sigIndex) return varno + 1;
+    return varno;
+  }
+  
   int tuples(int num, int depth)
   { return tuples_vector[num][map_depth(depth)]; }
   
   
-  TupleTrie(int _significantIndex, TupleList* tuplelist) :
-  arity(tuplelist->tuple_size()), sigIndex(_significantIndex)
+  TupleTrie(int _significantIndex, TupleList* tuplelist, StateObj* _stateObj) :
+  arity(tuplelist->tuple_size()), sigIndex(_significantIndex), stateObj(_stateObj)
   {
     // TODO : Fix this hard limit.
     D_ASSERT(arity < 100);
@@ -228,24 +236,31 @@ struct TupleTrie
  
 
   
-  template<typename VarArray>
-    bool search_trie(const VarArray& _vars, TrieObj** obj_list, int depth)
+  template<typename ConflictChecker, typename VarArray>
+    bool search_trie(const ConflictChecker& checker, const VarArray& _vars, TrieObj** obj_list, int depth)
   {
+    cout << "in search_trie" << endl;
     CON_INFO_ADDONE(SearchTrie);
     VarArray& vars = const_cast<VarArray&>(_vars);
     if(depth == arity)
       return true;
     
-    obj_list[depth] = obj_list[depth - 1]->offset_ptr;  
+    if(depth != 0) //don't set up depth 0 starting position, assume it is set up correctly on entry
+      obj_list[depth] = obj_list[depth - 1]->offset_ptr;
+    
+    cout << "trying " << obj_list[depth]->val << " in d" << depth << ",v" << vars[map_depth(depth)] << " as support" << endl;
     while(obj_list[depth]->val != DomainInt_Max)
     {
+      cout << "d=" << depth << ",v=" << obj_list[depth]->val << endl;
       if(vars[map_depth(depth)].inDomain(obj_list[depth]->val))
       {
-        if(search_trie(_vars, obj_list, depth + 1))
+	cout << "indomain" << endl;
+        if(checker.check(stateObj, vars, depth, obj_list) && search_trie(checker, _vars, obj_list, depth + 1))
           return true;
       }
       obj_list[depth]++;
     }
+    cout << "no support found" << endl;
     return false;
   }
   
@@ -293,61 +308,149 @@ struct TupleTrie
       array[map_depth(i)] = obj_list[i]->val;
   }
   
-  template<typename VarArray>
-    bool loop_search_trie(const VarArray& _vars, TrieObj** obj_list, int depth)
+  //start is a pointer to the very beginning of the trie, meaning this procedure can be used to search the entire trie
+  //and not just from depth 1.
+  template<typename ConflictChecker, typename VarArray>
+    bool loop_search_trie(const ConflictChecker& checker, const VarArray& _vars, TrieObj** obj_list, int depth, TrieObj* start = NULL)
   {
+    cout << "in loop_search_trie" << endl;
+    D_ASSERT(depth || start);
     CON_INFO_ADDONE(LoopSearchTrie);
       VarArray& vars = const_cast<VarArray&>(_vars);
-      if(depth == arity)
+      if(depth == arity) {
+	cout << "d=arity" << endl;
         return true;
+      }
       
       if(obj_list[depth]->val == DomainInt_Max)
-        return search_trie(_vars, obj_list, depth);
+        return search_trie(checker, _vars, obj_list, depth);
           
       if(vars[map_depth(depth)].inDomain(obj_list[depth]->val))
       {
-        if(loop_search_trie(_vars, obj_list, depth + 1))
+	cout << "applying checker and looking" << endl;
+        if(checker.check(stateObj, vars, depth, obj_list) && loop_search_trie(checker, _vars, obj_list, depth + 1))
           return true;
+	cout << "didn't pass or didn't find" << endl;
       }
       
       TrieObj* initial_pos = obj_list[depth]; 
+      cout << "initial_pos=" << initial_pos << endl;
+      cout << "start=" << start << endl;
       
       obj_list[depth]++;
       while(obj_list[depth]->val != DomainInt_Max)
       {
         if(vars[map_depth(depth)].inDomain(obj_list[depth]->val))
         {
-          if(search_trie(_vars, obj_list, depth + 1))
-            return true;
+	  if(checker.check(stateObj, vars, depth, obj_list) && search_trie(checker, _vars, obj_list, depth + 1))
+	    return true;
         }
         obj_list[depth]++;
       }
+
+      cout << "got to end, restarting" << endl;
       
-      obj_list[depth] = obj_list[depth - 1]->offset_ptr;  
+      if(depth != 0)
+	obj_list[depth] = obj_list[depth - 1]->offset_ptr;
+      else 
+	obj_list[0] = start;
       
       while(obj_list[depth] != initial_pos)
       {
         if(vars[map_depth(depth)].inDomain(obj_list[depth]->val))
         {
-          if(search_trie(_vars, obj_list, depth + 1))
-            return true;
+	  if(checker.check(stateObj, vars, depth, obj_list) && search_trie(checker, _vars, obj_list, depth + 1))
+	    return true;
         }
         obj_list[depth]++;
       }
       return false;
   }
+
+  class DefaultChecker {
+    TupleTrie* parent;
+    
+  public:
+    DefaultChecker(TupleTrie* _parent) : parent(_parent) {}
+    
+    template<typename VarArray>
+      bool check(StateObj* stateObj, const VarArray& vars, int depth, TrieObj** trie_obj) const
+    { 
+      Var curr_base_var = vars[parent->map_depth(depth)].getBaseVar();
+      for(int prev_d = 0; prev_d < depth; prev_d++) {
+	bool areEqual = trie_obj[prev_d]->val == trie_obj[depth]->val;
+	cout << "pair " << trie_obj[prev_d]->val << "," << trie_obj[depth]->val << endl;
+	if((areEqual && ARE_DISEQUAL(stateObj, vars[parent->map_depth(prev_d)].getBaseVar(), curr_base_var))
+	   || (!areEqual && ARE_EQUAL(stateObj, vars[parent->map_depth(prev_d)].getBaseVar(), curr_base_var))) { 
+	  cout << "found conflict" << endl;
+	  return false;
+	}
+      }
+      return true;
+    }
+  };
+  friend class DefaultChecker; //allow nested class to access methods for its parent object
   
+  class EqualChecker {
+    TupleTrie* parent;
+    int f; //already mapped to depth in trie
+    int s;
+    
+  public:
+  EqualChecker(TupleTrie* _parent, int _f, int _s) : parent(_parent), f(_f), s(_s) { D_ASSERT(s == 0); }
+    
+    template<typename VarArray>
+    bool check(StateObj* stateObj, const VarArray& vars, int depth, TrieObj** trie_obj) const
+    {
+      D_ASSERT(s < f);
+      if(depth == s)
+	return vars[parent->map_depth(f)].inDomain(trie_obj[s]->val);
+      else if(depth == f)
+	return trie_obj[s]->val == trie_obj[f]->val;
+      else
+	return DefaultChecker(parent).check(stateObj, vars, depth, trie_obj);
+    }
+  };
+  friend class EqualChecker; //allow nested class to access methods for its parent object
+
+  class DisequalChecker {
+    TupleTrie* parent;
+    int f; //already mapped to depth in trie
+    int s;
+    
+  public:
+  DisequalChecker(TupleTrie* _parent, int _f, int _s) : parent(_parent), f(_f), s(_s) { D_ASSERT(s == 0); }
+    
+    template<typename VarArray>
+    bool check(StateObj* stateObj, const VarArray& vars, int depth, TrieObj** trie_obj) const
+    {
+      D_ASSERT(s < f);
+      if(depth == s && vars[parent->map_depth(f)].isAssigned()) {
+	cout << "b1" << endl;
+	return trie_obj[s]->val != vars[parent->map_depth(f)].getAssignedValue();
+      } else if(depth == f) {
+	cout << "b2" << endl;
+	return trie_obj[s]->val != trie_obj[f]->val;
+      } else {
+	cout << "b3" << endl;
+	return DefaultChecker(parent).check(stateObj, vars, depth, trie_obj);
+      }
+    }
+  };
+  friend class DisequalChecker; //allow nested class to access methods for its parent object
   
   // Find support for domain value i. This will be the value used by
   // the first variable.
   template<typename VarArray>
     int nextSupportingTuple(DomainInt domain_val, const VarArray& _vars, TrieObj** obj_list)
   {
+    cout << "in nextSupportingTuple" << endl;
     if(trie_data == NULL)
       return -1;
       
     VarArray& vars = const_cast<VarArray&>(_vars);
-      
+    DefaultChecker dc = DefaultChecker(this);
+
     if(obj_list[0] == NULL)
     {
       TrieObj* first_ptr = get_next_ptr(trie_data, domain_val);
@@ -355,30 +458,81 @@ struct TupleTrie
         return -1;
     
       obj_list[0] = first_ptr;
-      if(search_trie(vars, obj_list, 1))
+      if(search_trie(dc, vars, obj_list, 1))
         return obj_list[arity-1] - obj_list[0];  
       else
         return -1;
     }
     else
     {
-      if(loop_search_trie(vars, obj_list, 1))
+      if(loop_search_trie(dc, vars, obj_list, 1))
         return obj_list[arity-1] - obj_list[0];  
       else
         return -1;
-/*    D_ASSERT(obj_list[0] == get_next_ptr(trie_data, domain_val));
-      int OK_depth = 1;
-      while(OK_depth < arity && vars[map_depth(OK_depth)].inDomain(obj_list[OK_depth]->val))
-        OK_depth++;
-      if(search_trie(vars,obj_list, OK_depth))
-        return obj_list[arity-1] - obj_list[0];
+    }
+  }
+  
+  // Find support for EQUALITY between var #s f and s.
+  template<typename VarArray>
+  int nextSupportingTupleEqual(int f, int s, const VarArray& _vars, TrieObj** obj_list)
+  {
+    cout << "in nextSupportingTupleEqual" << endl;
+    if(trie_data == NULL)
+      return -1;
+      
+    VarArray& vars = const_cast<VarArray&>(_vars);
+    EqualChecker ec = EqualChecker(this, map_varno(f), map_varno(s));
+      
+    if(obj_list[0] == NULL)
+    {
+      TrieObj* first_ptr = trie_data;
+      if(first_ptr == NULL)
+        return -1;
+    
+      obj_list[0] = first_ptr;
+      if(search_trie(ec, vars, obj_list, 0))
+        return obj_list[arity-1] - obj_list[0];  
       else
-      {
-        if(search_trie(vars, obj_list, 1))
-          return obj_list[arity-1] - obj_list[0];  
-        else
-          return -1;
-      }*/
+        return -1;
+    }
+    else
+    {
+      if(loop_search_trie(ec, vars, obj_list, 0, trie_data))
+        return obj_list[arity-1] - obj_list[0];  
+      else
+        return -1;
+    }
+  }
+  
+  // Find support for DISEQUALITY between var #s f and s.
+  template<typename VarArray>
+  int nextSupportingTupleDisequal(int f, int s, const VarArray& _vars, TrieObj** obj_list)
+  {
+    cout << "in nextSupportingTupleDisequal" << endl;
+    if(trie_data == NULL)
+      return -1;
+      
+    VarArray& vars = const_cast<VarArray&>(_vars);
+    DisequalChecker dc = DisequalChecker(this, map_varno(f), map_varno(s));
+      
+    if(obj_list[0] == NULL)
+    {
+      TrieObj* first_ptr = trie_data;
+      if(first_ptr == NULL)
+        return -1;
+    
+      obj_list[0] = first_ptr;
+      if(search_trie(dc, vars, obj_list, 0))
+        return obj_list[arity-1] - obj_list[0];  
+      else
+        return -1;
+    }
+    else
+    {
+      if(loop_search_trie(dc, vars, obj_list, 0, trie_data))
+        return obj_list[arity-1] - obj_list[0];  
+      else
+        return -1;
     }
   }
   
@@ -425,7 +579,7 @@ public:
     Constructor
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
   
-  TupleTrieArray(TupleList* _tuplelist) :
+  TupleTrieArray(TupleList* _tuplelist, StateObj* stateObj) :
     tuplelist(_tuplelist)
   {
       tuplelist->finalise_tuples();
@@ -441,7 +595,7 @@ public:
         FAIL_EXIT();
       }
       for (unsigned varIndex = 0; varIndex < arity; varIndex++)
-        new (tupleTries + varIndex) TupleTrie(varIndex, tuplelist);
+        new (tupleTries + varIndex) TupleTrie(varIndex, tuplelist, stateObj);
   }
 };
 

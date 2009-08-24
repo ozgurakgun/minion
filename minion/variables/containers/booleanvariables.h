@@ -415,7 +415,9 @@ inline BoolVarRef BoolVarContainer::getDiseqBool(Var v1, Var v2)
     v2_num = numRealBools + numBounds + numSparsebounds + v2.pos();
     break;
   default:
+    cout << "FAILING: remove constants before running!" << endl;
     D_ASSERT(false);
+    exit(1);
     v2_num = 0;
     break;
   }

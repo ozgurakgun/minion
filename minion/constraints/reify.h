@@ -103,6 +103,7 @@ struct reify : public ParentConstraint
 
   int dtcount;
   int c0vars;  // how many vars for child_constraints[0]
+  int c0vars_gsa; // how many vars used for get_satisfying_assignment
 
   typedef vector<vector<pair<int,int> > > triggerpairstype;
   D_DATA(triggerpairstype triggerpairs);
@@ -123,9 +124,9 @@ struct reify : public ParentConstraint
     child_constraints.push_back(_negcon);
     // assume for the time being that the two child constraints have the same number of vars.
     reify_var_num=child_constraints[0]->get_sat_assg_vars()->size()+child_constraints[1]->get_sat_assg_vars()->size();
-    //dtcount=dynamic_trigger_count();
-    dtcount=child_constraints[0]->get_sat_assg_vars()->size()*2 + child_constraints[1]->get_sat_assg_vars()->size()*2;
+    dtcount=dynamic_trigger_count();
     c0vars=child_constraints[0]->get_vars_singleton()->size();
+    c0vars_gsa = child_constraints[0]->get_sat_assg_vars()->size();
     bool hasbound=false;
     vector<AnyVarRef>& t1=*(child_constraints[0]->get_vars_singleton());
     for(int i=0; i<t1.size(); i++)
@@ -161,8 +162,8 @@ struct reify : public ParentConstraint
     // assume for the time being that the two child constraints have the same number of vars.
     reify_var_num=child_constraints[0]->get_sat_assg_vars()->size()+child_constraints[1]->get_sat_assg_vars()->size();
     dtcount=dynamic_trigger_count();
-    dtcount=child_constraints[0]->get_sat_assg_vars()->size()*2 + child_constraints[1]->get_sat_assg_vars()->size()*2;
     c0vars=child_constraints[0]->get_vars_singleton()->size();
+    c0vars_gsa = child_constraints[0]->get_sat_assg_vars()->size();
     D_DATA(triggerpairs.resize(2));
   }
 
@@ -224,7 +225,7 @@ struct reify : public ParentConstraint
     else
     {
       vals += c0vars;
-      return child_constraints[1]->check_assignment(vals, (dtcount/2)-c0vars);
+      return child_constraints[1]->check_assignment(vals, child_constraints[1]->get_vars_singleton()->size());
     }
   }
 
@@ -275,6 +276,7 @@ struct reify : public ParentConstraint
 
   virtual void propagate(int i, DomainDelta domain)
   {
+    cout << "reify DP" << endl;
     PROP_INFO_ADDONE(Reify);
     P("Static propagate start");
     if(constraint_locked)
@@ -328,6 +330,7 @@ struct reify : public ParentConstraint
 
   virtual void propagate(DynamicTrigger* trig)
   {
+    cout << "reify DP" << endl;
     PROP_INFO_ADDONE(Reify);
     P("Dynamic prop start");
     if(constraint_locked)
@@ -338,7 +341,7 @@ struct reify : public ParentConstraint
 
     if(!full_propagate_called)
     {
-        if(trig >= dt && trig < (dt + (c0vars*2)) )
+        if(trig >= dt && trig < (dt + (c0vars_gsa*2)) )
         {// Lost assignments for positive constraint.
             P("Triggered on an assignment watch for the positive child constraint");
             #ifdef MINION_DEBUG
@@ -362,6 +365,7 @@ struct reify : public ParentConstraint
             P("Find new assignment");
             if(!flag)
             { // No satisfying assignment to constraint
+	      cout << "reify DP: GSA failed on poscon" << endl;
               P("Failed!");
               reify_var.propagateAssign(0);
 
@@ -372,11 +376,11 @@ struct reify : public ParentConstraint
               return;
             }
             P("Found new assignment");
-            watch_assignment(assignment, *(child_constraints[0]->get_sat_assg_vars()), dt, dt+(c0vars*2));
+            watch_assignment(assignment, *(child_constraints[0]->get_sat_assg_vars()), dt, dt+(c0vars_gsa*2));
 
             return;
         }
-        else if(trig>= (dt+ (c0vars*2)) && trig < dt+dtcount)
+        else if(trig>= (dt+ (c0vars_gsa*2)) && trig < dt+dtcount)
         {// Lost assignments for negative constraint.
             P("Triggered on an assignment watch for the negative child constraint");
             #ifdef MINION_DEBUG
@@ -400,6 +404,7 @@ struct reify : public ParentConstraint
             P("Find new assignment");
             if(!flag)
             { // No satisfying assignment to constraint
+	      cout << "reify DP: GSA failed on negcon" << endl; 
               P("Failed!");
               reify_var.propagateAssign(1);
 
@@ -410,7 +415,7 @@ struct reify : public ParentConstraint
               return;
             }
             P("Found new assignment");
-            watch_assignment(assignment, *(child_constraints[1]->get_sat_assg_vars()), dt+(c0vars*2), dt+dtcount);
+            watch_assignment(assignment, *(child_constraints[1]->get_sat_assg_vars()), dt+(c0vars_gsa*2), dt+dtcount);
             return;
         }
         else
@@ -487,6 +492,7 @@ struct reify : public ParentConstraint
 
   virtual void full_propagate()
   {
+    cout << "reify FP" << endl;
     P("Full prop");
     P("reify " << child_constraints[0]->constraint_name());
     P("negation: " << child_constraints[1]->constraint_name());
@@ -516,6 +522,7 @@ struct reify : public ParentConstraint
     PROP_INFO_ADDONE(ReifyFullPropGetAssgPosCon);
     if(!flag)
     { // No satisfying assignment to constraint
+      cout << "reify FP: GSA failed on poscon" << endl;
       reify_var.propagateAssign(0);
 
       #ifdef NODETRICK
@@ -528,6 +535,7 @@ struct reify : public ParentConstraint
     GET_ASSIGNMENT(assignment1, child_constraints[1]);
     if(!flag)
     { // No satisfying assignment to constraint
+      cout << "reify FP: GSA failed on negcon" << endl;
       reify_var.propagateAssign(1);
       #ifdef NODETRICK
       reifysetnode=getState(stateObj).getNodeCount();
@@ -536,8 +544,8 @@ struct reify : public ParentConstraint
       return;
     }
 
-    watch_assignment(assignment0, *(child_constraints[0]->get_sat_assg_vars()), dt, dt+(c0vars*2));
-    watch_assignment(assignment1, *(child_constraints[1]->get_sat_assg_vars()), dt+(c0vars*2), dt+dtcount);
+    watch_assignment(assignment0, *(child_constraints[0]->get_sat_assg_vars()), dt, dt+(c0vars_gsa*2));
+    watch_assignment(assignment1, *(child_constraints[1]->get_sat_assg_vars()), dt+(c0vars_gsa*2), dt+dtcount);
   }
 };
 

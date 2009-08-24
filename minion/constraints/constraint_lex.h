@@ -81,7 +81,9 @@ struct LexLeqConstraint : public AbstractConstraint
   
   LexLeqConstraint(StateObj* _stateObj,const VarArray1& _x, const VarArray2& _y) :
     AbstractConstraint(_stateObj), alpha(_stateObj), beta(_stateObj), F(_stateObj), x(_x), y(_y)
-  { D_ASSERT(x.size() == y.size()); }
+  { 
+    D_ASSERT(x.size() == y.size()); 
+  }
   
   virtual triggerCollection setup_internal()
   {
@@ -100,6 +102,10 @@ struct LexLeqConstraint : public AbstractConstraint
       t.push_back(make_trigger(y[i], Trigger(this, i), LowerBound));
       t.push_back(make_trigger(y[i], Trigger(this, i), UpperBound));
     }
+
+    for(int i = 0; i < min(x_size, y_size); i++)
+      PUSH_EQUALITY_TRIGGER(t, x[i].getBaseVar(), y[i].getBaseVar(), this, i);
+    
     alpha = 0;
     if(Less)
       beta = x_size;
@@ -123,8 +129,9 @@ struct LexLeqConstraint : public AbstractConstraint
         getState(stateObj).setFailed(true);
         return;
       }
-      if (!x[i].isAssigned() || !y[i].isAssigned() ||
-          x[i].getAssignedValue() != y[i].getAssignedValue())  {
+      if (!ARE_EQUAL(stateObj, x[i].getBaseVar(), y[i].getBaseVar()) &&
+	  (!x[i].isAssigned() || !y[i].isAssigned() ||
+	   x[i].getAssignedValue() != y[i].getAssignedValue()))  {
         alpha = i;
         propagate(i,0);
       }
@@ -133,10 +140,12 @@ struct LexLeqConstraint : public AbstractConstraint
     else
     {
       while (i < n) {
-        if (!x[i].isAssigned() || !y[i].isAssigned() ||
-            x[i].getAssignedValue() != y[i].getAssignedValue())  {
+        if (!ARE_EQUAL(stateObj, x[i].getBaseVar(), y[i].getBaseVar()) &&
+	    (!x[i].isAssigned() || !y[i].isAssigned() ||
+	     x[i].getAssignedValue() != y[i].getAssignedValue()))  {
           alpha = i ;
           propagate(i,0) ;
+	  cout << "alpha=" << alpha << endl;
           return ;
         }
         i++ ;
@@ -151,9 +160,10 @@ struct LexLeqConstraint : public AbstractConstraint
   void updateBeta(int i) {
     int a = alpha ;
     while (i >= a) {
-      if (x[i].getMin() < y[i].getMax()) {
+      if (x[i].getMin() < y[i].getMax() && !ARE_EQUAL(stateObj, x[i].getBaseVar(), y[i].getBaseVar())) {
         beta = i+1 ;
         if (!(x[i].getMax() < y[i].getMin())) propagate(i,0) ;
+	cout << "beta=" << beta << endl;
         return ;
       }
       i-- ;    
@@ -164,6 +174,7 @@ struct LexLeqConstraint : public AbstractConstraint
   
   virtual void propagate(int i, DomainDelta)
   {
+    cout << "lex dprop" << endl;
     PROP_INFO_ADDONE(Lex);
     if (F)
     {
@@ -186,6 +197,8 @@ struct LexLeqConstraint : public AbstractConstraint
     if (i == a && i+1 == b) {
       x[i].setMax(y[i].getMax()-1) ;
       y[i].setMin(x[i].getMin()+1) ;
+      cout << "setting diseq in lex" << endl;
+      SET_DISEQUAL(stateObj, x[i].getBaseVar(), y[i].getBaseVar());
       if (checkLex(i)) {
         F = true ;
         return ;
@@ -198,11 +211,13 @@ struct LexLeqConstraint : public AbstractConstraint
         F = true ;
         return ;
       }
-      if (x[i].isAssigned() && y[i].isAssigned() && x[i].getAssignedValue() == y[i].getAssignedValue())
+      if (ARE_EQUAL(stateObj, x[i].getBaseVar(), y[i].getBaseVar()) || 
+	  (x[i].isAssigned() && y[i].isAssigned() && x[i].getAssignedValue() == y[i].getAssignedValue()))
         updateAlpha(i+1) ;
     }
     else if (a < i && i < b) {
-      if ((i == b-1 && x[i].getMin() == y[i].getMax()) || x[i].getMin() > y[i].getMax())
+      if ((i == b-1 && x[i].getMin() == y[i].getMax()) || x[i].getMin() > y[i].getMax() || 
+	  ARE_EQUAL(stateObj, x[i].getBaseVar(), y[i].getBaseVar()))
         updateBeta(i-1) ;
     }
   }
@@ -267,8 +282,10 @@ struct LexLeqConstraint : public AbstractConstraint
   
   virtual void full_propagate()
   {
+    cout << "lex FP" << endl;
     int i, n = x.size() ;
     for (i = 0; i < n; i++) {
+      if (ARE_EQUAL(stateObj, x[i].getBaseVar(), y[i].getBaseVar())) continue;
       if (!x[i].isAssigned()) break ;    
       if (!y[i].isAssigned()) break ;
       if (x[i].getAssignedValue() != y[i].getAssignedValue()) break ;
@@ -282,7 +299,7 @@ struct LexLeqConstraint : public AbstractConstraint
       int betaBound = -1 ;
       for (; i < n; i++) {
         if (x[i].getMin() > y[i].getMax()) break ;
-        if (x[i].getMin() == y[i].getMax()) {
+        if (x[i].getMin() == y[i].getMax() || ARE_EQUAL(stateObj, x[i].getBaseVar(), y[i].getBaseVar())) {
           if (betaBound == -1) betaBound = i ;     
         }
         else betaBound = -1 ;
@@ -292,6 +309,7 @@ struct LexLeqConstraint : public AbstractConstraint
         if (i == n) beta = 1000000 ;
         else if (betaBound == -1) beta = i ;
         else beta = betaBound ;
+	cout << "beta=" << beta << endl;
       }
       else
       {

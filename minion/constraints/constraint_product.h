@@ -53,6 +53,9 @@ struct ProductConstraint : public AbstractConstraint
     AbstractConstraint(_stateObj), var1(_var1), var2(_var2), var3(_var3)
   { }
   
+  int dynamic_trigger_count()
+  { return 2; }
+
   virtual triggerCollection setup_internal()
   {
     triggerCollection t;
@@ -62,6 +65,10 @@ struct ProductConstraint : public AbstractConstraint
     t.push_back(make_trigger(var1, Trigger(this, 1), UpperBound));
     t.push_back(make_trigger(var2, Trigger(this, 2), UpperBound));
     t.push_back(make_trigger(var3, Trigger(this, 3), UpperBound));
+    PUSH_DISEQ_OR_EQ_TRIGGER(t, var1.getBaseVar(), var3.getBaseVar(), this, 4);
+    PUSH_DISEQ_OR_EQ_TRIGGER(t, var2.getBaseVar(), var3.getBaseVar(), this, 5);
+    t.push_back(make_trigger(var1, Trigger(this, 6), Assigned));
+    t.push_back(make_trigger(var2, Trigger(this, 7), Assigned));
     return t;
   }
   
@@ -88,16 +95,57 @@ struct ProductConstraint : public AbstractConstraint
       return DomainInt_Max;
     return x / y; 
   }
+
+  virtual void propagate(DynamicTrigger* dt)
+  {
+    if(dt->trigger_info()) { // == 1
+      cout << "product DP causing var1=/=var3" << endl;
+      SET_DISEQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar());
+    } else {
+      D_ASSERT(dt->trigger_info() == 0);
+      cout << "product DP causing var2=/=var3" << endl;
+      SET_DISEQUAL(stateObj, var2.getBaseVar(), var3.getBaseVar());
+    }
+  }
   
-  virtual void propagate(int, DomainDelta)
+  virtual void propagate(int trig_no, DomainDelta)
   {
     PROP_INFO_ADDONE(Product);
+
     DomainInt var1_min = var1.getMin();
     DomainInt var1_max = var1.getMax();
     DomainInt var2_min = var2.getMin();
     DomainInt var2_max = var2.getMax();
     DomainInt var3_min = var3.getMin();
     DomainInt var3_max = var3.getMax();
+
+    if(trig_no == 4) {
+      if(ARE_EQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar())) {
+	cout << "DP product assign var2<-1" << endl;
+	var2.propagateAssign(1);
+      } else {
+	D_ASSERT(ARE_DISEQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar()));
+	cout << "DP product remove var2<-/-1" << endl;
+	var2.removeFromDomain(1);
+      }
+    } else if(trig_no == 5) {
+      if(ARE_EQUAL(stateObj, var2.getBaseVar(), var3.getBaseVar())) {
+	cout << "DP product assign var1<-1" << endl;
+	var1.propagateAssign(1);
+      } else {
+	D_ASSERT(ARE_DISEQUAL(stateObj, var2.getBaseVar(), var3.getBaseVar()));
+	cout << "DP product remove var1<-/-1" << endl;
+	var1.removeFromDomain(1);
+      }
+    } else if(trig_no == 6 && var1_min == 1) {
+      D_ASSERT(var1.isAssigned());
+      cout << "DP product setting var2 and var3 equal because var1=1" << endl;
+      SET_EQUAL(stateObj, var2.getBaseVar(), var3.getBaseVar());
+    } else if(trig_no == 7 && var2_min == 1) {
+      D_ASSERT(var2.isAssigned());
+      cout << "DP product setting var1 and var3 equal because var2=1" << endl;
+      SET_EQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar());
+    }
     
     if((var1_min >= 0) && (var2_min >= 0))
     {
@@ -156,7 +204,52 @@ struct ProductConstraint : public AbstractConstraint
   }
   
   virtual void full_propagate()
-  { propagate(0,0); }
+  { 
+    Var var1_b = var1.getBaseVar();
+    Var var2_b = var2.getBaseVar();
+    Var var3_b = var3.getBaseVar();
+    if(ARE_DISEQ_OR_EQ(stateObj, var1_b, var3_b)) {
+      if(ARE_EQUAL(stateObj, var1_b, var3_b)) {
+	cout << "FP product assign var2<-1" << endl;
+	var2.propagateAssign(1);
+      } else {
+	D_ASSERT(ARE_DISEQUAL(stateObj, var1_b, var3_b));
+	cout << "FP product remove var2<-/-1" << endl;
+	var2.removeFromDomain(1);
+      }
+    } else if(var2.isAssigned() && var2.getAssignedValue() == 1) {
+      cout << "FP product setting var1 and var3 equal because var2=1" << endl;
+      SET_EQUAL(stateObj, var1_b, var3_b);
+    } else if(!var2.inDomain(1)) {
+      cout << "product FP causing var1=/=var3" << endl;
+      SET_DISEQUAL(stateObj, var1.getBaseVar(), var3.getBaseVar());
+    }
+
+    if(ARE_DISEQ_OR_EQ(stateObj, var2_b, var3_b)) {
+      if(ARE_EQUAL(stateObj, var2_b, var3_b)) {
+	cout << "FP product assign var1<-1" << endl;
+	var1.propagateAssign(1);
+      } else {
+	D_ASSERT(ARE_DISEQUAL(stateObj, var2_b, var3_b));
+	cout << "FP product remove var1<-/-1" << endl;
+	var1.removeFromDomain(1);
+      }
+    } else if(var1.isAssigned() && var1.getAssignedValue() == 1) {
+      cout << "FP product setting var2 and var3 equal because var1=1" << endl;
+      SET_EQUAL(stateObj, var2_b, var3_b);
+    } else if(!var1.inDomain(1)) {
+      cout << "product FP causing var2=/=var3" << endl;
+      SET_DISEQUAL(stateObj, var2.getBaseVar(), var3.getBaseVar());
+    }
+
+    DynamicTrigger* dt = dynamic_trigger_start();
+    var1.addDynamicTrigger(dt, DomainRemoval, 1);
+    dt->trigger_info() = 0;
+    var2.addDynamicTrigger(dt + 1, DomainRemoval, 1);
+    (dt+1)->trigger_info() = 1;
+    
+    propagate(0,0); 
+  }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
   {
