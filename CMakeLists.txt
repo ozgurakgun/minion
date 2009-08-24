@@ -12,9 +12,6 @@ if(TINY_TEST)
     set(CONSTRAINTS "reify;reifyimply;watchelement;eq;sumgeq;true;watched-or")
 endif()
 
-include(constraints)
-include(CheckIncludeFiles)
-
 set(BUILD_DEF_FILE "${PROJECT_SOURCE_DIR}/minion/BuildDefines.h")
 file(REMOVE ${BUILD_DEF_FILE})
 
@@ -70,38 +67,7 @@ else()
     message(STATUS "You need a UNIX-like system to regenerate help")
 endif()
 
-if(CONSTRAINTS)
-    select_constraints(${CONSTRAINTS})
-elseif(CONSTRAINTS_FILE)
-    file(READ ${CONSTRAINTS_FILE} CONSTRAINTS_FILE_CONTENTS)
-    string(REGEX MATCHALL "([^a-z_-]|^)[a-z_-]+\\(" FINDS ${CONSTRAINTS_FILE_CONTENTS})
-    foreach(FIND ${FINDS})
-        string(REGEX REPLACE "[^a-z_-]" "" CONSTRAINT ${FIND})
-        set(FOUND False)
-        foreach(LIST_CONSTRAINT ${CONSTRAINTS})
-            if(${LIST_CONSTRAINT} STREQUAL ${CONSTRAINT})
-                set(FOUND True)
-            endif()
-        endforeach()
-        if(NOT FOUND)
-            list(APPEND CONSTRAINTS ${CONSTRAINT})
-        endif()
-    endforeach()
-    select_constraints(${CONSTRAINTS})
-else()
-    select_constraints(${ALL_CONSTRAINTS})
-endif()
-
 file(GLOB SRCS "${PROJECT_SOURCE_DIR}/minion/build_constraints/CT*.cpp")
-
-foreach(ct ${SRCS})
-    string(REGEX MATCH "CT_[A-Z_0-9]+" ct_name ${ct})
-    file(APPEND ${BUILD_DEF_FILE} "#define ${ct_name}_ABC\n")
-#    add_definitions(-D${ct_name}_ABC)
-endforeach()
-
-
-
 list(APPEND SRCS ${PROJECT_SOURCE_DIR}/minion/BuildVariables.cpp
                  ${PROJECT_SOURCE_DIR}/minion/BuildCSP.cpp
                  ${PROJECT_SOURCE_DIR}/minion/commandline_parse.cpp
@@ -111,7 +77,7 @@ list(APPEND SRCS ${PROJECT_SOURCE_DIR}/minion/BuildVariables.cpp
 #                ${PROJECT_SOURCE_DIR}/minion/minion.cpp
                  ${PROJECT_SOURCE_DIR}/minion/globals.cpp
                  ${PROJECT_SOURCE_DIR}/minion/preprocess.cpp
-                 ${PROJECT_SOURCE_DIR}/minion/build_constraints/BuildStaticStart.cpp
+                 ${PROJECT_SOURCE_DIR}/minion/build_constraints/BuildStart.cpp
                  ${PROJECT_SOURCE_DIR}/minion/system/trigger_timer.cpp
                  ${PROJECT_SOURCE_DIR}/minion/help/help.cpp)
 
