@@ -21,10 +21,10 @@
 
 #include "preprocess.h"
 
-#include "search/standard_search.h"
-#include "search/recursive_search.h"
-#include "search/conflict_search.h"
-#include "search/group_search.h"
+//#include "search/standard_search.h"
+//#include "search/recursive_search.h"
+//#include "search/conflict_search.h"
+//#include "search/group_search.h"
 
 #include "search/search_control.h"
 
@@ -81,55 +81,41 @@ void BuildCSP(StateObj* stateObj, CSPInstance& instance)
 
 void SolveCSP(StateObj* stateObj, CSPInstance& instance, SearchMethod args)
 {
-  vector<AnyVarRef> preprocess_vars = BuildCon::build_val_and_var_order(stateObj, instance.search_order[0]).first;
-  function<void (void)> search(bind(Controller::deal_with_solution, stateObj));
-
-  // Set up variable and value ordering
-  for(int i = instance.search_order.size() - 1; i >= 0; --i)
-  {
-    SearchOrder order = instance.search_order[i];
-
+    vector<AnyVarRef> preprocess_vars = BuildCon::build_val_and_var_order(stateObj, instance.search_order[0]).first;
+    
+    // Set up variable and value ordering
+    
+    D_ASSERT(instance.search_order.size()==1);
+    SearchOrder order = instance.search_order[0];
+    
     if(args.order != ORDER_NONE)
-      order.order = args.order;
-
-    pair<vector<AnyVarRef>, vector<int> > var_val_order = BuildCon::build_val_and_var_order(stateObj, instance.search_order[i]);
-
+        order.order = args.order;
+    
+    pair<vector<AnyVarRef>, vector<int> > var_val_order = BuildCon::build_val_and_var_order(stateObj, order);
+    
     if(getOptions(stateObj).randomise_valvarorder)
     {
-      getOptions(stateObj).printLine("Using seed: " + to_string(args.random_seed));
-      srand( args.random_seed );
-
-      std::random_shuffle(var_val_order.first.begin(), var_val_order.first.end());
-      for(unsigned i = 0; i < var_val_order.second.size(); ++i)
-        var_val_order.second[i] = (rand() % 100) > 50;
+        getOptions(stateObj).printLine("Using seed: " + to_string(args.random_seed));
+        srand( args.random_seed );
+        
+        std::random_shuffle(var_val_order.first.begin(), var_val_order.first.end());
+        for(unsigned i = 0; i < var_val_order.second.size(); ++i)
+            var_val_order.second[i] = (rand() % 100) > 50;
     }
-
-    switch(args.prop_method)
-    {
-      case PropLevel_GAC:
-      search = solve(stateObj, search, order, var_val_order, instance, PropagateGAC());
-      break;
-      case PropLevel_SAC:
-      search = solve(stateObj, search, order, var_val_order, instance, PropagateSAC());
-      break;
-      case PropLevel_SSAC:
-      search = solve(stateObj, search, order, var_val_order, instance, PropagateSSAC());
-      break;
-      default:
-      abort();
-    }
-  }
-
-  getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Build Search Ordering Time: ", "SearchOrderTime", getTableOut(), !getOptions(stateObj).silent);
-
-  PropogateCSP(stateObj, args.preprocess, preprocess_vars, !getOptions(stateObj).silent);
-  getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Preprocess Time: ", "PreprocessTime", getTableOut(), !getOptions(stateObj).silent);
-  getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_1, "First node time: ", "FirstNodeTime", getTableOut(), !getOptions(stateObj).silent);
-
+    
+    // oops, random order won't work.. need to put it back into order object.
+    Controller::SearchManager* sm=Controller::make_search_manager(stateObj, args.prop_method, order);
+    
+    getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Build Search Ordering Time: ", "SearchOrderTime", getTableOut(), !getOptions(stateObj).silent);
+    
+    PropogateCSP(stateObj, args.preprocess, preprocess_vars, !getOptions(stateObj).silent);
+    getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Preprocess Time: ", "PreprocessTime", getTableOut(), !getOptions(stateObj).silent);
+    getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_1, "First node time: ", "FirstNodeTime", getTableOut(), !getOptions(stateObj).silent);
+    
   if(!getState(stateObj).isFailed())
   {
     try
-      { search(); }
+      { sm->search(); }
     catch(EndOfSearch)
     { }
   }
