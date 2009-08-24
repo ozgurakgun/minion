@@ -1,0 +1,13 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+**VARIABLES**
+DISCRETE x {-5..5}
+DISCRETE y {-5..5}
+DISCRETE z {-5..5}
+**CONSTRAINTS**
+eq(x,z)
+product(x,y,z)
+w-notliteral(y,1)
+**EOF**

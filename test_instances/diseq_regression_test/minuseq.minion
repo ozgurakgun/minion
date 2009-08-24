@@ -1,0 +1,12 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+**VARIABLES**
+DISCRETE x {-5..5}
+DISCRETE y {-5..5}
+**CONSTRAINTS**
+w-notliteral(x,0)
+minuseq(x,y)
+eq(x,y)
+**EOF**

@@ -1,0 +1,13 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+**VARIABLES**
+DISCRETE v[3] {-5..5}
+DISCRETE m {-5..5}
+**CONSTRAINTS**
+eq(v[0],v[1])
+eq(v[1],v[2])
+min(v[_],m)
+diseq(v[2],m)
+**EOF**

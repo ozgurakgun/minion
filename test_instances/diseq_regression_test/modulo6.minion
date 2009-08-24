@@ -1,0 +1,14 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+#check that DP does z=0 when x=y
+**VARIABLES**
+DISCRETE x {0..10}
+DISCRETE y {1..10}
+DISCRETE z {0..10}
+**CONSTRAINTS**
+modulo(x,y,z)
+eq(x,y)
+w-notliteral(z,0)
+**EOF**

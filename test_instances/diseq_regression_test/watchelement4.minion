@@ -1,0 +1,13 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+**VARIABLES**
+DISCRETE vec[2] {-5..5}
+DISCRETE idx {0..1}
+DISCRETE res {-5..5}
+**CONSTRAINTS**
+watchelement(vec,idx,res)
+w-literal(idx, 1)
+diseq(vec[1],res)
+**EOF**

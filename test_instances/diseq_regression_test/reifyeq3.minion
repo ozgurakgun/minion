@@ -1,0 +1,14 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+#make sure that reify sets r to 0, inside full prop
+**VARIABLES**
+DISCRETE x {-10..10}
+DISCRETE y {0..10}
+BOOL r
+**CONSTRAINTS**
+diseq(x,y)
+reify(eq(x,y),r)
+w-literal(r,1)
+**EOF**

@@ -1,0 +1,16 @@
+MINION 3
+#TEST SOLCOUNT 1
+#TEST NODECOUNT 1
+
+#as table11 but testing incremental
+**VARIABLES**
+DISCRETE x {-5..5}
+DISCRETE y {-5..5}
+DISCRETE z {0..1}
+**CONSTRAINTS**
+table([x,y],{<-5,-5>,<-4,-4>,<-3,-3>,<-2,-2>,<-1,-1>,<0,0>,<1,1>,<2,2>,<3,3>,<4,4>,<5,5>,<1,2>})
+difference(x,y,z)
+**SEARCH**
+VARORDER [z,x,y]
+VALORDER [d,d,d]
+**EOF**

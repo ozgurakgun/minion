@@ -1,0 +1,19 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+**VARIABLES**
+DISCRETE x[4] {1..4}
+DISCRETE y[4] {1..4}
+BOOL aux[3]
+
+**CONSTRAINTS**
+eq(x[0],y[0])
+reify(eq(x[0],y[0]),aux[0])
+reify(eq(x[1],y[1]),aux[0])
+reify(eq(x[1],y[1]),aux[1])
+reify(eq(x[2],y[2]),aux[1])
+reify(eq(x[2],y[2]),aux[2])
+reify(eq(x[3],y[3]),aux[2])
+diseq(x[3],y[3])
+**EOF**

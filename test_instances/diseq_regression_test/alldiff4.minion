@@ -1,0 +1,11 @@
+MINION 3
+#TEST SOLCOUNT 0
+#TEST NODECOUNT 0
+
+**VARIABLES**
+DISCRETE x {-5..5}
+DISCRETE y {-5..5}
+DISCRETE z {0..0}
+**CONSTRAINTS**
+please find a test for alldiff dynamic propagate
+**EOF**
