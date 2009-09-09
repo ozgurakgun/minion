@@ -122,23 +122,23 @@ struct BoundVarRef_internal
   DomainInt getInitialMin() const
   { return GET_LOCAL_CON().getInitialMin(*this); }
   
-  void setMax(DomainInt i)
-  { GET_LOCAL_CON().setMax(*this,i); }
+  BOOL setMax(DomainInt i)
+  { return GET_LOCAL_CON().setMax(*this,i); }
   
-  void setMin(DomainInt i)
-  { GET_LOCAL_CON().setMin(*this,i); }
+  BOOL setMin(DomainInt i)
+  { return GET_LOCAL_CON().setMin(*this,i); }
   
-  void uncheckedAssign(DomainInt b)
-  { GET_LOCAL_CON().uncheckedAssign(*this, b); }
+  BOOL uncheckedAssign(DomainInt b)
+  { return GET_LOCAL_CON().uncheckedAssign(*this, b); }
   
-  void propagateAssign(DomainInt b)
-  { GET_LOCAL_CON().propagateAssign(*this, b); }
+  BOOL propagateAssign(DomainInt b)
+  { return GET_LOCAL_CON().propagateAssign(*this, b); }
 
-  void decisionAssign(DomainInt b)
-  { GET_LOCAL_CON().decisionAssign(*this, b); }
+  BOOL decisionAssign(DomainInt b)
+  { return GET_LOCAL_CON().decisionAssign(*this, b); }
 
-  void removeFromDomain(DomainInt b)
-  { GET_LOCAL_CON().removeFromDomain(*this, b); }
+  BOOL removeFromDomain(DomainInt b)
+  { return GET_LOCAL_CON().removeFromDomain(*this, b); }
   
   void addTrigger(Trigger t, TrigType type)
   { GET_LOCAL_CON().addTrigger(*this, t, type); }
@@ -270,24 +270,23 @@ struct BoundVarContainer {
   DomainInt getInitialMax(const BoundVarRef_internal<BoundType>& d) const
   { return initial_bounds[d.var_num].second; }
    
-  void removeFromDomain(const BoundVarRef_internal<BoundType>&, DomainInt )
+  BOOL removeFromDomain(const BoundVarRef_internal<BoundType>&, DomainInt )
   {
     D_FATAL_ERROR( "Cannot Remove Value from domain of a bound var");
     FAIL_EXIT();
   }
 
-  void internalAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+  BOOL internalAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
   {
     DomainInt min_val = getMin(d);
     DomainInt max_val = getMax(d);
     if(min_val > i || max_val < i)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     if(min_val == max_val)
-      return;
+      return true;
     
     trigger_list.push_domain_changed(d.var_num);
     trigger_list.push_assign(d.var_num, i);
@@ -302,30 +301,30 @@ struct BoundVarContainer {
     
     upper_bound(d) = i;
     lower_bound(d) = i;
+    return true;
   }
   
-  void propagateAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
-  { internalAssign(d, i); }
+  BOOL propagateAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+  { return internalAssign(d, i); }
   
   // TODO : Optimise
-  void uncheckedAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+  BOOL uncheckedAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
   { 
     D_ASSERT(inDomain(d,i));
-    internalAssign(d, i);
+    return internalAssign(d, i);
   }
 
-  void decisionAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
-  { internalAssign(d, i); }
+  BOOL decisionAssign(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+  { return internalAssign(d, i); }
   
-  void setMax(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+  BOOL setMax(const BoundVarRef_internal<BoundType>& d, DomainInt i)
   {
     DomainInt low_bound = lower_bound(d);
     DomainInt up_bound = upper_bound(d);
     
     if(i < low_bound)
     {
-       getState(stateObj).setFailed(true);
-       return;
+       return false;
     }
     
     
@@ -338,17 +337,18 @@ struct BoundVarContainer {
         trigger_list.push_assign(d.var_num, i);
       }
     }
+
+    return true;
   }
   
-  void setMin(const BoundVarRef_internal<BoundType>& d, DomainInt i)
+  BOOL setMin(const BoundVarRef_internal<BoundType>& d, DomainInt i)
   {
     DomainInt low_bound = lower_bound(d);
     DomainInt up_bound = upper_bound(d);
     
     if(i > up_bound)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     if(i > low_bound)
@@ -360,6 +360,8 @@ struct BoundVarContainer {
         trigger_list.push_assign(d.var_num, i);
       }
     }
+    
+    return true;
   }
   
 //  BoundVarRef get_new_var();

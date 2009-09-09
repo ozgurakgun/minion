@@ -284,7 +284,7 @@ struct BigRangeVarContainer {
   DomainInt getInitialMax(BigRangeVarRef_internal d) const
   { return initial_bounds[d.var_num].second; }
    
-  void removeFromDomain(BigRangeVarRef_internal d, DomainInt i)
+  BOOL removeFromDomain(BigRangeVarRef_internal d, DomainInt i)
   {
 #ifdef DEBUG
     cout << "Calling removeFromDomain: " << d.var_num << " " << i << " [" 
@@ -301,7 +301,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array->ifMember_remove
 #ifdef DEBUG
       cout << "Exiting removeFromDomain: " << d.var_num << " nothing to do" << endl;
 #endif
-      return;
+      return true;
     }
 #ifdef FULL_DOMAIN_TRIGGERS
     trigger_list.push_domain_removal(d.var_num, i);
@@ -338,7 +338,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array->ifMember_remove
          << endl;
     bms_array->print_state();
 #endif
-    return;
+    return true;
   }
 
   BOOL validAssignment(BigRangeVarRef_internal d, DomainInt offset, DomainInt lower, DomainInt upper)
@@ -346,44 +346,42 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array->ifMember_remove
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
     if(!inDomain(d,offset))
     {
-      getState(stateObj).setFailed(true); 
       return false;
     }
     if(offset == upper && offset == lower)
       return false;
     if(offset > upper || offset < lower)
     {
-      getState(stateObj).setFailed(true);
       return false;
     }
     return true;
   }    
   
-  void propagateAssign(BigRangeVarRef_internal d, DomainInt offset)
+  BOOL propagateAssign(BigRangeVarRef_internal d, DomainInt offset)
   {
     DomainInt lower = lower_bound(d);
     DomainInt upper = upper_bound(d);
-    if(!validAssignment(d, offset, lower, upper)) return;
-    commonAssign(d, offset, lower, upper);
+    if(!validAssignment(d, offset, lower, upper)) return true;
+    return commonAssign(d, offset, lower, upper);
   }
 
-  void uncheckedAssign(BigRangeVarRef_internal d, DomainInt i)
+  BOOL uncheckedAssign(BigRangeVarRef_internal d, DomainInt i)
   { 
     D_ASSERT(inDomain(d,i));
     D_ASSERT(!isAssigned(d));
-    commonAssign(d,i, lower_bound(d), upper_bound(d)); 
+    return commonAssign(d,i, lower_bound(d), upper_bound(d)); 
   }
 
-  void decisionAssign(BigRangeVarRef_internal d, DomainInt i)
+  BOOL decisionAssign(BigRangeVarRef_internal d, DomainInt i)
   {
     D_ASSERT(inDomain(d,i));
     D_ASSERT(!isAssigned(d));
-    commonAssign(d,i, lower_bound(d), upper_bound(d)); 
+    return commonAssign(d,i, lower_bound(d), upper_bound(d)); 
   }
     
 private:
   // This function just unifies part of propagateAssign and uncheckedAssign
-  void commonAssign(BigRangeVarRef_internal d, DomainInt offset, DomainInt lower, DomainInt upper)
+  BOOL commonAssign(BigRangeVarRef_internal d, DomainInt offset, DomainInt lower, DomainInt upper)
   {
 #ifdef FULL_DOMAIN_TRIGGERS
     // TODO : Optimise this function to only check values in domain.
@@ -413,11 +411,12 @@ private:
       upper_bound(d) = offset;
     }
     D_ASSERT(getState(stateObj).isFailed() || ( inDomain(d, lower_bound(d)) && inDomain(d, upper_bound(d)) ) );
-  }    
+    return true;
+  }
 public:
 
   
-  void setMax(BigRangeVarRef_internal d, DomainInt offset)
+  BOOL setMax(BigRangeVarRef_internal d, DomainInt offset)
   {
 #ifdef DEBUG
     cout << "Calling setMax: " << d.var_num << " " << offset << " [" 
@@ -433,8 +432,7 @@ public:
     
     if(offset < low_bound)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     if(offset < up_bound)
@@ -471,9 +469,10 @@ public:
          << endl;
     bms_array->print_state();
 #endif
+    return false;
   }
   
-  void setMin(BigRangeVarRef_internal d, DomainInt offset)
+  BOOL setMin(BigRangeVarRef_internal d, DomainInt offset)
   {
 #ifdef DEBUG
     cout << "Calling setMin: " << d.var_num << " " << offset << " [" 
@@ -489,8 +488,7 @@ public:
     
     if(offset > up_bound)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     if(offset > low_bound)
@@ -528,6 +526,7 @@ public:
          << endl;
     bms_array->print_state();
 #endif
+    return true;
   }
   
   BigRangeVarRef get_var_num(int i);
