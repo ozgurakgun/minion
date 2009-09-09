@@ -221,54 +221,57 @@ struct BoolVarContainer
   BoolVarRef get_var_num(int i);
   
   
-  void setMax(const BoolVarRef_internal& d, DomainInt i) 
+  BOOL setMax(const BoolVarRef_internal& d, DomainInt i) 
   {
     if(i < 0)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
 
     D_ASSERT(i >= 0);
     if(i==0)
       propagateAssign(d,0);
+
+    return true;
   }
   
-  void setMin(const BoolVarRef_internal& d, DomainInt i) 
+  BOOL setMin(const BoolVarRef_internal& d, DomainInt i) 
   {
     if(i > 1)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     D_ASSERT(i <= 1);
     if(i==1)
       propagateAssign(d,1);
+
+    return true;
   }
   
-  void removeFromDomain(const BoolVarRef_internal& d, DomainInt b)
+  BOOL removeFromDomain(const BoolVarRef_internal& d, DomainInt b)
   {
     D_ASSERT(lock_m && d.var_num < var_count_m);
     if((b|1) != 1)
-      return;
+      return true;
       
     if(d.isAssigned())
     {
       if(b == d.getAssignedValue()) 
-        getState(stateObj).setFailed(true);
+        return false;
     }
     else
       uncheckedAssign(d,1-b);
+
+    return true;
   }
 
-  void internalAssign(const BoolVarRef_internal& d, DomainInt b)
+  BOOL internalAssign(const BoolVarRef_internal& d, DomainInt b)
   {
     D_ASSERT(lock_m && d.var_num < var_count_m);
     D_ASSERT(!d.isAssigned());
     if((b|1) != 1)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     assign_ptr()[d.data_offset()] |= d.shift_offset;
     
@@ -288,24 +291,26 @@ struct BoolVarContainer
       trigger_list.push_upper(d.var_num, 1);
       value_ptr()[d.data_offset()] &= ~d.shift_offset;
     }
+    return true;
   }
   
-  void uncheckedAssign(const BoolVarRef_internal& d, DomainInt b)
-  { internalAssign(d, b); }
+  BOOL uncheckedAssign(const BoolVarRef_internal& d, DomainInt b)
+  { return internalAssign(d, b); }
   
-  void propagateAssign(const BoolVarRef_internal& d, DomainInt b)
+  BOOL propagateAssign(const BoolVarRef_internal& d, DomainInt b)
   {
     if(!d.isAssigned()) 
-      internalAssign(d,b);
+      return internalAssign(d,b);
     else
     {
       if(d.getAssignedValue() != b)
-    getState(stateObj).setFailed(true);
+        return false;
     }
+    return true;
   }
 
-  void decisionAssign(const BoolVarRef_internal& d, DomainInt b)
-  { internalAssign(d, b); }
+  BOOL decisionAssign(const BoolVarRef_internal& d, DomainInt b)
+  { return internalAssign(d, b); }
 
   void addTrigger(BoolVarRef_internal& b, Trigger t, TrigType type)
   { 

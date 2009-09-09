@@ -68,23 +68,23 @@ struct ShiftVar
   DomainInt getInitialMin() const
   { return data.getInitialMin() + shift; }
   
-  void setMax(DomainInt i)
-  { data.setMax(i - shift); }
+  BOOL setMax(DomainInt i)
+  { return data.setMax(i - shift); }
   
-  void setMin(DomainInt i)
-  { data.setMin(i - shift); }
+  BOOL setMin(DomainInt i)
+  { return data.setMin(i - shift); }
   
-  void uncheckedAssign(DomainInt b)
-  { data.uncheckedAssign(b - shift); }
+  BOOL uncheckedAssign(DomainInt b)
+  { return data.uncheckedAssign(b - shift); }
   
-  void propagateAssign(DomainInt b)
-  { data.propagateAssign(b - shift); }
+  BOOL propagateAssign(DomainInt b)
+  { return data.propagateAssign(b - shift); }
   
-  void decisionAssign(DomainInt b)
-  { data.decisionAssign(b - shift); }
+  BOOL decisionAssign(DomainInt b)
+  { return data.decisionAssign(b - shift); }
   
-  void removeFromDomain(DomainInt b)
-  { data.removeFromDomain(b - shift); }
+  BOOL removeFromDomain(DomainInt b)
+  { return data.removeFromDomain(b - shift); }
     
  void addTrigger(Trigger t, TrigType type)
   { 

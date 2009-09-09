@@ -270,13 +270,13 @@ struct SparseBoundVarContainer {
   { return get_domain_from_int(d.var_num).back(); }
   
   /// This function is provided for convience. It should never be called.
-  void removeFromDomain(SparseBoundVarRef_internal<BoundType>, DomainInt)
+  BOOL removeFromDomain(SparseBoundVarRef_internal<BoundType>, DomainInt)
   {
     D_FATAL_ERROR("Cannot Remove Value from domain of a bound var");
     FAIL_EXIT();
   }
 
-  void internalAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
+  BOOL internalAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
   {
     vector<BoundType>& bounds = get_domain(d);
     DomainInt min_val = getMin(d);
@@ -284,17 +284,15 @@ struct SparseBoundVarContainer {
 
     if(!binary_search(bounds.begin(), bounds.end(), i))
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     if(min_val > i || max_val < i)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     if(min_val == max_val)
-      return;
+      return true;
 
     trigger_list.push_domain_changed(d.var_num);
     trigger_list.push_assign(d.var_num, i);
@@ -313,19 +311,20 @@ struct SparseBoundVarContainer {
     
     upper_bound(d) = i;
     lower_bound(d) = i;
-  }    
+    return true;
+  }
   
-  void propagateAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
-  { internalAssign(d, i); }
+  BOOL propagateAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
+  { return internalAssign(d, i); }
   
   // TODO : Optimise
-  void uncheckedAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
-  { internalAssign(d, i); }
+  BOOL uncheckedAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
+  { return internalAssign(d, i); }
 
-  void decisionAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
-  { internalAssign(d, i); }
+  BOOL decisionAssign(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
+  { return internalAssign(d, i); }
   
-  void setMax(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
+  BOOL setMax(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
   {
     // Note, this just finds a new upper bound, it doesn't set it.
     i = find_upper_bound(d, i);
@@ -334,8 +333,7 @@ struct SparseBoundVarContainer {
     
     if(i < low_bound)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     DomainInt up_bound = upper_bound(d);
@@ -353,9 +351,10 @@ struct SparseBoundVarContainer {
         trigger_list.push_assign(d.var_num, i);
       }
     }
+    return true;
   }
   
-  void setMin(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
+  BOOL setMin(SparseBoundVarRef_internal<BoundType> d, DomainInt i)
   {
     i = find_lower_bound(d,i);
     
@@ -363,8 +362,7 @@ struct SparseBoundVarContainer {
     
     if(i > up_bound)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     DomainInt low_bound = lower_bound(d);
@@ -381,6 +379,7 @@ struct SparseBoundVarContainer {
        trigger_list.push_assign(d.var_num, i);
       }
     }
+    return true;
   }
   
 //  SparseBoundVarRef get_new_var();

@@ -77,23 +77,23 @@ struct VarNeg
   DomainInt getInitialMin() const
   { return -data.getInitialMax(); }
   
-  void setMax(DomainInt i)
-  { data.setMin(-i); }
+  BOOL setMax(DomainInt i)
+  { return data.setMin(-i); }
   
-  void setMin(DomainInt i)
-  { data.setMax(-i); }
+  BOOL setMin(DomainInt i)
+  { return data.setMax(-i); }
   
-  void uncheckedAssign(DomainInt b)
-  { data.uncheckedAssign(-b); }
+  BOOL uncheckedAssign(DomainInt b)
+  { return data.uncheckedAssign(-b); }
   
-  void propagateAssign(DomainInt b)
-  { data.propagateAssign(-b); }
+  BOOL propagateAssign(DomainInt b)
+  { return data.propagateAssign(-b); }
 
-  void decisionAssign(DomainInt b)
-  { data.decisionAssign(-b); }
+  BOOL decisionAssign(DomainInt b)
+  { return data.decisionAssign(-b); }
 
-  void removeFromDomain(DomainInt b)
-  { data.removeFromDomain(-b); }
+  BOOL removeFromDomain(DomainInt b)
+  { return data.removeFromDomain(-b); }
   
   /// There isn't a minus sign here as domain changes from both the top and bottom of the domain are positive numbers.
   int getDomainChange(DomainDelta d)

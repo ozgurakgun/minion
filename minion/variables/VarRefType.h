@@ -75,23 +75,23 @@ struct VarRefType
   DomainInt getInitialMin() const
   { return GET_CONTAINER().getInitialMin(data); }
   
-  void setMax(DomainInt i)
-  { GET_CONTAINER().setMax(data,i); }
+  BOOL setMax(DomainInt i)
+  { return GET_CONTAINER().setMax(data,i); }
   
-  void setMin(DomainInt i)
-  { GET_CONTAINER().setMin(data,i); }
+  BOOL setMin(DomainInt i)
+  { return GET_CONTAINER().setMin(data,i); }
   
-  void uncheckedAssign(DomainInt b)
-  { GET_CONTAINER().uncheckedAssign(data, b); }
+  BOOL uncheckedAssign(DomainInt b)
+  { return GET_CONTAINER().uncheckedAssign(data, b); }
   
-  void propagateAssign(DomainInt b)
-  { GET_CONTAINER().propagateAssign(data, b); }
+  BOOL propagateAssign(DomainInt b)
+  { return GET_CONTAINER().propagateAssign(data, b); }
   
-  void decisionAssign(DomainInt b)
-  { GET_CONTAINER().decisionAssign(data, b); }
+  BOOL decisionAssign(DomainInt b)
+  { return GET_CONTAINER().decisionAssign(data, b); }
   
-  void removeFromDomain(DomainInt b)
-  { GET_CONTAINER().removeFromDomain(data, b); }
+  BOOL removeFromDomain(DomainInt b)
+  { return GET_CONTAINER().removeFromDomain(data, b); }
   
   void addTrigger(Trigger t, TrigType type)
   { GET_CONTAINER().addTrigger(data, t, type); }
@@ -177,23 +177,23 @@ struct QuickVarRefType
   DomainInt getInitialMin() const
   { return data.getInitialMin(); }
   
-  void setMax(DomainInt i)
-  { GET_CONTAINER().setMax(data,i); }
+  BOOL setMax(DomainInt i)
+  { return GET_CONTAINER().setMax(data,i); }
   
-  void setMin(DomainInt i)
-  { GET_CONTAINER().setMin(data,i); }
+  BOOL setMin(DomainInt i)
+  { return GET_CONTAINER().setMin(data,i); }
   
-  void uncheckedAssign(DomainInt b)
-  { GET_CONTAINER().uncheckedAssign(data, b); }
+  BOOL uncheckedAssign(DomainInt b)
+  { return GET_CONTAINER().uncheckedAssign(data, b); }
   
-  void propagateAssign(DomainInt b)
-  { GET_CONTAINER().propagateAssign(data, b); }
+  BOOL propagateAssign(DomainInt b)
+  { return GET_CONTAINER().propagateAssign(data, b); }
   
-  void decisionAssign(DomainInt b)
-  { GET_CONTAINER().decisionAssign(data, b); }
+  BOOL decisionAssign(DomainInt b)
+  { return GET_CONTAINER().decisionAssign(data, b); }
   
-  void removeFromDomain(DomainInt b)
-  { GET_CONTAINER().removeFromDomain(data, b); }
+  BOOL removeFromDomain(DomainInt b)
+  { return GET_CONTAINER().removeFromDomain(data, b); }
   
   void addTrigger(Trigger t, TrigType type)
   { GET_CONTAINER().addTrigger(data, t, type); }
