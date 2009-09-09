@@ -88,7 +88,7 @@ struct DifferenceConstraint : public AbstractConstraint
     }
   }
     
-  virtual void propagate(int, DomainDelta)
+  virtual BOOL propagate(int, DomainDelta)
   {
       PROP_INFO_ADDONE(Difference);
     
@@ -99,28 +99,39 @@ struct DifferenceConstraint : public AbstractConstraint
 
     P(var1_min << var1_max << var2_min << var2_max << var3.getMin() << var3.getMax());
 
-    var3.setMax(max(var2_max, var1_max) - min(var1_min, var2_min));
+    if(!var3.setMax(max(var2_max, var1_max) - min(var1_min, var2_min)))
+        return false;
 
-    var1.setMin(var2.getMin() - var3.getMax());
-    var2.setMin(var1.getMin() - var3.getMax());
-    var1.setMax(var2.getMax() + var3.getMax());
+    if(!var1.setMin(var2.getMin() - var3.getMax()))
+        return false;
+    if(!var2.setMin(var1.getMin() - var3.getMax()))
+        return false;
+    if(!var1.setMax(var2.getMax() + var3.getMax()))
+        return false;
     P(var2.getMax());
-    var2.setMax(var1.getMax() + var3.getMax());
+    if(!var2.setMax(var1.getMax() + var3.getMax()))
+        return false;
     P(var2.getMax());
         
     if(var1_max < var2_min)
     {
-      var3.setMin(var2_min - var1_max);
-      var2.setMin(var1.getMin() + var3.getMin());
-      var1.setMax(var2.getMax() - var3.getMin());
+      if(!var3.setMin(var2_min - var1_max))
+        return false;
+      if(!var2.setMin(var1.getMin() + var3.getMin()))
+        return false;
+      if(!var1.setMax(var2.getMax() - var3.getMin()))
+        return false;
     }
 
     if(var2_max < var1_min)
     {
-      var3.setMin(var1_min - var2_max);
-      var1.setMin(var2.getMin() + var3.getMin());
+      if(!var3.setMin(var1_min - var2_max))
+        return false;
+      if(!var1.setMin(var2.getMin() + var3.getMin()))
+        return false;
     P(var2.getMax());
-          var2.setMax(var1.getMax() - var3.getMin());
+          if(!var2.setMax(var1.getMax() - var3.getMin()))
+            return false;
               P(var2.getMax());
     }
       
@@ -135,13 +146,14 @@ struct DifferenceConstraint : public AbstractConstraint
     }
     
     
-    
+    return true;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
-    var3.setMin(0);
-    propagate(0,0);
+    if(!var3.setMin(0))
+        return false;
+    return propagate(0,0);
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

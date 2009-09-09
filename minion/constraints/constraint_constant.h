@@ -36,13 +36,12 @@ struct ConstantConstraint : public AbstractConstraint
     return t;
   }
   
-  virtual void propagate(int i, DomainDelta)
-  {  }
+  virtual BOOL propagate(int i, DomainDelta)
+  { return true; }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
-    if(!truth)
-      getState(stateObj).setFailed(true);
+    return truth;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

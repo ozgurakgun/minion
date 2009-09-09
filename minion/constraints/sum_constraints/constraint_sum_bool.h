@@ -71,7 +71,7 @@ struct BoolLessSumConstraint : public AbstractConstraint
   }
   
   
-  void limit_reached()
+  BOOL limit_reached()
   {
     int one_vars = 0;
     typename VarArray::value_type* it = &*var_array.begin();
@@ -85,10 +85,11 @@ struct BoolLessSumConstraint : public AbstractConstraint
     }
     //D_ASSERT(one_vars >= occ_count());
     if(one_vars > occ_count())
-      getState(stateObj).setFailed(true);
+      return false;
+    return true;
   }
   
-  virtual void propagate(int i, DomainDelta)
+  virtual BOOL propagate(int i, DomainDelta)
   {
     PROP_INFO_ADDONE(BoolSum);
     D_ASSERT(var_array[i].getAssignedValue() == 0 ||
@@ -96,7 +97,9 @@ struct BoolLessSumConstraint : public AbstractConstraint
     int c = count + 1;
     count = c;
     if(c == occ_count())
-      limit_reached();
+      return limit_reached();
+    
+    return true;
   }
   
   virtual BOOL full_check_unsat()
@@ -122,7 +125,7 @@ struct BoolLessSumConstraint : public AbstractConstraint
       return false;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     int occs = 0;
     int array_size = var_array.size();
@@ -131,9 +134,10 @@ struct BoolLessSumConstraint : public AbstractConstraint
         occs++;
     count = occs;
     if(occs > occ_count())
-      getState(stateObj).setFailed(true);
+      return false;
     if(occs == occ_count())
-      limit_reached();  
+      return limit_reached();  
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

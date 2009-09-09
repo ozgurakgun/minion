@@ -92,12 +92,12 @@ public:
 
   /// Iterative propagation function.
   /** Can assume full_propagate is always called at least once before propagate */
-  virtual void propagate(DynamicTrigger*)
+  virtual BOOL propagate(DynamicTrigger*)
     { D_FATAL_ERROR("Fatal error in 'Dynamic Propagate' in " + constraint_name()); }
 
   /// Iterative propagation function.
   /** Can assume full_propagate is always called at least once before propagate */
-  virtual void propagate(int, DomainDelta)
+  virtual BOOL propagate(int, DomainDelta)
     { D_FATAL_ERROR("Fatal error in 'Static Propagate' in " + constraint_name()); }
 
   /// Checks if a constraint cannot be satisfied, and sets up any data structures for future incremental checks.
@@ -149,7 +149,7 @@ public:
 
   /// Performs a full round of propagation and sets up any data needs by propagate().
   /** This function can be called during search if the function is reified */
-  virtual void full_propagate() = 0;
+  virtual BOOL full_propagate() = 0;
 
   // Returns the variables of the constraint
   virtual vector<AnyVarRef> get_vars() = 0;
@@ -181,7 +181,7 @@ public:
 
   /// Allows functions to activate a special kind of trigger, run only
   /// after the normal queue is empty.
-  virtual void special_check()
+  virtual BOOL special_check()
   {
     cerr << "Serious internal error" << endl;
     FAIL_EXIT();
@@ -371,10 +371,10 @@ public:
   }
 };
 
-inline void DynamicTrigger::propagate()
+inline BOOL DynamicTrigger::propagate()
 {
   D_ASSERT(sanity_check == 1234);
-  constraint->propagate(this);
+  return constraint->propagate(this);
 }
 
 #endif

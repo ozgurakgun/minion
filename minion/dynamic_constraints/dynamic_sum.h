@@ -128,13 +128,13 @@ template<typename VarArray, typename VarSum, int VarToCount = 1, BOOL is_reverse
       return var_sum + 1; 
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     DynamicTrigger* dt = dynamic_trigger_start();
 
     if(var_sum <= 0)
       // Constraint trivially satisfied
-      return;
+      return true;
 
     int array_size = var_array.size(); 
     int triggers_wanted = var_sum + 1;
@@ -153,8 +153,7 @@ template<typename VarArray, typename VarSum, int VarToCount = 1, BOOL is_reverse
 
     if(triggers_wanted > 1)    // Then we have failed, forget it.
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     else if(triggers_wanted == 1)      // Then we can propagate 
     {                               // We never even set up triggers
@@ -162,10 +161,13 @@ template<typename VarArray, typename VarSum, int VarToCount = 1, BOOL is_reverse
       {
         if(var_array[i].inDomain(1 - VarToCount))
         {
-          if(VarToCount)
-            var_array[i].setMax(0);
-          else
-            var_array[i].setMin(1);          
+          if(VarToCount) {
+            if(!var_array[i].setMax(0))
+                return false;
+          } else {
+            if(!var_array[i].setMin(1))
+                return false;
+          }
         }
       }
     }
@@ -205,7 +207,7 @@ template<typename VarArray, typename VarSum, int VarToCount = 1, BOOL is_reverse
 
       D_ASSERT(j == num_unwatched);
     }
-    return;
+    return true;
   }
 
   /// Checks the consistency of the constraint's data structures
@@ -217,7 +219,7 @@ template<typename VarArray, typename VarSum, int VarToCount = 1, BOOL is_reverse
     return true;
   }
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(DynSum);
     D_ASSERT(check_consistency());
@@ -254,7 +256,7 @@ template<typename VarArray, typename VarSum, int VarToCount = 1, BOOL is_reverse
       unwatched_index = propval;       
       last = j;
 
-      return;
+      return true;
     }
 
   // there is no literal to watch, we need to propagate
@@ -265,13 +267,17 @@ template<typename VarArray, typename VarSum, int VarToCount = 1, BOOL is_reverse
     {
       if(dt != dt2)       // that one has just been set the other way
       {
-        if(VarToCount)
-          var_array[dt2->trigger_info()].setMax(0);
-        else
-          var_array[dt2->trigger_info()].setMin(1);
+        if(VarToCount) {
+          if(!var_array[dt2->trigger_info()].setMax(0))
+            return false;
+        } else {
+          if(!var_array[dt2->trigger_info()].setMin(1))
+            return false;
+        }
       }
       dt2++;
     }
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

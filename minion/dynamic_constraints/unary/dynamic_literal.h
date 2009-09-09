@@ -48,14 +48,14 @@ template<typename Var>
   int dynamic_trigger_count()
   { return 0; }
 
-  virtual void full_propagate()
-  { var.propagateAssign(val); }
+  virtual BOOL full_propagate()
+  { return var.propagateAssign(val); }
 
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
-    var.propagateAssign(val);
+    return var.propagateAssign(val);
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

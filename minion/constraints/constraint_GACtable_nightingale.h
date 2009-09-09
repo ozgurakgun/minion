@@ -410,7 +410,7 @@ struct GACTableConstraint : public AbstractConstraint
        return true;
   }
   
-  virtual void propagate(DynamicTrigger* propagated_trig)
+  virtual BOOL propagate(DynamicTrigger* propagated_trig)
   {
     PROP_INFO_ADDONE(DynGACTable);
     DynamicTrigger* dt = dynamic_trigger_start();
@@ -429,8 +429,10 @@ struct GACTableConstraint : public AbstractConstraint
     }
     else
     {
-      vars[varIndex].removeFromDomain(val);
+      if(!vars[varIndex].removeFromDomain(val))
+        return false;
     }
+    return true;
   }
   
   void setup_watches(int var, int val, int lit)
@@ -457,7 +459,7 @@ struct GACTableConstraint : public AbstractConstraint
   }
   
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
     for(int varIndex = 0; varIndex < vars.size(); ++varIndex) 
     {
@@ -465,11 +467,10 @@ struct GACTableConstraint : public AbstractConstraint
       int tuple_domain_min = (nightingale->tuples->dom_smallest)[varIndex];
       int tuple_domain_size = (nightingale->tuples->dom_size)[varIndex];
       
-      vars[varIndex].setMin(tuple_domain_min);
-      vars[varIndex].setMax(tuple_domain_min + tuple_domain_size);
-      
-      if(getState(stateObj).isFailed()) 
-        return;
+      if(!vars[varIndex].setMin(tuple_domain_min))
+        return false;
+      if(!vars[varIndex].setMax(tuple_domain_min + tuple_domain_size))
+        return false;
       
       int max = vars[varIndex].getMax();
       
@@ -483,7 +484,8 @@ struct GACTableConstraint : public AbstractConstraint
         if(_tuple==0)
         {
           //cout <<"no support found for var:"<<varIndex<< " and val:"<< i <<endl ;
-          vars[varIndex].removeFromDomain(i);
+          if(!vars[varIndex].removeFromDomain(i))
+            return false;
         }
         else
         {
@@ -491,6 +493,7 @@ struct GACTableConstraint : public AbstractConstraint
         }
       }
     }
+    return true;
     // cout << endl; cout << "  fp: finished finding supports: " << endl ;
   }
   

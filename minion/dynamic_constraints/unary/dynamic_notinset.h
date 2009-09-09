@@ -50,24 +50,27 @@ template<typename Var>
   int dynamic_trigger_count()
     { return 2; }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {  
     DynamicTrigger* dt = dynamic_trigger_start();
 
     if(var.isBound())
     {
       var.addDynamicTrigger(dt, DomainChanged);
-      propagate(NULL);
+      if(!propagate(NULL))
+        return false;
     }
     else
     {
       for(DomainInt i = 0; i < vals.size(); ++i)
-        var.removeFromDomain(vals[i]);
+        if(!var.removeFromDomain(vals[i]))
+            return false;
     }
+    return true;
   }
 
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInSet);
     // If we are in here, we have a bounds variable.
@@ -77,7 +80,8 @@ template<typename Var>
     
     while(lower_index < (int)vals.size() && vals[lower_index] <= var.getMin())
     {
-      var.setMin(vals[lower_index] + 1);
+      if(!var.setMin(vals[lower_index] + 1))
+        return false;
       lower_index++;
     }
     
@@ -85,9 +89,11 @@ template<typename Var>
     
     while(upper_index > 0 && vals[upper_index] >= var.getMax())
     {
-      var.setMax(vals[upper_index] - 1);
+      if(!var.setMax(vals[upper_index] - 1))
+        return false;
       upper_index--;
     }
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

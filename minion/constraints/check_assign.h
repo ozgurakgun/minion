@@ -58,7 +58,7 @@ struct Check_Assign : public AbstractConstraint
   virtual vector<AnyVarRef> get_vars()
   { return child->get_vars(); }
 
-  virtual void propagate(DynamicTrigger*)
+  virtual BOOL propagate(DynamicTrigger*)
   {
     DynamicTrigger* dt = dynamic_trigger_start();
     int size = child->get_vars_singleton()->size();
@@ -69,7 +69,7 @@ struct Check_Assign : public AbstractConstraint
         if(!(*vars)[i].isAssigned())
         {
             (*vars)[i].addDynamicTrigger(dt, DomainChanged);
-            return;
+            return true;
         }
     }
     
@@ -78,11 +78,12 @@ struct Check_Assign : public AbstractConstraint
         b.push_back((*vars)[i].getAssignedValue());
     
     if(!check_assignment(&b[0], size))
-        getState(stateObj).setFailed(true);
+        return false;
+    return true;
   }
 
-  virtual void full_propagate()
-  { propagate(NULL); }
+  virtual BOOL full_propagate()
+  { return propagate(NULL); }
 };
 
 AbstractConstraint*

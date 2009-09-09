@@ -139,7 +139,7 @@ public:
 
   /// Propagates the constraint stored in the trigger.
   /** Out of line as it needs the full definition of DynamicConstraint */
-  void propagate();
+  BOOL propagate();
 
   ~DynamicTrigger()
   {

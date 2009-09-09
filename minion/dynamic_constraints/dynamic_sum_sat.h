@@ -46,7 +46,7 @@ struct BoolSATConstraintDynamic : public AbstractConstraint
       return 2;
   }
     
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     DynamicTrigger* dt = dynamic_trigger_start();
     
@@ -61,8 +61,7 @@ struct BoolSATConstraintDynamic : public AbstractConstraint
 
     if(index == array_size)
     { // Not enough triggers
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     ++index;
@@ -74,8 +73,7 @@ struct BoolSATConstraintDynamic : public AbstractConstraint
     
     if(index >= array_size)
     { // Only one valid variable.
-      var_array[trig1].propagateAssign(1);
-      return;
+      return var_array[trig1].propagateAssign(1);
     }
     
     dt->trigger_info() = trig1;
@@ -86,10 +84,10 @@ struct BoolSATConstraintDynamic : public AbstractConstraint
     dt->trigger_info() = trig2;
     var_array[trig2].addDynamicTrigger(dt, UpperBound);
     
-    return;
+    return true;
   }
     
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(DynSumSat);
     int var_size = var_array.size();
@@ -134,8 +132,7 @@ struct BoolSATConstraintDynamic : public AbstractConstraint
     
       if(!found_new_support)
       {  // Have to propagate!
-        var_array[other_propval].propagateAssign(1);
-        return;
+        return var_array[other_propval].propagateAssign(1);
       }
     }
     
@@ -143,6 +140,7 @@ struct BoolSATConstraintDynamic : public AbstractConstraint
     dt->trigger_info() = loop;
     last = loop;
     var_array[loop].addDynamicTrigger(dt, UpperBound);
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

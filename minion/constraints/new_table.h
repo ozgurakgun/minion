@@ -231,7 +231,7 @@ struct NewTableConstraint : public AbstractConstraint
   int dynamic_trigger_count()
     { return data->getLiteralCount() * ( vars.size() - 1) ; }
 
-  virtual void propagate(DynamicTrigger* propagated_trig)
+  virtual BOOL propagate(DynamicTrigger* propagated_trig)
   {
     PROP_INFO_ADDONE(DynGACTable);
 
@@ -246,7 +246,7 @@ struct NewTableConstraint : public AbstractConstraint
     {
       //releaseTrigger(stateObj, propagated_trig BT_CALL_BACKTRACK);
       P("Quick return");
-      return;
+      return true;
     }
 
     vector<DomainInt>* supporting_tuple = state.findSupportingTuple(vars, lit);
@@ -258,9 +258,11 @@ struct NewTableConstraint : public AbstractConstraint
     else
     {
       P("Failed to find new support");
-      vars[lit.var].removeFromDomain(lit.val);
+      if(!vars[lit.var].removeFromDomain(lit.val))
+        return false;
       //clear_watches(lit, propagated_literal);
     }
+    return true;
   }
 
   void setup_watches(Literal lit, int lit_pos, const vector<DomainInt>& support)
@@ -295,21 +297,20 @@ struct NewTableConstraint : public AbstractConstraint
     }
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     if(vars.size() == 0)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
 
     for(unsigned i = 0; i < vars.size(); ++i)
     {
       pair<DomainInt, DomainInt> bounds = data->getDomainBounds(i);
-      vars[i].setMin(bounds.first);
-      vars[i].setMax(bounds.second);
-
-      if(getState(stateObj).isFailed()) return;
+      if(!vars[i].setMin(bounds.first))
+        return false;
+      if(!vars[i].setMax(bounds.second))
+        return false;
 
       for(DomainInt x = vars[i].getMin(); x <= vars[i].getMax(); ++x)
       {
@@ -320,10 +321,12 @@ struct NewTableConstraint : public AbstractConstraint
         }
         else
         {
-          vars[i].removeFromDomain(x);
+          if(!vars[i].removeFromDomain(x))
+            return false;
         }
       }
     }
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

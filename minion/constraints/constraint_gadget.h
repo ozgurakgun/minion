@@ -96,27 +96,27 @@ struct GadgetConstraint : public AbstractConstraint
     constraint_locked = false;
   }
   
-  virtual void propagate(int i, DomainDelta domain)
+  virtual BOOL propagate(int i, DomainDelta domain)
   {
     PROP_INFO_ADDONE(Gadget);
     if(constraint_locked)
-      return;
+      return true;
 
     constraint_locked = true;
     getQueue(stateObj).pushSpecialTrigger(this);
+    return true;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     if(getState(gadget_stateObj).isFailed())
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
-    do_prop();
+    return do_prop();
   }
 
-  void do_prop()
+  BOOL do_prop()
   { 
     D_ASSERT(!getState(gadget_stateObj).isFailed());
     Controller::world_push(gadget_stateObj);
@@ -125,12 +125,15 @@ struct GadgetConstraint : public AbstractConstraint
     {
       DomainInt min_val = var_array[i].getMin();
       DomainInt max_val = var_array[i].getMax();
-      construction_vars[i].setMin(min_val);
-      construction_vars[i].setMax(max_val);
+      if(!construction_vars[i].setMin(min_val))
+        return false;
+      if(!construction_vars[i].setMax(max_val))
+        return false;
       
       for(int j = min_val + 1; j < max_val; ++j)
         if(!var_array[i].inDomain(j))
-          construction_vars[i].removeFromDomain(j);
+          if(!construction_vars[i].removeFromDomain(j))
+            return false;
     }
     
     PropogateCSP(gadget_stateObj, gadget_prop_type, construction_vars);
@@ -139,22 +142,24 @@ struct GadgetConstraint : public AbstractConstraint
     {
       getState(gadget_stateObj).setFailed(false);
       Controller::world_pop(gadget_stateObj);
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
         
     for(int i = 0; i < var_array.size(); ++i)
     {
       DomainInt min_val = construction_vars[i].getMin();
       DomainInt max_val = construction_vars[i].getMax();
-      var_array[i].setMin(min_val);
-      var_array[i].setMax(max_val);
+      if(!var_array[i].setMin(min_val))
+        return false;
+      if(!var_array[i].setMax(max_val))
+        return false;
       
       for(int j = min_val + 1; j < max_val; ++j)
       {
         if(!construction_vars[i].inDomain(j))
         { 
-          var_array[i].removeFromDomain(j);
+          if(!var_array[i].removeFromDomain(j))
+            return false;
         }
       }
     }

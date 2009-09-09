@@ -88,10 +88,10 @@ struct LiteralSumConstraintDynamic : public AbstractConstraint
     return var_sum + 1;
   }
     
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     if(var_sum <= 0)
-      return;
+      return true;
       
     DynamicTrigger* dt = dynamic_trigger_start();
     
@@ -112,8 +112,7 @@ struct LiteralSumConstraintDynamic : public AbstractConstraint
     
     if(triggers_wanted > 1)    // Then we have failed, forget it.
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     else if(triggers_wanted == 1)      // Then we can propagate 
     {                               // We never even set up triggers
@@ -121,7 +120,8 @@ struct LiteralSumConstraintDynamic : public AbstractConstraint
       {
         if(var_array[i].inDomain(value_array[i]))
         {
-          var_array[i].propagateAssign(value_array[i]);
+          if(!var_array[i].propagateAssign(value_array[i]))
+            return false;
         }
       }
     }
@@ -160,7 +160,7 @@ struct LiteralSumConstraintDynamic : public AbstractConstraint
       
       D_ASSERT(j == num_unwatched);
     }
-    return;
+    return true;
   }
   
   /// Checks the consistency of the constraint's data structures
@@ -170,7 +170,7 @@ struct LiteralSumConstraintDynamic : public AbstractConstraint
   BOOL check_consistency()
   { return true; }
   
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(DynLitWatch);
     D_ASSERT(check_consistency());
@@ -209,7 +209,7 @@ struct LiteralSumConstraintDynamic : public AbstractConstraint
       
       unwatched_index = propval;       
       last = j;
-      return;
+      return true;
     }
     
     
@@ -221,10 +221,12 @@ struct LiteralSumConstraintDynamic : public AbstractConstraint
     {
       if(dt != dt2)       // that one has just been set the other way
       {
-        var_array[dt2->trigger_info()].propagateAssign(value_array[dt2->trigger_info()]);
+        if(!var_array[dt2->trigger_info()].propagateAssign(value_array[dt2->trigger_info()]))
+            return false;
       }
       dt2++;
     }
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

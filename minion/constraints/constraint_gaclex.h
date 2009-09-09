@@ -165,19 +165,19 @@ template<typename VarArray1, typename VarArray2, BOOL Less = false>
     return new GacLexLeqConstraint<VarArray2, VarArray1,!Less>(stateObj,y,x);
   }
 
-  void updateAlpha(int i) {
+  BOOL updateAlpha(int i) {
     int n = x.size();
     if(Less)
     {
       if(i == n || i == beta)
       {
-        getState(stateObj).setFailed(true);
-        return;
+        return false;
       }
       if (!x[i].isAssigned() || !y[i].isAssigned() ||
       x[i].getAssignedValue() != y[i].getAssignedValue())  {
         alpha = i;
-        propagate(i,0);
+        if(!propagate(i,0))
+            return false;
       }
       else updateAlpha(i+1);
     }
@@ -187,80 +187,84 @@ template<typename VarArray1, typename VarArray2, BOOL Less = false>
         if (!x[i].isAssigned() || !y[i].isAssigned() ||
         x[i].getAssignedValue() != y[i].getAssignedValue())  {
           alpha = i ;
-          propagate(i,0) ;
-          return ;
+          return propagate(i,0) ;
         }
         i++ ;
       }
       F = true ;
     }
 
+    return true;
   }
 
   ///////////////////////////////////////////////////////////////////////////////
   // updateBeta()
-  void updateBeta(int i) {
+  BOOL updateBeta(int i) {
     int a = alpha ;
     while (i >= a) {
       if (x[i].getMin() < y[i].getMax()) {
         beta = i+1 ;
-        if (!(x[i].getMax() < y[i].getMin())) propagate(i,0) ;
-        return ;
+        if (!(x[i].getMax() < y[i].getMin())) return propagate(i,0) ;
       }
       i-- ;    
     }
-    getState(stateObj).setFailed(true);
+    return false;
 
   }
 
-  virtual void propagate(int i, DomainDelta)
+  virtual BOOL propagate(int i, DomainDelta)
   {
     PROP_INFO_ADDONE(Lex);
     if (F)
     {
-      return ;
+      return true;
     }
     int a = alpha, b = beta;
 
     //Not sure why we need this, but we seem to.
     if(b <= a)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
 
     if(Less)
-      { if(i < a || i >=b) return; }
+      { if(i < a || i >=b) return true; }
     else
-      { if (i >= b) return ; }
+      { if (i >= b) return true; }
 
     if (i == a && i+1 == b) {
-      x[i].setMax(y[i].getMax()-1) ;
-      y[i].setMin(x[i].getMin()+1) ;
+      if(!x[i].setMax(y[i].getMax()-1))
+        return false;
+      if(!y[i].setMin(x[i].getMin()+1))
+        return false;
       if (checkLex(i)) {
         F = true ;
-        return ;
+        return true;
       }
     }
     else if (i == a && i+1 < b) {
-      x[i].setMax(y[i].getMax()) ;
-      y[i].setMin(x[i].getMin()) ;
+      if(!x[i].setMax(y[i].getMax()))
+        return false;
+      if(!y[i].setMin(x[i].getMin()))
+        return false;
       if (checkLex(i)) {
         F = true ;
-        return ;
+        return true;
       }
       if (x[i].isAssigned() && y[i].isAssigned() && x[i].getAssignedValue() == y[i].getAssignedValue())
-        updateAlpha(i+1) ;
+        if(!updateAlpha(i+1))
+            return false;
     }
     else if (a < i && i < b) {
       if ((i == b-1 && x[i].getMin() == y[i].getMax()) || x[i].getMin() > y[i].getMax())
-        updateBeta(i-1) ;
+        if(!updateBeta(i-1))
+            return false;
     }
 
-    gacpass();
+    return gacpass();
   }
 
-  void gacpass()
+  BOOL gacpass()
   {
     int a = alpha;
     int n = x.size();
@@ -298,7 +302,8 @@ template<typename VarArray1, typename VarArray2, BOOL Less = false>
 
         if(x_val > y_val)
         {
-          x[a].setMax(y[a].getMax() - 1);
+          if(!x[a].setMax(y[a].getMax() - 1))
+            return false;
           goto y_case;
         }
       }
@@ -338,18 +343,20 @@ template<typename VarArray1, typename VarArray2, BOOL Less = false>
         //cout << earliest_occurrence_x[i] << "." << earliest_occurrence_y[i] << endl;
 
         if(x_val < y_val)
-          return;
+          return true;
 
         if(x_val > y_val)
         {
           //cout << "Prop trigger!" << endl;
           //cout << a << ":" << i << ":" << (int)(beta) << endl;
-          y[a].setMin(x[a].getMin() + 1);
-          return;
+          if(!y[a].setMin(x[a].getMin() + 1))
+            return false;
+          return true;
         }
       }
     }
 
+    return true;
   }
 
   virtual BOOL check_unsat(int unsat_val, DomainDelta)
@@ -410,7 +417,7 @@ template<typename VarArray1, typename VarArray2, BOOL Less = false>
     }
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     int i, n = x.size() ;
     for (i = 0; i < n; i++) {
@@ -422,7 +429,7 @@ template<typename VarArray1, typename VarArray2, BOOL Less = false>
       alpha = i ;
       if (checkLex(i)) {
         F = true ;
-        return ;
+        return true;
       }
       int betaBound = -1 ;
       for (; i < n; i++) {
@@ -444,16 +451,18 @@ template<typename VarArray1, typename VarArray2, BOOL Less = false>
         if (betaBound == -1) beta = i ;
         else beta = betaBound ;
       }
-      if (alpha >= beta) getState(stateObj).setFailed(true);
-      propagate(alpha,0) ;             //initial propagation, if necessary.
+      if (alpha >= beta) return false;
+      if(!propagate(alpha,0))
+        return false;
     }
     else 
     {
       if(Less)
-        getState(stateObj).setFailed(true);
+        return false;
       else
         F = true;
     }
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

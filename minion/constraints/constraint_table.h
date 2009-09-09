@@ -67,7 +67,7 @@ struct TableConstraint : public AbstractConstraint
     return false;
   }
   
-  virtual void propagate(int, DomainDelta)
+  virtual BOOL propagate(int, DomainDelta)
   {
     PROP_INFO_ADDONE(Table);
     for(unsigned int check_var = 0; check_var < vars.size(); check_var++)
@@ -90,14 +90,16 @@ struct TableConstraint : public AbstractConstraint
         } while(!satisfied && increment(v, check_var));
         if(!satisfied)
         {
-          vars[check_var].removeFromDomain(check_dom);
+          if(!vars[check_var].removeFromDomain(check_dom))
+            return false;
         }
       }
     }
+    return true;
   }  
   
-  virtual void full_propagate()
-  { propagate(0,0); }
+  virtual BOOL full_propagate()
+  { return propagate(0,0); }
 };
 
 #endif

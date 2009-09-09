@@ -55,11 +55,14 @@ struct AbsConstraint : public AbstractConstraint
     return t;
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     var1.setMin(0);
     for(int i = 0; i < 4 && !getState(stateObj).isFailed(); ++i)
-      propagate(i, 0);
+      if(!propagate(i, 0))
+        return false;
+
+    return true;
   }
   
   // Assume values passed in in order.
@@ -91,7 +94,7 @@ struct AbsConstraint : public AbstractConstraint
     
   }
   
-  virtual void propagate(int i, DomainDelta)
+  virtual BOOL propagate(int i, DomainDelta)
   {
     // Assume this in the algorithm.
     D_ASSERT(var1.getMin() >= 0);
@@ -100,24 +103,26 @@ struct AbsConstraint : public AbstractConstraint
     switch(i)
     {
     case 1: //var1 upper
-      var2.setMax(var1.getMax());
-      var2.setMin(-var1.getMax());
-      return;
+      if(!var2.setMax(var1.getMax()))
+        return false;
+      return var2.setMin(-var1.getMax());
     case 2: //var1 lower
       if(var2.getMax() < var1.getMin())
-        var2.setMax(-var1.getMin());
+        if(!var2.setMax(-var1.getMin()))
+            return false;
       if(var2.getMin() > -var1.getMin())
-        var2.setMin(var1.getMin());
+        return var2.setMin(var1.getMin());
       else
-        var2.setMin(-var1.getMax());
-      return;
+        return var2.setMin(-var1.getMax());
     case 3: //var 2 upper
     case 4: //var 2 lower
-      var1.setMax(absmax(var2.getMin(), var2.getMax()));
-      var1.setMin(absmin(var2.getMin(), var2.getMax()));  
+      if(!var1.setMax(absmax(var2.getMin(), var2.getMax())))
+        return false;
+      if(!var1.setMin(absmin(var2.getMin(), var2.getMax())))
+        return false;
       if(var2.getMin() > -var1.getMin())
-        var2.setMin(var1.getMin());
-      return;
+        return var2.setMin(var1.getMin());
+      return true;
 
     }
   }

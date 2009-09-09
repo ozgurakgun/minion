@@ -53,7 +53,7 @@ struct BoolOrConstraintDynamic : public AbstractConstraint
     return 2;
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     DynamicTrigger* dt = dynamic_trigger_start();
     int found = 0; //num literals that can be T found so far
@@ -71,12 +71,10 @@ struct BoolOrConstraintDynamic : public AbstractConstraint
       }
     }
     if(found == 0) {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     if(found == 1) { //detect unit clause
-      var_array[first_found].propagateAssign(negs[first_found]);
-      return; //don't bother placing any watches on unit clause
+      return var_array[first_found].propagateAssign(negs[first_found]);
     }
     //not failed or unit, place watches
     var_array[first_found].addDynamicTrigger(dt, DomainRemoval, negs[first_found]);
@@ -86,9 +84,10 @@ struct BoolOrConstraintDynamic : public AbstractConstraint
     var_array[next_found].addDynamicTrigger(dt, DomainRemoval, negs[next_found]);
     dt->trigger_info() = next_found;
     watched[1] = next_found;
+    return true;
   }
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     size_t prev_var = dt->trigger_info();
     size_t other_var = watched[0] == prev_var ? watched[1] : watched[0];
@@ -101,11 +100,11 @@ struct BoolOrConstraintDynamic : public AbstractConstraint
     dt->trigger_info() = j;
     last = j;
     watched[watched[0] == prev_var ? 0 : 1] = j;
-    return;
+    return true;
       } 
     }
     //if we get here, we couldn't find a place to put the watch, do UP
-    var_array[other_var].propagateAssign(negs[other_var]);
+    return var_array[other_var].propagateAssign(negs[other_var]);
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

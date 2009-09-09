@@ -76,29 +76,36 @@ struct DivConstraint : public AbstractConstraint
     return t;
   }
     
-  virtual void propagate(int flag, DomainDelta)
+  virtual BOOL propagate(int flag, DomainDelta)
   {
     PROP_INFO_ADDONE(Pow);
     if(var1.isAssigned() && var2.isAssigned())
       {
         if(var2.getAssignedValue() == 0)
-          getState(stateObj).setFailed(true);
-      var3.propagateAssign(var1.getAssignedValue() / var2.getAssignedValue() );
+          return false;
+      return var3.propagateAssign(var1.getAssignedValue() / var2.getAssignedValue() );
     }
+    return true;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
     if(!var2.isBound()) {
-      var2.removeFromDomain(0);
+      if(!var2.removeFromDomain(0))
+        return false;
     }
       
-    propagate(1,0); 
-    propagate(2,0);
-    propagate(3,0);
-    propagate(-1,0);
-    propagate(-2,0);
-    propagate(-3,0);
+    if(!propagate(1,0))
+        return false;
+    if(!propagate(2,0))
+        return false;
+    if(!propagate(3,0))
+        return false;
+    if(!propagate(-1,0))
+        return false;
+    if(!propagate(-2,0))
+        return false;
+    return propagate(-3,0);
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

@@ -78,8 +78,8 @@ public:
 #endif
   }
   
-  void inline propagate(DomainDelta domain_data);
-  void full_propagate();
+  BOOL inline propagate(DomainDelta domain_data);
+  BOOL full_propagate();
   // In function_defs.hpp.
 
 #ifdef WEIGHTED_TRIGGERS

@@ -213,18 +213,21 @@ struct GCC : public AbstractConstraint
     vector<int> vars_in_scc;
     vector<int> vals_in_scc;  // Actual values.
     
-    virtual void full_propagate()
+    virtual BOOL full_propagate()
     {
         for(int i=0; i<capacity_array.size(); i++)
         {
             if(val_array[i]>=dom_min && val_array[i]<=dom_max)
             {
-                capacity_array[i].setMin(0);
-                capacity_array[i].setMax(numvars);
+                if(!capacity_array[i].setMin(0))
+                    return false;
+                if(!capacity_array[i].setMax(numvars))
+                    return false;
             }
             else
             {   // value can't occur.
-                capacity_array[i].propagateAssign(0);
+                if(!capacity_array[i].propagateAssign(0))
+                    return false;
             }
         }
         #ifdef INCGRAPH
@@ -281,10 +284,13 @@ struct GCC : public AbstractConstraint
         
         #ifdef SCC
         for(int i=0; i<numvars+numvals; i++) to_process.insert(i);  // may need to change.
-        do_gcc_prop_scc();
+        if(!do_gcc_prop_scc())
+            return false;
         #else
-        do_gcc_prop();
+        if(!do_gcc_prop())
+            return false;
         #endif
+        return true;
     }
     
     // to be deleted these two methods.
@@ -339,7 +345,7 @@ struct GCC : public AbstractConstraint
         #endif
     }
     
-    virtual void propagate(int prop_var, DomainDelta)
+    virtual BOOL propagate(int prop_var, DomainDelta)
     {
         if(!to_process.in(prop_var))
         {
@@ -353,15 +359,18 @@ struct GCC : public AbstractConstraint
             getQueue(stateObj).pushSpecialTrigger(this);
             #else
             #ifdef SCC
-            do_gcc_prop_scc();
+            if(!do_gcc_prop_scc())
+                return false;
             #else
-            do_gcc_prop();
+            if(!do_gcc_prop())
+                return false;
             #endif
             #endif
         }
+        return true;
     }
     
-    virtual void propagate(DynamicTrigger* trig)
+    virtual BOOL propagate(DynamicTrigger* trig)
     {
         DynamicTrigger* dtstart=dynamic_trigger_start();
         
@@ -395,9 +404,11 @@ struct GCC : public AbstractConstraint
                     getQueue(stateObj).pushSpecialTrigger(this);
                     #else
                     #ifdef SCC
-                    do_gcc_prop_scc();
+                    if(!do_gcc_prop_scc())
+                        return false;
                     #else
-                    do_gcc_prop();
+                    if(!do_gcc_prop())
+                        return false;
                     #endif
                     #endif
                 }
@@ -420,6 +431,7 @@ struct GCC : public AbstractConstraint
             boundsupported[trig->trigger_info()]=-1;
         }
         #endif
+        return true;
     }
     
     #ifdef CAPBOUNDSCACHE
@@ -428,21 +440,23 @@ struct GCC : public AbstractConstraint
     #endif
     
     virtual void special_unlock() { constraint_locked = false; to_process.clear(); }
-  virtual void special_check()
+  virtual BOOL special_check()
   {
     constraint_locked = false;  // should be above the if.
     
     if(getState(stateObj).isFailed())
     {
         to_process.clear();
-        return;
+        return true;
     }
     #ifdef SCC
-    do_gcc_prop_scc();
+    if(!do_gcc_prop_scc())
+        return false;
     #else
-    do_gcc_prop();
+    if(!do_gcc_prop())
+        return false;
     #endif
-    
+    return true;
   }
   
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
@@ -575,7 +589,7 @@ struct GCC : public AbstractConstraint
       }
   }
   
-    void do_gcc_prop()
+    BOOL do_gcc_prop()
     {
         // find/ repair the matching.
         #ifndef INCREMENTALMATCH
@@ -601,19 +615,18 @@ struct GCC : public AbstractConstraint
         
         if(!flag)
         {
-            getState(stateObj).setFailed(true);
-            return;
+            return false;
         }
         
         tarjan_recursive(0);
         
-        prop_capacity();
+        return prop_capacity();
         
     }
     
     smallset sccs_to_process;
     
-    void do_gcc_prop_scc()
+    BOOL do_gcc_prop_scc()
     {
         // Assumes triggered on variables in to_process
         #ifndef INCREMENTALMATCH
@@ -699,8 +712,7 @@ struct GCC : public AbstractConstraint
             if(!flag)
             {
                 GCCPRINT("Failing because no matching");
-                getState(stateObj).setFailed(true);
-                return;
+                return false;
             }
             
             tarjan_recursive(sccindex_start);
@@ -714,7 +726,8 @@ struct GCC : public AbstractConstraint
                     int v=vals_in_scc[valinscc];
                     if(val_to_cap_index[v-dom_min]!=-1 && lower[v-dom_min]!=upper[v-dom_min])
                     {
-                        prop_capacity_strong_scc(v);
+                        if(!prop_capacity_strong_scc(v))
+                            return false;
                     }
                 }
             }
@@ -724,13 +737,15 @@ struct GCC : public AbstractConstraint
         }
         
         #if !defined(SCCCARDS) || !defined(STRONGCARDS)
-            prop_capacity();
+            if(!prop_capacity())
+                return false;
         #endif
         
         #if defined(SCCCARDS)
         if(!Strongcards)
         {
-            prop_capacity();
+            if(!prop_capacity())
+                return false;
         }
         #endif
         
@@ -738,9 +753,11 @@ struct GCC : public AbstractConstraint
         #if defined(SCCCARDS)
         if(Strongcards)
         {
-            prop_capacity_simple();
+            if(!prop_capacity_simple())
+                return false;
         }
         #endif
+        return true;
     }
     
     deque<int> fifo;
@@ -1560,19 +1577,19 @@ struct GCC : public AbstractConstraint
     // Propagate to capacity variables.
     
     // can only be called when SCCs not used. 
-    inline void prop_capacity()
+    inline BOOL prop_capacity()
     {
         if(Strongcards)
         {
-            prop_capacity_strong();
+            return prop_capacity_strong();
         }
         else
         {
-            prop_capacity_simple();   
+            return prop_capacity_simple();   
         }
     }
     
-    void prop_capacity_simple()
+    BOOL prop_capacity_simple()
     {
         // basic prop from main vars to cap variables. equiv to occurrence constraints I think. 
         // NEEDS TO BE IMPROVED. but it would be quadratic (nd) whatever I do.
@@ -1591,8 +1608,10 @@ struct GCC : public AbstractConstraint
                             mincap++;
                     }
                 }
-                capacity_array[i].setMin(mincap);
-                capacity_array[i].setMax(maxcap);
+                if(!capacity_array[i].setMin(mincap))
+                    return false;
+                if(!capacity_array[i].setMax(maxcap))
+                    return false;
             #else
                 if(val>= dom_min && val<=dom_max)
                 {
@@ -1603,8 +1622,10 @@ struct GCC : public AbstractConstraint
                         if(var_array[var].isAssigned())
                             mincap++;
                     }
-                    capacity_array[i].setMin(mincap);
-                    capacity_array[i].setMax(adjlistlength[val-dom_min+numvars]);
+                    if(!capacity_array[i].setMin(mincap))
+                        return false;
+                    if(!capacity_array[i].setMax(adjlistlength[val-dom_min+numvars]))
+                        return false;
                 }  // else the cap will already have been set to 0.
             #endif
             //if(mincap>lower[val-dom_min])
@@ -1612,9 +1633,10 @@ struct GCC : public AbstractConstraint
             //if(maxcap<upper[val-dom_min])
             //    upper[val-dom_min]=maxcap;
         }
+        return true;
     }
     
-    void prop_capacity_strong()
+    BOOL prop_capacity_strong()
     {
         // Lower bounds.
         prop_capacity_simple();
@@ -1640,7 +1662,8 @@ struct GCC : public AbstractConstraint
                 if(newlb > capacity_array[validx].getMin())
                 {
                     GCCPRINT("Improved lower bound "<< newlb);
-                    capacity_array[validx].setMin(newlb);
+                    if(!capacity_array[validx].setMin(newlb))
+                        return false;
                 }
                 
                 GCCPRINT("Calling card_upperbound for value "<< value);
@@ -1650,17 +1673,20 @@ struct GCC : public AbstractConstraint
                 if(newub < capacity_array[validx].getMax())
                 {
                     GCCPRINT("Improved upper bound "<< newub);
-                    capacity_array[validx].setMax(newub);
+                    if(!capacity_array[validx].setMax(newub))
+                        return false;
                 }
             }
             else
             {// this may not be neecded. Only needed if we're not calling prop_capacity_simple
-                capacity_array[validx].propagateAssign(0);
+                if(!capacity_array[validx].propagateAssign(0))
+                    return false;
             }
         }
+        return true;
     }
     
-    void prop_capacity_strong_scc(int value)
+    BOOL prop_capacity_strong_scc(int value)
     {
         GCCPRINT("In prop_capacity_strong_scc(value)");
         // use the matching -- change it by lowering flow to value.
@@ -1673,7 +1699,8 @@ struct GCC : public AbstractConstraint
         if(newlb > capacity_array[validx].getMin())
         {
             GCCPRINT("Improved lower bound "<< newlb);
-            capacity_array[validx].setMin(newlb);
+            if(!capacity_array[validx].setMin(newlb))
+                return false;
         }
         
         GCCPRINT("Calling card_upperbound for value "<< value);
@@ -1683,8 +1710,10 @@ struct GCC : public AbstractConstraint
         if(newub < capacity_array[validx].getMax())
         {
             GCCPRINT("Improved upper bound "<< newub);
-            capacity_array[validx].setMax(newub);
+            if(!capacity_array[validx].setMax(newub))
+                return false;
         }
+        return true;
     }
     
     // function to re-maximise a matching without using a particular value.

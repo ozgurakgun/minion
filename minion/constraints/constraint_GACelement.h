@@ -123,7 +123,7 @@ struct GACElementConstraint : public AbstractConstraint
     return false;
   }
   
-  virtual void propagate(int prop_val, DomainDelta)
+  virtual BOOL propagate(int prop_val, DomainDelta)
   {
     PROP_INFO_ADDONE(GACElement);
     int array_size = var_array.size();
@@ -136,7 +136,8 @@ struct GACElementConstraint : public AbstractConstraint
     {
       if(indexvar.inDomain(prop_val) && !support_for_val_in_index(prop_val))
       {
-        indexvar.removeFromDomain(prop_val);
+        if(!indexvar.removeFromDomain(prop_val))
+            return false;
       }
       
       typename VarArray::value_type& var = var_array[prop_val];
@@ -148,10 +149,11 @@ struct GACElementConstraint : public AbstractConstraint
         if(!var.inDomain(val) && resultvar.inDomain(val) &&
            !support_for_val_in_result(val))
         {
-          resultvar.removeFromDomain(val);
+          if(!resultvar.removeFromDomain(val))
+            return false;
         }
       }
-      return;
+      return true;
     }
     
     if(prop_val == array_size)
@@ -160,9 +162,10 @@ struct GACElementConstraint : public AbstractConstraint
       for(DomainInt i = var_array_min_val; i <= var_array_max_val; ++i)
       {
         if(resultvar.inDomain(i) && !support_for_val_in_result(i))
-          resultvar.removeFromDomain(i);
+          if(!resultvar.removeFromDomain(i))
+            return false;
       }
-      return;
+      return true;
     }
     
     D_ASSERT(prop_val == array_size + 1);
@@ -171,12 +174,14 @@ struct GACElementConstraint : public AbstractConstraint
     {
       if(indexvar.inDomain(var) && !support_for_val_in_index(var))
       {
-        indexvar.removeFromDomain(var);
+        if(!indexvar.removeFromDomain(var))
+            return false;
       }
     }
+    return true;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     for(int i=0; i<var_array.size(); i++) {
         if(var_array[i].isBound()) {
@@ -186,12 +191,18 @@ struct GACElementConstraint : public AbstractConstraint
     if(indexvar.isBound() || resultvar.isBound()) {
         cerr << "Warning: GACElement is not designed to be used on bound variables and may cause crashes." << endl;
     }
-    indexvar.setMin(0);
-    indexvar.setMax(var_array.size() - 1);
-    resultvar.setMin(var_array_min_val);
-    resultvar.setMax(var_array_max_val);
+    if(!indexvar.setMin(0))
+        return false;
+    if(!indexvar.setMax(var_array.size() - 1))
+        return false;
+    if(!resultvar.setMin(var_array_min_val))
+        return false;
+    if(!resultvar.setMax(var_array_max_val))
+        return false;
     for(unsigned i = 0; i < var_array.size() + 2; ++i)
-      propagate(i,0);
+      if(!propagate(i,0))
+        return false;
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

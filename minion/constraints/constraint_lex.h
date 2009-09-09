@@ -114,21 +114,21 @@ struct LexLeqConstraint : public AbstractConstraint
     return new LexLeqConstraint<VarArray2, VarArray1,!Less>(stateObj,y,x);
   }
   
-  void updateAlpha(int i) {
+  BOOL updateAlpha(int i) {
     int n = x.size();
     if(Less)
     {
       if(i == n || i == beta)
       {
-        getState(stateObj).setFailed(true);
-        return;
+        return false;
       }
       if (!x[i].isAssigned() || !y[i].isAssigned() ||
           x[i].getAssignedValue() != y[i].getAssignedValue())  {
         alpha = i;
-        propagate(i,0);
+        if(!propagate(i,0))
+            return false;
       }
-      else updateAlpha(i+1);
+      else return updateAlpha(i+1);
     }
     else
     {
@@ -136,75 +136,79 @@ struct LexLeqConstraint : public AbstractConstraint
         if (!x[i].isAssigned() || !y[i].isAssigned() ||
             x[i].getAssignedValue() != y[i].getAssignedValue())  {
           alpha = i ;
-          propagate(i,0) ;
-          return ;
+          return propagate(i,0) ;
         }
         i++ ;
       }
       F = true ;
     }
+    return true;
     
   }
   
   ///////////////////////////////////////////////////////////////////////////////
   // updateBeta()
-  void updateBeta(int i) {
+  BOOL updateBeta(int i) {
     int a = alpha ;
     while (i >= a) {
       if (x[i].getMin() < y[i].getMax()) {
         beta = i+1 ;
-        if (!(x[i].getMax() < y[i].getMin())) propagate(i,0) ;
-        return ;
+        if (!(x[i].getMax() < y[i].getMin())) return propagate(i,0) ;
+        return true;
       }
       i-- ;    
     }
-    getState(stateObj).setFailed(true);
     
+    return false;
   }
   
-  virtual void propagate(int i, DomainDelta)
+  virtual BOOL propagate(int i, DomainDelta)
   {
     PROP_INFO_ADDONE(Lex);
     if (F)
     {
-      return ;
+      return true;
     }
     int a = alpha, b = beta;
     
     //Not sure why we need this, but we seem to.
     if(b <= a)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     if(Less)
-    { if(i < a || i >=b) return; }
+    { if(i < a || i >=b) return true; }
     else
-    { if (i >= b) return ; }
+    { if (i >= b) return true; }
     
     if (i == a && i+1 == b) {
-      x[i].setMax(y[i].getMax()-1) ;
-      y[i].setMin(x[i].getMin()+1) ;
+      if(!x[i].setMax(y[i].getMax()-1))
+        return false;
+      if(!y[i].setMin(x[i].getMin()+1))
+        return false;
       if (checkLex(i)) {
         F = true ;
-        return ;
+        return true;
       }
     }
     else if (i == a && i+1 < b) {
-      x[i].setMax(y[i].getMax()) ;
-      y[i].setMin(x[i].getMin()) ;
+      if(!x[i].setMax(y[i].getMax()))
+        return false;
+      if(!y[i].setMin(x[i].getMin()))
+        return false;
       if (checkLex(i)) {
         F = true ;
-        return ;
+        return true;
       }
       if (x[i].isAssigned() && y[i].isAssigned() && x[i].getAssignedValue() == y[i].getAssignedValue())
-        updateAlpha(i+1) ;
+        return updateAlpha(i+1);
     }
     else if (a < i && i < b) {
       if ((i == b-1 && x[i].getMin() == y[i].getMax()) || x[i].getMin() > y[i].getMax())
-        updateBeta(i-1) ;
+        return updateBeta(i-1) ;
     }
+    return true;
   }
   
   virtual BOOL check_unsat(int unsat_val, DomainDelta)
@@ -265,7 +269,7 @@ struct LexLeqConstraint : public AbstractConstraint
     }
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     int i, n = x.size() ;
     for (i = 0; i < n; i++) {
@@ -277,7 +281,7 @@ struct LexLeqConstraint : public AbstractConstraint
       alpha = i ;
       if (checkLex(i)) {
         F = true ;
-        return ;
+        return true;
       }
       int betaBound = -1 ;
       for (; i < n; i++) {
@@ -299,16 +303,17 @@ struct LexLeqConstraint : public AbstractConstraint
         if (betaBound == -1) beta = i ;
         else beta = betaBound ;
       }
-      if (alpha >= beta) getState(stateObj).setFailed(true);
-      propagate(alpha,0) ;             //initial propagation, if necessary.
+      if (alpha >= beta) return false;
+      return propagate(alpha,0) ;             //initial propagation, if necessary.
     }
     else 
     {
       if(Less)
-        getState(stateObj).setFailed(true);
+        return false;
       else
         F = true;
     }
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
