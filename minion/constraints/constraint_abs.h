@@ -125,6 +125,7 @@ struct AbsConstraint : public AbstractConstraint
       return true;
 
     }
+    return true;
   }
   
   

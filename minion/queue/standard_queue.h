@@ -121,7 +121,6 @@ public:
 
   bool propagateDynamicTriggerLists()
   {
-    bool* fail_ptr = getState(stateObj).getFailedPtr();
     while(!dynamic_trigger_list.empty())
     {
       DynamicTrigger* t = dynamic_trigger_list.back();
@@ -130,18 +129,15 @@ public:
 
       while(it != t)
       {
-        if(*fail_ptr)
-        {
-          clearQueues();
-          return true;
-        }
-
 #ifdef NO_DYN_CHECK
         DynamicTrigger* next_queue_ptr;
 #endif
         next_queue_ptr = it->next;
         CON_INFO_ADDONE(DynamicTrigger);
-        it->propagate();
+        if(!it->propagate()) {
+          clearQueues();
+          return true;
+        }
 
 #ifdef WDEG
         if(getOptions(stateObj).wdeg_on && *fail_ptr)
@@ -155,7 +151,6 @@ public:
 
   bool propagateStaticTriggerLists()
   {
-    bool* fail_ptr = getState(stateObj).getFailedPtr();
     while(!propagate_trigger_list.empty())
     {
 #ifdef WEIGHTED_TRIGGERS
@@ -170,24 +165,31 @@ public:
 
       for(Trigger* it = t.begin(); it != t.end(); it++)
       {
-        if(*fail_ptr)
-        {
-          clearQueues();
-          return true;
-        }
 
 #ifndef NO_DEBUG
         if(getOptions(stateObj).fullpropagate)
-          it->full_propagate();
+          if(!it->full_propagate()) {
+              clearQueues();
+              return true;
+          }
+            return false;
         else
         {
           CON_INFO_ADDONE(StaticTrigger);
-          it->propagate(data_val);
+          if(!it->propagate(data_val)) {
+              clearQueues();
+              return true;
+          }
+            return false;
         }
 #else
         {
           CON_INFO_ADDONE(StaticTrigger);
-          it->propagate(data_val);
+          if(!it->propagate(data_val)) {
+              clearQueues();
+              return true;
+          }
+            return false;
         }
 #endif
 #ifdef WDEG
@@ -241,7 +243,6 @@ public:
 
   bool propagateDynamicTriggerListsRoot()
   {
-    bool* fail_ptr = getState(stateObj).getFailedPtr();
     while(!dynamic_trigger_list.empty())
     {
       DynamicTrigger* t = dynamic_trigger_list.back();
@@ -250,12 +251,6 @@ public:
 
       while(it != t)
       {
-        if(*fail_ptr)
-        {
-          clearQueues();
-          return true;
-        }
-
 #ifdef NO_DYN_CHECK
         DynamicTrigger* next_queue_ptr;
 #endif
@@ -264,7 +259,10 @@ public:
         if(it->constraint->full_propagate_done)
         {
             CON_INFO_ADDONE(DynamicTrigger);
-            it->propagate();
+            if(!it->propagate()) {
+              clearQueues();
+              return true;
+            }
         }
 
         it = next_queue_ptr;
@@ -275,7 +273,6 @@ public:
 
   bool propagateStaticTriggerListsRoot()
   {
-    bool* fail_ptr = getState(stateObj).getFailedPtr();
     while(!propagate_trigger_list.empty())
     {
 #ifdef WEIGHTED_TRIGGERS
@@ -290,25 +287,29 @@ public:
 
       for(Trigger* it = t.begin(); it != t.end(); it++)
       {
-        if(*fail_ptr)
-        {
-          clearQueues();
-          return true;
-        }
         if(it->constraint->full_propagate_done)
         {
 #ifndef NO_DEBUG
         if(getOptions(stateObj).fullpropagate)
-          it->full_propagate();
+          if(!it->full_propagate()) {
+              clearQueues();
+              return true;
+          }
         else
         {
           CON_INFO_ADDONE(StaticTrigger);
-          it->propagate(data_val);
+          if(!it->propagate(data_val)) {
+              clearQueues();
+              return true;
+          }
         }
 #else
         {
           CON_INFO_ADDONE(StaticTrigger);
-          it->propagate(data_val);
+          if(!it->propagate(data_val)) {
+              clearQueues();
+              return true;
+          }
         }
 #endif
         }
