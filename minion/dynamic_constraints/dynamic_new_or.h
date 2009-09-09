@@ -120,13 +120,15 @@ struct Dynamic_OR : public ParentConstraint
     return assign_size * 2;
   }
 
-  virtual void special_check()
+  virtual BOOL special_check()
   {
     D_ASSERT(constraint_locked);
     constraint_locked = false;
     P("Full propagating: " << propagated_constraint);
-    child_constraints[propagated_constraint]->full_propagate();
+    if(!child_constraints[propagated_constraint]->full_propagate())
+        return false;
     full_propagate_called = true;
+    return true;
   }
 
   virtual void special_unlock()
@@ -135,12 +137,12 @@ struct Dynamic_OR : public ParentConstraint
     constraint_locked = false;
   }
 
-  virtual void propagate(int i, DomainDelta domain)
+  virtual BOOL propagate(int i, DomainDelta domain)
   {
     //PROP_INFO_ADDONE(WatchedOR);
     P("Static propagate start");
     if(constraint_locked)
-      return;
+      return true;
 
     if(full_propagate_called)
     {
@@ -150,12 +152,15 @@ struct Dynamic_OR : public ParentConstraint
       if(childTrigger.first == propagated_constraint)
       {
         P("Passing trigger" << childTrigger.second << "on");
-        child_constraints[propagated_constraint]->propagate(childTrigger.second, domain);
+        if(!child_constraints[propagated_constraint]->propagate(childTrigger.second,
+        domain))
+            return false;
       }
     }
+    return true;
   }
 
-  virtual void propagate(DynamicTrigger* trig)
+  virtual BOOL propagate(DynamicTrigger* trig)
   {
     //PROP_INFO_ADDONE(WatchedOr);
     P("Prop");
@@ -163,7 +168,7 @@ struct Dynamic_OR : public ParentConstraint
     P("FullPropOn: " << (bool)full_propagate_called << ", on: " << propagated_constraint);
     P("Locked:" << constraint_locked);
     if(constraint_locked)
-      return;
+      return true;
 
     DynamicTrigger* dt = dynamic_trigger_start();
 
@@ -172,7 +177,7 @@ struct Dynamic_OR : public ParentConstraint
     if(trig >= dt && trig < dt + assign_size * 2)
     {
       if(full_propagate_called)
-        return;
+        return true;
 
       int tripped_constraint = (trig - dt) / assign_size;
       int other_constraint = 1 - tripped_constraint;
@@ -188,7 +193,7 @@ struct Dynamic_OR : public ParentConstraint
         for(int i = 0; i < assignment_try.size(); ++i)
           P(assignment_try[i].first << "." << assignment_try[i].second << "  ");
         P(" -- Fixed, returning");
-        return;
+        return true;
       }
 
       const size_t cons_s = child_constraints.size();
@@ -206,7 +211,7 @@ struct Dynamic_OR : public ParentConstraint
             watch_assignment(child_constraints[i], dt + tripped_constraint * assign_size, assignment);
             watched_constraint[tripped_constraint] = i;
             P("New support. Switch " << tripped_constraint << " to " << i);
-            return;
+            return true;
           }
         }
       }
@@ -221,7 +226,7 @@ struct Dynamic_OR : public ParentConstraint
               watch_assignment(child_constraints[i], dt + tripped_constraint * assign_size, assignment);
               watched_constraint[tripped_constraint] = i;
               P("New support. Switch " << tripped_constraint << " to " << i);
-              return;
+              return true;
             }
           }
         }
@@ -234,17 +239,19 @@ struct Dynamic_OR : public ParentConstraint
       constraint_locked = true;
       getQueue(stateObj).pushSpecialTrigger(this);
 #else
-      child_constraints[propagated_constraint]->full_propagate();
+      if(!child_constraints[propagated_constraint]->full_propagate())
+        return false;
       full_propagate_called = true;
 #endif
-      return;
+      return true;
     }
 
 
     if(full_propagate_called && getChildDynamicTrigger(trig) == propagated_constraint)
     {
       P("Propagating child");
-      child_constraints[propagated_constraint]->propagate(trig);
+      if(!child_constraints[propagated_constraint]->propagate(trig))
+        return false;
     }
     else
     {
@@ -252,6 +259,7 @@ struct Dynamic_OR : public ParentConstraint
       // This is an optimisation.
       releaseTrigger(stateObj, trig);
     }
+    return true;
   }
 
   void watch_assignment(AbstractConstraint* con, DynamicTrigger* dt, box<pair<int,DomainInt> >& assignment)
@@ -262,7 +270,7 @@ struct Dynamic_OR : public ParentConstraint
       vars[assignment[i].first].addDynamicTrigger(dt + i, DomainRemoval, assignment[i].second);
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     P("Full Propagate")
     DynamicTrigger* dt = dynamic_trigger_start();
@@ -293,8 +301,7 @@ struct Dynamic_OR : public ParentConstraint
 
     if(found_watch == false)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
 
     P(" -- Found watch 0: " << loop);
@@ -314,7 +321,7 @@ struct Dynamic_OR : public ParentConstraint
         for(int i = 0; i < assignment.size(); ++i)
           P(assignment[i].first << "." << assignment[i].second << "  ");
         P(" -- Found watch 1: " << loop);
-        return;
+        return true;
       }
       else
         loop++;
@@ -326,6 +333,7 @@ struct Dynamic_OR : public ParentConstraint
       constraint_locked = true;
       getQueue(stateObj).pushSpecialTrigger(this);
     }
+    return true;
 
   }
 

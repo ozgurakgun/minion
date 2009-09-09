@@ -89,7 +89,7 @@ struct ProductConstraint : public AbstractConstraint
     return x / y; 
   }
   
-  virtual void propagate(int, DomainDelta)
+  virtual BOOL propagate(int, DomainDelta)
   {
     PROP_INFO_ADDONE(Product);
     DomainInt var1_min = var1.getMin();
@@ -112,29 +112,41 @@ struct ProductConstraint : public AbstractConstraint
       var2_min = max(var2_min, round_up_div(var3_min, var1_max));
       var2_max = min(var2_max, round_down_div(var3_max, var1_min));
       
-      var1.setMin(var1_min);
-      var1.setMax(var1_max);
-      var2.setMin(var2_min);
-      var2.setMax(var2_max);
-      var3.setMin(var3_min);
-      var3.setMax(var3_max);
+      if(!var1.setMin(var1_min))
+        return false;
+      if(!var1.setMax(var1_max))
+        return false;
+      if(!var2.setMin(var2_min))
+        return false;
+      if(!var2.setMax(var2_max))
+        return false;
+      if(!var3.setMin(var3_min))
+        return false;
+      if(!var3.setMax(var3_max))
+        return false;
     }
     else
     {
-      var3.setMax(mult_max(var1_min, var1_max, var2_min, var2_max));
-      var3.setMin(mult_min(var1_min, var1_max, var2_min, var2_max));
+      if(!var3.setMax(mult_max(var1_min, var1_max, var2_min, var2_max)))
+        return false;
+      if(!var3.setMin(mult_min(var1_min, var1_max, var2_min, var2_max)))
+        return false;
       if(var1.isAssigned())
       {
         DomainInt val1 = var1.getAssignedValue();
         if(val1 > 0)
         { 
-          var3.setMin(var2.getMin() * val1);
-          var3.setMax(var2.getMax() * val1);
+          if(!var3.setMin(var2.getMin() * val1))
+            return false;
+          if(!var3.setMax(var2.getMax() * val1))
+            return false;
         }
         else
         {
-          var3.setMin(var2.getMax() * val1);
-          var3.setMax(var2.getMin() * val1);
+          if(!var3.setMin(var2.getMax() * val1))
+            return false;
+          if(!var3.setMax(var2.getMin() * val1))
+            return false;
         }
       }
       
@@ -143,20 +155,25 @@ struct ProductConstraint : public AbstractConstraint
         DomainInt val2 = var2.getAssignedValue();
         if(val2 > 0)
         { 
-          var3.setMin(var1.getMin() * val2);
-          var3.setMax(var1.getMax() * val2);
+          if(!var3.setMin(var1.getMin() * val2))
+            return false;
+          if(!var3.setMax(var1.getMax() * val2))
+            return false;
         }
         else
         {
-          var3.setMin(var1.getMax() * val2);
-          var3.setMax(var1.getMin() * val2);
+          if(!var3.setMin(var1.getMax() * val2))
+            return false;
+          if(!var3.setMax(var1.getMin() * val2))
+            return false;
         }
       }
     }
+    return true;
   }
   
-  virtual void full_propagate()
-  { propagate(0,0); }
+  virtual BOOL full_propagate()
+  { return propagate(0,0); }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
   {

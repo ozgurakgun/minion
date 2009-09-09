@@ -238,20 +238,23 @@ struct reify : public ParentConstraint
     return triggers;
   }
 
-  virtual void special_check()
+  virtual BOOL special_check()
   {
     D_ASSERT(constraint_locked);
     P("Special Check!");
     constraint_locked = false;
     if(reify_var.inDomain(0))
     {
-        child_constraints[1]->full_propagate();
+        if(!child_constraints[1]->full_propagate())
+            return false;
     }
     else
     {
-        child_constraints[0]->full_propagate();
+        if(!child_constraints[0]->full_propagate())
+            return false;
     }
     full_propagate_called = true;
+    return true;
   }
 
   virtual void special_unlock()
@@ -261,12 +264,12 @@ struct reify : public ParentConstraint
     constraint_locked = false;
   }
 
-  virtual void propagate(int i, DomainDelta domain)
+  virtual BOOL propagate(int i, DomainDelta domain)
   {
     PROP_INFO_ADDONE(Reify);
     P("Static propagate start");
     if(constraint_locked)
-      return;
+      return true;
 
     if(i == -1000000000)
     {
@@ -277,13 +280,13 @@ struct reify : public ParentConstraint
       {
           numeric_limits<unsigned long long> ull;  // I hope the compiler will get rid fo this..
           reifysetnode=ull.max();  // avoid this happening more than once.
-          return;
+          return true;
       }
       #endif
 
       constraint_locked = true;
       getQueue(stateObj).pushSpecialTrigger(this);
-      return;
+      return true;
     }
 
     if(full_propagate_called)
@@ -295,10 +298,10 @@ struct reify : public ParentConstraint
           pair<int,int> childTrigger = getChildStaticTrigger(i);
           if(childTrigger.first != 0)
           {
-              return;
+              return true;
           }
           P("Passing trigger " << childTrigger.first <<","<< childTrigger.second << " on");
-          child_constraints[0]->propagate(childTrigger.second, domain);
+          return child_constraints[0]->propagate(childTrigger.second, domain);
       }
       else
       {
@@ -306,20 +309,21 @@ struct reify : public ParentConstraint
           pair<int,int> childTrigger = getChildStaticTrigger(i);
           if(childTrigger.first != 1)
           {
-              return;
+              return true;
           }
           P("Passing trigger " << childTrigger.first <<","<< childTrigger.second << " on");
-          child_constraints[1]->propagate(childTrigger.second, domain);
+          return child_constraints[1]->propagate(childTrigger.second, domain);
       }
     }
+    return true;
   }
 
-  virtual void propagate(DynamicTrigger* trig)
+  virtual BOOL propagate(DynamicTrigger* trig)
   {
     PROP_INFO_ADDONE(Reify);
     P("Dynamic prop start");
     if(constraint_locked)
-      return;
+      return true;
 
     DynamicTrigger* dt = dynamic_trigger_start();
     //int numtriggers=dynamic_trigger_count();
@@ -351,18 +355,19 @@ struct reify : public ParentConstraint
             if(!flag)
             { // No satisfying assignment to constraint
               P("Failed!");
-              reify_var.propagateAssign(0);
+              if(!reify_var.propagateAssign(0))
+                return false;
 
               #ifdef NODETRICK
               reifysetnode=getState(stateObj).getNodeCount();
               #endif
 
-              return;
+              return true;
             }
             P("Found new assignment");
             watch_assignment(assignment, *(child_constraints[0]->get_vars_singleton()), dt, dt+(c0vars*2));
 
-            return;
+            return true;
         }
         else if(trig>= (dt+ (c0vars*2)) && trig < dt+dtcount)
         {// Lost assignments for negative constraint.
@@ -389,17 +394,18 @@ struct reify : public ParentConstraint
             if(!flag)
             { // No satisfying assignment to constraint
               P("Failed!");
-              reify_var.propagateAssign(1);
+              if(!reify_var.propagateAssign(1))
+                return false;
 
               #ifdef NODETRICK
               reifysetnode=getState(stateObj).getNodeCount();
               #endif
 
-              return;
+              return true;
             }
             P("Found new assignment");
             watch_assignment(assignment, *(child_constraints[1]->get_vars_singleton()), dt+(c0vars*2), dt+dtcount);
-            return;
+            return true;
         }
         else
         {
@@ -413,7 +419,7 @@ struct reify : public ParentConstraint
         if(trig>= dt && trig < dt+dtcount)
         {   // is it a trigger from stage 1 .. if so, ignore.
             P("In stage 2, ignoring trigger from stage 1");
-            return;
+            return true;
         }
       P("Pass triggers to children");
       D_ASSERT(reify_var.isAssigned());
@@ -423,10 +429,11 @@ struct reify : public ParentConstraint
       {
           P("Removing leftover trigger from other child constraint");
           releaseTrigger(stateObj, trig);
-          return;
+          return true;
       }
-      child_constraints[getChildDynamicTrigger(trig)]->propagate(trig);
+      return child_constraints[getChildDynamicTrigger(trig)]->propagate(trig);
     }
+    return true;
 
   }
 
@@ -473,7 +480,7 @@ struct reify : public ParentConstraint
     #endif
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     P("Full prop");
     P("reify " << child_constraints[0]->constraint_name());
@@ -483,14 +490,16 @@ struct reify : public ParentConstraint
     {
         if(reify_var.getAssignedValue() > 0)
         {
-          child_constraints[0]->full_propagate();
+          if(!child_constraints[0]->full_propagate())
+            return false;
         }
         else
         {
-          child_constraints[1]->full_propagate();
+          if(!child_constraints[1]->full_propagate())
+            return false;
         }
         full_propagate_called = true;
-        return;
+        return true;
     }
 
     DynamicTrigger* dt = dynamic_trigger_start();
@@ -504,28 +513,31 @@ struct reify : public ParentConstraint
     PROP_INFO_ADDONE(ReifyFullPropGetAssgPosCon);
     if(!flag)
     { // No satisfying assignment to constraint
-      reify_var.propagateAssign(0);
+      if(!reify_var.propagateAssign(0))
+        return false;
 
       #ifdef NODETRICK
       reifysetnode=getState(stateObj).getNodeCount();
       #endif
 
-      return;
+      return true;
     }
     PROP_INFO_ADDONE(ReifyFullPropGetAssgNegCon);
     GET_ASSIGNMENT(assignment1, child_constraints[1]);
     if(!flag)
     { // No satisfying assignment to constraint
-      reify_var.propagateAssign(1);
+      if(!reify_var.propagateAssign(1))
+        return false;
       #ifdef NODETRICK
       reifysetnode=getState(stateObj).getNodeCount();
       #endif
 
-      return;
+      return true;
     }
 
     watch_assignment(assignment0, *(child_constraints[0]->get_vars_singleton()), dt, dt+(c0vars*2));
     watch_assignment(assignment1, *(child_constraints[1]->get_vars_singleton()), dt+(c0vars*2), dt+dtcount);
+    return true;
   }
 };
 
@@ -611,16 +623,19 @@ struct reify : public AbstractConstraint
   }
 
 
-  virtual void special_check()
+  virtual BOOL special_check()
   {
     D_ASSERT(constraint_locked);
     constraint_locked = false;
     D_ASSERT(rar_var.isAssigned());
     if(rar_var.getAssignedValue() > 0)
-      poscon->full_propagate();
+      if(!poscon->full_propagate())
+        return false;
     else
-      negcon->full_propagate();
+      if(!negcon->full_propagate())
+        return false;
     full_propagate_called = true;
+    return true;
   }
 
   virtual void special_unlock()
@@ -629,28 +644,34 @@ struct reify : public AbstractConstraint
       constraint_locked = false;
   }
 
-  virtual void propagate(int i, DomainDelta domain)
+  virtual BOOL propagate(int i, DomainDelta domain)
   {
     PROP_INFO_ADDONE(Reify);
 
     if(constraint_locked)
-      return;
+      return true;
 
     if(i == -99998 || i == -99999)
     {
         constraint_locked = true;
       getQueue(stateObj).pushSpecialTrigger(this);
-      return;
+      return true;
     }
 
     if(full_propagate_called)
     {
       D_ASSERT(rar_var.isAssigned());
-      if(rar_var.getAssignedValue() == 1)
-        { if(i%2 == 0) poscon->propagate(i/2, domain); }
-      else
-        { if(i%2 == 1) negcon->propagate((i-1)/2, domain); }
-      return;
+      if(rar_var.getAssignedValue() == 1) {
+          if(i%2 == 0)
+            if(!poscon->propagate(i/2, domain))
+                return false;
+      }
+      else {
+          if(i%2 == 1)
+              if(!negcon->propagate((i-1)/2, domain))
+                return false;
+      }
+      return true;
     }
 
     if(i%2 == 0)
@@ -666,7 +687,8 @@ struct reify : public AbstractConstraint
       PROP_INFO_ADDONE(ReifyCheckUnsatPosCon);
       if(poscon->check_unsat(i/2, domain))
       {
-        rar_var.propagateAssign(false);
+        if(!rar_var.propagateAssign(false))
+            return false;
       }
     }
     else
@@ -682,12 +704,14 @@ struct reify : public AbstractConstraint
       PROP_INFO_ADDONE(ReifyCheckUnsatNegCon);
       if(negcon->check_unsat((i-1)/2,domain))
       {
-        rar_var.propagateAssign(true);
+        if(!rar_var.propagateAssign(true))
+            return false;
       }
     }
+    return true;
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
 #ifdef MINION_DEBUG
     {
@@ -700,7 +724,8 @@ struct reify : public AbstractConstraint
     PROP_INFO_ADDONE(ReifyFullCheckUnsatPosCon);
     if(poscon->full_check_unsat())
     {
-      rar_var.propagateAssign(false);
+      if(!rar_var.propagateAssign(false))
+        return false;
     }
 
 #ifdef MINION_DEBUG
@@ -714,17 +739,21 @@ struct reify : public AbstractConstraint
     PROP_INFO_ADDONE(ReifyFullCheckUnsatNegCon);
     if(negcon->full_check_unsat())
     {
-      rar_var.propagateAssign(true);
+      if(!rar_var.propagateAssign(true))
+        return false;
     }
 
     if(rar_var.isAssigned())
     {
       if(rar_var.getAssignedValue() > 0)
-        poscon->full_propagate();
+        if(!poscon->full_propagate())
+            return false;
       else
-        negcon->full_propagate();
+        if(!negcon->full_propagate())
+            return false;
       full_propagate_called = true;
     }
+    return true;
   }
 };
 

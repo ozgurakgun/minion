@@ -38,34 +38,32 @@ struct WatchNeqConstraint : public AbstractConstraint
   int dynamic_trigger_count()
   { return 2; }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {  
     DynamicTrigger* dt = dynamic_trigger_start();
     
       if(var1.isAssigned() && var2.isAssigned() && var1.getAssignedValue() == var2.getAssignedValue())
       {
-        getState(stateObj).setFailed(true);
-        return;
+        return false;
       }
       
       if(var1.isAssigned())
       {
-        var2.removeFromDomain(var1.getAssignedValue());
-        return;
+        return var2.removeFromDomain(var1.getAssignedValue());
       }
       
       if(var2.isAssigned())
       {
-        var1.removeFromDomain(var2.getAssignedValue());
-        return;
+        return var1.removeFromDomain(var2.getAssignedValue());
       }
       
     var1.addDynamicTrigger(dt    , Assigned);
     var2.addDynamicTrigger(dt + 1, Assigned);
+    return true;
   }
   
     
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
       PROP_INFO_ADDONE(WatchNEQ);
       DynamicTrigger* dt_start = dynamic_trigger_start();
@@ -75,12 +73,12 @@ struct WatchNeqConstraint : public AbstractConstraint
       if(dt == dt_start)
       {
         D_ASSERT(var1.isAssigned());
-        var2.removeFromDomain(var1.getAssignedValue());
+        return var2.removeFromDomain(var1.getAssignedValue());
       }
       else
       {
         D_ASSERT(var2.isAssigned());
-        var1.removeFromDomain(var2.getAssignedValue());
+        return var1.removeFromDomain(var2.getAssignedValue());
       }
   }
   

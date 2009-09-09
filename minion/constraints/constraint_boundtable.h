@@ -66,7 +66,7 @@ struct BoundsTableConstraint : public AbstractConstraint
     return false;
   }
   
-  virtual void propagate(int, DomainDelta)
+  virtual BOOL propagate(int, DomainDelta)
   {
     PROP_INFO_ADDONE(BoundTable);
     for(unsigned int check_var = 0; check_var < vars.size(); check_var++)
@@ -117,11 +117,12 @@ end_check_upper:
       
       
       
+      return true;
     }
   }  
   
-  virtual void full_propagate()
-  { propagate(0,0); }
+  virtual BOOL full_propagate()
+  { return propagate(0,0); }
 };
 
 #endif

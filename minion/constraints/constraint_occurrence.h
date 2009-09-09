@@ -134,7 +134,7 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
   }
 
 
-  virtual void propagate(int z, DomainDelta)
+  virtual BOOL propagate(int z, DomainDelta)
   {
       // val_count has been assigned.
       D_ASSERT(z==-1);
@@ -144,8 +144,7 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
           trigger1index=watch_unassigned_in_vector(-1, trigger1index, dt);
           if(trigger1index==-1)
           {
-              valcount_assigned();
-              return;
+              return valcount_assigned();
           }
       }
       if(trigger2index==-1 || var_array[trigger2index].isAssigned())
@@ -153,13 +152,13 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
           trigger2index=watch_unassigned_in_vector(trigger1index, trigger2index, dt+1);
           if(trigger2index==-1)
           {
-              valcount_assigned();
-              return;
+              return valcount_assigned();
           }
       }
+      return true;
   }
 
-  virtual void propagate(DynamicTrigger* trig)
+  virtual BOOL propagate(DynamicTrigger* trig)
   {
       DynamicTrigger* dt = dynamic_trigger_start();
       if(trig==dt || trigger1index==-1)
@@ -170,16 +169,14 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
               trigger1index=watch_unassigned_in_vector(-1, trigger1index, dt);
               if(trigger1index==-1)
               {
-                  valcount_assigned();
-                  return;
+                  return valcount_assigned();
               }
               if(trigger2index==-1 || var_array[trigger2index].isAssigned())
               {
                   trigger2index=watch_unassigned_in_vector(trigger1index, trigger2index, dt+1);
                   if(trigger2index==-1)
                   {
-                      valcount_assigned();
-                      return;
+                      return valcount_assigned();
                   }
               }
           }
@@ -188,31 +185,31 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
               trigger1index=watch_unassigned_in_vector(-1, trigger1index, dt);
               if(trigger1index==-1)
               {
-                  vector_assigned();
-                  return;
+                  return vector_assigned();
               }
           }
-          return;
+          return true;
       }
       D_ASSERT(trig==dt+1);
       if(!val_count.isAssigned())
       {   // don't need two triggers.
           releaseTrigger(stateObj, trig);
           trigger2index=-1;
-          return;
+          return true;
       }
 
       if(var_array[trigger1index].isAssigned())
       {
           // just wait for the other trigger, then both triggers will be repositioned. lazy coding!
-          return;
+          return true;
       }
 
       trigger2index=watch_unassigned_in_vector(trigger1index, trigger2index, dt+1);
       if(trigger2index==-1)
       {
-          valcount_assigned();
+          return valcount_assigned();
       }
+      return true;
   }
 
   // unfinished new stuff starts here.
@@ -250,7 +247,7 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
   int trigger1index;
   int trigger2index;
 
-  void vector_assigned()
+  BOOL vector_assigned()
   {
       // count occurrences of val
       int occ=0;
@@ -261,11 +258,13 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
       }
       if(val_count.inDomain(occ))
       {
-          val_count.removeFromDomain(occ);
+          if(!val_count.removeFromDomain(occ))
+            return false;
       }
+      return true;
   }
 
-  void valcount_assigned()
+  BOOL valcount_assigned()
   {
       // valcount, and all but one (or all) of the vector, are assigned.
       // count occurrences of val
@@ -294,30 +293,30 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
           // just check, everything is assigned.
           if(occ==val_count.getAssignedValue())
           {
-              getState(stateObj).setFailed(true);
+              return false;
           }
       }
       else
       {
           if(occ==val_count.getAssignedValue())
           { // need another occurrence of the value
-              var_array[unassigned].propagateAssign(value);
+              return var_array[unassigned].propagateAssign(value);
           }
           else if(occ+1 == val_count.getAssignedValue())
           { // not allowed to have another value.
-              var_array[unassigned].removeFromDomain(value);
+              return var_array[unassigned].removeFromDomain(value);
           }
       }
+      return true;
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     DynamicTrigger* dt = dynamic_trigger_start();
     trigger1index=watch_unassigned_in_vector(-1, -1, dt);
     if(trigger1index==-1)
     {
-        vector_assigned();
-        return;
+        return vector_assigned();
     }
 
     if(val_count.isAssigned())
@@ -326,10 +325,10 @@ struct NotOccurrenceEqualConstraint : public AbstractConstraint
         trigger2index=watch_unassigned_in_vector(trigger1index, trigger1index, dt+1);
         if(trigger2index==-1)
         {
-            valcount_assigned();
-            return;
+            return valcount_assigned();
         }
     }
+    return true;
   }
 
    // Getting a satisfying assignment here is too hard, we don't want to have to
@@ -401,7 +400,7 @@ struct ConstantOccurrenceEqualConstraint : public AbstractConstraint
     return t;
   }
 
-  void occurrence_limit_reached()
+  BOOL occurrence_limit_reached()
   {
     D_ASSERT(val_count_max <= occurrences_count);
     int occs = 0;
@@ -415,14 +414,16 @@ struct ConstantOccurrenceEqualConstraint : public AbstractConstraint
       }
       else
       {
-        it->removeFromDomain(value);
+        if(!it->removeFromDomain(value))
+            return false;
       }
     }
     if(val_count_max < occs)
-      getState(stateObj).setFailed(true);
+      return false;
+    return true;
   }
 
-  void not_occurrence_limit_reached()
+  BOOL not_occurrence_limit_reached()
   {
     D_ASSERT(not_occurrences_count >= static_cast<int>(var_array.size()) - val_count_min);
     int occs = 0;
@@ -434,14 +435,17 @@ struct ConstantOccurrenceEqualConstraint : public AbstractConstraint
       if(it->getAssignedValue() != value)
         ++occs;
       }
-      else
-      { it->propagateAssign(value); }
+      else {
+          if(!it->propagateAssign(value))
+            return false;
+      }
     }
     if(val_count_min > static_cast<int>(var_array.size()) - occs)
-      getState(stateObj).setFailed(true);
+      return false;
+    return true;
   }
 
-  virtual void propagate(int i, DomainDelta)
+  virtual BOOL propagate(int i, DomainDelta)
   {
       PROP_INFO_ADDONE(OccEqual);
     D_ASSERT(i >= 0);
@@ -450,18 +454,19 @@ struct ConstantOccurrenceEqualConstraint : public AbstractConstraint
     {
       ++occurrences_count;
       if(val_count_max < occurrences_count)
-        getState(stateObj).setFailed(true);
+        return false;
       if(occurrences_count == val_count_max)
-        occurrence_limit_reached();
+        return occurrence_limit_reached();
     }
     else
     {
       ++not_occurrences_count;
       if(val_count_min > static_cast<int>(var_array.size()) - not_occurrences_count)
-        getState(stateObj).setFailed(true);
+        return false;
       if(not_occurrences_count == static_cast<int>(var_array.size()) - val_count_min )
-        not_occurrence_limit_reached();
+        return not_occurrence_limit_reached();
     }
+    return true;
   }
 
   void setup_counters()
@@ -483,22 +488,25 @@ struct ConstantOccurrenceEqualConstraint : public AbstractConstraint
       not_occurrences_count = not_occs;
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     if(val_count_max < 0 || val_count_min > (int)var_array.size())
-      getState(stateObj).setFailed(true);
+      return false;
     setup_counters();
 
     if(val_count_max < occurrences_count)
-      getState(stateObj).setFailed(true);
+      return false;
 
     if(val_count_min > static_cast<int>(var_array.size()) - not_occurrences_count)
-      getState(stateObj).setFailed(true);
+      return false;
 
     if(occurrences_count == val_count_max)
-      occurrence_limit_reached();
+      if(!occurrence_limit_reached())
+        return false;
     if(not_occurrences_count == static_cast<int>(var_array.size()) - val_count_min)
-      not_occurrence_limit_reached();
+      if(!not_occurrence_limit_reached())
+        return false;
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)
@@ -596,7 +604,7 @@ struct OccurrenceEqualConstraint : public AbstractConstraint
     return t;
   }
 
-  void occurrence_limit_reached()
+  BOOL occurrence_limit_reached()
   {
     D_ASSERT(val_count.getMax() <= occurrences_count);
     int occs = 0;
@@ -610,13 +618,14 @@ struct OccurrenceEqualConstraint : public AbstractConstraint
       }
       else
       {
-        it->removeFromDomain(value);
+        if(!it->removeFromDomain(value))
+            return false;
       }
     }
-    val_count.setMin(occs);
+    return val_count.setMin(occs);
   }
 
-  void not_occurrence_limit_reached()
+  BOOL not_occurrence_limit_reached()
   {
     D_ASSERT(not_occurrences_count >= static_cast<int>(var_array.size()) - val_count.getMin());
     int occs = 0;
@@ -628,38 +637,46 @@ struct OccurrenceEqualConstraint : public AbstractConstraint
       if(it->getAssignedValue() != value)
         ++occs;
       }
-      else
-      { it->propagateAssign(value); }
+      else {
+          if(!it->propagateAssign(value))
+            return false;
+      }
     }
-    val_count.setMax(static_cast<int>(var_array.size()) - occs);
+    return val_count.setMax(static_cast<int>(var_array.size()) - occs);
   }
 
-  virtual void propagate(int i, DomainDelta)
+  virtual BOOL propagate(int i, DomainDelta)
   {
     PROP_INFO_ADDONE(OccEqual);
     if(i < 0)
     { // val_count changed
       if(occurrences_count == val_count.getMax())
-        occurrence_limit_reached();
+        if(!occurrence_limit_reached())
+            return false;
       if(not_occurrences_count == static_cast<int>(var_array.size()) - val_count.getMin() )
-        not_occurrence_limit_reached();
-      return;
+        if(!not_occurrence_limit_reached())
+            return false;
+      return true;
     }
 
     if( var_array[i].getAssignedValue() == value )
     {
       ++occurrences_count;
-      val_count.setMin(occurrences_count);
+      if(!val_count.setMin(occurrences_count))
+        return false;
       if(occurrences_count == val_count.getMax())
-        occurrence_limit_reached();
+        return occurrence_limit_reached();
     }
     else
     {
       ++not_occurrences_count;
-      val_count.setMax(static_cast<int>(var_array.size()) - not_occurrences_count);
+      if(!val_count.setMax(static_cast<int>(var_array.size()) -
+      not_occurrences_count))
+        return false;
       if(not_occurrences_count == static_cast<int>(var_array.size()) - val_count.getMin() )
-        not_occurrence_limit_reached();
+        return not_occurrence_limit_reached();
     }
+    return true;
   }
 
   void setup_counters()
@@ -681,18 +698,26 @@ struct OccurrenceEqualConstraint : public AbstractConstraint
     not_occurrences_count = not_occs;
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
-    val_count.setMin(0);
-    val_count.setMax(var_array.size());
+    if(!val_count.setMin(0))
+        return false;
+    if(!val_count.setMax(var_array.size()))
+        return false;
     setup_counters();
-    val_count.setMin(occurrences_count);
-    val_count.setMax(static_cast<int>(var_array.size()) - not_occurrences_count);
+    if(!val_count.setMin(occurrences_count))
+        return false;
+    if(!val_count.setMax(static_cast<int>(var_array.size()) -
+    not_occurrences_count))
+        return false;
 
     if(occurrences_count == val_count.getMax())
-      occurrence_limit_reached();
+     if(! occurrence_limit_reached())
+        return false;
     if(not_occurrences_count == static_cast<int>(var_array.size()) - val_count.getMin() )
-      not_occurrence_limit_reached();
+      if(!not_occurrence_limit_reached())
+        return false;
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

@@ -47,29 +47,32 @@ struct WatchLessConstraint : public AbstractConstraint
   int dynamic_trigger_count()
   { return 2; }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {  
     DynamicTrigger* dt = dynamic_trigger_start();
         
     var1.addDynamicTrigger(dt    , LowerBound);
     var2.addDynamicTrigger(dt + 1, UpperBound);
     
-    var2.setMin(var1.getMin() + 1);
-    var1.setMax(var2.getMax() - 1);
+    if(!var2.setMin(var1.getMin() + 1))
+        return false;
+    return var1.setMax(var2.getMax() - 1);
   }
   
     
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
       PROP_INFO_ADDONE(WatchNEQ);
       DynamicTrigger* dt_start = dynamic_trigger_start();
       
       D_ASSERT(dt == dt_start || dt == dt_start + 1);
     
-      if(dt == dt_start)
-      { var2.setMin(var1.getMin() + 1); }
-      else
-      { var1.setMax(var2.getMax() - 1); }
+      if(dt == dt_start) {
+          return var2.setMin(var1.getMin() + 1);
+      }
+      else {
+          return var1.setMax(var2.getMax() - 1);
+      }
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

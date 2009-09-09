@@ -43,7 +43,7 @@ struct BoolThreeSATConstraintDynamic : public AbstractConstraint
   }
   
   // Not specialised for 3 sat
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     DynamicTrigger* dt = dynamic_trigger_start();
     
@@ -58,8 +58,7 @@ struct BoolThreeSATConstraintDynamic : public AbstractConstraint
 
     if(index == array_size)
     { // Not enough triggers
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
     ++index;
@@ -71,8 +70,7 @@ struct BoolThreeSATConstraintDynamic : public AbstractConstraint
     
     if(index >= array_size)
     { // Only one valid variable.
-      var_array[trig1].propagateAssign(1);
-      return;
+      return var_array[trig1].propagateAssign(1);
     }
     
     dt->trigger_info() = trig1;
@@ -83,7 +81,7 @@ struct BoolThreeSATConstraintDynamic : public AbstractConstraint
     dt->trigger_info() = trig2;
     var_array[trig2].addDynamicTrigger(dt, UpperBound);
     
-    return;
+    return true;
   }
   
   /// Finds the value out of 0,1 and 2 which is not a or b.
@@ -98,7 +96,7 @@ struct BoolThreeSATConstraintDynamic : public AbstractConstraint
     return 2;
   }
   
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(Dyn3SAT);
     int propval = dt->trigger_info();
@@ -121,8 +119,11 @@ struct BoolThreeSATConstraintDynamic : public AbstractConstraint
       dt->trigger_info() = unchecked_val;
       var_array[unchecked_val].addDynamicTrigger(dt, UpperBound);
     }
-    else
-    { var_array[other_propval].propagateAssign(1); }
+    else {
+        if(!var_array[other_propval].propagateAssign(1))
+            return false;
+    }
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

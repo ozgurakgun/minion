@@ -86,12 +86,14 @@ struct Dynamic_reify_true_old: public AbstractConstraint
             (start + i)->constraint = this;
     }
 
-    virtual void special_check()
+    virtual BOOL special_check()
     {
         D_ASSERT(constraint_locked);
         constraint_locked = false;
-        poscon->full_propagate();
+        if(!poscon->full_propagate())
+            return false;
         full_propagate_called = true;
+        return true;
     }
 
     virtual void special_unlock()
@@ -100,13 +102,13 @@ struct Dynamic_reify_true_old: public AbstractConstraint
         constraint_locked = false;
     }
 
-    virtual void propagate(DynamicTrigger* trig)
+    virtual BOOL propagate(DynamicTrigger* trig)
     {
         PROP_INFO_ADDONE(ReifyTrue);
         P("ReifyImply Prop");
 
         if (constraint_locked)
-            return;
+            return true;
 
         DynamicTrigger* dt = dynamic_trigger_start();
         DynamicTrigger* assign_trigs = dt + 1;
@@ -118,7 +120,7 @@ struct Dynamic_reify_true_old: public AbstractConstraint
             D_ASSERT(rar_var.isAssigned() && rar_var.getAssignedValue() == 1);
             constraint_locked = true;
             getQueue(stateObj).pushSpecialTrigger(this);
-            return;
+            return true;
         }
 
         if (trig >= assign_trigs && trig < dt + dynamic_trigger_count())
@@ -130,8 +132,7 @@ struct Dynamic_reify_true_old: public AbstractConstraint
 
                 if (!flag)
                 { // No satisfying assignment to constraint
-                    rar_var.propagateAssign(0);
-                    return;
+                    return rar_var.propagateAssign(0);
                 }
 
                 vector<AnyVarRef>& poscon_vars =
@@ -151,22 +152,23 @@ struct Dynamic_reify_true_old: public AbstractConstraint
                     }
                 }
             }
-            return;
+            return true;
         }
 
         if (full_propagate_called)
         {
             D_ASSERT(rar_var.isAssigned() && rar_var.getAssignedValue() == 1);
-            poscon->propagate(trig);
+            return poscon->propagate(trig);
         }
         else
         {
             // This is an optimisation.
             releaseTrigger(stateObj, trig);
         }
+        return true;
     }
 
-    virtual void full_propagate()
+    virtual BOOL full_propagate()
     {
         P("Reifyimply FullProp");
         DynamicTrigger* dt = dynamic_trigger_start();
@@ -183,8 +185,7 @@ struct Dynamic_reify_true_old: public AbstractConstraint
         if (!flag)
         { // No satisfying assignment to constraint
             cout << "Found no satisfying assignment!" << endl;
-            rar_var.propagateAssign(0);
-            return;
+            return rar_var.propagateAssign(0);
         }
 
         vector<AnyVarRef>& poscon_vars = *(poscon->get_vars_singleton());
@@ -205,9 +206,11 @@ struct Dynamic_reify_true_old: public AbstractConstraint
         }
         if (rar_var.isAssigned() && rar_var.getAssignedValue() > 0)
         {
-            poscon->full_propagate();
+            if(!poscon->full_propagate())
+                return false;
             full_propagate_called = true;
         }
+        return true;
     }
 };
 

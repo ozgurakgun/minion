@@ -50,28 +50,32 @@ template<typename Var>
   int dynamic_trigger_count()
     { return 2; }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {  
     DynamicTrigger* dt = dynamic_trigger_start();
-    var.setMin(vals.front());
-    var.setMax(vals.back());
+    if(!var.setMin(vals.front()))
+        return false;
+    if(!var.setMax(vals.back()))
+        return false;
 
     if(var.isBound())
     {
       // May as well pass DomainRemoval
       var.addDynamicTrigger(dt, DomainChanged);
-      propagate(NULL);
+      return propagate(NULL);
     }
     else
     {
       for(int i = 0; i < vals.size() - 1; ++i)
         for(DomainInt pos = vals[i] + 1; pos < vals[i+1]; ++pos)
-        var.removeFromDomain(pos);
+            if(!var.removeFromDomain(pos))
+                return false;
     }
+    return true;
   }
 
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInSet);
     // If we are in here, we have a bounds variable.
@@ -80,30 +84,30 @@ template<typename Var>
     vector<DomainInt>::iterator it_low = std::lower_bound(vals.begin(), vals.end(), var.getMin());
     if(it_low == vals.end())
     {
-      getState(stateObj).setFailed(true);
+      return false;
     }
     else
     {
-      var.setMin(*it_low);
+      if(!var.setMin(*it_low))
+        return false;
     }
 
     vector<DomainInt>::iterator it_high = std::lower_bound(vals.begin(), vals.end(), var.getMax());
     if(it_high == vals.end())
     {
       var.setMax(*(it_high - 1));
-      return;
+      return true;
     }
 
     if(*it_high == var.getMax())
-      return;
+      return true;
 
     if(it_high == vals.begin())
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
 
-    var.setMax(*(it_high - 1));
+    return var.setMax(*(it_high - 1));
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

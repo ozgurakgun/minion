@@ -229,7 +229,7 @@ struct ElementConstraintDynamic : public AbstractConstraint
     }
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     for(int i=0; i<var_array.size(); i++) {
         if(var_array[i].isBound() && !var_array[i].isAssigned()) { // isassigned excludes constants.
@@ -250,10 +250,10 @@ struct ElementConstraintDynamic : public AbstractConstraint
     
     // Couple of quick sanity-propagations.
     // We define UNDEF = false ;)
-    indexvar.setMin(0);
-    indexvar.setMax(array_size - 1);
-    
-    if(getState(stateObj).isFailed()) return;
+    if(!indexvar.setMin(0))
+        return false;
+    if(!indexvar.setMax(array_size - 1))
+        return false;
     
     for(int i = 0; i < array_size; ++i)
     {
@@ -287,10 +287,11 @@ struct ElementConstraintDynamic : public AbstractConstraint
     ++dt;
     
     indexvar.addDynamicTrigger(dt, Assigned);
+    return true;
   }
   
   
-  virtual void propagate(DynamicTrigger* trig)
+  virtual BOOL propagate(DynamicTrigger* trig)
   {
     PROP_INFO_ADDONE(DynElement);
     DynamicTrigger* dt = dynamic_trigger_start();
@@ -303,14 +304,14 @@ struct ElementConstraintDynamic : public AbstractConstraint
     if(pos < result_support_triggers)
     {// It was a value in the result var which lost support
       find_new_support_for_result(pos / 2);
-      return;
+      return true;
     }
     pos -= result_support_triggers;
     
     if(pos < index_support_triggers)
     {// A value in the index var lost support
       find_new_support_for_index( pos / 2 );
-      return;
+      return true;
     }
     pos -= index_support_triggers;
     
@@ -321,12 +322,13 @@ struct ElementConstraintDynamic : public AbstractConstraint
       {
         deal_with_assigned_index();
       }
-      return;
+      return true;
     }
     
     D_ASSERT(pos == 1);
     // index has become assigned.
     deal_with_assigned_index();
+    return true;
   }
   
     virtual BOOL check_assignment(DomainInt* v, int v_size)

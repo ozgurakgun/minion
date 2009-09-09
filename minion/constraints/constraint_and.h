@@ -53,77 +53,84 @@ struct AndConstraint : public AbstractConstraint
     return t;
   }
   
-  virtual void propagate(int i, DomainDelta)
+  virtual BOOL propagate(int i, DomainDelta)
   {
     PROP_INFO_ADDONE(And);
     switch(i)
     {
       case 1:
         if(var2.isAssignedValue(true))
-          var3.propagateAssign(true);
+          return var3.propagateAssign(true);
         else
         {
           if(var3.isAssignedValue(false))
-            var2.propagateAssign(false);
+            return var2.propagateAssign(false);
         }
           break;
         
       case 2:
         if(var1.isAssignedValue(true))
-          var3.propagateAssign(true);
+          return var3.propagateAssign(true);
         else
         {
           if(var3.isAssignedValue(false))
-            var1.propagateAssign(false);
+            return var1.propagateAssign(false);
         }
           break;
         
       case 3:
-        var1.propagateAssign(true);
-        var2.propagateAssign(true);
-        break;
+        if(!var1.propagateAssign(true))
+            return false;
+        return var2.propagateAssign(true);
         
         
       case -1:
       case -2:
-        var3.propagateAssign(false);
-        break;
+        return var3.propagateAssign(false);
         
       case -3:
         if(var1.isAssignedValue(true))
-          var2.propagateAssign(false);
+          return var2.propagateAssign(false);
         else
         {
           if(var2.isAssignedValue(true))
-            var1.propagateAssign(false);
+            return var1.propagateAssign(false);
         }
           break;
     }
     
+    return true;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     if(var1.isAssignedValue(false) || var2.isAssignedValue(false))
-      var3.propagateAssign(false);
+      if(!var3.propagateAssign(false))
+        return false;
     
     if(var1.isAssignedValue(true) && var2.isAssignedValue(true))
-      var3.propagateAssign(true);
+      if(!var3.propagateAssign(true))
+        return false;
     
     if(var3.isAssignedValue(false))
     {
       if(var1.isAssignedValue(true))
-        var2.propagateAssign(false);
+        if(!var2.propagateAssign(false))
+            return false;
       if(var2.isAssignedValue(true))
-        var1.propagateAssign(false);
+        if(!var1.propagateAssign(false))
+            return false;
     }
     
     if(var3.isAssignedValue(true))
     {
-      var1.propagateAssign(true);
-      var2.propagateAssign(true);
+      if(!var1.propagateAssign(true))
+        return false;
+      if(!var2.propagateAssign(true))
+        return false;
     }
     
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

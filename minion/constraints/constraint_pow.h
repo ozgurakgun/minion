@@ -117,7 +117,7 @@ struct PowConstraint : public AbstractConstraint
   double my_x(DomainInt y, DomainInt z)
   { return exp(log(checked_cast<double>(z)) / checked_cast<double>(y)); }
   
-  virtual void propagate(int flag, DomainDelta)
+  virtual BOOL propagate(int flag, DomainDelta)
   {
     PROP_INFO_ADDONE(Pow);
     switch(flag)
@@ -125,59 +125,77 @@ struct PowConstraint : public AbstractConstraint
       case -1:
       {
         // var3 >= min(var1) ^ min(var2)
-        var3.setMin(LRINT(my_pow(var1.getMin(),var2.getMin())));
+        if(!var3.setMin(LRINT(my_pow(var1.getMin(),var2.getMin()))))
+            return false;
         DomainInt var1_min = var1.getMin();
         if(var1_min > 1)
           // var2 <= log base max(var3) of min(var1)
-          var2.setMax(LRINT(my_y(var1_min, var3.getMax())));
+          if(!var2.setMax(LRINT(my_y(var1_min, var3.getMax()))))
+            return false;
         break;
       }
       case -2:
         // var3>= min(var1) ^ min(var2) 
-        var3.setMin(LRINT(my_pow(var1.getMin(), var2.getMin())));
-        var1.setMax(LRINT(my_x(var2.getMin(), var3.getMax())));
+        if(!var3.setMin(LRINT(my_pow(var1.getMin(), var2.getMin()))))
+            return false;
+        if(!var1.setMax(LRINT(my_x(var2.getMin(), var3.getMax()))))
+            return false;
         break;
         
       case -3:
       {
-        var1.setMin(LRINT(my_x(var2.getMax(), var3.getMin())));
+        if(!var1.setMin(LRINT(my_x(var2.getMax(), var3.getMin()))))
+            return false;
         DomainInt var1_max = var1.getMax();
         if(var1_max > 1)
-          var2.setMin(LRINT(my_y(var1_max, var3.getMin())));
+          if(!var2.setMin(LRINT(my_y(var1_max, var3.getMin()))))
+            return false;
         break;
       }
       case 1:
       {
-        var3.setMax(rounddown(my_pow(var1.getMax(),var2.getMax())));  // wraparound was occurring here, so use rounddown
+        if(!var3.setMax(rounddown(my_pow(var1.getMax(),var2.getMax()))))
+            return false;
         DomainInt var1_max = var1.getMax();
         if(var1_max > 1)
-          var2.setMin(LRINT(my_y(var1_max, var3.getMin())));
+          if(!var2.setMin(LRINT(my_y(var1_max, var3.getMin()))))
+            return false;
         break;
       }
       case 2:
-        var3.setMax(rounddown(my_pow(var1.getMax(), var2.getMax())));  // wraparound here.
-        var1.setMin(LRINT(my_x(var2.getMax(), var3.getMin())));
+        if(!var3.setMax(rounddown(my_pow(var1.getMax(), var2.getMax()))))
+            return false;
+        if(!var1.setMin(LRINT(my_x(var2.getMax(), var3.getMin()))))
+            return false;
         break;
         
       case 3:
       {
-        var1.setMax(LRINT(my_x(var2.getMin(), var3.getMax())));
+        if(!var1.setMax(LRINT(my_x(var2.getMin(), var3.getMax()))))
+            return false;
         DomainInt var1_min = var1.getMin();
         if(var1_min > 1)
-          var2.setMax(LRINT(my_y(var1_min, var3.getMax())));
+          if(!var2.setMax(LRINT(my_y(var1_min, var3.getMax()))))
+            return false;
         break;
       }
     }
+    return true;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
-    propagate(1,0); 
-    propagate(2,0);
-    propagate(3,0);
-    propagate(-1,0);
-    propagate(-2,0);
-    propagate(-3,0);
+    if(!propagate(1,0))
+        return false;
+    if(!propagate(2,0))
+        return false;
+    if(!propagate(3,0))
+        return false;
+    if(!propagate(-1,0))
+        return false;
+    if(!propagate(-2,0))
+        return false;
+    return propagate(-3,0);
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

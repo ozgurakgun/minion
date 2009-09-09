@@ -59,54 +59,54 @@ template<typename Var>
   int dynamic_trigger_count()
     { return 2; }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {  
     DynamicTrigger* dt = dynamic_trigger_start();    
     // Ignore empty ranges
     if(range_min > range_max)
-      return;
+      return true;
       
     if(var.getMax() <= range_max)
     {
-      var.setMax(range_min - 1);
-      return;
+      return var.setMax(range_min - 1);
     }
     
     if(var.getMin() >= range_min)
     {
-      var.setMin(range_max + 1);
-      return;
+      return var.setMin(range_max + 1);
     }
     
     if(var.isBound())
     {
       var.addDynamicTrigger(dt, DomainChanged);
-      propagate(NULL); 
+      if(!propagate(NULL))
+        return false;
     }
     else
     {
       for(DomainInt i = range_min; i <= range_max; ++i)
-        var.removeFromDomain(i); 
+        if(!var.removeFromDomain(i))
+            return false;
     }
+    return true;
   }
 
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchNotInRange);
     D_ASSERT(var.isBound());
     
     if(var.getMax() <= range_max)
     {
-      var.setMax(range_min - 1);
-      return;
+      return var.setMax(range_min - 1);
     }
     
     if(var.getMin() >= range_min)
     {
-      var.setMin(range_max + 1);
-      return;
+      return var.setMin(range_max + 1);
     }
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

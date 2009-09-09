@@ -107,7 +107,7 @@ struct LessEqualSumConstraint : public AbstractConstraint
     return max_diff;
   }
   
-  virtual void propagate(int prop_val, DomainDelta domain_change)
+  virtual BOOL propagate(int prop_val, DomainDelta domain_change)
   {
     PROP_INFO_ADDONE(FullSum);
     DomainInt sum = var_array_min_sum;
@@ -119,24 +119,26 @@ struct LessEqualSumConstraint : public AbstractConstraint
       var_array_min_sum = sum;
     }
     
-    var_sum.setMin(sum);
-    if(getState(stateObj).isFailed())
-        return;
+    if(!var_sum.setMin(sum))
+        return false;
     D_ASSERT(sum <= get_real_min_sum());
     
     DomainInt looseness = var_sum.getMax() - sum;
     if(looseness < 0)
     { 
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
 
     if(looseness < max_looseness)
     {
       // max_looseness.set(looseness);
-      for(typename VarArray::iterator it = var_array.begin(); it != var_array.end(); ++it)
-        it->setMax(it->getMin() + looseness);
+      for(typename VarArray::iterator it = var_array.begin(); it != var_array.end(); ++it) {
+        if(!it->setMax(it->getMin() + looseness))
+            return false;
+      }
     }
+
+    return true;
   }
   
   virtual BOOL check_unsat(int prop_val, DomainDelta domain_change)
@@ -166,7 +168,7 @@ struct LessEqualSumConstraint : public AbstractConstraint
     }
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     DomainInt min_sum = 0;
     DomainInt max_diff = 0;
@@ -180,9 +182,9 @@ struct LessEqualSumConstraint : public AbstractConstraint
     D_ASSERT(min_sum == get_real_min_sum());
     max_looseness = max_diff;
     if(!var_array.empty())
-      propagate(0,0);
+      return propagate(0,0);
     else
-      var_sum.setMin(0);
+      return var_sum.setMin(0);
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

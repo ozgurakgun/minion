@@ -111,7 +111,7 @@ struct GACTableConstraint : public AbstractConstraint
      return true;
   }
   
-  virtual void propagate(DynamicTrigger* propagated_trig)
+  virtual BOOL propagate(DynamicTrigger* propagated_trig)
   {
     PROP_INFO_ADDONE(DynGACTable);
     DynamicTrigger* dt = dynamic_trigger_start();
@@ -130,8 +130,10 @@ struct GACTableConstraint : public AbstractConstraint
     }
     else
     {
-      vars[varIndex].removeFromDomain(val);
+      if(!vars[varIndex].removeFromDomain(val))
+        return false;
     }
+    return true;
   }
   
   void setup_watches(int var, int lit)
@@ -161,22 +163,21 @@ struct GACTableConstraint : public AbstractConstraint
     }
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
       if(negative==0 && tuples->size()==0)
       {   // it seems to work without this explicit check, but I put it in anyway.
-          getState(stateObj).setFailed(true);
-          return;
+          return false;
       }
       for(int varIndex = 0; varIndex < vars.size(); ++varIndex) 
       {
         if(negative==0)
         {
-            vars[varIndex].setMin((tuples->dom_smallest)[varIndex]);
-            vars[varIndex].setMax((tuples->dom_smallest)[varIndex] + (tuples->dom_size)[varIndex]);
+            if(!vars[varIndex].setMin((tuples->dom_smallest)[varIndex]))
+                return false;
+            if(!vars[varIndex].setMax((tuples->dom_smallest)[varIndex] + (tuples->dom_size)[varIndex]))
+                return false;
         }
-        
-        if(getState(stateObj).isFailed()) return;
         
         DomainInt max = vars[varIndex].getMax();
         for(DomainInt i = vars[varIndex].getMin(); i <= max; ++i) 
@@ -205,7 +206,8 @@ struct GACTableConstraint : public AbstractConstraint
                   //cout <<"No valid support for " + to_string(i) + " in var " + to_string(varIndex) << endl;
                   //volatile int * myptr=NULL;
                   //int crashit=*(myptr);
-                  vars[varIndex].removeFromDomain(i);
+                  if(!vars[varIndex].removeFromDomain(i))
+                    return false;
                 }
                 else
                 {
@@ -221,6 +223,7 @@ struct GACTableConstraint : public AbstractConstraint
             }
         }
       }
+      return true;
       // cout << endl; cout << "  fp: finished finding supports: " << endl ;
   }
   

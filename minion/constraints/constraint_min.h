@@ -85,7 +85,7 @@ struct MinConstraint : public AbstractConstraint
   
   //  virtual AbstractConstraint* reverse_constraint()
   
-  virtual void propagate(int prop_val, DomainDelta)
+  virtual BOOL propagate(int prop_val, DomainDelta)
   {
     PROP_INFO_ADDONE(Min);
     if(prop_val > 0)
@@ -99,7 +99,8 @@ struct MinConstraint : public AbstractConstraint
         DomainInt new_min = min_var.getMin();
         typename VarArray::iterator end = var_array.end();
         for(typename VarArray::iterator it = var_array.begin(); it < end; ++it)
-          (*it).setMin(new_min);
+          if(!(*it).setMin(new_min))
+            return false;
       }
       else
       {
@@ -113,7 +114,8 @@ struct MinConstraint : public AbstractConstraint
           if(it_min < min)
             min = it_min;
         }
-        min_var.setMin(min);
+        if(!min_var.setMin(min))
+            return false;
       }
     }
     else
@@ -128,8 +130,7 @@ struct MinConstraint : public AbstractConstraint
           ++it;
         if(it == var_array.end())
         {
-          getState(stateObj).setFailed(true);
-          return;
+          return false;
         }
         // Possibly this variable is the only one that can be the minimum
         typename VarArray::iterator it_copy(it);
@@ -138,34 +139,40 @@ struct MinConstraint : public AbstractConstraint
           ++it;
         if(it != var_array.end())
         { // No, another variable can be the minimum
-          return;
+          return true;
         }
-        it_copy->setMax(minvar_max);
+        if(!it_copy->setMax(minvar_max))
+            return false;
       }
       else
       {
-        min_var.setMax(var_array[prop_val].getMax());
+        if(!min_var.setMax(var_array[prop_val].getMax()))
+            return false;
       }
     }
 
+    return true;
   }
   
     
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     int array_size = var_array.size();
     if(array_size == 0)
     {
-      getState(stateObj).setFailed(true);
+      return false;
     }
     else
     {
       for(int i = 1;i <= array_size + 1; ++i)
       {
-        propagate(i,0);
-        propagate(-i,0);
+        if(!propagate(i,0))
+            return false;
+        if(!propagate(-i,0))
+            return false;
       }
     }
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

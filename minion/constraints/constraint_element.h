@@ -126,7 +126,7 @@ struct ElementConstraint : public AbstractConstraint
     return t;
   }
   
-  virtual void propagate(int prop_val, DomainDelta)
+  virtual BOOL propagate(int prop_val, DomainDelta)
   {
     PROP_INFO_ADDONE(NonGACElement);
     if(index_ref.isAssigned())
@@ -134,15 +134,18 @@ struct ElementConstraint : public AbstractConstraint
       int index = checked_cast<int>(index_ref.getAssignedValue());
       if(index < 0 || index >= (int)var_array.size())
       {
-        getState(stateObj).setFailed(true);
-        return;
+        return false;
       }
       DomainInt val_min = max(result_var.getMin(), var_array[index].getMin());
       DomainInt val_max = min(result_var.getMax(), var_array[index].getMax());
-      result_var.setMin(val_min);
-      var_array[index].setMin(val_min);
-      result_var.setMax(val_max);
-      var_array[index].setMax(val_max);
+      if(!result_var.setMin(val_min))
+        return false;
+      if(!var_array[index].setMin(val_min))
+        return false;
+      if(!result_var.setMax(val_max))
+        return false;
+      if(!var_array[index].setMax(val_max))
+        return false;
     }
     else
     {
@@ -153,12 +156,17 @@ struct ElementConstraint : public AbstractConstraint
         {
             if(index_ref.isBound())
             {
-                if(prop_val==index_ref.getMax()) index_ref.setMax(prop_val-1);
-                if(prop_val==index_ref.getMin()) index_ref.setMin(prop_val+1);
+                if(prop_val==index_ref.getMax())
+                    if(!index_ref.setMax(prop_val-1))
+                        return false;
+                if(prop_val==index_ref.getMin())
+                    if(!index_ref.setMin(prop_val+1))
+                        return false;
             }
             else
             {
-                index_ref.removeFromDomain(prop_val);
+                if(!index_ref.removeFromDomain(prop_val))
+                    return false;
             }
         }
         
@@ -174,48 +182,58 @@ struct ElementConstraint : public AbstractConstraint
           {
               if(index_ref.isBound())
               {
-                  if(i==index_ref.getMax()) index_ref.setMax(i-1);
-                  if(i==index_ref.getMin()) index_ref.setMin(i+1);
+                  if(i==index_ref.getMax())
+                      if(!index_ref.setMax(i-1))
+                        return false;
+                  if(i==index_ref.getMin())
+                      if(!index_ref.setMin(i+1))
+                        return false;
               }
               else
               {
-                  index_ref.removeFromDomain(i);
+                  if(!index_ref.removeFromDomain(i))
+                    return false;
               }
           }
         }
       }
     }
+    return true;
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     if(index_ref.isAssigned())
     {
       int index = checked_cast<int>(index_ref.getAssignedValue());
       if(index < 0 || index >= (int)var_array.size())
       {
-        getState(stateObj).setFailed(true);
-        return;
+        return false;
       }
       DomainInt val_min = max(result_var.getMin(), var_array[index].getMin());
       DomainInt val_max = min(result_var.getMax(), var_array[index].getMax());
-      result_var.setMin(val_min);
-      var_array[index].setMin(val_min);
-      result_var.setMax(val_max);
-      var_array[index].setMax(val_max);
+      if(!result_var.setMin(val_min))
+        return false;
+      if(!var_array[index].setMin(val_min))
+        return false;
+      if(!result_var.setMax(val_max))
+        return false;
+      if(!var_array[index].setMax(val_max))
+        return false;
     }
     
     int array_size = var_array.size();
     // Constrain the index variable to have only indices in range.
     if(index_ref.getMin()<0)
     {
-        index_ref.setMin(0);
+        if(!index_ref.setMin(0))
+            return false;
     }
     if(index_ref.getMax()>=array_size)
     {
-        index_ref.setMax(array_size-1);
+        if(!index_ref.setMax(array_size-1))
+            return false;
     }
-    if(getState(stateObj).isFailed()) return;
     
     // Should use the new iterators here. Check each value of result_var to see 
     // if it's in one of var_array. 
@@ -237,7 +255,8 @@ struct ElementConstraint : public AbstractConstraint
                 }
                 if(!supported)
                 {
-                    result_var.removeFromDomain(i);
+                    if(!result_var.removeFromDomain(i))
+                        return false;
                 }
             }
         }
@@ -245,7 +264,7 @@ struct ElementConstraint : public AbstractConstraint
     else
     {// result_var is a bound variable
         // iterate up from the minimum
-        while(!getState(stateObj).isFailed())
+        while(true)
         {
             DomainInt i=result_var.getMin();
             BOOL supported=false;
@@ -259,13 +278,14 @@ struct ElementConstraint : public AbstractConstraint
             }
             if(!supported)
             {
-                result_var.setMin(i+1);
+                if(!result_var.setMin(i+1))
+                    return false;
             }
             else
                 break;
         }
         // now iterate down from the top.
-        while(!getState(stateObj).isFailed())
+        while(true)
         {
             DomainInt i=result_var.getMax();
             BOOL supported=false;
@@ -279,14 +299,13 @@ struct ElementConstraint : public AbstractConstraint
             }
             if(!supported)
             {
-                result_var.setMax(i-1);
+                if(!result_var.setMax(i-1))
+                    return false;
             }
             else
                 break;
         }
     }
-    
-    if(getState(stateObj).isFailed()) return;
     
     for(int i = index_ref.getMin();i <= index_ref.getMax(); i++)
     {
@@ -303,7 +322,8 @@ struct ElementConstraint : public AbstractConstraint
             else
             {
                 
-                index_ref.removeFromDomain(i);
+                if(!index_ref.removeFromDomain(i))
+                    return false;
             }
         }
       }
@@ -323,12 +343,14 @@ struct ElementConstraint : public AbstractConstraint
             }
             else
             {
-                index_ref.removeFromDomain(i);
+                if(!index_ref.removeFromDomain(i))
+                    return false;
             }
         }
       }
     }
     
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

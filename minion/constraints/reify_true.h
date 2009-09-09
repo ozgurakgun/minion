@@ -99,13 +99,15 @@ template<typename BoolVar, bool DoWatchAssignment>
     return triggers;
   }
 
-  virtual void special_check()
+  virtual BOOL special_check()
   {
     D_ASSERT(constraint_locked);
     P("Special Check!");
     constraint_locked = false;
-    child_constraints[0]->full_propagate();
+    if(!child_constraints[0]->full_propagate())
+        return false;
     full_propagate_called = true;
+    return true;
   }
 
   virtual void special_unlock()
@@ -115,21 +117,21 @@ template<typename BoolVar, bool DoWatchAssignment>
     constraint_locked = false;
   }
 
-  virtual void propagate(int i, DomainDelta domain)
+  virtual BOOL propagate(int i, DomainDelta domain)
   {
     PROP_INFO_ADDONE(ReifyTrue);
     P("Static propagate start");
     if(constraint_locked)
-      return;
+      return true;
 
     if(i == -1)
     {
         if(!rar_var.isAssigned() || rar_var.getAssignedValue()==0 )
-            return;
+            return true;
         P("rarvar assigned to 1- Do full propagate");
         constraint_locked = true;
         getQueue(stateObj).pushSpecialTrigger(this);
-        return;
+        return true;
     }
 
     if(full_propagate_called)
@@ -139,16 +141,18 @@ template<typename BoolVar, bool DoWatchAssignment>
       pair<int,int> childTrigger = getChildStaticTrigger(i);
       D_ASSERT(childTrigger.first == 0);
       P("Passing trigger" << childTrigger.second << "on");
-      child_constraints[0]->propagate(childTrigger.second, domain);
+      if(!child_constraints[0]->propagate(childTrigger.second, domain))
+        return false;
     }
+    return true;
   }
 
-  virtual void propagate(DynamicTrigger* trig)
+  virtual BOOL propagate(DynamicTrigger* trig)
   {
     PROP_INFO_ADDONE(ReifyTrue);
     P("Dynamic prop start");
     if(constraint_locked)
-      return;
+      return true;
 
     DynamicTrigger* dt = dynamic_trigger_start();
 
@@ -165,20 +169,22 @@ template<typename BoolVar, bool DoWatchAssignment>
         if(!flag)
         { // No satisfying assignment to constraint
           P("Failed!");
-          rar_var.propagateAssign(0);
-          return;
+          if(!rar_var.propagateAssign(0))
+            return false;
+          return true;
         }
         P("Found new assignment");
         watch_assignment(assignment, *(child_constraints[0]->get_vars_singleton()), dt);
       }
-      return;
+      return true;
     }
 
     if(full_propagate_called)
     {
       P("Pass triggers to children");
       D_ASSERT(rar_var.isAssigned() && rar_var.getAssignedValue() == 1);
-      child_constraints[0]->propagate(trig);
+      if(!child_constraints[0]->propagate(trig))
+        return false;
     }
     else
     {
@@ -186,6 +192,7 @@ template<typename BoolVar, bool DoWatchAssignment>
       // This is an optimisation.
       releaseTrigger(stateObj, trig);
     }
+    return true;
   }
 
   template<typename T, typename Vars, typename Trigger>
@@ -203,16 +210,17 @@ template<typename BoolVar, bool DoWatchAssignment>
 
   }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     P("Full prop");
     
     P(child_constraints[0]->constraint_name());
     if(rar_var.isAssigned() && rar_var.getAssignedValue() == 1)
     {
-      child_constraints[0]->full_propagate();
+      if(!child_constraints[0]->full_propagate())
+        return false;
       full_propagate_called = true;
-      return;
+      return true;
     }
     
     DynamicTrigger* dt = dynamic_trigger_start();
@@ -229,11 +237,13 @@ template<typename BoolVar, bool DoWatchAssignment>
         if(!flag)
         {   // No satisfying assignment to constraint
             P("Assigning reifyvar to 0");
-            rar_var.propagateAssign(0);
-            return;
+            if(!rar_var.propagateAssign(0))
+                return false;
+            return true;
         }
         watch_assignment(assignment, *(child_constraints[0]->get_vars_singleton()), dt);
     }
+    return true;
   }
 };
 

@@ -92,7 +92,7 @@ struct NotModConstraint : public AbstractConstraint
     return t;
   }
   
-  virtual void propagate(int flag, DomainDelta)
+  virtual BOOL propagate(int flag, DomainDelta)
   {
     PROP_INFO_ADDONE(Mod);
     // propagate var1 % var2 != var3 by forward checking
@@ -100,15 +100,19 @@ struct NotModConstraint : public AbstractConstraint
     {
         if(!var3.isBound())
         {
-            var3.removeFromDomain(var1.getAssignedValue() % var2.getAssignedValue());
+            if(!var3.removeFromDomain(var1.getAssignedValue() % var2.getAssignedValue()))
+                return false;
         }
         else
         {
             DomainInt temp=var1.getAssignedValue() % var2.getAssignedValue();
-            if(temp==var3.getMin())
-                var3.setMin(temp+1);
-            else if(temp==var3.getMax())
-                var3.setMax(temp-1);
+            if(temp==var3.getMin()) {
+                if(!var3.setMin(temp+1))
+                    return false;
+            } else if(temp==var3.getMax()) {
+                if(!var3.setMax(temp-1))
+                    return false;
+            }
         }
     }
     else if(var1.isAssigned() && var3.isAssigned())
@@ -119,7 +123,8 @@ struct NotModConstraint : public AbstractConstraint
             {
                 if(var1.getAssignedValue() % i == var3.getAssignedValue())
                 {
-                    var2.removeFromDomain(i);
+                    if(!var2.removeFromDomain(i))
+                        return false;
                 }
             }
         }
@@ -127,11 +132,13 @@ struct NotModConstraint : public AbstractConstraint
         {
             if(var1.getAssignedValue() % var2.getMin() == var3.getAssignedValue())
             {
-                var2.setMin(var2.getMin()+1);
+                if(!var2.setMin(var2.getMin()+1))
+                    return false;
             }
             else if(var1.getAssignedValue() % var2.getMax() == var3.getAssignedValue())
             {
-                var2.setMax(var2.getMax()-1);
+                if(!var2.setMax(var2.getMax()-1))
+                    return false;
             }
         }
     }
@@ -143,7 +150,8 @@ struct NotModConstraint : public AbstractConstraint
             {
                 if(i % var2.getAssignedValue() == var3.getAssignedValue())
                 {
-                    var1.removeFromDomain(i);
+                    if(!var1.removeFromDomain(i))
+                        return false;
                     
                     // skip a few iterations to the next interesting value.
                     i=i+var2.getAssignedValue()-1;
@@ -154,20 +162,23 @@ struct NotModConstraint : public AbstractConstraint
         {
             if(var1.getMin() % var2.getAssignedValue() == var3.getAssignedValue())
             {
-                var1.setMin(var1.getMin()+1);
+                if(!var1.setMin(var1.getMin()+1))
+                    return false;
             }
             else if(var1.getMax() % var2.getAssignedValue() == var3.getAssignedValue())
             {
-                var1.setMax(var1.getMax()-1);
+                if(!var1.setMax(var1.getMax()-1))
+                    return false;
             }
         }
     }
     
+    return true;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
-    propagate(1,0);
+    return propagate(1,0);
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
@@ -252,7 +263,7 @@ struct ModConstraint : public AbstractConstraint
     return t;
   }
   
-  virtual void propagate(int flag, DomainDelta)
+  virtual BOOL propagate(int flag, DomainDelta)
   {
     PROP_INFO_ADDONE(Mod);
     // aiming at bounds(D)-consistency. 
@@ -263,53 +274,54 @@ struct ModConstraint : public AbstractConstraint
     while(!testsupport_var1(var1val))
     {
         // While no support for upperbound, reduce upperbound
-        var1.setMax(var1val-1);
+        if(!var1.setMax(var1val-1))
+            return false;
         var1val=var1.getMax();
-        if(getState(stateObj).isFailed()) return;
     }
     
     var1val=var1.getMin();
     while(!testsupport_var1(var1val))
     {
-        var1.setMin(var1val+1);
+        if(!var1.setMin(var1val+1))
+            return false;
         var1val=var1.getMin();
-        if(getState(stateObj).isFailed()) return;
     }
     
     DomainInt var2val=var2.getMax();
     while(!testsupport_var2(var2val))
     {
         // While no support for upperbound, reduce upperbound
-        var2.setMax(var2val-1);  // Is this the right function for pruning the upperbound?
+        if(!var2.setMax(var2val-1))
+            return false;
         var2val=var2.getMax();
-        if(getState(stateObj).isFailed()) return;
     }
     
     var2val=var2.getMin();
     while(!testsupport_var2(var2val))
     {
-        var2.setMin(var2val+1);
+        if(!var2.setMin(var2val+1))
+            return false;
         var2val=var2.getMin();
-        if(getState(stateObj).isFailed()) return;
     }
     
     DomainInt var3val=var3.getMax();
     while(!testsupport_var3(var3val))
     {
         // While no support for upperbound, reduce upperbound
-        var3.setMax(var3val-1);  // Is this the right function for pruning the upperbound?
+        if(!var3.setMax(var3val-1))
+            return false;
         var3val=var3.getMax();
-        if(getState(stateObj).isFailed()) return;
     }
     
     var3val=var3.getMin();
     while(!testsupport_var3(var3val))
     {
-        var3.setMin(var3val+1);
+        if(!var3.setMin(var3val+1))
+            return false;
         var3val=var3.getMin();
-        if(getState(stateObj).isFailed()) return;
     }
     
+    return true;
   }
   
   // next step is to modify the following three functions to store the supporting tuple,
@@ -385,9 +397,9 @@ struct ModConstraint : public AbstractConstraint
         return false;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
-    propagate(1,0); 
+    return propagate(1,0); 
     /*propagate(2,0);
     propagate(3,0);
     propagate(-1,0);

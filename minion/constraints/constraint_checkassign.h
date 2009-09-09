@@ -55,11 +55,12 @@ struct CheckAssignConstraint : public AbstractConstraint
     FAIL_EXIT();
   }
   
-  virtual void propagate(int prop_val,DomainDelta delta)
+  virtual BOOL propagate(int prop_val,DomainDelta delta)
   {
     PROP_INFO_ADDONE(CheckAssign);
     if(check_unsat(prop_val, delta))
-      getState(stateObj).setFailed(true);
+        return false;
+    return true;
   }
   
   virtual BOOL check_unsat(int,DomainDelta)
@@ -108,10 +109,11 @@ struct CheckAssignConstraint : public AbstractConstraint
     return false;
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     if(full_check_unsat())
-      getState(stateObj).setFailed(true);
+      return false;
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

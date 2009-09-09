@@ -74,21 +74,23 @@ template<typename VarArray1, typename VarArray2, bool Less = false>
       releaseTrigger(stateObj, dt + 1 BT_CALL_BACKTRACK);
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     DynamicTrigger* dt = dynamic_trigger_start();
 
     if(var_array1.size() == 0)
     {
         if(Less)
-            getState(stateObj).setFailed(true);
-        return;
+            return false;
+        return true;
     }
     
     alpha = 0;
     
-    var_array2[0].setMin(var_array1[0].getMin());
-    var_array1[0].setMax(var_array2[0].getMax());
+    if(!var_array2[0].setMin(var_array1[0].getMin()))
+        return false;
+    if(!var_array1[0].setMax(var_array2[0].getMax()))
+        return false;
     
     // Set these up, just so they are stored.
     var_array1[0].addDynamicTrigger(dt, LowerBound, NoDomainValue BT_CALL_STORE);
@@ -98,11 +100,12 @@ template<typename VarArray1, typename VarArray2, bool Less = false>
     if(var_array1[0].isAssigned() && var_array2[0].isAssigned() &&
        var_array1[0].getAssignedValue() == var_array2[0].getAssignedValue())
     {
-        progress();
+        return progress();
     }
+    return true;
   }
   
-  void progress()
+  BOOL progress()
   {
     int a = alpha;
     int n = var_array1.size();
@@ -114,8 +117,10 @@ template<typename VarArray1, typename VarArray2, bool Less = false>
     
     while(a < n)
     {
-      var_array1[a].setMax(var_array2[a].getMax());
-      var_array2[a].setMin(var_array1[a].getMin());
+      if(!var_array1[a].setMax(var_array2[a].getMax()))
+        return false;
+      if(!var_array2[a].setMin(var_array1[a].getMin()))
+        return false;
       if(var_array1[a].isAssigned() && var_array2[a].isAssigned() &&
          var_array1[a].getAssignedValue() == var_array2[a].getAssignedValue())
          {
@@ -125,20 +130,21 @@ template<typename VarArray1, typename VarArray2, bool Less = false>
          {
            attach_triggers(a);
            alpha = a;
-           return;
+           return true;
          }
     }
     
     if(Less)
-        getState(stateObj).setFailed(true);
+        return false;
     else
     {
         detach_triggers();
         alpha = n;
     }
+    return true;
   }
   
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     DynamicTrigger* base_dt = dynamic_trigger_start();
     
@@ -148,23 +154,27 @@ template<typename VarArray1, typename VarArray2, bool Less = false>
 
     if(base_dt == dt)
     { // X triggered
-      var_array2[a].setMin(var_array1[a].getMin());
+      if(!var_array2[a].setMin(var_array1[a].getMin()))
+        return false;
     }
     else
     { // Y triggered
-      var_array1[a].setMax(var_array2[a].getMax());
+      if(!var_array1[a].setMax(var_array2[a].getMax()))
+        return false;
     }
 
     if(var_array1[a].isAssigned() && var_array2[a].isAssigned() &&
        var_array1[a].getAssignedValue() == var_array2[a].getAssignedValue())
     {
-      progress();
+      if(!progress())
+        return false;
     }
     else
     {
         //if(var_array1[a].getMax() < var_array2[a].getMin())
         //    detach_triggers();
     }
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

@@ -76,7 +76,7 @@ struct NeqConstraint : public AbstractConstraint
   virtual AbstractConstraint* reverse_constraint()
   { return new CheckAssignConstraint<VarArray, NeqConstraint>(stateObj, var_array, *this); }
   
-  virtual void propagate(int prop_val, DomainDelta)
+  virtual BOOL propagate(int prop_val, DomainDelta)
   {
     PROP_INFO_ADDONE(ArrayNeq);
     DomainInt remove_val = var_array[prop_val].getAssignedValue();
@@ -88,16 +88,20 @@ struct NeqConstraint : public AbstractConstraint
         if(var_array[i].isBound())
         {
           if(var_array[i].getMin() == remove_val)
-            var_array[i].setMin(remove_val + 1);
+            if(!var_array[i].setMin(remove_val + 1))
+                return false;
           if(var_array[i].getMax() == remove_val)
-            var_array[i].setMax(remove_val - 1);
+            if(!var_array[i].setMax(remove_val - 1))
+                return false;
         }
         else {
-          var_array[i].removeFromDomain(remove_val);
+          if(!var_array[i].removeFromDomain(remove_val))
+            return false;
         }
       }
     }
     
+    return true;
   }
   
   virtual BOOL full_check_unsat()
@@ -141,7 +145,7 @@ struct NeqConstraint : public AbstractConstraint
   }
   
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     int array_size = var_array.size();
     for(int i = 0; i < array_size; ++i)
@@ -155,16 +159,20 @@ struct NeqConstraint : public AbstractConstraint
             if(var_array[j].isBound())
             {
               if(var_array[j].getMin() == remove_val)
-                var_array[j].setMin(remove_val + 1);
+                if(!var_array[j].setMin(remove_val + 1))
+                    return false;
               if(var_array[j].getMax() == remove_val)
-                var_array[j].setMax(remove_val - 1);
+                if(!var_array[j].setMax(remove_val - 1))
+                    return false;
             }
             else {
-              var_array[j].removeFromDomain(remove_val);
+              if(!var_array[j].removeFromDomain(remove_val))
+                return false;
             }
           }
         }
       }
+    return true;
   }
     
     virtual BOOL check_assignment(DomainInt* v, int v_size)

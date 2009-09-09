@@ -47,16 +47,16 @@ template<typename Var>
   int dynamic_trigger_count()
   { return 0; }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
-    var.removeFromDomain(val); 
+    return var.removeFromDomain(val); 
   }
 
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
-    var.removeFromDomain(val); 
+    return var.removeFromDomain(val); 
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)
@@ -109,15 +109,15 @@ struct WatchNotLiteralBoolConstraint : public AbstractConstraint
   int dynamic_trigger_count()
   { return 0; }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
-    var.removeFromDomain(val); 
+    return var.removeFromDomain(val); 
   }
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
-    var.removeFromDomain(val); 
+    return var.removeFromDomain(val); 
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

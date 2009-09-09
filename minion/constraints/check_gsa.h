@@ -58,7 +58,7 @@ struct Check_GSA : public AbstractConstraint
   virtual vector<AnyVarRef> get_vars()
   { return child->get_vars(); }
 
-  virtual void propagate(DynamicTrigger*)
+  virtual BOOL propagate(DynamicTrigger*)
   {
     DynamicTrigger* dt = dynamic_trigger_start();
     bool flag = false;
@@ -67,6 +67,7 @@ struct Check_GSA : public AbstractConstraint
     { getState(stateObj).setFailed(true); }
     else
     { watch_assignment(assignment, *(child->get_vars_singleton()), dt); }
+    return true;
   }
 
   template<typename T, typename Vars, typename Trigger>
@@ -83,8 +84,8 @@ struct Check_GSA : public AbstractConstraint
     }
   }
 
-  virtual void full_propagate()
-  { propagate(NULL); }
+  virtual BOOL full_propagate()
+  { return propagate(NULL); }
 };
 
 AbstractConstraint*

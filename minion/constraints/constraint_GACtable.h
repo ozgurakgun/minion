@@ -227,7 +227,7 @@ struct GACTableConstraint : public AbstractConstraint
 #endif
   }
 
-  virtual void propagate(DynamicTrigger* propagated_trig)
+  virtual BOOL propagate(DynamicTrigger* propagated_trig)
   {
     PROP_INFO_ADDONE(DynGACTable);
 
@@ -245,8 +245,10 @@ struct GACTableConstraint : public AbstractConstraint
     }
     else
     {
-      vars[varval.first].removeFromDomain(varval.second);
+      if(!vars[varval.first].removeFromDomain(varval.second))
+        return false;
     }
+    return true;
   }  
   
   void setup_watches(int var, int val)
@@ -268,23 +270,24 @@ struct GACTableConstraint : public AbstractConstraint
     }
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
     for(unsigned i = 0; i < vars.size(); ++i)
     {
       int dom_min = (lists->tuples->dom_smallest)[i];
       int dom_max = (lists->tuples->dom_smallest)[i] + (lists->tuples->dom_size)[i];
-      vars[i].setMin(dom_min);
-      vars[i].setMax(dom_max - 1);
-      
-      if(getState(stateObj).isFailed()) return;
+      if(!vars[i].setMin(dom_min))
+        return false;
+      if(!vars[i].setMax(dom_max - 1))
+        return false;
       
       for(int x = vars[i].getMin(); x <= vars[i].getMax(); ++x)
       {
         int literal = (lists->tuples->get_literal)(i, x);
         if((lists->literal_specific_tuples)[literal].empty())
         {
-          vars[i].removeFromDomain(x);
+          if(!vars[i].removeFromDomain(x))
+            return false;
         }
         else
         {
@@ -293,13 +296,15 @@ struct GACTableConstraint : public AbstractConstraint
           
           if(!is_new_support)
           {
-            vars[i].removeFromDomain(x);
+            if(!vars[i].removeFromDomain(x))
+                return false;
           }
           else
           { setup_watches(i, x); }
         }
       }
     }
+    return true;
   }
   
    virtual BOOL check_assignment(DomainInt* v, int v_size)

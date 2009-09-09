@@ -67,17 +67,20 @@ struct LeqConstraint : public AbstractConstraint
   // Needs to be at end of file
   virtual AbstractConstraint* reverse_constraint();
   
-  virtual void propagate(int prop_val,DomainDelta)
+  virtual BOOL propagate(int prop_val,DomainDelta)
   {
     PROP_INFO_ADDONE(BinaryLeq);
     if(prop_val)
     {// y changed
-      x.setMax(y.getMax() + offset);
+      if(!x.setMax(y.getMax() + offset))
+        return false;
     }
     else
     {// x changed
-      y.setMin(x.getMin() - offset);
+      if(!y.setMin(x.getMin() - offset))
+        return false;
     }
+    return true;
   }
   
   virtual BOOL check_unsat(int,DomainDelta)
@@ -86,10 +89,11 @@ struct LeqConstraint : public AbstractConstraint
   virtual BOOL full_check_unsat()
   { return (x.getMin() > y.getMax() + offset); }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
-    propagate(0,0);
-    propagate(1,0);
+    if(!propagate(0,0))
+        return false;
+    return propagate(1,0);
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

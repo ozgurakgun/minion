@@ -59,14 +59,15 @@ template<typename Var>
   int dynamic_trigger_count()
     { return 2; }
 
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {  
-    var.setMin(range_min);
-    var.setMax(range_max);
+    if(!var.setMin(range_min))
+        return false;
+    return var.setMax(range_max);
   }
 
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(WatchInRange);
     D_FATAL_ERROR("Propagation is never called for 'in range'");

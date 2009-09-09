@@ -400,7 +400,7 @@ struct GACTableConstraint : public AbstractConstraint
       return true;
   }
   
-  virtual void propagate(DynamicTrigger* propagated_trig)
+  virtual BOOL propagate(DynamicTrigger* propagated_trig)
   {
     PROP_INFO_ADDONE(DynGACTable);
     DynamicTrigger* dt = dynamic_trigger_start();
@@ -419,8 +419,10 @@ struct GACTableConstraint : public AbstractConstraint
     }
     else
     {
-      vars[varIndex].removeFromDomain(val);
+      if(!vars[varIndex].removeFromDomain(val))
+        return false;
     }
+    return true;
   }
   
   void setup_watches(int var, int val, int lit)
@@ -443,7 +445,7 @@ struct GACTableConstraint : public AbstractConstraint
   }
   
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   { 
     for(int varIndex = 0; varIndex < vars.size(); ++varIndex) 
     {
@@ -451,11 +453,10 @@ struct GACTableConstraint : public AbstractConstraint
       int tuple_domain_min = (tupleList->dom_smallest)[varIndex];
       int tuple_domain_size = (tupleList->dom_size)[varIndex];
       
-      vars[varIndex].setMin(tuple_domain_min);
-      vars[varIndex].setMax(tuple_domain_min + tuple_domain_size);
-      
-      if(getState(stateObj).isFailed()) 
-        return;
+      if(!vars[varIndex].setMin(tuple_domain_min))
+        return false;
+      if(!vars[varIndex].setMax(tuple_domain_min + tuple_domain_size))
+        return false;
       
       int max = vars[varIndex].getMax();
       
@@ -466,7 +467,8 @@ struct GACTableConstraint : public AbstractConstraint
         int sup=current_support[varIndex][i - tuple_domain_min]->get();
         if(_tuple==0)
         {
-          vars[varIndex].removeFromDomain(i);
+          if(!vars[varIndex].removeFromDomain(i))
+            return false;
         }
         else
         {
@@ -474,6 +476,7 @@ struct GACTableConstraint : public AbstractConstraint
         }
       }
     }
+    return true;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

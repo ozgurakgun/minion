@@ -60,18 +60,20 @@ struct EqIterated
   }
   
   template<typename VarType1, typename VarType2>  
-  static void propagate_from_var1(VarType1& var1, VarType2& var2)
+  static BOOL propagate_from_var1(VarType1& var1, VarType2& var2)
   {
       // just do bounds for the time being
-      var2.setMin(var1.getMin());
-      var2.setMax(var1.getMax());
+      if(!var2.setMin(var1.getMin()))
+        return false;
+      return var2.setMax(var1.getMax());
   }
   
   template<typename VarType1, typename VarType2>
-  static void propagate_from_var2(VarType1& var1, VarType2& var2)
+  static BOOL propagate_from_var2(VarType1& var1, VarType2& var2)
   {
-      var1.setMin(var2.getMin());
-      var1.setMax(var2.getMax());
+      if(!var1.setMin(var2.getMin()))
+        return false;
+      return var1.setMax(var2.getMax());
   }
   
   template<typename VarType1, typename VarType2>
@@ -127,17 +129,19 @@ struct NeqIterated
   }
   
   template<typename VarType1, typename VarType2>  
-  static void propagate_from_var1(VarType1& var1, VarType2& var2)
+  static BOOL propagate_from_var1(VarType1& var1, VarType2& var2)
   {
     if(var1.isAssigned())
-      remove_value(var1.getAssignedValue(), var2);
+      return remove_value(var1.getAssignedValue(), var2);
+    return true;
   }
   
   template<typename VarType1, typename VarType2>
-  static void propagate_from_var2(VarType1& var1, VarType2& var2)
+  static BOOL propagate_from_var2(VarType1& var1, VarType2& var2)
   {
     if(var2.isAssigned())
-      remove_value(var2.getAssignedValue(), var1);
+      return remove_value(var2.getAssignedValue(), var1);
+    return true;
   }
   
   template<typename VarType1, typename VarType2>
@@ -148,18 +152,19 @@ struct NeqIterated
   }
     
   template<typename Var>
-  static void remove_value(DomainInt val, Var& var)
+  static BOOL remove_value(DomainInt val, Var& var)
   {
     if(var.isBound())
     {
       if(var.getMin() == val)
-        var.setMin(val + 1);
+        return var.setMin(val + 1);
       else
         if(var.getMax() == val)
-        var.setMax(val - 1);
+        return var.setMax(val - 1);
     }
     else
-      { var.removeFromDomain(val); }
+      { return var.removeFromDomain(val); }
+    return true;
   }
   
   template<typename Var1, typename Var2>
@@ -210,15 +215,15 @@ struct LessIterated
   }
   
   template<typename VarType1, typename VarType2>  
-  static void propagate_from_var1(VarType1& var1, VarType2& var2)
+  static BOOL propagate_from_var1(VarType1& var1, VarType2& var2)
   {
-    var2.setMin(var1.getMin() + 1);
+    return var2.setMin(var1.getMin() + 1);
   }
   
   template<typename VarType1, typename VarType2>
-  static void propagate_from_var2(VarType1& var1, VarType2& var2)
+  static BOOL propagate_from_var2(VarType1& var1, VarType2& var2)
   {
-    var1.setMax(var2.getMax() - 1);
+    return var1.setMax(var2.getMax() - 1);
   }
   
   template<typename VarType1, typename VarType2>
@@ -263,15 +268,15 @@ struct BothNonZeroIterated
   }
   
   template<typename VarType1, typename VarType2>  
-  static void propagate_from_var1(VarType1& var1, VarType2& var2)
+  static BOOL propagate_from_var1(VarType1& var1, VarType2& var2)
   {
-    var2.setMin(1);
+    return var2.setMin(1);
   }
   
   template<typename VarType1, typename VarType2>
-  static void propagate_from_var2(VarType1& var1, VarType2& var2)
+  static BOOL propagate_from_var2(VarType1& var1, VarType2& var2)
   {
-    var1.setMin(1);
+    return var1.setMin(1);
   }
   
   template<typename VarType1, typename VarType2>
@@ -355,10 +360,11 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     return t;
   }
   
-  virtual void propagate(int i, DomainDelta)
+  virtual BOOL propagate(int i, DomainDelta)
   {
     if(var_array1[i].getMin() == var_array2[i].getMax())
       counter = counter + 1;
+    return true;
   }
 #endif
   
@@ -371,7 +377,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     Operator::add_triggers(var_array1[index], var_array2[index], dt);
   }
   
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     P("VecNeq full prop");
     DynamicTrigger* dt = dynamic_trigger_start();
@@ -385,8 +391,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     // Vectors are assigned and equal.
     if(index == size)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
 
     watched_index0 = index;
@@ -400,27 +405,30 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     // There is only one possible pair allowed...
     if(index == size)
     {
-      propagate_from_var1(watched_index0);
-      propagate_from_var2(watched_index0);
+      if(!propagate_from_var1(watched_index0))
+        return false;
+      if(!propagate_from_var2(watched_index0))
+        return false;
       propagate_mode = true;
       index_to_propagate = watched_index0;
       add_triggers(watched_index0, dt);
-      return;
+      return true;
     }
 
     watched_index1 = index;
 
     add_triggers(watched_index0, dt);
     add_triggers(watched_index1, dt + 2);
+    return true;
   }
 
-  void propagate_from_var1(int index)
-  { Operator::propagate_from_var1(var_array1[index], var_array2[index]); }
+  BOOL propagate_from_var1(int index)
+  { return Operator::propagate_from_var1(var_array1[index], var_array2[index]); }
   
-  void propagate_from_var2(int index)
-  {  Operator::propagate_from_var2(var_array1[index], var_array2[index]); }
+  BOOL propagate_from_var2(int index)
+  {  return Operator::propagate_from_var2(var_array1[index], var_array2[index]); }
 
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(DynVecNeq);
     P("VecNeq prop");
@@ -455,22 +463,22 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     {
       // If this is true, the other index got assigned.
       if(index_to_propagate != original_index)
-        return;
+        return true;
 
       if(triggerarray == 1)
       {
-        propagate_from_var1(index_to_propagate);
+        return propagate_from_var1(index_to_propagate);
       }
       else
       {  
-        propagate_from_var2(index_to_propagate);
+        return propagate_from_var2(index_to_propagate);
       }
-      return;   
+      return true;
     }
 
     // Check if propagation has caused a loss of support.
     if(!no_support_for_index(original_index))
-      return;
+      return true;
 
     int index = original_index + 1;
 
@@ -491,9 +499,9 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
         P("Entering propagate mode for index " << index_to_propagate);
         propagate_mode = true;
         index_to_propagate = other_index;
-        propagate_from_var1(other_index);
-        propagate_from_var2(other_index);
-        return;
+        if(!propagate_from_var1(other_index))
+            return false;
+        return propagate_from_var2(other_index);
       }
     }
 
@@ -506,6 +514,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     D_ASSERT(watched_index0 != watched_index1);
     DynamicTrigger* trigs = dynamic_trigger_start();
     add_triggers(index, trigs + triggerpair * 2);
+    return true;
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

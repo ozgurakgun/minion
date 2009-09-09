@@ -41,20 +41,18 @@ struct BoolBinarySATConstraintDynamic : public AbstractConstraint
     return 2;
   }
     
-  virtual void full_propagate()
+  virtual BOOL full_propagate()
   {
     DynamicTrigger* dt = dynamic_trigger_start();
 
     if(var1.isAssignedValue(false))
     {
-      var2.propagateAssign(true);
-      return;
+      return var2.propagateAssign(true);
     }
     
     if(var2.isAssignedValue(false))
     {
-      var1.propagateAssign(true);
-      return;
+      return var1.propagateAssign(true);
     }
     
     dt->trigger_info() = 0;
@@ -65,18 +63,18 @@ struct BoolBinarySATConstraintDynamic : public AbstractConstraint
     dt->trigger_info() = 1;
     var2.addDynamicTrigger(dt, UpperBound);
     
-    return;
+    return true;
   }
     
-  virtual void propagate(DynamicTrigger* dt)
+  virtual BOOL propagate(DynamicTrigger* dt)
   {
     PROP_INFO_ADDONE(Dyn2SAT);
     int propval = dt->trigger_info();
     
     if(propval)
-      var1.propagateAssign(true);
+      return var1.propagateAssign(true);
     else
-      var2.propagateAssign(true);
+      return var2.propagateAssign(true);
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
