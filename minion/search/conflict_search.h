@@ -27,15 +27,16 @@ namespace Controller
   // This function implements the algorithm in the ECAI '06 paper,
   // Last Conﬂict based Reasoning 
   template<typename VarOrder, typename Variables, typename Propogator>
-  inline void conflict_solve_loop(StateObj* stateObj, function<void (void)> next_search, VarOrder& order, Variables& v, Propogator prop = PropagateGAC())
+  inline BOOL conflict_solve_loop(StateObj* stateObj, function<BOOL (void)> next_search, VarOrder& order, Variables& v, Propogator prop = PropagateGAC())
   {
     maybe_print_search_state(stateObj, "Node: ", v);
     int last_conflict_var = -1;
+    BOOL retval = true;
     while(true)
     {
       getState(stateObj).incrementNodeCount();
       if(do_checks(stateObj, order))
-        return;
+        return true;
       
       D_ASSERT(last_conflict_var >= -1 && last_conflict_var < (int)v.size());
       // Clear the 'last conflict var if it has got assigned'
@@ -49,7 +50,7 @@ namespace Controller
         // has been reached.
         next_search();
         // fail here to force backtracking.
-        getState(stateObj).setFailed(true);
+        return false;
       }
       else
       {
@@ -59,10 +60,10 @@ namespace Controller
           order.branch_left();
         else
           order.force_branch_left(last_conflict_var);
-        prop(stateObj, v);
+        retval = prop(stateObj, v);
       }
       
-      if(!getState(stateObj).isFailed())
+      if(retval)
       {
         // Last conflict var is satisfied
         last_conflict_var = -1;  
@@ -70,23 +71,23 @@ namespace Controller
       else
       {
         // Either search failed, or a solution was found.
-        while(getState(stateObj).isFailed())
+        while(!retval)
         {
           // the order.get_current_pos() != v.size() is in case we just got a soln.
           if(last_conflict_var == -1 && order.get_current_pos() != v.size())
             last_conflict_var = order.get_current_pos();
           
-          getState(stateObj).setFailed(false);
+          retval = true;
           
           if(order.finished_search())
-            return;
+            return true;
           
           world_pop(stateObj);
           maybe_print_search_action(stateObj, "bt");
 
           order.branch_right();
 
-          set_optimise_and_propagate_queue(stateObj);
+          retval = set_optimise_and_propagate_queue(stateObj);
         }
       }
     }

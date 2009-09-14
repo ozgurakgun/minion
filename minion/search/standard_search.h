@@ -34,8 +34,9 @@ namespace Controller
   // (Feel free to ignore the value ordering!)
   
   template<typename VarOrder, typename Variables, typename Propogator>
-  inline void solve_loop(StateObj* stateObj, function<void (void)> next_search, VarOrder& order, Variables& v, Propogator prop, bool findOneSol)
+  inline BOOL solve_loop(StateObj* stateObj, function<BOOL (void)> next_search, VarOrder& order, Variables& v, Propogator prop, bool findOneSol)
   {
+    BOOL retval = true;
     // Don't corrupt the state the world came in with.
     world_push(stateObj);
     
@@ -65,38 +66,38 @@ namespace Controller
           order.reset();
           world_pop(stateObj);
           cout << "Solution Leaving" << endl;
-          return;
+          return true;
         }
         
         // fail here to force backtracking.
-        getState(stateObj).setFailed(true);
+        retval = false;
       }
       else
       {
         maybe_print_search_state(stateObj, "Node: ", v);
         world_push(stateObj);
         order.branch_left();
-        prop(stateObj, v);
-        D_ASSERT(getQueue(stateObj).isQueuesEmpty() || getState(stateObj).isFailed());
+        retval = prop(stateObj, v);
       }
 
       // Either search failed, or a solution was found.
-      while(getState(stateObj).isFailed())
+      while(!retval)
       {
-        getState(stateObj).setFailed(false);
+        retval = true;
         if(order.finished_search())
         {
           order.reset();
           world_pop(stateObj);
           cout << "Search end leaving" << endl;
-          return;
+          return true;
         }
         world_pop(stateObj);
         maybe_print_search_action(stateObj, "bt");
         order.branch_right();
-        set_optimise_and_propagate_queue(stateObj);
+        retval = set_optimise_and_propagate_queue(stateObj);
       }
     }
+    return true;
   }
 
 }

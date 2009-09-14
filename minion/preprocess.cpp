@@ -21,16 +21,17 @@
 #include "preprocess.h"
 /// Apply a high level of consistency to a CSP.
 /** This function is not particularly optimised, implementing only the most basic SAC and SSAC algorithms */
-void PropogateCSP(StateObj* stateObj, PropagationLevel preprocessLevel, vector<AnyVarRef>& vars, bool print_info)
+BOOL PropogateCSP(StateObj* stateObj, PropagationLevel preprocessLevel, vector<AnyVarRef>& vars, bool print_info)
 {
   if(preprocessLevel == PropLevel_None)
-    return;
+    return true;
   
   PropagateGAC propGAC;
-  propGAC(stateObj, vars);
+  if(!propGAC(stateObj, vars))
+    return false;
   
   if(preprocessLevel == PropLevel_GAC)
-    return;
+    return true;
   
   BigInt lits = lit_count(vars);
   bool bounds_check = ( (preprocessLevel == PropLevel_SACBounds) ||
@@ -39,32 +40,36 @@ void PropogateCSP(StateObj* stateObj, PropagationLevel preprocessLevel, vector<A
   if(bounds_check)
   {
     PropagateSAC_Bounds prop_SAC_bounds;
-    prop_SAC_bounds(stateObj, vars);
+    if(!prop_SAC_bounds(stateObj, vars))
+        return false;
   }
   else
   {
     PropagateSAC prop_SAC;
-    prop_SAC(stateObj, vars);
+    if(!prop_SAC(stateObj, vars))
+        return false;
   }
   
   if(print_info) 
   { cout << "SAC" << (bounds_check ? "Bounds" : "") << " Removed " << (lits - lit_count(vars)) << " literals" << endl; }
   
   if(preprocessLevel == PropLevel_SAC || preprocessLevel == PropLevel_SACBounds)
-    return;
+    return true;
 
   lits = lit_count(vars);
   if(bounds_check)
   {
     PropagateSSAC_Bounds prop_SSAC_bounds;
-    prop_SSAC_bounds(stateObj, vars);
+    if(!prop_SSAC_bounds(stateObj, vars))
+        return false;
   }
   else
   {
     PropagateSSAC prop_SSAC;
-    prop_SSAC(stateObj, vars);
+    if(!prop_SSAC(stateObj, vars))
+        return false;
   }
   if(print_info) 
   { cout << "SSAC" << (bounds_check ? "Bounds" : "") << " Removed " << (lits - lit_count(vars)) << " literals" << endl; }
-
+  return true;
 }

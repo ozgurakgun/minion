@@ -58,7 +58,7 @@ struct AbsConstraint : public AbstractConstraint
   virtual BOOL full_propagate()
   {
     var1.setMin(0);
-    for(int i = 0; i < 4 && !getState(stateObj).isFailed(); ++i)
+    for(int i = 0; i < 4; ++i)
       if(!propagate(i, 0))
         return false;
 

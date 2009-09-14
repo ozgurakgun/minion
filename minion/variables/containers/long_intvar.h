@@ -361,7 +361,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array->ifMember_remove
   {
     DomainInt lower = lower_bound(d);
     DomainInt upper = upper_bound(d);
-    if(!validAssignment(d, offset, lower, upper)) return true;
+    if(!validAssignment(d, offset, lower, upper)) return false;
     return commonAssign(d, offset, lower, upper);
   }
 

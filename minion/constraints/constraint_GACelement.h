@@ -75,19 +75,20 @@ struct GACElementConstraint : public AbstractConstraint
     return t;
   }
   
-  void index_assigned()
+  BOOL index_assigned()
   {
     int index = checked_cast<int>(indexvar.getAssignedValue());
     int array_size = var_array.size();
     
     if(index < 0 || index >= array_size)
     {
-      getState(stateObj).setFailed(true);
-      return;
+      return false;
     }
     
-    var_array[index].setMin(resultvar.getMin());
-    var_array[index].setMax(resultvar.getMax());
+    if(!var_array[index].setMin(resultvar.getMin()))
+        return false;
+    if(!var_array[index].setMax(resultvar.getMax()))
+        return false;
     
     DomainInt min_val = max(var_array[index].getMin(), resultvar.getMin());
     DomainInt max_val = min(var_array[index].getMax(), resultvar.getMax());
@@ -95,8 +96,10 @@ struct GACElementConstraint : public AbstractConstraint
     for(DomainInt i = min_val; i <= max_val; ++i)
     {
       if(!resultvar.inDomain(i))
-        var_array[index].removeFromDomain(i);
+        if(!var_array[index].removeFromDomain(i))
+            return false;
     }
+    return true;
   }
   
   BOOL support_for_val_in_result(DomainInt val)
@@ -129,8 +132,10 @@ struct GACElementConstraint : public AbstractConstraint
     int array_size = var_array.size();
     // DomainInt domain_size = (var_array_max_val - var_array_min_val + 1);
     
-    if(indexvar.isAssigned())
-    { index_assigned(); }
+    if(indexvar.isAssigned()) {
+        if(!index_assigned())
+            return false;
+    }
     
     if(prop_val < array_size)
     {

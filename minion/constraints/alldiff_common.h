@@ -334,9 +334,11 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         getQueue(stateObj).pushSpecialTrigger(this);
         #else
         #ifndef SCC
-        do_prop_noscc();
+        if(!do_prop_noscc())
+            return false;
         #else
-        do_prop();
+        if(!do_prop())
+            return false;
         #endif
         #endif
     }
@@ -438,9 +440,11 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         getQueue(stateObj).pushSpecialTrigger(this);
         #else
         #ifndef SCC
-        do_prop_noscc();
+        if(!do_prop_noscc())
+            return false;
         #else
-        do_prop();
+        if(!do_prop())
+            return false;
         #endif
         #endif
     }
@@ -452,12 +456,6 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   virtual BOOL special_check()
   {
     constraint_locked = false;  // should be above the if.
-    
-    if(getState(stateObj).isFailed())
-    {
-        to_process.clear();
-        return true;
-    }
     
     #ifdef SCC
     if(!do_prop())
@@ -598,7 +596,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
             P("start:" << sccindex_start << " end:"<< sccindex_end);
             
             if(!matching_wrapper(sccindex_start, sccindex_end))
-                return true;
+                return false;
             
             #ifdef DYNAMICALLDIFF
             // sync the watches to the matching, 
@@ -718,7 +716,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
             {
                 int l=j; while(SCCSplit.isMember(l) && l<(numvars-1)) l++;
                 if(!matching_wrapper(j, l))
-                    return true;
+                    return false;
             }
             #endif
             
@@ -840,7 +838,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
     
     // Call hopcroft for the whole matching.
     if(!matching_wrapper(0, numvars-1))
-        return true;
+        return false;
     
     #ifdef DYNAMICALLDIFF
     // sync the watches to the matching, 
@@ -1087,9 +1085,11 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
       #endif
       
       #ifdef SCC
-      do_prop();
+      if(!do_prop())
+        return false;
       #else
-      do_prop_noscc();
+      if(!do_prop_noscc())
+        return false;
       #endif
       return true;
   }
@@ -1801,7 +1801,6 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
                 valvarmatching[varvalmatching[j]-dom_min]=j;
             }
             
-            getState(stateObj).setFailed(true);
             return false;
         }
         
@@ -2109,7 +2108,6 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         {
             // The constraint is unsatisfiable (no matching).
             P("About to fail. Changed varvalmatching: "<< varvalmatching);
-            getState(stateObj).setFailed(true);
             return false;
         }
         
