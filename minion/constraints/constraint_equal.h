@@ -98,31 +98,33 @@ struct ReifiedEqualConstraint : public AbstractConstraint
   // rewrite the following two functions.
   virtual BOOL full_propagate()
   {
+    BOOL retval = true;
     if(var3.isAssigned())
     {
       if(var3.getAssignedValue() == 1)
-        return eqprop();
+        retval &= eqprop();
       else
       {
           if(var1.isAssigned())
           {
-              return diseqvar1assigned();
+              retval &= diseqvar1assigned();
           }
           if(var2.isAssigned())
           {
-              return diseqvar2assigned();
+              retval &= diseqvar2assigned();
           }
       }
     }
     else
     {   // r not assigned.
-        return check();
+        retval &= check();
     }
-    return true;
+    return retval;
   }
   
   virtual BOOL propagate(int i, DomainDelta)
   {
+    BOOL retval = true;
     PROP_INFO_ADDONE(ReifyEqual);
     switch(i)
     {
@@ -132,17 +134,16 @@ struct ReifiedEqualConstraint : public AbstractConstraint
           {
               if(var3.getAssignedValue()==1)
               {
-                  if(!var2.setMin(var1.getMin()))
-                    return false;
+                  retval &= var2.setMin(var1.getMin());
               }
               else
               { // not equal.     
-                  return diseq();
+                  retval &= diseq();
               }
           }
           else
           {
-              return check();
+              retval &= check();
           }
         break;
         
@@ -152,17 +153,16 @@ struct ReifiedEqualConstraint : public AbstractConstraint
           {
               if(var3.getAssignedValue()==1)
               {
-                  if(!var2.setMax(var1.getMax()))
-                    return false;
+                  retval &= var2.setMax(var1.getMax());
               }
               else
               { // not equal.     
-                  return diseq();
+                  retval &= diseq();
               }
           }
           else
           {
-              return check();
+              retval &= check();
           }
         break;        
         
@@ -172,17 +172,16 @@ struct ReifiedEqualConstraint : public AbstractConstraint
           {
               if(var3.getAssignedValue()==1)
               {
-                  if(!var1.setMin(var2.getMin()))
-                    return false;
+                  retval &= var1.setMin(var2.getMin());
               }
               else
               {
-                  return diseq();
+                  retval &= diseq();
               }
           }
           else
           {
-              return check();
+              retval &= check();
           }
           break;
           
@@ -192,110 +191,104 @@ struct ReifiedEqualConstraint : public AbstractConstraint
           {
               if(var3.getAssignedValue()==1)
               {
-                  if(!var1.setMax(var2.getMax()))
-                    return false;
+                  retval &= var1.setMax(var2.getMax());
               }
               else
               {
-                  return diseq();
+                  retval &= diseq();
               }
           }
           else
           {
-              return check();
+              retval &= check();
           }
           break;
           
       case 3:
           if(var3.getAssignedValue()==1)
           {
-              return eqprop();
+              retval &= eqprop();
           }
           else
           {
-              return diseq();
+              retval &= diseq();
           }
           break;
     }
-    return true;
+    return retval;
   }
   
   inline BOOL eqprop()
   {
-      if(!var1.setMin(var2.getMin()))
-        return false;
-      if(!var1.setMax(var2.getMax()))
-        return false;
-      if(!var2.setMin(var1.getMin()))
-        return false;
-      return var2.setMax(var1.getMax());
+      BOOL retval = true;
+      retval &= var1.setMin(var2.getMin());
+      retval &= var1.setMax(var2.getMax());
+      retval &= var2.setMin(var1.getMin());
+      retval &= var2.setMax(var1.getMax());
+      return retval;
   }
   
   inline BOOL check()
   {   // var1 or var2 has changed, so check
+      BOOL retval = true;
       if(var1.getMax()<var2.getMin() || var1.getMin()>var2.getMax())
       {   // not equal
-          if(!var3.propagateAssign(0))
-            return false;
+          retval &= var3.propagateAssign(0);
       }
       if(var1.isAssigned() && var2.isAssigned()
           && var1.getAssignedValue()==var2.getAssignedValue())
       {   // equal
-          if(!var3.propagateAssign(1))
-            return false;
+          retval &= var3.propagateAssign(1);
       }
-      return true;
+      return retval;
   }
   
   inline BOOL diseqvar1assigned()
   {
+      BOOL retval = true;
       DomainInt remove_val = var1.getAssignedValue();
       if(var2.isBound())
       {
         if(var2.getMin() == remove_val)
-          if(!var2.setMin(remove_val + 1))
-            return false;
+          retval &= var2.setMin(remove_val + 1);
         if(var2.getMax() == remove_val)
-          if(!var2.setMax(remove_val - 1))
-            return false;
+          retval &= var2.setMax(remove_val - 1);
       }
       else {
-        if(!var2.removeFromDomain(remove_val))
-            return false;
+        retval &= var2.removeFromDomain(remove_val);
       }
-      return true;
+      return retval;
   }
   
   inline BOOL diseqvar2assigned()
   {
+      BOOL retval = true;
       DomainInt remove_val = var2.getAssignedValue();
       if(var1.isBound())
       {
         if(var1.getMin() == remove_val)
-          if(!var1.setMin(remove_val + 1))
-            return false;
+          retval &= var1.setMin(remove_val + 1);
         if(var1.getMax() == remove_val)
-          if(!var1.setMax(remove_val - 1))
-            return false;
+          retval &= var1.setMax(remove_val - 1);
       }
       else {
-        if(!var1.removeFromDomain(remove_val))
-            return false;
+        retval &= var1.removeFromDomain(remove_val);
       }
-      return true;
+      return retval;
   }
   
   inline BOOL diseq()
   {
+      BOOL retval = true;
       if(var1.isAssigned())
       {
-          return diseqvar1assigned();
+          retval &= diseqvar1assigned();
       }
       else if(var2.isAssigned())
       {
-          return diseqvar2assigned();
+          retval &= diseqvar2assigned();
       }
-      return true;
+      return retval;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
@@ -369,61 +362,55 @@ struct NeqConstraintBinary : public AbstractConstraint
   virtual BOOL propagate(int prop_val, DomainDelta)
   {
     PROP_INFO_ADDONE(BinaryNeq);
+    BOOL retval = true;
     if (prop_val == 1) {
       DomainInt remove_val = var1.getAssignedValue();
       if(var2.isBound())
       {
         if(var2.getMin() == remove_val)
-          if(!var2.setMin(remove_val + 1))
-            return false;
+          retval &= var2.setMin(remove_val + 1);
         if(var2.getMax() == remove_val)
-          if(!var2.setMax(remove_val - 1))
-            return false;
+          retval &= var2.setMax(remove_val - 1);
       }
       else {
-        if(!var2.removeFromDomain(remove_val))
-            return false;
+        retval &= var2.removeFromDomain(remove_val);
       }
     }
     #ifdef MAKECONFLUENT
     else if(prop_val == 3)
     {   // ub moved var1
         if(var2.isAssigned() && var2.getAssignedValue()==var1.getMax())
-            if(!var1.setMax(var1.getMax()-1))
-                return false;
+            retval &= var1.setMax(var1.getMax()-1);
         if(var1.isAssigned())
         {
-            return var1assigned();
+            retval &= var1assigned();
         }
     }
     else if(prop_val == 4)
     {   // lb moved var1
         if(var2.isAssigned() && var2.getAssignedValue()==var1.getMin())
-            if(!var1.setMin(var1.getMin()+1))
-                return false;
+            retval &= var1.setMin(var1.getMin()+1);
         if(var1.isAssigned())
         {
-            return var1assigned();
+            retval &= var1assigned();
         }
     }
     else if(prop_val == 5)
     {   // ub moved var2
         if(var1.isAssigned() && var1.getAssignedValue()==var2.getMax())
-            if(!var2.setMax(var2.getMax()-1))
-                return false;
+            retval &= var2.setMax(var2.getMax()-1);
         if(var2.isAssigned())
         {
-            return var2assigned();
+            retval &= var2assigned();
         }
     }
     else if(prop_val == 6)
     {   // lb moved var2
         if(var1.isAssigned() && var1.getAssignedValue()==var2.getMin())
-            if(!var2.setMin(var2.getMin()+1))
-                return false;
+            retval &= var2.setMin(var2.getMin()+1);
         if(var2.isAssigned())
         {
-            return var2assigned();
+            retval &= var2assigned();
         }
     }
     #endif
@@ -434,75 +421,66 @@ struct NeqConstraintBinary : public AbstractConstraint
       if(var1.isBound())
       {
         if(var1.getMin() == remove_val)
-          if(!var1.setMin(remove_val + 1))
-            return false;
+          retval &= var1.setMin(remove_val + 1);
         if(var1.getMax() == remove_val)
-          if(!var1.setMax(remove_val - 1))
-            return false;
+          retval &= var1.setMax(remove_val - 1);
       }
       else {
-        if(!var1.removeFromDomain(remove_val))
-            return false;
+        retval &= var1.removeFromDomain(remove_val);
       }
     }
-    return true;
+    return retval;
   }
   
   inline BOOL var1assigned()
   {
+      BOOL retval = true;
       DomainInt remove_val = var1.getAssignedValue();
       if(var2.isBound())
       {
         if(var2.getMin() == remove_val)
-          if(!var2.setMin(remove_val + 1))
-            return false;
+          retval &= var2.setMin(remove_val + 1);
         if(var2.getMax() == remove_val)
-          if(!var2.setMax(remove_val - 1))
-            return false;
+          retval &= var2.setMax(remove_val - 1);
       }
       else {
-        if(!var2.removeFromDomain(remove_val))
-            return false;
+        retval &= var2.removeFromDomain(remove_val);
       }
-      return true;
+      return retval;
   }
   
   inline BOOL var2assigned()
   {
+      BOOL retval = true;
       DomainInt remove_val = var2.getAssignedValue();
       if(var1.isBound())
       {
         if(var1.getMin() == remove_val)
-          if(!var1.setMin(remove_val + 1))
-            return false;
+          retval &= var1.setMin(remove_val + 1);
         if(var1.getMax() == remove_val)
-          if(!var1.setMax(remove_val - 1))
-            return false;
+          retval &= var1.setMax(remove_val - 1);
       }
       else {
-        if(!var1.removeFromDomain(remove_val))
-            return false;
+        retval &= var1.removeFromDomain(remove_val);
       }
-      return true;
+      return retval;
   }
   
   virtual BOOL full_propagate()
   {
+    BOOL retval = true;
     if(var1.isAssigned())
     { 
       DomainInt remove_val = var1.getAssignedValue();
       if(var2.isBound())
       {
         if(var2.getMin() == remove_val)
-          if(!var2.setMin(remove_val + 1))
-            return false;
+          retval &= var2.setMin(remove_val + 1);
         if(var2.getMax() == remove_val)
-          if(!var2.setMax(remove_val - 1))
-            return false;
+          retval &= var2.setMax(remove_val - 1);
       }
       else {
-        if(!var2.removeFromDomain(remove_val))
-            return false;
+        retval &= var2.removeFromDomain(remove_val);
       }
     }
     if(var2.isAssigned())
@@ -511,18 +489,15 @@ struct NeqConstraintBinary : public AbstractConstraint
       if(var1.isBound())
       {
         if(var1.getMin() == remove_val)
-          if(!var1.setMin(remove_val + 1))
-            return false;
+          retval &= var1.setMin(remove_val + 1);
         if(var1.getMax() == remove_val)
-          if(!var1.setMax(remove_val - 1))
-            return false;
+          retval &= var1.setMax(remove_val - 1);
       }
       else {
-        if(!var1.removeFromDomain(remove_val))
-            return false;
+        retval &= var1.removeFromDomain(remove_val);
       }
     }
-    return true;
+    return retval;
   }
     
     virtual BOOL check_assignment(DomainInt* v, int v_size)
@@ -588,13 +563,12 @@ struct EqualConstraint : public AbstractConstraint
   
   virtual BOOL full_propagate()
   {
-    if(!propagate(1,0))
-        return false;
-    if(!propagate(2,0))
-        return false;
-    if(!propagate(3,0))
-        return false;
-    return propagate(4,0);
+    BOOL retval = true;
+    retval &= propagate(1,0);
+    retval &= propagate(2,0);
+    retval &= propagate(3,0);
+    retval &= propagate(4,0);
+    return retval;
   }
   
   virtual BOOL propagate(int i, DomainDelta)

@@ -246,7 +246,7 @@ namespace Controller
           cout << "SearchAction:" << action << endl;
   }
 
-  void inline deal_with_solution(StateObj* stateObj)
+  BOOL inline deal_with_solution(StateObj* stateObj)
   {
     // We have found a solution!
     check_sol_is_correct(stateObj);
@@ -269,13 +269,14 @@ namespace Controller
     // Note that sollimit = -1 if all solutions should be found.
     if(getState(stateObj).getSolutionCount() == getOptions(stateObj).sollimit)
       throw EndOfSearch();
+    return true;
   }
 
-  void inline set_optimise_and_propagate_queue(StateObj* stateObj)
+  BOOL inline set_optimise_and_propagate_queue(StateObj* stateObj)
   {
     if(getState(stateObj).isOptimisationProblem())
       getState(stateObj).getOptimiseVar()->setMin(getState(stateObj).getOptimiseValue());
-    getQueue(stateObj).propagateQueue();
+    return getQueue(stateObj).propagateQueue();
   }
 
   void inline initalise_search(StateObj* stateObj)

@@ -167,20 +167,17 @@ public:
       {
 
 #ifndef NO_DEBUG
-        if(getOptions(stateObj).fullpropagate)
+        if(getOptions(stateObj).fullpropagate) {
           if(!it->full_propagate()) {
               clearQueues();
               return true;
           }
-            return false;
-        else
-        {
+        } else {
           CON_INFO_ADDONE(StaticTrigger);
           if(!it->propagate(data_val)) {
               clearQueues();
               return true;
           }
-            return false;
         }
 #else
         {
@@ -189,7 +186,6 @@ public:
               clearQueues();
               return true;
           }
-            return false;
         }
 #endif
 #ifdef WDEG
@@ -202,7 +198,7 @@ public:
     return false;
   }
 
-  inline void propagateQueue()
+  inline BOOL propagateQueue()
   {
     while(true)
     {
@@ -211,26 +207,27 @@ public:
         while(!propagate_trigger_list.empty() || !dynamic_trigger_list.empty())
         {
           if(propagateDynamicTriggerLists())
-            return;
+            return false;
 
           /* Don't like code duplication here but a slight efficiency gain */
           if(propagateStaticTriggerLists())
-            return;
+            return false;
         }
       }
       else
       {
         if(propagateStaticTriggerLists())
-          return;
+          return false;
       }
 
       if(special_triggers.empty())
-        return;
+        return true;
 
       AbstractConstraint* trig = special_triggers.back();
       special_triggers.pop_back();
       CON_INFO_ADDONE(SpecialTrigger);
-      trig->special_check();
+      if(!trig->special_check())
+        return false;
 #ifdef WDEG
       if(getOptions(stateObj).wdeg_on && getState(stateObj).isFailed()) trig->incWdeg();
 #endif
@@ -290,13 +287,12 @@ public:
         if(it->constraint->full_propagate_done)
         {
 #ifndef NO_DEBUG
-        if(getOptions(stateObj).fullpropagate)
+        if(getOptions(stateObj).fullpropagate) {
           if(!it->full_propagate()) {
               clearQueues();
               return true;
           }
-        else
-        {
+        } else {
           CON_INFO_ADDONE(StaticTrigger);
           if(!it->propagate(data_val)) {
               clearQueues();
@@ -319,7 +315,7 @@ public:
     return false;
   }
 
-  inline void propagateQueueRoot()
+  inline BOOL propagateQueueRoot()
   {
     while(true)
     {
@@ -328,29 +324,31 @@ public:
         while(!propagate_trigger_list.empty() || !dynamic_trigger_list.empty())
         {
           if(propagateDynamicTriggerListsRoot())
-            return;
+            return false;
 
           /* Don't like code duplication here but a slight efficiency gain */
           if(propagateStaticTriggerListsRoot())
-            return;
+            return false;
         }
       }
       else
       {
         if(propagateStaticTriggerListsRoot())
-          return;
+          return false;
       }
 
       if(special_triggers.empty())
-        return;
+        return false;
 
       AbstractConstraint* trig = special_triggers.back();
       special_triggers.pop_back();
       CON_INFO_ADDONE(SpecialTrigger);
-      trig->special_check();
+      if(!trig->special_check())
+        return false;
 
     } // while(true)
 
+    return true;
   } // end Function
 };
 

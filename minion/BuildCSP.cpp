@@ -82,7 +82,7 @@ void BuildCSP(StateObj* stateObj, CSPInstance& instance)
 void SolveCSP(StateObj* stateObj, CSPInstance& instance, SearchMethod args)
 {
   vector<AnyVarRef> preprocess_vars = BuildCon::build_val_and_var_order(stateObj, instance.search_order[0]).first;
-  function<void (void)> search(bind(Controller::deal_with_solution, stateObj));
+  function<BOOL (void)> search(bind(Controller::deal_with_solution, stateObj));
 
   // Set up variable and value ordering
   for(int i = instance.search_order.size() - 1; i >= 0; --i)
@@ -122,11 +122,11 @@ void SolveCSP(StateObj* stateObj, CSPInstance& instance, SearchMethod args)
 
   getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Build Search Ordering Time: ", "SearchOrderTime", getTableOut(), !getOptions(stateObj).silent);
 
-  PropogateCSP(stateObj, args.preprocess, preprocess_vars, !getOptions(stateObj).silent);
+  BOOL retval = PropogateCSP(stateObj, args.preprocess, preprocess_vars, !getOptions(stateObj).silent);
   getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Preprocess Time: ", "PreprocessTime", getTableOut(), !getOptions(stateObj).silent);
   getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_1, "First node time: ", "FirstNodeTime", getTableOut(), !getOptions(stateObj).silent);
 
-  if(!getState(stateObj).isFailed())
+  if(retval)
   {
     try
       { search(); }

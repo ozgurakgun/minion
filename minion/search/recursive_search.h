@@ -29,13 +29,13 @@ namespace Controller
   // (Feel free to ignore the value ordering!)
   
   template<typename VarOrder, typename Variables>
-  inline void solve_loop_recursive(StateObj* stateObj, VarOrder& order, Variables& v)
+  inline BOOL solve_loop_recursive(StateObj* stateObj, VarOrder& order, Variables& v)
   {
     maybe_print_search_state(stateObj, "Node: ", v);
 
     getState(stateObj).incrementNodeCount();
     if(do_checks(stateObj, order))
-      return;
+      return true;
     
     // order.find_next_unassigned returns true if all variables assigned.
     if(order.find_next_unassigned())
@@ -44,24 +44,21 @@ namespace Controller
       deal_with_solution(stateObj);
       
       // fail here to force backtracking.
-        return;
+        return false;
     }
     
     maybe_print_search_state(stateObj, "Node: ", v);
     world_push(stateObj);
     order.branch_left();
-    getQueue(stateObj).propagateQueue();
-    if(!getState(stateObj).isFailed())
+    if(!getQueue(stateObj).propagateQueue())
       solve_loop_recursive(order, v);
-    
-    getState(stateObj).setFailed(false);
     
     world_pop(stateObj);
     order.branch_right();
-    set_optimise_and_propagate_queue(stateObj);
-    
-    if(!getState(stateObj).isFailed())
+    if(!set_optimise_and_propagate_queue(stateObj))
       solve_loop_recursive(order, v);
+
+    return true;
 }
 }
 

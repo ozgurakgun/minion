@@ -100,18 +100,17 @@ struct LightLessEqualSumConstraint : public AbstractConstraint
     for(unsigned i = 0; i < size; ++i)
       min_sum += var_array[i].getMin();
     
+    BOOL retval = true;
     if(prop_val >= 0) {
-      if(!var_sum.setMin(min_sum))
-        return false;
+      retval &= var_sum.setMin(min_sum);
     }
     
     DomainInt slack = var_sum.getMax() - min_sum;
     for(unsigned i = 0; i < size; ++i) {
-      if(!var_array[i].setMax(var_array[i].getMin() + slack))
-        return false;
+      retval &= var_array[i].setMax(var_array[i].getMin() + slack);
     }
 
-    return true;
+    return retval;
   }
   
   virtual BOOL full_check_unsat()
@@ -127,9 +126,10 @@ struct LightLessEqualSumConstraint : public AbstractConstraint
   
   virtual BOOL full_propagate()
   {
-    if(!propagate(-1,0))
-      return false;
-    return propagate(0,0);
+    BOOL retval = true;
+    retval &= propagate(-1,0);
+    retval &= propagate(0,0);
+    return retval;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

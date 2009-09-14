@@ -39,11 +39,10 @@ bool inline check_fail(StateObj* stateObj, Var& var, DomainInt val, Vars& vars, 
 }
 
 template <typename Var, typename Prop>
-void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop, bool onlyCheckBounds)
+BOOL propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop, bool onlyCheckBounds)
 {
-  getQueue(stateObj).propagateQueue();
-  if(getState(stateObj).isFailed())
-    return;
+  if(!getQueue(stateObj).propagateQueue())
+    return false;
   bool reduced = true;
   while(reduced)
   {
@@ -56,19 +55,19 @@ void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop,
         while(check_fail(stateObj, var, var.getMax(), vararray, prop))
         {
           reduced = true;
-          var.setMax(var.getMax() - 1);
-          prop(stateObj, vararray);
-          if(getState(stateObj).isFailed())
-            return;
+          if(!var.setMax(var.getMax() - 1))
+            return false;
+          if(!prop(stateObj, vararray))
+            return false;
         }
         
         while(check_fail(stateObj, var, var.getMin(), vararray, prop))
         {
           reduced = true;
-          var.setMin(var.getMin() + 1);
-          prop(stateObj, vararray);
-          if(getState(stateObj).isFailed())
-            return;
+          if(!var.setMin(var.getMin() + 1))
+            return false;
+          if(!prop(stateObj, vararray))
+            return false;
         }
       }
       else
@@ -78,59 +77,59 @@ void propagateSAC_internal(StateObj* stateObj, vector<Var>& vararray, Prop prop,
           if(var.inDomain(val) && check_fail(stateObj, var, val, vararray, prop))
           {
             reduced = true;
-            var.removeFromDomain(val);
-            prop(stateObj, vararray);
-            if(getState(stateObj).isFailed())
-              return;          
+            if(!var.removeFromDomain(val))
+                return false;
+            if(!prop(stateObj, vararray))
+                return false;
           }
         }
       }
     }
   }
-  
+  return true;
 }
 
 struct PropagateGAC
 {
   template<typename Vars>
-  void operator()(StateObj* stateObj, Vars&)
-  {getQueue(stateObj).propagateQueue();}
+  BOOL operator()(StateObj* stateObj, Vars&)
+  { return getQueue(stateObj).propagateQueue();}
 };
 
 struct PropagateSAC
 {
   template<typename Vars>
-  void operator()(StateObj* stateObj, Vars& vars)
-  {propagateSAC_internal(stateObj, vars, PropagateGAC(), false);}
+  BOOL operator()(StateObj* stateObj, Vars& vars)
+  { return propagateSAC_internal(stateObj, vars, PropagateGAC(), false);}
 };
 
 struct PropagateSAC_Bounds
 {
   template<typename Vars>
-  void operator()(StateObj* stateObj, Vars& vars)
-  {propagateSAC_internal(stateObj, vars, PropagateGAC(), true);}
+  BOOL operator()(StateObj* stateObj, Vars& vars)
+  { return propagateSAC_internal(stateObj, vars, PropagateGAC(), true);}
 };
 
 struct PropagateSSAC
 {
   template<typename Vars>
-  void operator()(StateObj* stateObj, Vars& vars)
+  BOOL operator()(StateObj* stateObj, Vars& vars)
   {
     PropagateSAC sac;
-    propagateSAC_internal(stateObj, vars, sac, false);
+    return propagateSAC_internal(stateObj, vars, sac, false);
   }
 };
 
 struct PropagateSSAC_Bounds
 {
   template<typename Vars>
-  void operator()(StateObj* stateObj, Vars& vars)
+  BOOL operator()(StateObj* stateObj, Vars& vars)
   {
     PropagateSAC sac;
-    propagateSAC_internal(stateObj, vars, sac, true);
+    return propagateSAC_internal(stateObj, vars, sac, true);
   }
 };
 
-void PropogateCSP(StateObj*, PropagationLevel, vector<AnyVarRef>&, bool print_info = false);
+BOOL PropogateCSP(StateObj*, PropagationLevel, vector<AnyVarRef>&, bool print_info = false);
 
 #endif

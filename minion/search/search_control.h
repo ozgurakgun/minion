@@ -25,7 +25,7 @@ using boost::bind;
 #include "standard_search.h"
 
 template<typename SearchAlgorithm, typename Vars, typename Propogator>
-  function<void (void)> solve_select_search(StateObj* stateObj, const function<void (void)>& next_search, SearchOrder order_in, 
+  function<BOOL (void)> solve_select_search(StateObj* stateObj, const function<BOOL (void)>& next_search, SearchOrder order_in, 
                                                  SearchAlgorithm& order, Vars& vars, CSPInstance& instance, Propogator prop)
 {
   switch(order_in.order)
@@ -52,7 +52,7 @@ template<typename SearchAlgorithm, typename Vars, typename Propogator>
 }
 
   template<typename VarValOrder, typename Propogator>
-function<void (void)> solve(StateObj* stateObj, const function<void (void)>& next_search, SearchOrder order_in, 
+function<BOOL (void)> solve(StateObj* stateObj, const function<BOOL (void)>& next_search, SearchOrder order_in, 
                                  VarValOrder& search_order, CSPInstance& instance, Propogator prop)
 {
   typedef typename VarValOrder::first_type::value_type VarType;

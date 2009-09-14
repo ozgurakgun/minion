@@ -115,46 +115,46 @@ struct InfoRefType
     return initialMin; 
   }
   
-  void setMax(DomainInt i)
+  BOOL setMax(DomainInt i)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, setMax);
     VAR_INFO_PRINT_0("SetMax", i);
-    data.setMax(i); 
+    return data.setMax(i); 
   }
   
-  void setMin(DomainInt i)
+  BOOL setMin(DomainInt i)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, setMin);
     VAR_INFO_PRINT_0("SetMin", i);
-    data.setMin(i); 
+    return data.setMin(i); 
   }
   
-  void uncheckedAssign(DomainInt b)
+  BOOL uncheckedAssign(DomainInt b)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, uncheckedAssign);
     VAR_INFO_PRINT_0("uncheckedAssign", b);
-    data.uncheckedAssign( b); 
+    return data.uncheckedAssign( b); 
   }
   
-  void propagateAssign(DomainInt b)
+  BOOL propagateAssign(DomainInt b)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, propagateAssign);
     VAR_INFO_PRINT_0("propagateAssign", b);
-    data.propagateAssign( b); 
+    return data.propagateAssign( b); 
   }
   
-  void decisionAssign(DomainInt b)
+  BOOL decisionAssign(DomainInt b)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, decisionAssign);
     VAR_INFO_PRINT_0("decisionAssign", b);
-    data.decisionAssign(b); 
+    return data.decisionAssign(b); 
   }
   
-  void removeFromDomain(DomainInt b)
+  BOOL removeFromDomain(DomainInt b)
   { 
     VAR_INFO_ADDONE(VAR_TYPE, RemoveFromDomain);
     VAR_INFO_PRINT_0("removeFromDomain", b);
-    data.removeFromDomain( b); 
+    return data.removeFromDomain( b); 
   }
   
   void addTrigger(Trigger t, TrigType type)

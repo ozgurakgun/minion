@@ -25,18 +25,18 @@ namespace Controller
 {
 
     template<typename VarOrder, typename Variables, typename Permutation, typename Propogator>
-    void group_solve_loop(StateObj* stateObj, function<void (void)> next_search, VarOrder& original_order, Variables& v, Permutation& perm, Propogator prop = PropagateGAC())
+    BOOL group_solve_loop(StateObj* stateObj, function<BOOL (void)> next_search, VarOrder& original_order, Variables& v, Permutation& perm, Propogator prop = PropagateGAC())
     {
       int sol_count = 0;
       for(int i = 0; i < perm.size(); ++i)
       {
-        perm[i].setMin(1);
-        perm[i].setMax(perm.size());
+        if(!perm[i].setMin(1))
+            return false;
+        if(!perm[i].setMax(perm.size()))
+            return false;
       }
 
-      getQueue(stateObj).propagateQueue();
-      if(getState(stateObj).isFailed())
-        return;
+      return getQueue(stateObj).propagateQueue();
 
       for(int i = 0; i < perm.size(); ++i)
       {
@@ -45,16 +45,18 @@ namespace Controller
           int world_depth = get_world_depth(stateObj);
           world_push(stateObj);
           for(int k = 0; k < i; ++k)
-            perm[k].propagateAssign(k+1);
-          perm[i].propagateAssign(j);
+            if(!perm[k].propagateAssign(k+1))
+                return false;
+          if(!perm[i].propagateAssign(j))
+            return false;
 
-          getQueue(stateObj).propagateQueue();
-          if(!getState(stateObj).isFailed())
+          BOOL retval = getQueue(stateObj).propagateQueue();
+          if(retval)
           {
             try
             {
               VarOrder order(original_order);
-              solve_loop(stateObj, next_search, order, v, prop, true);
+              retval = solve_loop(stateObj, next_search, order, v, prop, true);
             }
             catch(EndOfSearch)
             { 
@@ -63,7 +65,7 @@ namespace Controller
               getQueue(stateObj).clearQueues();
             }
           }
-          getState(stateObj).setFailed(false);
+          retval = true;
           // We need this as we can exit search deep in search.
           D_ASSERT(world_depth < get_world_depth(stateObj));
           world_pop_to_depth(stateObj, world_depth);          
@@ -71,6 +73,7 @@ namespace Controller
       }
 
       printf("Generators: %d\n", sol_count);
+      return true;
     }
 }
 

@@ -99,39 +99,29 @@ struct DifferenceConstraint : public AbstractConstraint
 
     P(var1_min << var1_max << var2_min << var2_max << var3.getMin() << var3.getMax());
 
-    if(!var3.setMax(max(var2_max, var1_max) - min(var1_min, var2_min)))
-        return false;
+    BOOL retval = true;
+    retval &= var3.setMax(max(var2_max, var1_max) - min(var1_min, var2_min));
 
-    if(!var1.setMin(var2.getMin() - var3.getMax()))
-        return false;
-    if(!var2.setMin(var1.getMin() - var3.getMax()))
-        return false;
-    if(!var1.setMax(var2.getMax() + var3.getMax()))
-        return false;
+    retval &= var1.setMin(var2.getMin() - var3.getMax());
+    retval &= var2.setMin(var1.getMin() - var3.getMax());
+    retval &= var1.setMax(var2.getMax() + var3.getMax());
     P(var2.getMax());
-    if(!var2.setMax(var1.getMax() + var3.getMax()))
-        return false;
+    retval &= var2.setMax(var1.getMax() + var3.getMax());
     P(var2.getMax());
         
     if(var1_max < var2_min)
     {
-      if(!var3.setMin(var2_min - var1_max))
-        return false;
-      if(!var2.setMin(var1.getMin() + var3.getMin()))
-        return false;
-      if(!var1.setMax(var2.getMax() - var3.getMin()))
-        return false;
+      retval &= var3.setMin(var2_min - var1_max);
+      retval &= var2.setMin(var1.getMin() + var3.getMin());
+      retval &= var1.setMax(var2.getMax() - var3.getMin());
     }
 
     if(var2_max < var1_min)
     {
-      if(!var3.setMin(var1_min - var2_max))
-        return false;
-      if(!var1.setMin(var2.getMin() + var3.getMin()))
-        return false;
+      retval &= var3.setMin(var1_min - var2_max);
+      retval &= var1.setMin(var2.getMin() + var3.getMin());
     P(var2.getMax());
-          if(!var2.setMax(var1.getMax() - var3.getMin()))
-            return false;
+          retval &= var2.setMax(var1.getMax() - var3.getMin());
               P(var2.getMax());
     }
       
@@ -146,14 +136,15 @@ struct DifferenceConstraint : public AbstractConstraint
     }
     
     
-    return true;
+    return retval;
   }
   
   virtual BOOL full_propagate()
   { 
-    if(!var3.setMin(0))
-        return false;
-    return propagate(0,0);
+    BOOL retval = true;
+    retval &= var3.setMin(0);
+    retval &= propagate(0,0);
+    return retval;
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
