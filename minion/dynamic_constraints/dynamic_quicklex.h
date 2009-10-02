@@ -28,11 +28,16 @@
 //#define P(x) cout << x << endl
 #define P(x)
 
-template<typename VarArray1, typename VarArray2>
+template<typename VarArray1, typename VarArray2, bool Less = false>
   struct QuickLexDynamic : public AbstractConstraint
 {
   virtual string constraint_name()
-    { return "QuickLexDynamic"; }
+    { 
+        if(Less)
+            return "QuickLexLessDynamic";
+        else
+            return "QuickLexDynamic"; 
+    }
 
   typedef typename VarArray1::value_type VarRef1;
   typedef typename VarArray2::value_type VarRef2;
@@ -73,20 +78,27 @@ template<typename VarArray1, typename VarArray2>
   {
     DynamicTrigger* dt = dynamic_trigger_start();
 
+    if(var_array1.size() == 0)
+    {
+        if(Less)
+            getState(stateObj).setFailed(true);
+        return;
+    }
+    
     alpha = 0;
     
     var_array2[0].setMin(var_array1[0].getMin());
     var_array1[0].setMax(var_array2[0].getMax());
+    
+    // Set these up, just so they are stored.
+    var_array1[0].addDynamicTrigger(dt, LowerBound, NoDomainValue BT_CALL_STORE);
+    var_array2[0].addDynamicTrigger(dt + 1, UpperBound, NoDomainValue BT_CALL_STORE);
+    
 
     if(var_array1[0].isAssigned() && var_array2[0].isAssigned() &&
        var_array1[0].getAssignedValue() == var_array2[0].getAssignedValue())
     {
         progress();
-    }
-    else
-    {
-        var_array1[0].addDynamicTrigger(dt, LowerBound, NoDomainValue BT_CALL_STORE);
-        var_array2[0].addDynamicTrigger(dt + 1, UpperBound, NoDomainValue BT_CALL_STORE);
     }
   }
   
@@ -117,8 +129,13 @@ template<typename VarArray1, typename VarArray2>
          }
     }
     
-    detach_triggers();
-    alpha = n;
+    if(Less)
+        getState(stateObj).setFailed(true);
+    else
+    {
+        detach_triggers();
+        alpha = n;
+    }
   }
   
   virtual void propagate(DynamicTrigger* dt)
@@ -164,9 +181,36 @@ template<typename VarArray1, typename VarArray2>
         return false;
     }
     
-    return true;
+    return !Less;
   }
+  
+  virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+    {
+      size_t array_size = var_array1.size();
+      for(size_t i = 0; i < array_size; ++i)
+      {
+        DomainInt x_i_min = var_array1[i].getMin();
+        DomainInt y_i_max = var_array2[i].getMax();
 
+        if(x_i_min > y_i_max)
+        {
+          return false;
+        }
+
+        assignment.push_back(make_pair(i         , x_i_min));
+        assignment.push_back(make_pair(i + array_size, y_i_max));
+        if(x_i_min < y_i_max)
+          return true;
+      }
+
+      return !Less;
+    }
+
+  virtual AbstractConstraint* reverse_constraint()
+  {
+      return new QuickLexDynamic<VarArray2, VarArray1,!Less>(stateObj,var_array2,var_array1);
+  }
+    
   virtual vector<AnyVarRef> get_vars()
   { 
     vector<AnyVarRef> vars;

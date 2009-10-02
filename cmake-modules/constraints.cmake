@@ -1,20 +1,27 @@
 set(ALL_CONSTRAINTS "element" "element_one" "watchelement" "watchelement_one"
                     "gacelement-deprecated" "gac2delement" "alldiff" "gacalldiff" "gcc" "gccweak" "watchneq"
                     "diseq" "__reify_diseq" "eq" "__reify_eq" "minuseq" "__reify_minuseq"
-                    "abs" "ineq" "watchless" "lexleq[rv]" "lexleq[quick]" "lexleq" "lexless" "max" "min" "occurrence"
+                    "abs" "ineq" "watchless" "lexleq[rv]" "lexleq[quick]" "lexleq" "lexless"
+                    "max" "min" "occurrence"
                     "occurrenceleq" "occurrencegeq" "product" "difference"
                     "weightedsumleq" "weightedsumgeq" "sumgeq" "sumleq" "watchsumgeq"
                     "watchsumleq" "table" "negativetable" "watchvecneq" "litsumgeq"
                     "pow" "div" "modulo" "gadget" "disabled-or"
-                    "hamming" "watched-or" "watched-and"
+                    "hamming" "not-hamming" "watched-or" "watched-and"
                     "w-inset" "w-notinset" "w-inrange" "w-notinrange" "w-literal"
-                    "w-notliteral" "reify" "reifyimply-quick" "reifyimply" "reifyimply-old" "reifyimply-new" "true" "false")
+                    "w-notliteral" "reify" "reifyimply-quick" "reifyimply" "reifyimply-old"
+                    "reifyimply-new" "true" "false" "check[gsa]" "check[assign]"
+                    "watchvecexists_less"
+                    )
 
 set(GEN_FILES_DIR "${PROJECT_SOURCE_DIR}/minion/build_constraints")
 set(CONSTRAINT_DEFS "${GEN_FILES_DIR}/constraint_defs.h")
 set(CONSTRAINT_ENUM "${GEN_FILES_DIR}/ConstraintEnum.h")
 set(BUILD_START "${GEN_FILES_DIR}/BuildStart.h")
 set(BUILD_STATIC_START "${GEN_FILES_DIR}/BuildStaticStart.cpp")
+
+set(NAME_ID_watchvecexists_less "CT_WATCHED_VEC_OR_LESS")
+set(NAME_READ_watchvecexists_less "read_list" "read_list")
 
 set(NAME_ID_element "CT_ELEMENT")
 set(NAME_READ_element "read_list" "read_var" "read_var")
@@ -158,6 +165,9 @@ set(NAME_READ_disabled-or "read_list")
 set(NAME_ID_hamming "CT_WATCHED_HAMMING")
 set(NAME_READ_hamming "read_list" "read_list" "read_constant")
 
+set(NAME_ID_not-hamming "CT_WATCHED_NOT_HAMMING")
+set(NAME_READ_not-hamming "read_list" "read_list" "read_constant")
+
 set(NAME_ID_watched-or "CT_WATCHED_NEW_OR")
 set(NAME_READ_watched-or "read_constraint_list")
 
@@ -183,13 +193,19 @@ set(NAME_ID_w-notliteral "CT_WATCHED_NOTLIT")
 set(NAME_READ_w-notliteral "read_var" "read_constant")
 
 set(NAME_ID_reify "CT_REIFY")
-set(NAME_READ_reify "read_constraint" "read_bool_var")
+set(NAME_READ_reify "read_constraint" "read_var")
 
 set(NAME_ID_reifyimply-quick "CT_REIFYIMPLY_QUICK")
 set(NAME_READ_reifyimply-quick "read_constraint" "read_bool_var")
 
+set(NAME_ID_check[gsa] "CT_CHECK_GSA")
+set(NAME_READ_check[gsa] "read_constraint")
+
+set(NAME_ID_check[assign] "CT_CHECK_ASSIGN")
+set(NAME_READ_check[assign] "read_constraint")
+
 set(NAME_ID_reifyimply "CT_REIFYIMPLY")
-set(NAME_READ_reifyimply "read_constraint" "read_bool_var")
+set(NAME_READ_reifyimply "read_constraint" "read_var")
 
 set(NAME_ID_reifyimply-old "CT_REIFYIMPLY_OLD")
 set(NAME_READ_reifyimply-old "read_constraint" "read_bool_var")
@@ -265,7 +281,7 @@ macro(select_constraints)
     message(STATUS "${msg}")
     file(APPEND ${CONSTRAINT_DEFS} "};")
     file(APPEND ${CONSTRAINT_ENUM} "};\n")
-    file(APPEND ${CONSTRAINT_ENUM} "#endif")
+    file(APPEND ${CONSTRAINT_ENUM} "#endif\n")
     file(APPEND ${BUILD_STATIC_START} "default: D_FATAL_ERROR(\"Fatal error building constraints\");\n")
     file(APPEND ${BUILD_STATIC_START} "}}")
 endmacro(select_constraints)

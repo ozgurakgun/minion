@@ -7,26 +7,27 @@ for i in ./test_instances/resume_instances/*.minion; do
     INSTANCE=$i;
     echo $i;
 
-    COMPLETEOUTPUT=`mktemp`;
-    FIRSTPARTIALOUTPUT=`mktemp`;
-    SECONDPARTIALOUTPUT=`mktemp`;
+    COMPLETEOUTPUT=`mktemp test-resume.co.XXXXXX`;
+    FIRSTPARTIALOUTPUT=`mktemp test-resume.fpo.XXXXXX`;
+    SECONDPARTIALOUTPUT=`mktemp test-resume.spo.XXXXXX`;
     
     $MINION $INSTANCE > $COMPLETEOUTPUT;
     completenodes=`grep "Total Nodes" $COMPLETEOUTPUT | cut -d' ' -f3`;
     completesols=`grep "Solutions Found" $COMPLETEOUTPUT | cut -d' ' -f3`;
     completewalltime=`grep "Total Wall Time" $COMPLETEOUTPUT | cut -d' ' -f4`;
     completesolvetime=`grep "Solve Time" $COMPLETEOUTPUT | cut -d' ' -f3`;
+    completefirstnodetime=`grep "First node time" $COMPLETEOUTPUT | cut -d' ' -f4`;
     
     #don't test if the solve time is under a second, because  it is difficult to ensure
-    #that the first partial run later will not run to competition, due to variation in
+    #that the first partial run later will not run to completion, due to variation in
     #solve times
-    continue=`echo "($completewalltime - $completesolvetime)<1.0" | bc`;
-    if [ $continue -eq 1 ]; then
+    if [ `echo $completesolvetime | awk -F '.' '{ print $1 }'` -eq 0 ]; then
 	echo "Solve time under a second - don't test";
 	continue;
     fi
 
-    timeout=`echo "scale=9;(($completewalltime+$completesolvetime)/2)" | bc`;
+    #timeout is supposed to be roughly half way through search
+    timeout=`echo "scale=9;(($completefirstnodetime+$completewalltime)/2)" | bc`;
     
     echo complete nodes$completenodes sols$completesols walltime$completewalltime solvetime$completesolvetime timeout$timeout;
     
@@ -34,7 +35,7 @@ for i in ./test_instances/resume_instances/*.minion; do
     PID=$!;
     sleep $timeout;
     kill -2 $PID;
-    sync; #i have found that this is necessary to ensure the data can be extracted properly
+    wait $PID;
     resumefile=`grep "Output resume file" $FIRSTPARTIALOUTPUT | cut -d' ' -f5 `;
     resumefile=${resumefile#\"}; #remove leading quote
     resumefile=${resumefile%\"}; #remove trailing quote
@@ -53,6 +54,8 @@ for i in ./test_instances/resume_instances/*.minion; do
     echo "Resume sols: $(($firstpartialsols+$secondpartialsols))=$firstpartialsols+$secondpartialsols";
     
     if [ $completesols -ne $(($firstpartialsols+$secondpartialsols)) ]; then
-	exit 1; #fail and exit if sols don't match
+        exit 1; #fail and exit if sols don't match
     fi
-done;
+
+    rm -f $COMPLETEOUTPUT $FIRSTPARTIALOUTPUT $SECONDPARTIALOUTPUT
+done

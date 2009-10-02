@@ -170,7 +170,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     int triggerpair = trigger_activated / Operator::dynamic_trigger_count();   
     D_ASSERT(triggerpair >= 0 && triggerpair < num_to_watch);
 
-    printf("propmode=%d, triggerpair=%d, trigger_activated=%d\n",
+    /*printf("propmode=%d, triggerpair=%d, trigger_activated=%d\n",
       (int)propagate_mode, (int)triggerpair, (int)trigger_activated);
 
     for(int i = 0; i < watched_values.size(); ++i)
@@ -189,7 +189,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     for(int i = 0; i < var_array2.size(); ++i)
       cout << var_array2[i].getMin() << ":" << var_array2[i].getMax() << ",";
     
-    cout << endl;
+    cout << endl;*/
     
     
     if(propagate_mode)
@@ -293,7 +293,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
    typename disable_if_c<b, AbstractConstraint*>::type rev_implement()
    {
      return new VecCountDynamic<VarArray1, VarArray2, typename Operator::reverse_operator, true>
-         (stateObj, var_array1, var_array2, var_array1.size()-hamming_distance+1);
+         (stateObj, var_array1, var_array2, (int)var_array1.size()-hamming_distance+1);
    }
 
    template<bool b>
@@ -308,5 +308,9 @@ template<typename VarArray1,  typename VarArray2>
 AbstractConstraint*
   VecOrCountConDynamic(StateObj* stateObj,const VarArray1& varray1, const VarArray2& varray2, int i)
   { return new VecCountDynamic<VarArray1,VarArray2>(stateObj, varray1, varray2, i); }
-#endif
 
+template<typename VarArray1,  typename VarArray2>
+AbstractConstraint*
+  NotVecOrCountConDynamic(StateObj* stateObj,const VarArray1& varray1, const VarArray2& varray2, int i)
+  { return new VecCountDynamic<VarArray1,VarArray2,EqIterated>(stateObj, varray1, varray2, (int)varray1.size() - i + 1); }
+#endif

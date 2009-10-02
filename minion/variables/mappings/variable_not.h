@@ -17,9 +17,13 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-
-
 #include "../../constraints/constraint_abstract.h"
+
+// This is a temporary fix to get around the fact that 'VarNot' is defined in some windows header.
+// Long term, probably need a better solution.
+#ifdef _WIN32
+#define VarNot Minion_VarNot
+#endif
 
 /**
  * @brief Nots a variable reference.
@@ -40,8 +44,8 @@ struct VarNot
   
   VarNot(const VarRef& _data) : data(_data)
   { 
-    D_ASSERT(data.getInitialMin() == 0);
-    D_ASSERT(data.getInitialMax() == 1);
+    //D_ASSERT(data.getInitialMin() == 0);
+    //D_ASSERT(data.getInitialMax() == 1);
   }
   
   VarNot() : data()
