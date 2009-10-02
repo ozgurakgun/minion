@@ -482,20 +482,21 @@ class testgac2delement:
         out=[]
         # given a list of lists for the domains, generate the table for gacelement 
         numvars=len(domains)
-        vectordoms=domains[:-2]
-        otherdoms=domains[-2:]
+        vectordoms=domains[:-3]
+        otherdoms=domains[-3:]
         tocross=domains[:-1]
         cross=[]
         crossprod(tocross, [], cross)
         for l in cross:
-            if l[-1] >=0 and l[-1]<(len(l)-1):
-                if l[l[-1]] in otherdoms[1]:
-                    out.append(l+[l[l[-1]]])
-                    
+          
+            if l[-1] >=0 and l[-2] >=0 and ((const * l[-1])+l[-2])<(len(l)-2) and l[-2]<const:
+                if l[(const * l[-1])+l[-2]] in otherdoms[2]:
+                                        out.append(l+[l[(const * l[-1])+l[-2]]])
+                     
         return out
     
     def runtest(self, options=dict()):
-        return runtestgeneral("gac2delement", False, options, [4,2,1,1], ["smallnum", "num", "num", "const"], self, True)
+        return runtestgeneral("gac2delement", False, options, [4,2,1,1], ["smallnum", "smallnum", "smallnum", "const"], self, not options['reify'])
 
 class testwatchelement(testgacelement__minus__deprecated):
     def runtest(self, options=dict()):
