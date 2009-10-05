@@ -21,10 +21,10 @@
 
 #include "preprocess.h"
 
-#include "search/standard_search.h"
-#include "search/recursive_search.h"
-#include "search/conflict_search.h"
-#include "search/group_search.h"
+//#include "search/standard_search.h"
+//#include "search/recursive_search.h"
+//#include "search/conflict_search.h"
+//#include "search/group_search.h"
 
 #include "search/search_control.h"
 
@@ -81,55 +81,53 @@ void BuildCSP(StateObj* stateObj, CSPInstance& instance)
 
 void SolveCSP(StateObj* stateObj, CSPInstance& instance, SearchMethod args)
 {
-  vector<AnyVarRef> preprocess_vars = BuildCon::build_val_and_var_order(stateObj, instance.search_order[0]).first;
-  function<void (void)> search(bind(Controller::deal_with_solution, stateObj));
-
-  // Set up variable and value ordering
-  for(int i = instance.search_order.size() - 1; i >= 0; --i)
-  {
-    SearchOrder order = instance.search_order[i];
-
-    if(args.order != ORDER_NONE)
-      order.order = args.order;
-
-    pair<vector<AnyVarRef>, vector<int> > var_val_order = BuildCon::build_val_and_var_order(stateObj, instance.search_order[i]);
-
-    if(getOptions(stateObj).randomise_valvarorder)
+    // Check that when searching PropagateSAC does actually do the SAC over all vars in any
+    // varorder block, not just the ones in the 'current' block
+    
+    
+    
+    // Set up variable and value ordering
+    // Strange that when using randomise_valvarorder, the variables are
+    // only shuffled within the VARORDER blocks from the input file.
+    // Likewise, using a dynamic variable ordering, it only applies within
+    // the VARORDER blocks.
+    
+    vector<AnyVarRef> preprocess_vars;
+    
+    for(int i = instance.search_order.size() - 1; i >= 0; --i)
     {
-      getOptions(stateObj).printLine("Using seed: " + to_string(args.random_seed));
-      srand( args.random_seed );
-
-      std::random_shuffle(var_val_order.first.begin(), var_val_order.first.end());
-      for(unsigned i = 0; i < var_val_order.second.size(); ++i)
-        var_val_order.second[i] = (rand() % 100) > 50;
+        if(args.order != ORDER_NONE)
+            instance.search_order[i].order = args.order;
+        
+        for(int j=0; j<instance.search_order[i].var_order.size(); j++)
+        {   // cobble together all the varorder blocks for preprocessing.
+            preprocess_vars.push_back(get_AnyVarRef_from_Var(stateObj, instance.search_order[i].var_order[j]));
+        }
+        
+        if(getOptions(stateObj).randomise_valvarorder)
+        {
+            getOptions(stateObj).printLine("Using seed: " + to_string(args.random_seed));
+            srand( args.random_seed );
+            
+            std::random_shuffle(instance.search_order[i].var_order.begin(), instance.search_order[i].var_order.end()); 
+            
+            for(unsigned j = 0; j < instance.search_order[i].val_order.size(); ++j)
+                instance.search_order[i].val_order[j] = (rand() % 100) > 50;
+        }
     }
-
-    switch(args.prop_method)
-    {
-      case PropLevel_GAC:
-      search = solve(stateObj, search, order, var_val_order, instance, PropagateGAC());
-      break;
-      case PropLevel_SAC:
-      search = solve(stateObj, search, order, var_val_order, instance, PropagateSAC());
-      break;
-      case PropLevel_SSAC:
-      search = solve(stateObj, search, order, var_val_order, instance, PropagateSSAC());
-      break;
-      default:
-      abort();
-    }
-  }
-
-  getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Build Search Ordering Time: ", "SearchOrderTime", getTableOut(), !getOptions(stateObj).silent);
-
-  PropogateCSP(stateObj, args.preprocess, preprocess_vars, !getOptions(stateObj).silent);
-  getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Preprocess Time: ", "PreprocessTime", getTableOut(), !getOptions(stateObj).silent);
-  getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_1, "First node time: ", "FirstNodeTime", getTableOut(), !getOptions(stateObj).silent);
-
+    
+    Controller::SearchManager* sm=Controller::make_search_manager(stateObj, args.prop_method, instance.search_order);
+    
+    getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Build Search Ordering Time: ", "SearchOrderTime", getTableOut(), !getOptions(stateObj).silent);
+    
+    PropogateCSP(stateObj, args.preprocess, preprocess_vars, !getOptions(stateObj).silent);
+    getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_2, "Preprocess Time: ", "PreprocessTime", getTableOut(), !getOptions(stateObj).silent);
+    getState(stateObj).getOldTimer().maybePrintTimestepStore(Output_1, "First node time: ", "FirstNodeTime", getTableOut(), !getOptions(stateObj).silent);
+    
   if(!getState(stateObj).isFailed())
   {
     try
-      { search(); }
+      { sm->search(); }
     catch(EndOfSearch)
     { }
   }
