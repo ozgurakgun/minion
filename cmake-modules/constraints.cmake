@@ -271,8 +271,9 @@ macro(select_constraints)
             # BuildStaticStart.h
             file(APPEND ${BUILD_STATIC_START} "case ${NAME_ID_${constraint}}: return build_constraint_${NAME_ID_${constraint}}(stateObj, b);\n")
             # CT_*.cpp
-            file(READ "${GEN_FILES_DIR}/${NAME_ID_${constraint}}.tmpl" CONS)
-            file(WRITE "${GEN_FILES_DIR}/${NAME_ID_${constraint}}.cpp" "${CONS}")
+            configure_file("${GEN_FILES_DIR}/${NAME_ID_${constraint}}.tmpl"
+                           "${GEN_FILES_DIR}/${NAME_ID_${constraint}}.cpp"
+                           COPYONLY)
         endif()
     endforeach()
     message(STATUS "${msg}")
