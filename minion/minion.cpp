@@ -425,6 +425,13 @@ try {
     graph.g.output_nauty_graph(instance);
     exit(0);
   }
+  
+  if(getOptions(stateObj).instance_stats)
+  {
+      InstanceStats s(instance); 
+      s.output_stats();
+      exit(0);
+  }
 
   if(getOptions(stateObj).redump)
   {

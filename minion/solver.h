@@ -231,6 +231,7 @@ public:
   
   bool redump;
   bool graph;
+  bool instance_stats;
 
   //do we resume from a previous run and, if so, what file
   bool resume;
@@ -256,7 +257,8 @@ public:
     nodelimit(0), tableout(false), solsoutWrite(false), 
     print_solution(true), time_limit(0), time_limit_is_CPU_time(false),
     randomise_valvarorder(false), parser_verbose(false), 
-    redump(false), graph(false), resume(false), noresumefile(false),
+    redump(false), graph(false), instance_stats(false), 
+    resume(false), noresumefile(false),
     outputType(-1), noTimers(false)
   {}
   

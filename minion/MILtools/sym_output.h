@@ -17,6 +17,9 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <cmath>
+#include <algorithm>
+
 std::vector<std::vector<int> > 
 build_graph(std::vector<std::set<int> > graph, const std::vector<std::set<int> >& partition);
 
@@ -594,3 +597,239 @@ struct GraphBuilder
 };
 
 
+struct InstanceStats
+{
+  CSPInstance& csp;
+  
+  InstanceStats(CSPInstance& _csp) : csp(_csp)
+  { }
+  
+  void output_stats()
+  {
+      string s("stats_"); // common prefix
+      // Variables statistics
+      VarContainer& v=csp.vars;
+      int varcount=v.BOOLs+v.bound.size()+v.sparse_bound.size()+v.discrete.size();
+      cout << s << "varcount:" << varcount <<endl;
+      cout << s << "var_bool:" <<v.BOOLs <<endl;
+      cout << s << "var_discrete:" << v.discrete.size() << endl;
+      cout << s << "var_bound:" << v.bound.size() << endl;
+      cout << s << "var_sparsebound:" << v.sparse_bound.size() << endl;
+      
+      // collect all domain sizes into an array
+      vector<int> domsizes;
+      for(int i=0; i<v.BOOLs; i++)
+          domsizes.push_back(2);
+      for(int i=0; i<v.bound.size(); i++)
+          domsizes.push_back(v.bound[i].second.upper_bound-v.bound[i].second.lower_bound+1);
+      for(int i=0; i<v.discrete.size(); i++)
+          domsizes.push_back(v.discrete[i].second.upper_bound-v.discrete[i].second.lower_bound+1);
+      for(int i=0; i<v.sparse_bound.size(); i++)
+          domsizes.push_back(v.sparse_bound[i].second.size());
+      
+      std::sort(domsizes.begin(), domsizes.end());
+      // Some rubbish which does not give you the real medians, quartiles
+      cout << s << "dom_0:" << domsizes[0] <<endl;
+      cout << s << "dom_25:" << domsizes[domsizes.size()/4] <<endl;
+      cout << s << "dom_50:" << domsizes[domsizes.size()/2] <<endl;
+      cout << s << "dom_75:" << domsizes[(domsizes.size()*3)/4] <<endl;
+      cout << s << "dom_100:" << domsizes.back() <<endl;
+      
+      int totaldom=std::accumulate(domsizes.begin(), domsizes.end(), 0);
+      cout << s << "dom_mean:" << ((double)totaldom)/(double) domsizes.size() << endl;
+      
+      int num2s= std::count(domsizes.begin(), domsizes.end(), 2);
+      cout << s << "dom_not2_2_ratio:" << ((double) (varcount-num2s) )/(double)num2s << endl;
+      
+      cout << s << "discrete_bool_ratio:" << ((double) v.discrete.size())/(double)v.BOOLs <<endl;
+      
+      int branchingvars=0;
+      int auxvars=0;
+      for(int i=0; i<csp.search_order.size(); i++)
+      {
+          if(csp.search_order[i].find_one_assignment)
+          {
+              auxvars=auxvars+csp.search_order[i].var_order.size();
+          }
+          else
+          {
+              branchingvars=branchingvars+csp.search_order[i].var_order.size();
+          }
+      }
+      cout << s << "branchingvars:" << branchingvars <<endl;
+      cout << s << "auxvars:" << auxvars <<endl;
+      cout << s << "auxvar_branching_ratio:" << ((double)auxvars)/(double)branchingvars <<endl;
+      
+      //////////////////////////////////////////////////////////////////////////
+      // Constraint stats
+      list<ConstraintBlob> & c=csp.constraints;
+      
+      cout <<s << "conscount:" << c.size() <<endl;
+      vector<int> arities;
+      for(list<ConstraintBlob>::iterator i=c.begin(); i!=c.end(); ++i)
+      {
+          arities.push_back(arity(*i));
+      }
+      std::sort(arities.begin(), arities.end());
+      
+      cout << s << "arity_0:" << arities[0] <<endl;
+      cout << s << "arity_25:" << arities[arities.size()/4] <<endl;
+      cout << s << "arity_50:" << arities[arities.size()/2] <<endl;
+      cout << s << "arity_75:" << arities[(arities.size()*3)/4] <<endl;
+      cout << s << "arity_100:" << arities.back() <<endl;
+      
+      int totalarity=std::accumulate(arities.begin(), arities.end(), 0);
+      cout << s << "arity_mean:" << ((double)totalarity)/(double) arities.size() << endl;
+      cout << s << "cts_per_var_mean:" << ((double)totalarity)/(double) varcount << endl;
+      
+      // six categories of constraint, output their proportion and count
+      int alldiff=0, sums=0, wor=0, ternary=0, binary=0, table=0, reify=0, lex=0;
+      for(list<ConstraintBlob>::iterator i=c.begin(); i!=c.end(); ++i)
+      {
+          ConstraintType ct=(*i).constraint->type;
+          switch(ct)
+          {
+            case CT_ALLDIFF:
+            case CT_GACALLDIFF:
+                alldiff++;
+                break;
+            case CT_GEQSUM:
+            case CT_LEQSUM:
+            case CT_WEIGHTGEQSUM:
+            case CT_WEIGHTLEQSUM:
+            case CT_WATCHED_GEQSUM:
+            case CT_WATCHED_LEQSUM:
+                sums++;
+                break;
+            case CT_WATCHED_OR:
+                wor++;
+                break;
+            case CT_PRODUCT2:
+            case CT_MODULO:
+            case CT_DIV:
+            case CT_POW:
+                ternary++;
+                break;
+            case CT_ABS:
+            case CT_INEQ:
+            case CT_EQ:
+                binary++;
+                break;
+            case CT_REIFY:
+            case CT_DISEQ_REIFY:
+            case CT_EQ_REIFY:
+            case CT_MINUSEQ_REIFY:
+            case CT_REIFYIMPLY_QUICK:
+            case CT_REIFYIMPLY:
+            case CT_REIFYIMPLY_OLD:
+            case CT_REIFYIMPLY_NEW:
+                reify++;
+                break;
+            case CT_WATCHED_TABLE:
+            case CT_WATCHED_NEGATIVE_TABLE:
+            case CT_LIGHTTABLE:
+                table++;
+                break;
+            case CT_GACLEXLEQ:
+            case CT_QUICK_LEXLEQ:
+            case CT_LEXLEQ:
+            case CT_LEXLESS:
+            case CT_QUICK_LEXLESS:
+                lex++;
+                break;
+            default:
+                cerr << "Stats: Uncategorised constraint:" << (*i).constraint->name <<endl;
+          }
+      }
+      
+      cout << s << "alldiff_count:" << alldiff << endl;
+      cout << s << "alldiff_proportion:" << ((double)alldiff)/(double)c.size() << endl;
+      cout << s << "sums_count:" << sums << endl;
+      cout << s << "sums_proportion:" << ((double)sums)/(double)c.size() << endl;
+      cout << s << "wor_count:" << wor << endl;
+      cout << s << "wor_proportion:" << ((double)wor)/(double)c.size() << endl;
+      cout << s << "ternary_count:" << ternary << endl;
+      cout << s << "ternary_proportion:" << ((double)ternary)/(double)c.size() << endl;
+      cout << s << "binary_count:" << binary << endl;
+      cout << s << "binary_proportion:" << ((double)binary)/(double)c.size() << endl;
+      cout << s << "reify_count:" << reify << endl;
+      cout << s << "reify_proportion:" << ((double)reify)/(double)c.size() << endl;
+      cout << s << "table_count:" << table << endl;
+      cout << s << "table_proportion:" << ((double)table)/(double)c.size() << endl;
+      cout << s << "lex_count:" << lex << endl;
+      cout << s << "lex_proportion:" << ((double)lex)/(double)c.size() << endl;
+      
+      int count_2_overlaps=0;
+      for(list<ConstraintBlob>::iterator i=c.begin(); i!=c.end(); ++i)
+      {
+          for(list<ConstraintBlob>::iterator j=i; j!=c.end(); ++j)
+          {
+              if(j!=i)  // can't say i+1 above.
+              {
+                  set<Var> c1vars=find_all_vars(*i);
+                  set<Var> c2vars=find_all_vars(*j);
+                  vector<Var> inter;
+                  
+                  set_intersection(c1vars.begin(), c1vars.end(), c2vars.begin(), c2vars.end(), back_inserter(inter));
+                  if(inter.size()>=2)
+                  {
+                      count_2_overlaps++;
+                  }
+              }
+          }
+      }
+      
+      int conspairs=((double)(c.size()*(c.size()-1)))/2.0;
+      
+      cout << s << "multi_shared_vars:" << ((double)count_2_overlaps)/conspairs <<endl;
+  }
+  
+  // pretend each top-level constraint is just one constraint (i.e. no constraint trees)
+  // naive arity count that eliminates repeated variables but 
+  // counts constants in place of variables as variables.
+  int arity(ConstraintBlob& ct)
+  {
+      return find_all_vars(ct).size();
+          
+      /*    
+      int count=0;
+      for(int i=0; i< ct.vars.size(); i++)
+      {
+          count=count+ct.vars[i].size();
+      }
+      // sub-constraints
+      for(int i=0; i<ct.internal_constraints.size(); i++)
+      {
+          count=count+arity(ct.internal_constraints[i]);
+      }
+      return count;*/
+  }
+  
+  // counts constants as vars still.
+  set<Var> find_all_vars(ConstraintBlob& ct)
+  {
+      set<Var> t2;
+      for(int i = 0; i < ct.vars.size(); ++i )
+      {
+          for(int j=0; j<ct.vars[i].size(); j++)
+          {
+            t2.insert(ct.vars[i][j]);
+          }
+      }
+      
+      for(int i=0; i<ct.internal_constraints.size(); i++)
+      {
+          set<Var> t3=find_all_vars(ct.internal_constraints[i]);
+          for(set<Var>::iterator j=t3.begin(); j!=t3.end(); ++j)
+          {
+              t2.insert(*j);
+          }
+      }
+      
+      // filter out constants here.
+      
+      return t2;
+  }
+  
+  
+};

@@ -20,6 +20,10 @@
 #ifndef STANDARD_QUEUE_H
 #define STANDARD_QUEUE_H
 
+// use a deque (as a fifo) for the special queue
+//#define SQ_DEQUE
+
+#include <deque>
 #include "../solver.h"
 #include "../get_info/get_info.h"
 #include "../constraints/triggers.h"
@@ -45,7 +49,11 @@ class Queues
   // normal queue is empty. This list is at the moment only used
   // by reified constraints when they want to start propagation.
   // I don't like it, but it is necesasary.
-  vector<AbstractConstraint*> special_triggers;
+  #ifdef SQ_DEQUE
+    deque<AbstractConstraint*> special_triggers;
+  #else
+    vector<AbstractConstraint*> special_triggers;
+  #endif
 
 #ifndef NO_DYN_CHECK
   DynamicTrigger* next_queue_ptr;
@@ -224,9 +232,15 @@ public:
 
       if(special_triggers.empty())
         return;
-
-      AbstractConstraint* trig = special_triggers.back();
-      special_triggers.pop_back();
+      
+      #ifdef SQ_DEQUE
+        AbstractConstraint* trig = special_triggers.front();
+        special_triggers.pop_front();
+      #else
+        AbstractConstraint* trig = special_triggers.back();
+        special_triggers.pop_back();
+      #endif
+      
       CON_INFO_ADDONE(SpecialTrigger);
       trig->special_check();
 #ifdef WDEG
