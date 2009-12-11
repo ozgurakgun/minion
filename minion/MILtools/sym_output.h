@@ -753,12 +753,16 @@ struct InstanceStats
       cout << s << "cts_per_var_mean:" << ((double)totalarity)/(double) varcount << endl;
       
       // six categories of constraint, output their proportion and count
-      int alldiff=0, sums=0, wor=0, ternary=0, binary=0, table=0, reify=0, lex=0;
+      int alldiff=0, sums=0, wor=0, ternary=0, binary=0, table=0, reify=0, lex=0, unary=0;
       for(list<ConstraintBlob>::iterator i=c.begin(); i!=c.end(); ++i)
       {
           ConstraintType ct=(*i).constraint->type;
           switch(ct)
           {
+  	    case CT_WATCHED_LIT:
+	    case CT_WATCHED_NOTLIT:
+	      unary++;
+	      break;
             case CT_ALLDIFF:
             case CT_GACALLDIFF:
                 alldiff++;
@@ -771,7 +775,7 @@ struct InstanceStats
             case CT_WATCHED_LEQSUM:
                 sums++;
                 break;
-            case CT_WATCHED_OR:
+            case CT_WATCHED_NEW_OR:
                 wor++;
                 break;
             case CT_PRODUCT2:
@@ -828,6 +832,8 @@ struct InstanceStats
       cout << s << "table_proportion:" << ((double)table)/(double)c.size() << endl;
       cout << s << "lex_count:" << lex << endl;
       cout << s << "lex_proportion:" << ((double)lex)/(double)c.size() << endl;
+      cout << s << "unary_count:" << unary << endl;
+      cout << s << "unary_proportion:" << ((double)unary)/(double)c.size() << endl;
       
       int count_2_overlaps=0;
 
