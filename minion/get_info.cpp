@@ -120,6 +120,9 @@ void ConInfoAddone(Info_ConEvent type)
 void PropInfoAddone(Info_PropEvent type)
 { var_info.propcount[type]++; }
 
+void PropInfoAdd(Info_PropEvent type, int count)
+{ var_info.propcount[type] += count; }
+
 void print_search_info()
 {
    cout << pad("");

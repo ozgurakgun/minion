@@ -67,6 +67,8 @@ PROP_EVENT(BinaryNeq)
 PROP_EVENT(NonGACElement)
 PROP_EVENT(GACElement)
 PROP_EVENT(Lex)
+PROP_EVENT(WatchLex)
+PROP_EVENT(QuickLex)
 PROP_EVENT(FullSum)
 PROP_EVENT(BoolSum)
 PROP_EVENT(AlldiffGacSlow)
@@ -118,6 +120,14 @@ PROP_EVENT(ReifyImplyFullCheckUnsat)
 PROP_EVENT(ReifyImplyCheckUnsat)
 PROP_EVENT(ReifyImplyGetSatAssg)
 PROP_EVENT(Clique)
+
+PROP_EVENT(TryBetaPruning)
+PROP_EVENT(BetaPruning)
+
+PROP_EVENT(EntailedLex)
+
+PROP_EVENT(ShrinkLexTriggers)
+PROP_EVENT(ShrinkLexTriggersCount)
 
 PROP_EVENT(Counter1)
 PROP_EVENT(Counter2)
