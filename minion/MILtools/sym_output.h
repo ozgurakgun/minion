@@ -554,6 +554,19 @@ struct GraphBuilder
     
     return v;
   }
+
+  string colour_symmetric_parent_constraint(const ConstraintBlob& b, string name)
+  {
+    D_ASSERT(b.vars.size() == 0 && b.constants.size() == 0);
+    string v = g.new_vertex(name + "_HEAD");
+
+    for(int i = 0; i < b.internal_constraints.size(); ++i)
+    {
+      string child_con = colour_constraint(b.internal_constraints[i]);
+      add_edge(v, child_con);
+    }
+    return v;
+  }
   
   string colour_constraint(const ConstraintBlob& b)
   {
@@ -561,6 +574,12 @@ struct GraphBuilder
     {
 #ifdef CT_REIFY_ABC
       case CT_REIFY: return colour_reify(b, "REIFY");
+#endif
+#ifdef CT_CHECK_GSA_ABC
+      case CT_CHECK_GSA : return colour_constraint(b.internal_constraints[0]);
+#endif
+#ifdef CT_CHECK_ASSIGN_ABC
+      case CT_CHECK_ASSIGN : return colour_constraint(b.internal_constraints[0]);
 #endif
 #ifdef CT_REIFYIMPLY_ABC
       case CT_REIFYIMPLY: return colour_reify(b, "REIFYIMPLY");
@@ -719,6 +738,18 @@ struct GraphBuilder
 #endif
 #ifdef CT_GCCWEAK_ABC
       case CT_GCCWEAK: return colour_gcc(b, "GCC");
+#endif
+#ifdef CT_FALSE_ABC
+      case CT_FALSE: return g.new_vertex("FALSE");
+#endif
+#ifdef CT_TRUE_ABC
+      case CT_TRUE: return g.new_vertex("TRUE");
+#endif
+#ifdef CT_WATCHED_NEW_OR_ABC
+      case CT_WATCHED_NEW_OR: return colour_symmetric_parent_constraint(b, "OR");
+#endif
+#ifdef CT_WATCHED_NEW_AND_ABC
+      case CT_WATCHED_NEW_AND: return colour_symmetric_parent_constraint(b, "AND");
 #endif
 
       default:
@@ -929,9 +960,12 @@ struct InstanceStats
       }
       
       int conspairs=((double)(c.size()*(c.size()-1)))/2.0;
-      
+     
+      double proportion = 0;
+      if(conspairs >0)
+        proportion =((double)count_2_overlaps)/conspairs;
       // proportion of pairs of constraints that share two or more variables.
-      cout << s << "multi_shared_vars:" << ((double)count_2_overlaps)/conspairs <<endl;
+      cout << s << "multi_shared_vars:" << proportion <<endl;
       
       GraphBuilder graph(csp);
       cout << s << "Local_Variance: " << partition_graph(graph.g.build_graph_info(csp, false)) << endl;
