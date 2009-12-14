@@ -50,7 +50,8 @@ conslist+=["negativetable", "lighttable"]
 
 # symmetry-breaking constraints
 
-conslist+=["lexleq", "lexless", "lexleq_quick", "lexless_quick"]
+conslist+=["lexleq", "lexless", "lexleq_quick", "lexless_quick", "lexleq_nb", "lexleq_w",
+           "lexleq_w_ent", "lexleq_w_shrink", "lexleq_w_ent_shrink"]
 
 conslist+=["max", "min"]
 

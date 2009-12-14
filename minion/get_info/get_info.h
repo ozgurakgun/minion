@@ -69,15 +69,20 @@ ConInfoAddone(CON_INFO_ ## ConEvent)
 #define PROP_INFO_ADDONE(PropEvent) \
 PropInfoAddone(PROP_INFO_ ## PropEvent)
 
+#define PROP_INFO_ADD(PropEvent, count) \
+PropInfoAdd(PROP_INFO_ ## PropEvent, count);
+
 void VarInfoAddone(Info_VarType, Info_VarEvent);
 void ConInfoAddone(Info_ConEvent);
 void PropInfoAddone(Info_PropEvent);
+void PropInfoAdd(Info_PropEvent, int);
 void print_search_info();
 
 #else
 #define CON_INFO_ADDONE(ConEvent)
 #define VAR_INFO_ADDONE(VarType, VarEvent)
 #define PROP_INFO_ADDONE(PropType)
+#define PROP_INFO_ADD(PropEvent, count)
 #endif
 
 #endif

@@ -59,16 +59,16 @@ See also
 for a similar constraint with strict lexicographic inequality.
 */
 
-#ifndef CONSTRAINT_LEX_H
-#define CONSTRAINT_LEX_H
+#ifndef CONSTRAINT_WATCHED_LEX_H
+#define CONSTRAINT_WATCHED_LEX_H
 
-template<typename VarArray1, typename VarArray2, BOOL Less = false, bool UseBeta = true>
-struct LexLeqConstraint : public AbstractConstraint
+template<typename VarArray1, typename VarArray2, BOOL Less, bool DoShrink, bool DoEntailed>
+struct LexLeqWatchedConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
   { if(Less) return "LexLess"; else return "LexLeq"; }
   
-  typedef LexLeqConstraint<VarArray2, VarArray1,!Less, UseBeta> NegConstraintType;
+  typedef LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed> NegConstraintType;
   typedef typename VarArray1::value_type ArrayVarRef1;
   typedef typename VarArray2::value_type ArrayVarRef2;
   
@@ -79,41 +79,49 @@ struct LexLeqConstraint : public AbstractConstraint
   VarArray1 x;
   VarArray2 y;
   
-  LexLeqConstraint(StateObj* _stateObj,const VarArray1& _x, const VarArray2& _y) :
+  LexLeqWatchedConstraint(StateObj* _stateObj,const VarArray1& _x, const VarArray2& _y) :
     AbstractConstraint(_stateObj), alpha(_stateObj), beta(_stateObj), F(_stateObj), x(_x), y(_y)
-  { D_ASSERT(x.size() == y.size()); }
-  
-  virtual triggerCollection setup_internal()
-  {
-    triggerCollection t;
-    
-    int x_size = x.size();
-    for(int i=0; i < x_size; ++i)
-    {
-      t.push_back(make_trigger(x[i], Trigger(this, i), LowerBound));
-      t.push_back(make_trigger(x[i], Trigger(this, i), UpperBound));
-    }
-    
-    int y_size = y.size();
-    for(int i=0; i < y_size; ++i)
-    {
-      t.push_back(make_trigger(y[i], Trigger(this, i), LowerBound));
-      t.push_back(make_trigger(y[i], Trigger(this, i), UpperBound));
-    }
+  { 
+    D_ASSERT(x.size() == y.size());
     alpha = 0;
     if(Less)
-      beta = x_size;
+      beta = x.size();
     else
-      beta = 100000;
-    F = 0;
-    return t;
+      beta = 1000000;
+    F = false;
   }
   
+  int dynamic_trigger_count()
+  { return x.size() * 2; }
+
   virtual AbstractConstraint* reverse_constraint()
   {
-    return new LexLeqConstraint<VarArray2, VarArray1,!Less, UseBeta>(stateObj,y,x);
+    return new LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed>(stateObj,y,x);
   }
   
+  void attach_all_triggers()
+  {
+    DynamicTrigger* dt = dynamic_trigger_start();
+    int size = x.size();
+    for(int i = 0; i < size; ++i)
+    {
+      x[i].addDynamicTrigger(dt + i,       LowerBound, NoDomainValue BT_CALL_BACKTRACK);
+      y[i].addDynamicTrigger(dt + i + size,UpperBound, NoDomainValue BT_CALL_BACKTRACK);
+    }
+  }
+
+  // Remove triggers in the range [i, j)
+  void release_trigger_range(int i, int j)
+  {
+    DynamicTrigger* dt = dynamic_trigger_start();
+    int size = x.size();
+    for(int l = i; l < j; ++l)
+    {
+      releaseTrigger(stateObj, dt + l        BT_CALL_BACKTRACK);
+      releaseTrigger(stateObj, dt + l + size BT_CALL_BACKTRACK);
+    }
+  }
+
   void updateAlpha(int i) {
     int n = x.size();
     if(Less)
@@ -126,7 +134,7 @@ struct LexLeqConstraint : public AbstractConstraint
       if (!x[i].isAssigned() || !y[i].isAssigned() ||
           x[i].getAssignedValue() != y[i].getAssignedValue())  {
         alpha = i;
-        do_propagate(i);
+        index_propagate(i);
       }
       else updateAlpha(i+1);
     }
@@ -136,12 +144,12 @@ struct LexLeqConstraint : public AbstractConstraint
         if (!x[i].isAssigned() || !y[i].isAssigned() ||
             x[i].getAssignedValue() != y[i].getAssignedValue())  {
           alpha = i ;
-          do_propagate(i) ;
+          index_propagate(i) ;
           return ;
         }
         i++ ;
       }
-      F = true ;
+      set_implied();
     }
     
   }
@@ -149,12 +157,11 @@ struct LexLeqConstraint : public AbstractConstraint
   ///////////////////////////////////////////////////////////////////////////////
   // updateBeta()
   void updateBeta(int i) {
-    D_ASSERT(UseBeta);
     int a = alpha ;
     while (i >= a) {
       if (x[i].getMin() < y[i].getMax()) {
         beta = i+1 ;
-        if (!(x[i].getMax() < y[i].getMin())) do_propagate(i) ;
+        if (!(x[i].getMax() < y[i].getMin())) index_propagate(i) ;
         return ;
       }
       i-- ;    
@@ -163,13 +170,38 @@ struct LexLeqConstraint : public AbstractConstraint
     
   }
   
-  virtual void propagate(int i, DomainDelta)
+  virtual void propagate(DynamicTrigger* dt)
   {
-    PROP_INFO_ADDONE(Lex);
-    do_propagate(i);
+    PROP_INFO_ADDONE(WatchLex);
+    int i = (dt - dynamic_trigger_start()) % (x.size());
+    int old_beta = beta;
+    index_propagate(i);
+    if(DoShrink)
+    {
+      PROP_INFO_ADDONE(ShrinkLexTriggers);
+      int max_val = min(old_beta, (int)x.size());
+
+      int trig_count = min(0, max_val - (beta + 1));
+      PROP_INFO_ADD(ShrinkLexTriggersCount, trig_count);
+
+      release_trigger_range(beta + 1, max_val);
+    }
   }
 
-  void do_propagate(int i)
+  void set_implied()
+  {
+    F = true;
+    if(DoEntailed)
+    {
+      PROP_INFO_ADDONE(EntailedLex);
+      int max_val = x.size();
+      if(DoShrink)
+        max_val = min((int)beta, max_val);
+      release_trigger_range(alpha, max_val);
+    }
+  }
+
+  void index_propagate(int i)
   {
     if (F)
     {
@@ -190,17 +222,10 @@ struct LexLeqConstraint : public AbstractConstraint
     { if (i >= b) return ; }
     
     if (i == a && i+1 == b) {
-#ifdef MORE_SEARCH_INFO
-    PROP_INFO_ADDONE(TryBetaPruning);
-    if(x[i].inDomain(y[i].getMax()))
-    { PROP_INFO_ADDONE(BetaPruning); }
-    if(y[i].inDomain(x[i].getMin()))
-    { PROP_INFO_ADDONE(BetaPruning); }
-#endif
       x[i].setMax(y[i].getMax()-1) ;
       y[i].setMin(x[i].getMin()+1) ;
       if (checkLex(i)) {
-        F = true ;
+        set_implied();
         return ;
       }
     }
@@ -208,13 +233,13 @@ struct LexLeqConstraint : public AbstractConstraint
       x[i].setMax(y[i].getMax()) ;
       y[i].setMin(x[i].getMin()) ;
       if (checkLex(i)) {
-        F = true ;
+        set_implied();
         return ;
       }
       if (x[i].isAssigned() && y[i].isAssigned() && x[i].getAssignedValue() == y[i].getAssignedValue())
         updateAlpha(i+1) ;
     }
-    else if (a < i && i < b && UseBeta) {
+    else if (a < i && i < b) {
       if ((i == b-1 && x[i].getMin() == y[i].getMax()) || x[i].getMin() > y[i].getMax())
         updateBeta(i-1) ;
     }
@@ -280,6 +305,7 @@ struct LexLeqConstraint : public AbstractConstraint
   
   virtual void full_propagate()
   {
+    attach_all_triggers();
     int i, n = x.size() ;
     for (i = 0; i < n; i++) {
       if (!x[i].isAssigned()) break ;    
@@ -289,7 +315,7 @@ struct LexLeqConstraint : public AbstractConstraint
     if (i < n) {
       alpha = i ;
       if (checkLex(i)) {
-        F = true ;
+        set_implied();
         return ;
       }
       int betaBound = -1 ;
@@ -300,31 +326,30 @@ struct LexLeqConstraint : public AbstractConstraint
         }
         else betaBound = -1 ;
       }
-      if(UseBeta)
+      if(!Less)
       {
-        if(!Less)
-        {
-          if (i == n) beta = 1000000 ;
-          else if (betaBound == -1) beta = i ;
-          else beta = betaBound ;
-        }
-        else
-        {
-          if(i == n) beta = n;
-          if (betaBound == -1) beta = i ;
-          else beta = betaBound ;
-        }
+        if (i == n) beta = 1000000 ;
+        else if (betaBound == -1) beta = i ;
+        else beta = betaBound ;
+      }
+      else
+      {
+        if(i == n) beta = n;
+        if (betaBound == -1) beta = i ;
+        else beta = betaBound ;
       }
       if (alpha >= beta) getState(stateObj).setFailed(true);
-      do_propagate(alpha) ;             //initial propagation, if necessary.
+      index_propagate(alpha) ;             //initial propagation, if necessary.
     }
     else 
     {
       if(Less)
         getState(stateObj).setFailed(true);
       else
-        F = true;
+        set_implied();
     }
+    if(DoShrink)
+        release_trigger_range(beta + 1, x.size());
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)
