@@ -62,7 +62,7 @@ for a similar constraint with strict lexicographic inequality.
 #ifndef CONSTRAINT_WATCHED_LEX_H
 #define CONSTRAINT_WATCHED_LEX_H
 
-template<typename VarArray1, typename VarArray2, BOOL Less, bool DoShrink, bool DoEntailed>
+template<typename VarArray1, typename VarArray2, BOOL Less, bool DoShrink, bool DoEntailed, bool DoBeta = true>
 struct LexLeqWatchedConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
@@ -82,6 +82,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
   LexLeqWatchedConstraint(StateObj* _stateObj,const VarArray1& _x, const VarArray2& _y) :
     AbstractConstraint(_stateObj), alpha(_stateObj), beta(_stateObj), F(_stateObj), x(_x), y(_y)
   { 
+    D_ASSERT(DoBeta || (!DoShrink && !DoEntailed));
     D_ASSERT(x.size() == y.size());
     alpha = 0;
     if(Less)
@@ -157,6 +158,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
   ///////////////////////////////////////////////////////////////////////////////
   // updateBeta()
   void updateBeta(int i) {
+    D_ASSERT(DoBeta);
     int a = alpha ;
     while (i >= a) {
       if (x[i].getMin() < y[i].getMax()) {
@@ -178,12 +180,15 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
     index_propagate(i);
     if(DoShrink)
     {
-      PROP_INFO_ADDONE(ShrinkLexTriggers);
       int max_val = min(old_beta, (int)x.size());
-
-      int trig_count = min(0, max_val - (beta + 1));
-      PROP_INFO_ADD(ShrinkLexTriggersCount, trig_count);
-
+#ifdef MORE_SEARCH_INFO
+      int deleted_triggers = max(0, max_val - (beta + 1));
+      if(deleted_triggers > 0)
+      {
+        PROP_INFO_ADDONE(ShrinkLexTriggers);
+        PROP_INFO_ADD(ShrinkLexTCount, deleted_triggers);
+      }
+#endif
       release_trigger_range(beta + 1, max_val);
     }
   }
@@ -239,7 +244,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
       if (x[i].isAssigned() && y[i].isAssigned() && x[i].getAssignedValue() == y[i].getAssignedValue())
         updateAlpha(i+1) ;
     }
-    else if (a < i && i < b) {
+    else if (a < i && i < b && DoBeta) {
       if ((i == b-1 && x[i].getMin() == y[i].getMax()) || x[i].getMin() > y[i].getMax())
         updateBeta(i-1) ;
     }
