@@ -931,6 +931,13 @@ class testlexleq_w(testlexleq):
     def runtest(self, options=dict()):
         return runtestgeneral("lexleq[w]", True, options, [4,4], ["smallnum", "smallnum"], self, True)
 
+class testlexleq_w_nb(testlexleq):
+    def printtable(self, domains):
+        return testlexleq.printtable(self, domains, less=False)
+
+    def runtest(self, options=dict()):
+        return runtestgeneral("lexleq[w-nb]", True, options, [4,4], ["smallnum", "smallnum"], self, False)
+
 class testlexleq_w_ent(testlexleq):
     def printtable(self, domains):
         return testlexleq.printtable(self, domains, less=False)

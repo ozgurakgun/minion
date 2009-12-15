@@ -140,6 +140,7 @@ template<typename VarArray1, typename VarArray2, bool Less = false>
   
   virtual void propagate(DynamicTrigger* dt)
   {
+    PROP_INFO_ADDONE(WatchLex);
     DynamicTrigger* base_dt = dynamic_trigger_start();
     
     P("Trigger Event:" << dt - base_dt << " alpha:" << (int)alpha);

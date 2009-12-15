@@ -121,7 +121,10 @@ void PropInfoAddone(Info_PropEvent type)
 { var_info.propcount[type]++; }
 
 void PropInfoAdd(Info_PropEvent type, int count)
-{ var_info.propcount[type] += count; }
+{
+  D_ASSERT(count >= 0);
+  var_info.propcount[type] += count; 
+}
 
 void print_search_info()
 {

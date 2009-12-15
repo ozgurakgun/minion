@@ -127,7 +127,7 @@ PROP_EVENT(BetaPruning)
 PROP_EVENT(EntailedLex)
 
 PROP_EVENT(ShrinkLexTriggers)
-PROP_EVENT(ShrinkLexTriggersCount)
+PROP_EVENT(ShrinkLexTCount)
 
 PROP_EVENT(Counter1)
 PROP_EVENT(Counter2)
