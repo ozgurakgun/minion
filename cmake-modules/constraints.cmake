@@ -3,6 +3,7 @@ set(ALL_CONSTRAINTS "element" "element_one" "watchelement" "watchelement_one"
                     "diseq" "__reify_diseq" "eq" "__reify_eq" "minuseq" "__reify_minuseq"
                     "abs" "ineq" "watchless" "lexleq[rv]" "lexleq[quick]" "lexleq" "lexless" "lexless[quick]"
                     "lexleq[nb]" "lexleq[w]" "lexleq[w-nb]" "lexleq[w-shrink]" "lexleq[w-ent]" "lexleq[w-ent-shrink]"
+                    "lexleq[w-shrink-l]" "lexleq[w-ent-l]" "lexleq[w-ent-shrink-l]"
                     "max" "min" "occurrence"
                     "occurrenceleq" "occurrencegeq" "product" "difference"
                     "weightedsumleq" "weightedsumgeq" "sumgeq" "sumleq" "watchsumgeq"
@@ -104,6 +105,15 @@ set(NAME_READ_lexleq[w-ent] "read_list" "read_list")
 
 set(NAME_ID_lexleq[w-ent-shrink] "CT_LEXLEQ_W_ENT_SHRINK")
 set(NAME_READ_lexleq[w-ent-shrink] "read_list" "read_list")
+
+set(NAME_ID_lexleq[w-shrink-l] "CT_LEXLEQ_W_SHRINK_L")
+set(NAME_READ_lexleq[w-shrink-l] "read_list" "read_list")
+
+set(NAME_ID_lexleq[w-ent-l] "CT_LEXLEQ_W_ENT_L")
+set(NAME_READ_lexleq[w-ent-l] "read_list" "read_list")
+
+set(NAME_ID_lexleq[w-ent-shrink-l] "CT_LEXLEQ_W_ENT_SHRINK_L")
+set(NAME_READ_lexleq[w-ent-shrink-l] "read_list" "read_list")
 
 set(NAME_ID_lexleq "CT_LEXLEQ")
 set(NAME_READ_lexleq "read_list" "read_list")
