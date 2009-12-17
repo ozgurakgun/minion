@@ -68,7 +68,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
   virtual string constraint_name()
   { if(Less) return "LexLess"; else return "LexLeq"; }
   
-  typedef LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed> NegConstraintType;
+  typedef LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed, DoBeta, BeLazy> NegConstraintType;
   typedef typename VarArray1::value_type ArrayVarRef1;
   typedef typename VarArray2::value_type ArrayVarRef2;
   
@@ -98,7 +98,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
 
   virtual AbstractConstraint* reverse_constraint()
   {
-    return new LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed, BeLazy>(stateObj,y,x);
+    return new LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed, DoBeta, BeLazy>(stateObj,y,x);
   }
   
   void attach_all_triggers()
