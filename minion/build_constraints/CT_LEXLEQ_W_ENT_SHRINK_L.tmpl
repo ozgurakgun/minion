@@ -9,7 +9,7 @@
 
 template<typename VarArray1, typename VarArray2>
 AbstractConstraint*
-BuildCT_LEXLEQ_W_ENT_SHRINK(StateObj* stateObj, const VarArray1& x, const VarArray2& y, ConstraintBlob&)
-{ return new LexLeqWatchedConstraint<VarArray1, VarArray2, false, true, true, true>(stateObj,x,y); }
+BuildCT_LEXLEQ_W_ENT_SHRINK_L(StateObj* stateObj, const VarArray1& x, const VarArray2& y, ConstraintBlob&)
+{ return new LexLeqWatchedConstraint<VarArray1, VarArray2, false, true, true, true, true>(stateObj,x,y); }
 
-BUILD_CT(CT_LEXLEQ_W_ENT_SHRINK, 2)
+BUILD_CT(CT_LEXLEQ_W_ENT_SHRINK_L, 2)

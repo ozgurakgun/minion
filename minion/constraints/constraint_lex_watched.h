@@ -62,7 +62,7 @@ for a similar constraint with strict lexicographic inequality.
 #ifndef CONSTRAINT_WATCHED_LEX_H
 #define CONSTRAINT_WATCHED_LEX_H
 
-template<typename VarArray1, typename VarArray2, BOOL Less, bool DoShrink, bool DoEntailed, bool DoBeta = true, bool beLazy = false>
+template<typename VarArray1, typename VarArray2, BOOL Less, bool DoShrink, bool DoEntailed, bool DoBeta = true, bool BeLazy = false>
 struct LexLeqWatchedConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
@@ -83,7 +83,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
     AbstractConstraint(_stateObj), alpha(_stateObj), beta(_stateObj), F(_stateObj), x(_x), y(_y)
   { 
     D_ASSERT(DoBeta || (!DoShrink && !DoEntailed));
-    D_ASSERT(!(beLazy && !doBeta));
+    D_ASSERT(!(BeLazy && !DoBeta));
     D_ASSERT(x.size() == y.size());
     alpha = 0;
     if(Less)
@@ -98,7 +98,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
 
   virtual AbstractConstraint* reverse_constraint()
   {
-    return new LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed, beLazy>(stateObj,y,x);
+    return new LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed, BeLazy>(stateObj,y,x);
   }
   
   void attach_all_triggers()
