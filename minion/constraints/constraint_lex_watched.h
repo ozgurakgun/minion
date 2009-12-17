@@ -62,7 +62,7 @@ for a similar constraint with strict lexicographic inequality.
 #ifndef CONSTRAINT_WATCHED_LEX_H
 #define CONSTRAINT_WATCHED_LEX_H
 
-template<typename VarArray1, typename VarArray2, BOOL Less, bool DoShrink, bool DoEntailed, bool DoBeta = true>
+template<typename VarArray1, typename VarArray2, BOOL Less, bool DoShrink, bool DoEntailed, bool DoBeta = true, bool beLazy = false>
 struct LexLeqWatchedConstraint : public AbstractConstraint
 {
   virtual string constraint_name()
@@ -83,6 +83,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
     AbstractConstraint(_stateObj), alpha(_stateObj), beta(_stateObj), F(_stateObj), x(_x), y(_y)
   { 
     D_ASSERT(DoBeta || (!DoShrink && !DoEntailed));
+    D_ASSERT(!(beLazy && !doBeta));
     D_ASSERT(x.size() == y.size());
     alpha = 0;
     if(Less)
@@ -97,7 +98,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
 
   virtual AbstractConstraint* reverse_constraint()
   {
-    return new LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed>(stateObj,y,x);
+    return new LexLeqWatchedConstraint<VarArray2, VarArray1,!Less, DoShrink, DoEntailed, beLazy>(stateObj,y,x);
   }
   
   void attach_all_triggers()
@@ -176,9 +177,25 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
   {
     PROP_INFO_ADDONE(WatchLex);
     int i = (dt - dynamic_trigger_start()) % (x.size());
+    if(BeLazy)
+    {
+      if(DoEntailed && F)
+      {
+        releaseTrigger(stateObj, dt BT_CALL_BACKTRACK);
+        PROP_INFO_ADDONE(EntailedShrinkLexTs);
+        return;
+      }
+      if(DoShrink && i > beta)
+      {
+        releaseTrigger(stateObj, dt BT_CALL_BACKTRACK);
+        PROP_INFO_ADDONE(LazyShrinkLexTs);
+        return;
+      }
+    }
+
     int old_beta = beta;
     index_propagate(i);
-    if(DoShrink)
+    if(DoShrink && !BeLazy)
     {
       int max_val = min(old_beta, (int)x.size());
 #ifdef MORE_SEARCH_INFO
@@ -196,7 +213,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
   void set_implied()
   {
     F = true;
-    if(DoEntailed)
+    if(DoEntailed && !BeLazy)
     {
       PROP_INFO_ADDONE(EntailedLex);
       int max_val = x.size();
@@ -353,7 +370,7 @@ struct LexLeqWatchedConstraint : public AbstractConstraint
       else
         set_implied();
     }
-    if(DoShrink)
+    if(DoShrink && !BeLazy)
         release_trigger_range(beta + 1, x.size());
   }
   
