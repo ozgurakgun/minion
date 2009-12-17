@@ -129,6 +129,9 @@ PROP_EVENT(EntailedLex)
 PROP_EVENT(ShrinkLexTriggers)
 PROP_EVENT(ShrinkLexTCount)
 
+PROP_EVENT(LazyShrinkLexTs)
+PROP_EVENT(EntailedShrinkLexTs)
+
 PROP_EVENT(Counter1)
 PROP_EVENT(Counter2)
 PROP_EVENT(Counter3)
