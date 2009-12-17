@@ -959,6 +959,26 @@ class testlexleq_w_ent_shrink(testlexleq):
     def runtest(self, options=dict()):
         return runtestgeneral("lexleq[w-ent-shrink]", True, options, [4,4], ["smallnum", "smallnum"], self, True)
 
+class testlexleq_w_ent_l(testlexleq):
+    def printtable(self, domains):
+        return testlexleq.printtable(self, domains, less=False)
+
+    def runtest(self, options=dict()):
+        return runtestgeneral("lexleq[w-ent-l]", True, options, [4,4], ["smallnum", "smallnum"], self, True)
+
+class testlexleq_w_shrink_l(testlexleq):
+    def printtable(self, domains):
+        return testlexleq.printtable(self, domains, less=False)
+
+    def runtest(self, options=dict()):
+        return runtestgeneral("lexleq[w-shrink-l]", True, options, [4,4], ["smallnum", "smallnum"], self, True)
+
+class testlexleq_w_ent_shrink_l(testlexleq):
+    def printtable(self, domains):
+        return testlexleq.printtable(self, domains, less=False)
+
+    def runtest(self, options=dict()):
+        return runtestgeneral("lexleq[w-ent-shrink-l]", True, options, [4,4], ["smallnum", "smallnum"], self, True)
 
 class testlexless_quick(testlexleq):
     def printtable(self, domains):
