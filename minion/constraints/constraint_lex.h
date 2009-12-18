@@ -104,7 +104,7 @@ struct LexLeqConstraint : public AbstractConstraint
     if(Less)
       beta = x_size;
     else
-      beta = 100000;
+      beta = 1000000;
     F = 0;
     return t;
   }
