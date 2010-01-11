@@ -435,8 +435,7 @@ struct GraphBuilder
   // The first array can be permuted, if the same permutation is applied to the second array.
   string colour_symmetric_indexes(const ConstraintBlob& b, string name)
   {
-    D_ASSERT(b.vars[0].size() == b.vars[1].size());
-
+   
     string v = g.new_vertex(name + "_MASTER");
     
     for(int i = 0; i < b.vars[0].size(); ++i)
@@ -461,12 +460,11 @@ struct GraphBuilder
     
     return v;
   }
-  
+
   // The first array can be permuted, if the same permutation is applied to the second array.
   string colour_weighted_sum(const ConstraintBlob& b, string name)
   {
     D_ASSERT(b.vars[0].size() == b.constants[0].size());
-
 
     string v = g.new_vertex(name + "_MASTER");
     
@@ -491,6 +489,66 @@ struct GraphBuilder
     }  
     return v;
   }
+
+  string colour_lit(const ConstraintBlob& b, string name)
+  {
+    D_ASSERT(b.vars[0].size() == 1 && b.constants[0].size() == 1);
+    string v = g.new_vertex(name + "_MASTER");
+
+    string vm = g.new_vertex(name + "_CHILD_1");
+    add_edge(v, Var(VAR_CONSTANT, b.constants[0][0]));
+    add_edge(v, vm);
+    add_edge(vm, b.vars[0][0]);
+
+    return v;
+  }
+
+  string colour_litlist(const ConstraintBlob& b, string name)
+  {
+    D_ASSERT(b.vars[0].size() == 1 && b.constants.size() == 1);
+    string v = g.new_vertex(name + "_MASTER");
+
+    string vm = g.new_vertex(name + "_CHILD_1");
+    for(int i = 0; i < b.constants[0].size(); ++i)
+      add_edge(v, Var(VAR_CONSTANT, b.constants[0][i]));
+    add_edge(v, vm);
+    add_edge(vm, b.vars[0][0]);
+
+    return v;
+  }
+
+  string colour_gcc(const ConstraintBlob& b, string name)
+  {
+    D_ASSERT(b.vars.size() == 2 && b.constants.size() == 1);
+    D_ASSERT(b.vars[1].size() == b.constants[0].size());
+
+    string v = g.new_vertex(name + "_SECOND_MASTER");
+    
+    for(int i = 0; i < b.vars[1].size(); ++i)
+    {
+      string vm = g.new_vertex(name + "_INDEX");
+      string v1 = g.new_vertex(name + "_ARRAY1");
+      string v2 = g.new_vertex(name + "_ARRAY2");
+      
+      add_edge(v,vm);
+      add_edge(vm,v1);
+      add_edge(vm,v2);
+      add_edge(v1, b.vars[0][i]);
+      add_edge(v2, Var(VAR_CONSTANT, b.constants[0][i]));
+    }
+
+    string w = g.new_vertex(name + "_FIRST_MASTER");
+    
+    for(int j = 0; j < b.vars[0].size(); ++j)
+        add_edge(w, b.vars[0][j]);
+
+    string x = g.new_vertex(name + "_MASTER");
+
+    add_edge(x, w);
+    add_edge(x, v);
+
+    return x;
+  }
   
   string colour_reify(const ConstraintBlob& b, string name)
   {
@@ -510,6 +568,19 @@ struct GraphBuilder
     
     return v;
   }
+
+  string colour_symmetric_parent_constraint(const ConstraintBlob& b, string name)
+  {
+    D_ASSERT(b.vars.size() == 0 && b.constants.size() == 0);
+    string v = g.new_vertex(name + "_HEAD");
+
+    for(int i = 0; i < b.internal_constraints.size(); ++i)
+    {
+      string child_con = colour_constraint(b.internal_constraints[i]);
+      add_edge(v, child_con);
+    }
+    return v;
+  }
   
   string colour_constraint(const ConstraintBlob& b)
   {
@@ -517,6 +588,12 @@ struct GraphBuilder
     {
 #ifdef CT_REIFY_ABC
       case CT_REIFY: return colour_reify(b, "REIFY");
+#endif
+#ifdef CT_CHECK_GSA_ABC
+      case CT_CHECK_GSA : return colour_constraint(b.internal_constraints[0]);
+#endif
+#ifdef CT_CHECK_ASSIGN_ABC
+      case CT_CHECK_ASSIGN : return colour_constraint(b.internal_constraints[0]);
 #endif
 #ifdef CT_REIFYIMPLY_ABC
       case CT_REIFYIMPLY: return colour_reify(b, "REIFYIMPLY");
@@ -575,6 +652,18 @@ struct GraphBuilder
 #endif
 #ifdef CT_LEXLESS_ABC
       case CT_LEXLESS: return colour_no_symmetry(b, "LEXLESS");
+#endif
+
+#ifdef CT_GACLEXLEQ_ABC
+      case CT_GACLEXLEQ: return colour_no_symmetry(b, "LEXLEQ");
+#endif
+
+
+#ifdef CT_QUICK_LEXLEQ_ABC
+      case CT_QUICK_LEXLEQ: return colour_no_symmetry(b, "LEXLEQ");
+#endif
+#ifdef CT_QUICK_LEXLESS_ABC
+      case CT_QUICK_LEXLESS: return colour_no_symmetry(b, "LEXLESS");
 #endif
       
 #ifdef CT_MAX_ABC
@@ -657,8 +746,46 @@ struct GraphBuilder
 #ifdef CT_WATCHED_HAMMING_ABC
       case CT_WATCHED_HAMMING: return colour_array_swap_each_index(b, "HAMMING");
 #endif
-      
+#ifdef CT_WATCHED_LIT_ABC
+      case CT_WATCHED_LIT: return colour_lit(b, "WATCHED_LIT");
+#endif
+#ifdef CT_WATCHED_NOTLIT_ABC
+      case CT_WATCHED_NOTLIT: return colour_lit(b, "WATCHED_NOTLIT");
+#endif
+#ifdef CT_WATCHED_INSET_ABC
+      case CT_WATCHED_INSET: return colour_litlist(b, "WATCHED_INSET");
+#endif
+#ifdef CT_WATCHED_NOT_INSET_ABC
+      case CT_WATCHED_NOT_INSET: return colour_litlist(b, "WATCHED_NOT_INSET");
+#endif
+#ifdef CT_WATCHED_INRANGE_ABC
+      case CT_WATCHED_INRANGE: return colour_litlist(b, "WATCHED_INRANGE");
+#endif
+#ifdef CT_WATCHED_NOT_INRANGE_ABC
+      case CT_WATCHED_NOT_INRANGE: return colour_litlist(b, "WATCHED_NOT_INRANGE");
+#endif
+
+#ifdef CT_GCC_ABC
+      case CT_GCC:  return colour_gcc(b, "GCC");
+#endif
+#ifdef CT_GCCWEAK_ABC
+      case CT_GCCWEAK: return colour_gcc(b, "GCC");
+#endif
+#ifdef CT_FALSE_ABC
+      case CT_FALSE: return g.new_vertex("FALSE");
+#endif
+#ifdef CT_TRUE_ABC
+      case CT_TRUE: return g.new_vertex("TRUE");
+#endif
+#ifdef CT_WATCHED_NEW_OR_ABC
+      case CT_WATCHED_NEW_OR: return colour_symmetric_parent_constraint(b, "OR");
+#endif
+#ifdef CT_WATCHED_NEW_AND_ABC
+      case CT_WATCHED_NEW_AND: return colour_symmetric_parent_constraint(b, "AND");
+#endif
+
       default:
+        cerr << "No colouring defined for " << b.constraint->name << endl;
         abort();
     }
     
@@ -754,16 +881,21 @@ struct InstanceStats
       cout << s << "cts_per_var_mean:" << ((double)totalarity)/(double) varcount << endl;
       
       // six categories of constraint, output their proportion and count
-      int alldiff=0, sums=0, wor=0, ternary=0, binary=0, table=0, reify=0, lex=0, unary=0;
+      int alldiff=0, sums=0, or_atleastk=0, ternary=0, binary=0, table=0; 
+      int reify=0, lex=0, unary=0, nullary=0, element=0, minmax=0, occurrence=0;
       for(list<ConstraintBlob>::iterator i=c.begin(); i!=c.end(); ++i)
       {
           ConstraintType ct=(*i).constraint->type;
           switch(ct)
           {
-  	    case CT_WATCHED_LIT:
-	    case CT_WATCHED_NOTLIT:
-	      unary++;
-	      break;
+            case CT_WATCHED_LIT:
+            case CT_WATCHED_NOTLIT:
+            case CT_WATCHED_INSET:
+            case CT_WATCHED_NOT_INSET:
+            case CT_WATCHED_INRANGE:
+            case CT_WATCHED_NOT_INRANGE:
+                unary++;
+                break;
             case CT_ALLDIFF:
             case CT_GACALLDIFF:
                 alldiff++;
@@ -776,10 +908,18 @@ struct InstanceStats
             case CT_WATCHED_LEQSUM:
                 sums++;
                 break;
+            case CT_WATCHED_OR:
             case CT_WATCHED_NEW_OR:
-                wor++;
+            case CT_WATCHED_NEW_AND:
+            case CT_WATCHED_LITSUM:
+            case CT_WATCHED_VECNEQ:
+            case CT_WATCHED_HAMMING:
+            case CT_WATCHED_NOT_HAMMING:
+            case CT_WATCHED_VEC_OR_LESS:
+                or_atleastk++;
                 break;
             case CT_PRODUCT2:
+            case CT_DIFFERENCE:
             case CT_MODULO:
             case CT_DIV:
             case CT_POW:
@@ -788,6 +928,10 @@ struct InstanceStats
             case CT_ABS:
             case CT_INEQ:
             case CT_EQ:
+            case CT_MINUSEQ:
+            case CT_DISEQ:
+            case CT_WATCHED_NEQ:
+            case CT_WATCHED_LESS:
                 binary++;
                 break;
             case CT_REIFY:
@@ -812,8 +956,31 @@ struct InstanceStats
             case CT_QUICK_LEXLESS:
                 lex++;
                 break;
+            case CT_TRUE:
+            case CT_FALSE:
+                nullary++;
+                break;
+            case CT_ELEMENT:
+            case CT_ELEMENT_ONE:
+            case CT_WATCHED_ELEMENT:
+            case CT_WATCHED_ELEMENT_ONE:
+            case CT_GACELEMENT:
+                element++;
+                break;
+            case CT_MIN:
+            case CT_MAX:
+                minmax++;
+                break;
+            case CT_OCCURRENCE:
+            case CT_LEQ_OCCURRENCE:
+            case CT_GEQ_OCCURRENCE:
+            case CT_GCC:
+            case CT_GCCWEAK:
+                occurrence++;
+                break;
             default:
                 cerr << "Stats: Uncategorised constraint:" << (*i).constraint->name <<endl;
+                // constraints missing: CT_GADGET, CT_CHECK_GSA, CT_CHECK_ASSIGN.
           }
       }
       
@@ -821,8 +988,8 @@ struct InstanceStats
       cout << s << "alldiff_proportion:" << ((double)alldiff)/(double)c.size() << endl;
       cout << s << "sums_count:" << sums << endl;
       cout << s << "sums_proportion:" << ((double)sums)/(double)c.size() << endl;
-      cout << s << "wor_count:" << wor << endl;
-      cout << s << "wor_proportion:" << ((double)wor)/(double)c.size() << endl;
+      cout << s << "or_atleastk_count:" << or_atleastk << endl;
+      cout << s << "or_atleastk_proportion:" << ((double)or_atleastk)/(double)c.size() << endl;
       cout << s << "ternary_count:" << ternary << endl;
       cout << s << "ternary_proportion:" << ((double)ternary)/(double)c.size() << endl;
       cout << s << "binary_count:" << binary << endl;
@@ -835,6 +1002,15 @@ struct InstanceStats
       cout << s << "lex_proportion:" << ((double)lex)/(double)c.size() << endl;
       cout << s << "unary_count:" << unary << endl;
       cout << s << "unary_proportion:" << ((double)unary)/(double)c.size() << endl;
+      cout << s << "nullary_count:" << nullary << endl;
+      cout << s << "nullary_proportion:" << ((double)nullary)/(double)c.size() << endl;
+      cout << s << "element_count:" << element << endl;
+      cout << s << "element_proportion:" << ((double)element)/(double)c.size() << endl;
+      cout << s << "minmax_count:" << minmax << endl;
+      cout << s << "minmax_proportion:" << ((double)minmax)/(double)c.size() << endl;
+      cout << s << "occurrence_count:" << occurrence << endl;
+      cout << s << "occurrence_proportion:" << ((double)occurrence)/(double)c.size() << endl;
+      
       
       // Count the number of pairs of constraints that overlap by two or more
       // variables.
@@ -865,9 +1041,12 @@ struct InstanceStats
       }
       
       int conspairs=((double)(c.size()*(c.size()-1)))/2.0;
-      
+     
+      double proportion = 0;
+      if(conspairs >0)
+        proportion =((double)count_2_overlaps)/conspairs;
       // proportion of pairs of constraints that share two or more variables.
-      cout << s << "multi_shared_vars:" << ((double)count_2_overlaps)/conspairs <<endl;
+      cout << s << "multi_shared_vars:" << proportion <<endl;
       
       GraphBuilder graph(csp);
       cout << s << "Local_Variance: " << partition_graph(graph.g.build_graph_info(csp, false)) << endl;
