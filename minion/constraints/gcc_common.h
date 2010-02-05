@@ -39,8 +39,8 @@
 #define SPECIALQUEUE
 
 // should be called dynamic partitioning
-//#define SCC
-//#define SCCCARDS
+#define SCC
+#define SCCCARDS
 
 #define INCREMENTALMATCH
 
@@ -75,7 +75,7 @@
 // This one just sets up the watches BT arrays, to measure the cost of BTing them.
 #define UseWatches2 UseWatches
 
-#define UseWatchesAlt true
+#define UseWatchesAlt false
 
 // Requires SCC to be defined. Only splits off unit SCCs from the current
 // SCC. This is the Gecode implementation.
@@ -2466,7 +2466,7 @@ struct GCC : public FlowConstraint<VarArray, UseIncGraph>
                             && varvalmatching[vartoqueue]!=stackval)   // Need to exclude the matching edges????
                         {
                             // there is an edge from stackval to vartoqueue.
-                            if(varvalmatching[vartoqueue]==dom_min-1)
+                            if(varvalmatching[vartoqueue]==dom_min-1)   // This should never be true...
                             {
                                 // vartoqueue terminates an odd alternating path.
                                 // Unwind and apply the path here
