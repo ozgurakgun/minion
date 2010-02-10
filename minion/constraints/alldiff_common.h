@@ -34,6 +34,15 @@ using namespace std;
 // The implementation of the alldiff GAC algorithm,
 // shared between gacalldiff and the (now defunct) dynamicalldiff.
 
+// Use dynamic triggers as in the 2008 AIJ paper. 
+// Not currently working.
+#define AlldiffDT false
+
+// Use watched literals (i.e. the new idea.)
+#define AlldiffWL true
+
+// Internal dynamic triggers
+#define InternalDT false
 
 // whether to backtrack the matching.
 // This one is a slowdown.
@@ -49,14 +58,11 @@ using namespace std;
 // Check domain size -- if it is greater than numvars, then no need to wake the constraint.
 //#define CHECKDOMSIZE
 
-// Process SCCs independently
+// Process SCCs independently -- also known as dynamic partitioning.
 #define SCC
 
-// Warning: if this is not defined true, then watchedalldiff probably won't do anything.
-#define UseWatches false
-
 // Optimize the case where a value was assigned. Only works in the presence of SCC
-#define ASSIGNOPT 
+#define ASSIGNOPT
 
 // Use the special queue
 #define SPECIALQUEUE
@@ -134,6 +140,16 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         SCCSplit(_stateObj, _var_array.size())
     //sparevaluespresent(_stateObj, _var_array.size())
     {
+      #if (InternalDT || AlldiffDT || AlldiffWL)  && defined(CHECKDOMSIZE)
+      cout << "Watches/dynamic triggers and Quimper&Walsh's criterion do not safely co-exist." <<endl;
+      FAIL_EXIT();
+      #endif
+      
+      #if (InternalDT && (AlldiffDT || AlldiffWL) )  || (AlldiffDT && AlldiffWL)
+      cout << "Specify only one of InternalDT, AlldiffDT and AlldiffWL at once." <<endl;
+      FAIL_EXIT();
+      #endif
+      
       SCCs.resize(var_array.size());
       varToSCCIndex.resize(var_array.size());
       for(int i=0; i<var_array.size(); ++i)
@@ -158,26 +174,32 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
       // Initialize matching to satisfy the invariant
       // that the values are all different in varvalmatching.
       // watches DS is used in alldiffgacslow and in debugging.
-      #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
-      if(UseWatches) watches.resize(numvars);
+      #if InternalDT 
+          watches.resize(numvars);
       #endif
       
       for(int i=0; i<numvars ; i++) //&& i<numvals
       {
           varvalmatching[i]=i+dom_min;
           if(i<numvals) valvarmatching[i]=i;
-          
-          #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
-          if(UseWatches) watches[i].reserve(numvals, stateObj);
+          #if InternalDT
+              watches[i].reserve(numvals, stateObj);
           #endif
       }
       
       D_DATA(SCCSplit2=getMemory(stateObj).backTrack().request_bytes((sizeof(char) * numvars)));
       D_DATA(for(int i=0; i<numvars; i++) ((char *)SCCSplit2.get_ptr())[i]=1);
       
+      #if AlldiffDT
+        bt_triggers_start=dynamic_trigger_start()+numvars;
+      #endif
+      
+      #if AlldiffWL
+        new_wls.resize(numvars);
+        current_wls.resize(numvars);
+      #endif
   }
   
-  // only used in dynamic version.
   int dynamic_trigger_count()
   {
     // First an array of watches for the matching, then a 2d array of mixed triggers
@@ -188,16 +210,20 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         numtrigs+=numvars*numvals; // one for each var-val pair so we know when it is removed.
     }
     
-    #ifdef DYNAMICALLDIFF
+    #if AlldiffDT
     numtrigs+= numvars+numvars*numvals;
     #endif
     
+    #if AlldiffWL
+    numtrigs+=numvars*numvals;
+    #endif
+    
     // Dynamic alldiff triggers go first, incgraph triggers are after that
-    // so places which access incgraph triggers must check if DYNAMICALLDIFF is defined.
+    // so places which access incgraph triggers must check if AlldiffDT or AlldiffWL is defined.
     return numtrigs;
   }
   
-  #ifdef DYNAMICALLDIFF
+  #if AlldiffDT
   inline DynamicTrigger * get_dt(int var, int counter)
   {
       // index the square array of dynamic triggers from dt
@@ -211,8 +237,23 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   }
   #endif
   
+  #if AlldiffWL
+  inline DynamicTrigger* get_wl(int var, int val)
+  {
+      // val is a real value. 
+      return dynamic_trigger_start()+(var*numvals)+(val-dom_min);
+  }
+  
+  // New values to put watched literals on, after Tarjan's has finished.
+  vector<vector<int> > new_wls;
+  
+  // Current watched literals.
+  vector<vector<int> > current_wls;
+  
+  #endif
+  
   // Should only be used in non-dynamic version.
-  #ifndef DYNAMICALLDIFF
+  #if !(AlldiffDT || AlldiffWL)
   virtual triggerCollection setup_internal()
   {
     triggerCollection t;
@@ -241,233 +282,196 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
       }
       return new Dynamic_OR(stateObj, con);
   }
-  
-  smallset to_process;  // set of vars to process.
-  
-  #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
-  vector<smallset_list_bt> watches;
-  #endif
-  
-  virtual void propagate(int prop_var, DomainDelta)
-  {
-    D_ASSERT(prop_var>=0 && prop_var<var_array.size());
     
-    // return if all the watches are still in place.
-    #ifndef BTMATCHING 
-    if(UseWatches && !to_process.in(prop_var) 
-        && var_array[prop_var].inDomain(varvalmatching[prop_var]))     // This still has to be here, because we still wake up if the matchingis broken.
-    #else
-    if(UseWatches && !to_process.in(prop_var))
+    smallset to_process;  // set of vars to process.
+    
+    #if InternalDT
+    vector<smallset_list_bt> watches;
     #endif
+    
+    virtual void propagate(int prop_var, DomainDelta)
     {
-        smallset_list_bt& watch = watches[prop_var];
-        short * list = ((short *) watch.list.get_ptr());
-        int count=list[watch.maxsize];
-        bool valout=false;
+        D_ASSERT(prop_var>=0 && prop_var<var_array.size());
         
-        for(int i=0; i<count; i++)
-        {
-            P("Checking var "<< prop_var << " val " << list[i]+dom_min);
-            if(!var_array[prop_var].inDomain(list[i]+dom_min))
-            {
-                valout=true;
-                break;
-            }
-        }
-        if(!valout)
-        {
-            P("None of the watches were disturbed. Saved a call with watches.");
-            return;
-        }
-    }
-    #ifdef CHECKDOMSIZE
-    // If the domain size is >= numvars, then return.
-    //if(!constraint_locked)
-    {
-        int count=0;
-        for(int i=var_array[prop_var].getMin(); i<=var_array[prop_var].getMax(); i++)
-        {
-            if(var_array[prop_var].inDomain(i))
-            {
-                count++;
-            }
-        }
-        if(count>=numvars)
-            return;
-    }
-    // could improve domain counting by also applying it when
-    // the constraint is already queued, DONE since it might avoid calls to Tarjan's.
-    // i.e. some vars may not need to be queued in to_process.
-    #endif
-    
-    #ifdef STAGED
-    if(var_array[prop_var].isAssigned())
-    {
-        int assignedval=var_array[prop_var].getAssignedValue();
-        for(int i=0; i<numvars; i++)
-        {
-            if(i!=prop_var && var_array[i].inDomain(assignedval))
-            {
-                var_array[i].removeFromDomain(assignedval);
-                #if UseIncGraph
-                    adjlist_remove(i, assignedval);
-                #endif
-            }
-        }
-    }
-    #endif
-    
-    if(!to_process.in(prop_var))
-    {
-        to_process.insert(prop_var);
-    }
-    
-    if(!constraint_locked)
-    {
-        #ifdef SPECIALQUEUE
-        constraint_locked = true;
-        getQueue(stateObj).pushSpecialTrigger(this);
-        #else
-        #ifndef SCC
-        do_prop_noscc();
-        #else
-        do_prop();
+        // return if all the InternalDT watches are still in place, and the matching is still OK.
+        #if InternalDT
+        if(!to_process.in(prop_var)
+        #ifndef BTMATCHING 
+            && var_array[prop_var].inDomain(varvalmatching[prop_var])     // Check that the matching value is still present.
         #endif
-        #endif
-    }
-  }
-  
-  virtual void propagate(DynamicTrigger* trig)
-  {
-      #if UseIncGraph
-      DynamicTrigger* dtstart=dynamic_trigger_start();
-      #ifdef DYNAMICALLDIFF
-      dtstart+=numvars+numvars*numvals;
-      #endif
-      if(trig>=dtstart && trig< dtstart+numvars*numvals)  // does this trigger belong to incgraph?
-      {
-          int diff=trig-dtstart;
-            int var=diff/numvals;
-            int validx=diff%numvals;
-            if(adjlistpos[validx+numvars][var]<adjlistlength[validx+numvars])
+            )
+        {
+            smallset_list_bt& watch = watches[prop_var];
+            short * list = ((short *) watch.list.get_ptr());
+            int count=list[watch.maxsize];
+            bool valout=false;
+            
+            for(int i=0; i<count; i++)
             {
-                P("Removing var, val " << var << ","<< (validx+dom_min) << " from adjacency list.");
-                adjlist_remove(var, validx+dom_min); //validx, adjlistpos[validx][var]);
+                P("Checking var "<< prop_var << " val " << list[i]+dom_min);
+                if(!var_array[prop_var].inDomain(list[i]+dom_min))
+                {
+                    valout=true;
+                    break;
+                }
             }
-            return;
-      }
-      #endif
-      
-      // get variable number from the trigger
-    int prop_var = trig->trigger_info();
-    #ifdef PLONG
-    // check that some value has been disturbed; otherwise the watches are malfunctioning.
-    if(var_array[prop_var].inDomain(varvalmatching[prop_var]))
-    {
-        smallset_list_bt& watch = watches[prop_var];
-        short * list = ((short *) watch.list.get_ptr());
-        int count=list[watch.maxsize];
-        bool valout=false;
+            if(!valout)
+            {
+                P("None of the watches were disturbed. Saved a call with InternalDT.");
+                return;
+            }
+        }
+        #endif
         
-        for(int i=0; i<count; i++)
+        #ifdef CHECKDOMSIZE
+        // If the domain size is >= numvars, then return.
+        //if(!constraint_locked)
         {
-            P("Checking var "<< prop_var << " val " << list[i]+dom_min);
-            if(!var_array[prop_var].inDomain(list[i]+dom_min))
+            int count=0;
+            for(int i=var_array[prop_var].getMin(); i<=var_array[prop_var].getMax(); i++)
             {
-                valout=true;
-                break;
+                if(var_array[prop_var].inDomain(i))
+                {
+                    count++;
+                }
+            }
+            if(count>=numvars)
+                return;
+        }
+        // could improve domain counting by also applying it when
+        // the constraint is already queued, DONE since it might avoid calls to Tarjan's.
+        // i.e. some vars may not need to be queued in to_process.
+        #endif
+        
+        #ifdef STAGED
+        if(var_array[prop_var].isAssigned())
+        {
+            int assignedval=var_array[prop_var].getAssignedValue();
+            for(int i=0; i<numvars; i++)
+            {
+                if(i!=prop_var && var_array[i].inDomain(assignedval))
+                {
+                    var_array[i].removeFromDomain(assignedval);
+                    #if UseIncGraph
+                        adjlist_remove(i, assignedval);
+                    #endif
+                }
             }
         }
-        if(!valout)
+        #endif
+        
+        if(!to_process.in(prop_var))
         {
-            // none of the watches were disturbed.
-            cout << "None of the watches in the DS were disturbed. BT triggers must not match with watches DS." <<endl;
-            cout << "Variable " << prop_var <<", val in matching: " << varvalmatching[prop_var] << endl;
-            D_ASSERT(false);
+            to_process.insert(prop_var);
+        }
+        
+        if(!constraint_locked)
+        {
+            #ifdef SPECIALQUEUE
+            constraint_locked = true;
+            getQueue(stateObj).pushSpecialTrigger(this);
+            #else
+            #ifndef SCC
+            do_prop_noscc();
+            #else
+            do_prop();
+            #endif
+            #endif
         }
     }
-    #endif
     
-    #ifdef CHECKDOMSIZE
-    // If the domain size is >= numvars, then return.
-    // WHY IS THIS HERE WHEN checkdomsize and dynamic triggers don't work together??
-    int count=0;
-    for(int i=var_array[prop_var].getMin(); i<=var_array[prop_var].getMax(); i++)
+    virtual void propagate(DynamicTrigger* trig)
     {
-        if(var_array[prop_var].inDomain(i))
-        {
-            count++;
-        }
-    }
-    if(count>=numvars)
-        return;
-    #endif
-    
-    #ifdef STAGED
-    if(var_array[prop_var].isAssigned())
-    {
-        int assignedval=var_array[prop_var].getAssignedValue();
-        for(int i=0; i<numvars; i++)
-        {
-            if(i!=prop_var && var_array[i].inDomain(assignedval))
+        #if UseIncGraph
+            DynamicTrigger* dtstart=dynamic_trigger_start();
+            #if AlldiffDT
+                dtstart+=numvars+numvars*numvals;
+            #endif
+            #if AlldiffWL
+                dtstart+=numvars*numvals;
+            #endif
+            
+            if(trig>=dtstart && trig< dtstart+numvars*numvals)  // does this trigger belong to incgraph?
             {
-                var_array[i].removeFromDomain(assignedval);
-                #if UseIncGraph
-                    adjlist_remove(i, assignedval);
-                #endif
+                int diff=trig-dtstart;
+                int var=diff/numvals;
+                int validx=diff%numvals;
+                D_ASSERT(!var_array[var].inDomain(validx+dom_min));
+                if(adjlistpos[validx+numvars][var]<adjlistlength[validx+numvars])
+                {
+                    P("Removing var, val " << var << ","<< (validx+dom_min) << " from adjacency list.");
+                    adjlist_remove(var, validx+dom_min); //validx, adjlistpos[validx][var]);
+                }
+                return;
+            }
+        #endif
+        
+        // get variable number from the trigger
+        int prop_var = trig->trigger_info();
+        
+        // Note: does not check domain size here, because AlldiffWL and AlldiffDT are not compatible with CHECKDOMSIZE
+        
+        #ifdef STAGED
+        if(var_array[prop_var].isAssigned())
+        {
+            int assignedval=var_array[prop_var].getAssignedValue();
+            for(int i=0; i<numvars; i++)
+            {
+                if(i!=prop_var && var_array[i].inDomain(assignedval))
+                {
+                    var_array[i].removeFromDomain(assignedval);
+                    #if UseIncGraph
+                        adjlist_remove(i, assignedval);
+                    #endif
+                }
             }
         }
+        #endif
+        
+        if(!to_process.in(prop_var))
+        {
+            to_process.insert(prop_var);
+        }
+        
+        if(!constraint_locked)
+        {
+            #ifdef SPECIALQUEUE
+            constraint_locked = true;
+            getQueue(stateObj).pushSpecialTrigger(this);
+            #else
+            #ifndef SCC
+            do_prop_noscc();
+            #else
+            do_prop();
+            #endif
+            #endif
+        }
     }
-    #endif
     
-    if(!to_process.in(prop_var))
-    {
-        to_process.insert(prop_var);
-    }
+    virtual void special_unlock() { constraint_locked = false; to_process.clear(); }
     
-    if(!constraint_locked)
+    virtual void special_check()
     {
-        #ifdef SPECIALQUEUE
-        constraint_locked = true;
-        getQueue(stateObj).pushSpecialTrigger(this);
-        #else
-        #ifndef SCC
-        do_prop_noscc();
-        #else
+        constraint_locked = false;  // should be above the if.
+        
+        if(getState(stateObj).isFailed())
+        {
+            to_process.clear();
+            return;
+        }
+        
+        #ifdef SCC
         do_prop();
+        #else
+        do_prop_noscc();
         #endif
-        #endif
-    }
-  }
-  
-  
-  virtual void special_unlock() { constraint_locked = false; to_process.clear(); }
-  virtual void special_check()
-  {
-    constraint_locked = false;  // should be above the if.
-    
-    if(getState(stateObj).isFailed())
-    {
         to_process.clear();
-        return;
     }
     
-    #ifdef SCC
-    do_prop();
-    #else
-    do_prop_noscc();
-    #endif
-    to_process.clear();
-  }
-  
-  
+    
   void do_prop()
   {
-    PROP_INFO_ADDONE(AlldiffGacSlow);
-    
-    #ifdef DYNAMICALLDIFF
-    bt_triggers_start=dynamic_trigger_start()+numvars;
-    #endif
+    PROP_INFO_ADDONE(GacAlldiff);
     
     #ifdef PLONG
     cout << "Entering do_prop."<<endl;
@@ -513,22 +517,6 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         #endif
     }
     
-    #ifdef DYNAMICALLDIFF
-    // Can't yet check all the watches are in the right place, but can check
-    // there are the right number of them on each var.
-    for(int i=0; i<var_array.size(); i++)
-    {
-        int count=0;
-        DynamicTrigger* trig=get_dt(i, 0);
-        while(trig->queue!=NULL && count<numvals)
-        {
-            count++;
-            if(count<numvals) trig=get_dt(i,count);
-        }
-        D_ASSERT(count==watches[i].size());
-    }
-    #endif
-    
     // Check that if an element of the matching is removed, then the var is 
     // in to_process.
     for(int i=0; i<var_array.size(); i++)
@@ -539,7 +527,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         }
     }
     #endif
-    // end of debug.
+    // end of debug. ///////////////////////////////////////////////////////////
     
     #ifndef INCREMENTALMATCH
     // clear the matching.
@@ -550,15 +538,18 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
     }
     #endif
     
+    vector<char> run_matching;  
+    run_matching.resize(numvars, 0);
+    
     sccs_to_process.clear();
     {
     vector<int>& toiterate = to_process.getlist();
     P("About to loop for to_process variables.");
     
+    
     for(int i=0; i<toiterate.size(); ++i)
     {
         int tempvar=toiterate[i];
-        
         
         int sccindex_start=varToSCCIndex[tempvar];
         int sccindex_end=varToSCCIndex[tempvar];
@@ -575,32 +566,42 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         
         if(!var_array[tempvar].inDomain(varvalmatching[tempvar]))
         {
+            run_matching[sccindex_start]=1;
+        }
+        
+        if(!sccs_to_process.in(sccindex_start))
+        {
+            sccs_to_process.insert(sccindex_start);
+        }
+        
+         /*   
             // Find the start of the SCC in SCCs
             var_indices.clear();
-            
-            // Add a greedy repair here.
-            
-            // Actually should queue the SCCs which need to be hopcrofted,
-            // and make greedy repairs to var matchings as we process them here.
             
             P("Varvalmatching:" <<varvalmatching);
             
             P("start:" << sccindex_start << " end:"<< sccindex_end);
             
             if(!matching_wrapper(sccindex_start, sccindex_end))
+            {
+                // Check that each element in the matching has a WL.
+                for(int i=0; i<numvars; i++)
+                {
+                    D_ASSERT(get_wl(i, varvalmatching[i])->isAttached());
+                }
                 return;
+            }
             
-            #ifdef DYNAMICALLDIFF
+            #if AlldiffDT  && !defined(BTMATCHING)
             // sync the watches to the matching, 
             // since the matching has just changed.
-            #ifndef BTMATCHING
+            // For AlldiffWL, watches are put on the matching in Tarjan's algorithm.
             DynamicTrigger * trig = dynamic_trigger_start();
             for(int j=0; j<numvars; j++)
             {
                 var_array[j].addWatchTrigger(trig + j, DomainRemoval, varvalmatching[j]);
                 P("Adding watch for var " << j << " val " << varvalmatching[j]);
             }
-            #endif
             #endif
             
             P("Fixed varvalmatching:" << varvalmatching);
@@ -631,8 +632,8 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
                 varToSCCIndex[swapvar]=varToSCCIndex[tempvar];
                 varToSCCIndex[tempvar]=sccindex_start;
                 
-                //cout <<"After swap:" <<SCCs <<endl;
-                //cout <<"varToSCCIndex:" << varToSCCIndex <<endl;
+                // cout <<"After swap:" <<SCCs <<endl;
+                // cout <<"varToSCCIndex:" << varToSCCIndex <<endl;
                 
                 // Split the SCCs
                 SCCSplit.remove(sccindex_start);
@@ -651,7 +652,15 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
                         #if UseIncGraph
                             adjlist_remove(SCCs[i], tempval);
                         #endif
-                        if(getState(stateObj).isFailed()) return;
+                        if(getState(stateObj).isFailed())
+                        {
+                            // Check that each element in the matching has a WL.
+                            for(int i=0; i<numvars; i++)
+                            {
+                                D_ASSERT(get_wl(i, varvalmatching[i])->isAttached());
+                            }
+                            return;
+                        }
                     }
                 }
                 
@@ -660,9 +669,28 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
                     D_ASSERT(!sccs_to_process.in(sccindex_start));
                     sccs_to_process.insert(sccindex_start);
                 }
+                // Else: The SCC is unit anyway. Should be no work to do, and do not insert into sccs_to_process.
             }
-            // Else: The SCC is unit anyway. Should be no work to do, and do not insert into sccs_to_process.
             
+            #if AlldiffWL
+            // The unit SCC(s) will not be processed by Tarjan's, so must bring watches up to date here.
+            D_ASSERT(var_array[tempvar].inDomain(varvalmatching[tempvar]));
+            DynamicTrigger* wl= get_wl(tempvar, varvalmatching[tempvar]);
+            if(!wl->isAttached())
+            {
+                var_array[tempvar].addDynamicTrigger(wl, DomainRemoval, varvalmatching[tempvar]);
+            }
+            // Perhaps the 'rest' of the SCC that the assigned var was split from is now singleton.
+            if(sccindex_start==sccindex_end)
+            {
+                D_ASSERT(var_array[sccindex_start].inDomain(varvalmatching[sccindex_start]));
+                DynamicTrigger* wl= get_wl(sccindex_start, varvalmatching[sccindex_start]);
+                if(!wl->isAttached())
+                {
+                    var_array[sccindex_start].addDynamicTrigger(wl, DomainRemoval, varvalmatching[sccindex_start]);
+                }
+            }
+            #endif
         }
         else
         {
@@ -671,13 +699,12 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
             {
                 sccs_to_process.insert(sccindex_start);
             }
-        }
+        }*/
         
     } // end of loop.
     }
     
-    
-    #ifndef NO_DEBUG
+    /*#ifndef NO_DEBUG
     // Check the matching is valid.
     for(int i=0; i<numvars; i++)
     {
@@ -691,17 +718,44 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         D_ASSERT(SCCs[varToSCCIndex[i]]==i);
     }
     #endif
-    
+    */
     // Call Tarjan's for each disturbed SCC.
     {
     vector<int> & toiterate=sccs_to_process.getlist();
     for(int i=0; i<toiterate.size(); i++)
     {
-        int j=toiterate[i];
+        int sccindex_start=toiterate[i];
+        
+        int sccindex_end=sccindex_start; 
+        while(SCCSplit.isMember(sccindex_end) && sccindex_end<(numvars-1)) 
+            sccindex_end++;
+        
+        if(run_matching[sccindex_start])
+        {
+            vector<int> matching_backup=varvalmatching;
+            
+            if(!matching_wrapper(sccindex_start, sccindex_end))
+            {
+                varvalmatching=matching_backup;
+                #if AlldiffWL
+                    // Check that each element in the matching has a WL.
+                    for(int i=0; i<numvars; i++)
+                    {
+                        D_ASSERT(get_wl(i, varvalmatching[i])->isAttached());
+                    }
+                #endif
+                return;
+            }
+        }
+        
+        // Assignment optimization properly goes here.
+        // The assigned vars will be matched to their value, and can be split off.
+        // Don't forget to update the WLs.
+        
         
         // remake var_indices for this SCC.
         var_indices.clear();
-        for(int k=j; k<numvars; k++)
+        for(int k=sccindex_start; k<numvars; k++)
         {
             #ifdef CHECKDOMSIZE
             if(!var_array[SCCs[k]].inDomain(varvalmatching[SCCs[k]]))
@@ -717,24 +771,17 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         }
         
         //cout << "Running tarjan's on component "<< var_indices <<endl;
-        tarjan_recursive(j);
+        tarjan_recursive(sccindex_start);
     }
     }
     
-    
-    //  print components out
-    
-    /*
-    cout<<"SCCs:"<<endl;
-    for(int i=0; i<SCCs.size(); i++)
-    {
-        cout<< SCCs[i] <<endl;
-    }
-    cout<<"SCCSplit:"<<endl;
-    for(int i=0; i<SCCs.size(); i++)
-    {
-        cout << ((SCCSplit.isMember(i))?"Nosplit":"Split") <<endl;
-    }*/
+    // Check that each element in the matching has a WL.
+    #if AlldiffWL
+        for(int i=0; i<numvars; i++)
+        {
+            D_ASSERT(get_wl(i, varvalmatching[i])->isAttached());
+        }
+    #endif
     
     return;
   }
@@ -743,11 +790,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   // visit for the whole set of variables.
   void do_prop_noscc()
   {
-    PROP_INFO_ADDONE(AlldiffGacSlow);
-    
-    #ifdef DYNAMICALLDIFF
-    bt_triggers_start=dynamic_trigger_start()+numvars;
-    #endif
+    PROP_INFO_ADDONE(GacAlldiff);
     
     #ifndef INCREMENTALMATCH
     // clear the matching.
@@ -758,90 +801,19 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
     }
     #endif
     
-    #ifdef PLONG
-    cout << "Entering do_prop."<<endl;
-    cout << "Varvalmatching:" <<varvalmatching<<endl;
-    cout << "SCCs:" << SCCs <<endl;
-    cout << "SCCSplit: ";
-    for(int i=0; i<numvars; i++)
-    {
-        cout << (SCCSplit.isMember(i)?"1, ":"0, ");
-    }
-    cout <<endl;
-    cout << "varToSCCIndex: "<< varToSCCIndex<<endl;
-    cout << "Domains (remember that the var array is reversed):" <<endl;
-    for(int i=0; i<numvars; i++)
-    {
-        cout << "var:" << i << " vals:" ;
-        for(int j=dom_min; j<=dom_max; j++)
-        {
-            if(var_array[i].inDomain(j))
-            {
-                cout << j <<", ";
-            }
-        }
-        cout << endl;
-    }
-    
-    // Check the matching is valid.
-    for(int i=0; i<numvars; i++)
-    {
-        if(!var_array[i].inDomain(varvalmatching[i]))
-        {
-            cout << "val in matching removed, var: " << i << ", val:" << varvalmatching[i] <<endl;
-        }
-        for(int j=i+1; j<numvars; j++)
-        {
-            D_ASSERT(varvalmatching[i]!=varvalmatching[j]);
-            D_ASSERT(SCCs[i]!=SCCs[j]);
-        }
-        D_ASSERT(SCCSplit.isMember(i) == (((char*)SCCSplit2.get_ptr())[i]==1));
-        cout << (int)SCCSplit.isMember(i) << ", " << (int) (((char*)SCCSplit2.get_ptr())[i]==1) << endl;
-        // The matches correspond.
-        D_ASSERT(valvarmatching[varvalmatching[i]-dom_min]==i);
-    }
-    
-    #ifdef DYNAMICALLDIFF
-    // Can't yet check all the watches are in the right place, but can check
-    // there are the right number of them on each var.
-    for(int i=0; i<var_array.size(); i++)
-    {
-        int count=0;
-        DynamicTrigger* trig=get_dt(i, 0);
-        while(trig->queue!=NULL && count<numvals)
-        {
-            count++;
-            if(count<numvals) trig=get_dt(i,count);
-        }
-        D_ASSERT(count==watches[i].size());
-    }
-    #endif
-    
-    // Check that if an element of the matching is removed, then the var is 
-    // in to_process.
-    for(int i=0; i<var_array.size(); i++)
-    {
-        if(!var_array[i].inDomain(varvalmatching[i]))
-        {
-            D_ASSERT(to_process.in(i));
-        }
-    }
-    #endif
-    
     // Call hopcroft for the whole matching.
     if(!matching_wrapper(0, numvars-1))
         return;
     
-    #ifdef DYNAMICALLDIFF
+    #if AlldiffDT && !defined(BTMATCHING)
     // sync the watches to the matching, 
     // since the matching has just changed.
-    #ifndef BTMATCHING
+    // Not used in AlldiffWL because it is done in Tarjan's algorithm.
     DynamicTrigger * trig = dynamic_trigger_start();
     for(int j=0; j<numvars; j++)
     {
         var_array[j].addWatchTrigger(trig + j, DomainRemoval, varvalmatching[j]);
     }
-    #endif
     #endif
     
     P("Fixed varvalmatching:" << varvalmatching);
@@ -866,7 +838,6 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
     }
     #endif
     
-    
     // Call Tarjan's for all vars
     
     var_indices.clear();
@@ -877,68 +848,6 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
     
     return;
   }
-  
-  /*
-  inline bool greedymatch(int tempvar, int sccindex_start, int sccindex_end)
-  {
-    D_ASSERT(!var_array[tempvar].inDomain(varvalmatching[tempvar]));
-    
-    valinlocalmatching.clear();
-    for(int j=sccindex_start; j<=sccindex_end; j++)
-    {
-        valinlocalmatching.insert(varvalmatching[SCCs[j]]-dom_min);
-    }
-    
-    for(int val=var_array[tempvar].getMin(); val<=var_array[tempvar].getMax(); val++)
-    {
-        if(var_array[tempvar].inDomain(val) && !valinlocalmatching.in(val-dom_min))
-        {
-            varvalmatching[tempvar]=val;
-            valvarmatching[val-dom_min]=tempvar;
-            return true;
-        }
-    }
-    return false;
-  }
-  
-  inline bool greedymatch2(int , int sccindex_start, int sccindex_end)
-  {
-      // process all the broken matchings.
-    
-    valinlocalmatching.clear();
-    for(int j=sccindex_start; j<=sccindex_end; j++)
-    {
-        valinlocalmatching.insert(varvalmatching[SCCs[j]]-dom_min);
-    }
-    
-    for(int j=sccindex_start; j<=sccindex_end; j++)
-    {
-        int tempvar=SCCs[j];
-        
-        if(var_array[tempvar].inDomain(varvalmatching[tempvar]))
-        {
-            bool found=false;
-            for(int val=var_array[tempvar].getMin(); val<=var_array[tempvar].getMax(); val++)
-            {
-                if(var_array[tempvar].inDomain(val) && !valinlocalmatching.in(val-dom_min))
-                {
-                    varvalmatching[tempvar]=val;
-                    valvarmatching[val-dom_min]=tempvar;
-                    valinlocalmatching.insert(val-dom_min);
-                    found=true;
-                    break;
-                }
-            }
-            if(!found)
-            {
-                return false;
-            }
-        }
-    }
-    
-    return true;
-  }
-  */
   
   virtual BOOL full_check_unsat()
   { 
@@ -987,8 +896,11 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         {
             // update the adjacency lists. and place dts
             DynamicTrigger* dt=dynamic_trigger_start();
-            #ifdef DYNAMICALLDIFF
+            #if AlldiffDT
             dt+=numvars+numvars*numvals;
+            #endif
+            #if AlldiffWL
+            dt+=numvars*numvals;
             #endif
             for(int i=dom_min; i<=dom_max; i++)
             {
@@ -1012,16 +924,6 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         }
       #endif
       
-      #if UseWatches && defined(CHECKDOMSIZE)
-      cout << "Watches and Quimper&Walsh's criterion do not safely co-exist." <<endl;
-      FAIL_EXIT();
-      #endif
-      
-      #if defined(DYNAMICALLDIFF) && !UseWatches
-      cout << "watchedalldiff does not work if UseWatches is not defined true." << endl;
-      FAIL_EXIT();
-      #endif
-      
       // Is this guaranteed to be called before do_prop is ever called??
       // I hope so, because the following test has to be done first.
       if(numvars>numvals)
@@ -1038,10 +940,9 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
           to_process.insert(i);
       }
       
-      #ifdef DYNAMICALLDIFF
+      #if AlldiffDT
         // Clear all the BT triggers. This is so that the tests at
         // the start of do_prop will work.
-        bt_triggers_start=dynamic_trigger_start()+numvars;
         for(int i=0; i<var_indices.size(); i++)
         {
             int var=var_indices[i];
@@ -1078,6 +979,23 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
             P("Adding watch for var " << j << " val " << varvalmatching[j]);
         }
       #endif
+      #endif
+      
+      #if AlldiffWL
+        // Clear all the watches.
+        // Set the variable numbers in the watches.
+        for(int i=0; i<numvars; i++)
+        {
+            for(int j=0; j<numvals; j++)
+            {
+                DynamicTrigger* wl=get_wl(i, j+dom_min);
+                wl->trigger_info() = i;
+                if(wl->isAttached())
+                {
+                    releaseTrigger(stateObj, wl);
+                }
+            }
+        }
       #endif
       
       #ifdef SCC
@@ -1216,7 +1134,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
     
     int varcount;
     
-    #ifdef DYNAMICALLDIFF
+    #if AlldiffDT
     vector<int> triggercount; // number of triggers on the variable
     DynamicTrigger * bt_triggers_start;   // points at dynamic_trigger_start()+numvars
     #endif
@@ -1239,7 +1157,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         
         //iterationstack.resize(numnodes);
         curnodestack.reserve(numnodes);
-        #ifdef DYNAMICALLDIFF
+        #if AlldiffDT
         triggercount.resize(numvars);
         #endif
     }
@@ -1262,28 +1180,38 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
             valinlocalmatching.insert(varvalmatching[var_indices[i]]-dom_min);
         }
         
-        if(UseWatches)
-        {
+        #if (InternalDT || AlldiffDT || AlldiffWL)
             for(int i=0; i<var_indices.size(); i++)
             {
-                #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
+                int var=var_indices[i];
+                
+                #if InternalDT
                 watches[var_indices[i]].clear();
-                P("Adding DT for var " << var_indices[i] << " val " << varvalmatching[var_indices[i]]);
-                // watch the value from the matching.
                 watches[var_indices[i]].insert(varvalmatching[var_indices[i]]-dom_min);
+                // watch the value from the matching.
+                P("Adding DT for var " << var_indices[i] << " val " << varvalmatching[var_indices[i]]);
                 #endif
                 
-                #ifdef DYNAMICALLDIFF
-                // Clear all the triggers on this variable. At end now.
-                int var=var_indices[i];
+                #if AlldiffDT
+                // Clearing all triggers on this var is now performed after Tarjan's 
                 triggercount[var]=1;
                 
                 var_array[var].addDynamicTriggerBT(get_dt(var, 0), 
                     DomainRemoval, varvalmatching[var]);
                 P("Adding DT for var " << var_indices[i] << " val " << varvalmatching[var_indices[i]]);
                 #endif
+                
+                #if AlldiffWL
+                // WLs on deleted values are not disturbed. 
+                // Therefore we can't clear the WL's yet because we don't know
+                // which values might be deleted at the end of Tarjan's
+                // algorithm.
+                // Empty the list of new watched literals.
+                new_wls[var].clear();
+                new_wls[var].push_back(varvalmatching[var]);
+                #endif
             }
-        }
+        #endif
         
         // spare_values
         // This should be computed somehow on demand because it might not be used.
@@ -1355,9 +1283,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         }
         
         // Clear any extra watches.
-        #ifdef DYNAMICALLDIFF
-        if(UseWatches)
-        {
+        #if AlldiffDT
             for(int i=0; i<var_indices.size(); i++)
             {
                 int var=var_indices[i];
@@ -1370,7 +1296,50 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
                     get_dt(var, j)->sleepDynamicTriggerBT(stateObj);
                 }
             }
-        }
+        #endif
+        
+        #if AlldiffWL
+            for(int i=0; i<var_indices.size(); i++)
+            {
+                int var=var_indices[i];
+                // remove all watches on values in the domain
+                // This is terrible -- should not iterate through the whole domain like this.
+                
+                for(int validx=0; validx<current_wls[var].size(); validx++)
+                {
+                    int val=current_wls[var][validx];
+                    if(var_array[var].inDomain(val))
+                    {
+                        // remove it from current_wls and lift the trigger.
+                        D_ASSERT(get_wl(var, val)->isAttached());
+                        releaseTrigger(stateObj, get_wl(var, val));
+                        
+                        current_wls[var][validx]=current_wls[var].back();
+                        current_wls[var].pop_back();
+                        validx--;
+                    }
+                }
+                
+                /*
+                for(int val=var_array[var].getMin(); val<=var_array[var].getMax(); val++)
+                {
+                    if(var_array[var].inDomain(val))
+                    {
+                        if(get_wl(var, val)->isAttached())
+                        {
+                            releaseTrigger(stateObj, get_wl(var, val));
+                        }
+                    }
+                }*/
+                
+                // add the values in new_wls
+                for(int validx=0; validx<new_wls[var].size(); validx++)
+                {
+                    int val=new_wls[var][validx];
+                    var_array[var].addDynamicTrigger(get_wl(var, val), DomainRemoval, val);
+                    current_wls[var].push_back(val);
+                }
+            }
         #endif
     }
     
@@ -1477,20 +1446,24 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
                         if(!visited.in(newnode))
                         {
                             // set a watch
-                            if(UseWatches)
-                            {
+                            #if (InternalDT || AlldiffDT || AlldiffWL)
                                 P("Adding DT for var " << newnode << " val " << curnode-numvars+dom_min);
                                 
-                                #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
+                                #if InternalDT
                                 watches[newnode].insert(curnode-numvars);
                                 #endif
                                 
-                                #ifdef DYNAMICALLDIFF
+                                #if AlldiffDT
                                 var_array[newnode].addDynamicTriggerBT(get_dt(newnode, triggercount[newnode]), 
                                     DomainRemoval, curnode-numvars+dom_min);
                                 triggercount[newnode]++;
                                 #endif
-                            }
+                                
+                                #if AlldiffWL
+                                new_wls[newnode].push_back(curnode-numvars+dom_min);
+                                #endif
+                            #endif
+                            
                             visit(newnode, false, sccindex_start);
                             if(lowlink[newnode]<lowlink[curnode])
                             {
@@ -1540,17 +1513,20 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
             }
             
             // Where did the low link value come from? insert that edge into watches.
-            if(UseWatches && lowlinkvar!=-1)
+            if((AlldiffDT || InternalDT || AlldiffWL) && lowlinkvar!=-1)
             {
                 P("Adding DT for var " << lowlinkvar << " val " << curnode-numvars+dom_min);
                 
-                #if !defined(DYNAMICALLDIFF) || !defined(NO_DEBUG)
+                #if InternalDT
                 watches[lowlinkvar].insert(curnode-numvars);
                 #endif
-                #ifdef DYNAMICALLDIFF
+                #if AlldiffDT
                 var_array[lowlinkvar].addDynamicTriggerBT(get_dt(lowlinkvar, triggercount[lowlinkvar]), 
                     DomainRemoval, curnode-numvars+dom_min);
                 triggercount[lowlinkvar]++;
+                #endif
+                #if AlldiffWL
+                new_wls[lowlinkvar].push_back(curnode-numvars+dom_min);
                 #endif
             }
         }
