@@ -1,5 +1,7 @@
 #include <iostream>
 #include <istream>
+#include <stdio.h>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -15,8 +17,8 @@ int main(int argc, char** argv)
     cout << "**VARIABLES**" << endl;
     cout << "BOOL v[" << num << "]" << endl;
     cout << "**CONSTRAINTS**" << endl;
-    cout << "sumleq(v, 50)" << endl;
-    cout << "sumgeq(v, 51)" << endl;
+  //  cout << "sumleq(v, 50)" << endl;
+  //  cout << "sumgeq(v, 51)" << endl;
 
     for(int i = 0; i < 2000; ++i)
     {
@@ -36,6 +38,9 @@ int main(int argc, char** argv)
         break;
             case 2:
         printf("min([v[%d],v[%d]], v[%d])\n", x1, x2, x3);
+        break;
+           case 3:
+        printf("product(v[%d],v[%d], v[%d])\n", x1, x2, x3);
         break;
         default: abort();
         }

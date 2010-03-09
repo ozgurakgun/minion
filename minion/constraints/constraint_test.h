@@ -30,10 +30,15 @@ struct TestConstraint : public AbstractConstraint
   
    typedef typename VarArray::value_type ArrayVarRef;
   
-  VarArray var_array;
+   array<ArrayVarRef,3> var_array;
   
   TestConstraint(StateObj* _stateObj, const VarArray& _var_array) :
-    AbstractConstraint(_stateObj), var_array(_var_array)  { }
+    AbstractConstraint(_stateObj)
+  {
+    var_array[0] = _var_array[0];
+    var_array[1] = _var_array[1];
+    var_array[2] = _var_array[2];
+  }
   
   virtual triggerCollection setup_internal()
   {
