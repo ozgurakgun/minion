@@ -141,6 +141,7 @@ struct LessEqualSumConstraint : public AbstractConstraint
   
   virtual BOOL check_unsat(int prop_val, DomainDelta domain_change)
   {
+    PROP_INFO_ADDONE(FullsumCheckUnsat);
     DomainInt sum = var_array_min_sum;
     if(prop_val != -1)
     { // One of the array changed
@@ -152,6 +153,7 @@ struct LessEqualSumConstraint : public AbstractConstraint
   
   virtual BOOL full_check_unsat()
   {
+    PROP_INFO_ADDONE(FullsumFullCheckUnsat);
     DomainInt min_sum = get_real_min_sum();
     DomainInt max_diff = get_real_max_diff();
     
@@ -196,6 +198,7 @@ struct LessEqualSumConstraint : public AbstractConstraint
   
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
   {
+    PROP_INFO_ADDONE(FullsumGetSatAssg);
     P("GSA");
     int sum_value = 0;
     int v_size = var_array.size();
