@@ -62,6 +62,7 @@ struct LightLessEqualSumConstraint : public AbstractConstraint
   
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
   {
+    PROP_INFO_ADDONE(LightsumGetSatAssg);
     int sum_value = 0;
     int v_size = var_array.size();
     
@@ -108,15 +109,24 @@ struct LightLessEqualSumConstraint : public AbstractConstraint
       var_array[i].setMax(var_array[i].getMin() + slack);
   }
   
-  virtual BOOL full_check_unsat()
-  { return check_unsat(0, 0); }
-  
-  virtual BOOL check_unsat(int, DomainDelta)
+  inline BOOL check_unsat_internal()
   {
     DomainInt min_sum = 0;
     for(unsigned i = 0; i < size; ++i)
       min_sum += var_array[i].getMin();
     return min_sum > var_sum.getMax();
+  }
+
+  virtual BOOL full_check_unsat()
+  { 
+    PROP_INFO_ADDONE(LightsumFullCheckUnsat);
+    return check_unsat_internal(); 
+  }
+  
+  virtual BOOL check_unsat(int, DomainDelta)  
+  { 
+    PROP_INFO_ADDONE(LightsumCheckUnsat);
+    return check_unsat_internal(); 
   }
   
   virtual void full_propagate()

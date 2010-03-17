@@ -217,22 +217,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   
   typedef typename VarArray::value_type VarRef;
   virtual AbstractConstraint* reverse_constraint()
-  { // w-or of pairwise equality.
-      
-      /// solely for reify exps
-      return new CheckAssignConstraint<VarArray, GacAlldiffConstraint>(stateObj, var_array, *this);
-      
-      vector<AbstractConstraint*> con;
-      for(int i=0; i<var_array.size(); i++)
-      {
-          for(int j=i+1; j<var_array.size(); j++)
-          {
-              EqualConstraint<VarRef, VarRef>* t=new EqualConstraint<VarRef, VarRef>(stateObj, var_array[i], var_array[j]);
-              con.push_back((AbstractConstraint*) t);
-          }
-      }
-      return new Dynamic_OR(stateObj, con);
-  }
+  { return new CheckAssignConstraint<VarArray, GacAlldiffConstraint>(stateObj, var_array, *this); }
   
   smallset to_process;  // set of vars to process.
   
@@ -944,44 +929,46 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   
   virtual BOOL full_check_unsat()
   { 
-    int v_size = var_array.size();
-    for(int i = 0; i < v_size; ++i)
+    PROP_INFO_ADDONE(AlldiffAnyCheckUnsat);
+    bool matchok=true;
+    for(int i=0; i<numvars; i++)
     {
-      if(var_array[i].isAssigned())
-      {
-      
-        for(int j = i + 1; j < v_size; ++j)
+        if(!var_array[i].inDomain(varvalmatching[i]))
         {
-          if(var_array[j].isAssigned())
-          {
-            if(var_array[i].getAssignedValue() == var_array[j].getAssignedValue())
-              return true;
-          }
+            matchok=false;
+            break;
         }
-        
-      }
     }
     
-    return false;
+    if(!matchok)
+    {
+        if(numvals<numvars) return false; // there can't be a matching.
+        #ifdef INCGRAPH
+          // update the adjacency lists.
+          for(int i=dom_min; i<=dom_max; i++)
+          {
+              for(int j=0; j<adjlistlength[i-dom_min+numvars]; j++)
+              {
+                  int var=adjlist[i-dom_min+numvars][j];
+                  if(!var_array[var].inDomain(i))
+                  {
+                      // swap with the last element and remove
+                      adjlist_remove(var, i);
+                      j--; // stay in the same place, dont' skip over the 
+                      // value which was just swapped into the current position.
+                  }
+              }
+          }
+        #endif
+        
+        matchok=bfsmatching(0, numvars-1);
+    }
+    
+    return !matchok;
   }
   
   virtual BOOL check_unsat(int i, DomainDelta)
-  {
-    int v_size = var_array.size();
-    if(!var_array[i].isAssigned()) return false;
-    
-    DomainInt assign_val = var_array[i].getAssignedValue();
-    for(int loop = 0; loop < v_size; ++loop)
-    {
-      if(loop != i)
-      {
-        if(var_array[loop].isAssigned() && 
-           var_array[loop].getAssignedValue() == assign_val)
-        return true;
-      }
-    }
-    return false;
-  }
+  { return full_check_unsat(); }
   
   virtual void full_propagate()
   { 

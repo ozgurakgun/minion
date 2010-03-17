@@ -81,10 +81,16 @@ struct LeqConstraint : public AbstractConstraint
   }
   
   virtual BOOL check_unsat(int,DomainDelta)
-  { return (x.getMin() > y.getMax() + offset); }
+  { 
+    PROP_INFO_ADDONE(IneqCheckUnsat);
+    return (x.getMin() > y.getMax() + offset); 
+  }
   
   virtual BOOL full_check_unsat()
-  { return (x.getMin() > y.getMax() + offset); }
+  { 
+    PROP_INFO_ADDONE(IneqFullCheckUnsat);
+    return (x.getMin() > y.getMax() + offset); 
+  }
   
   virtual void full_propagate()
   {
@@ -100,6 +106,7 @@ struct LeqConstraint : public AbstractConstraint
   
   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
   {
+    PROP_INFO_ADDONE(IneqGetSatAssg);
     int x_min = x.getMin();
     int y_max = y.getMax();
     

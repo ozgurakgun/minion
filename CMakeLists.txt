@@ -348,6 +348,13 @@ if(WTRIG)
     add_definitions(-DWEIGHTED_TRIGGERS)
 endif()
 
+option(NEWREIFY "" OFF)
+if(NEWREIFY)
+  message(STATUS "Enabling new reify")
+  set(BINARY "${BINARY}-newreify")
+  add_definitions(-DNEWREIFY)
+endif()
+
 option(INFO "" OFF)
 if(INFO)
     message(STATUS "Enabling INFO")

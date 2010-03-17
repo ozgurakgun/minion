@@ -78,7 +78,7 @@ ALL constraints are reifyimplyable.
 //#define P(x) cout << x << endl
 #define P(x)
 
-#define NEWREIFY
+//#define NEWREIFY //switch using cmake lists
 //#define NODETRICK   // This is broken! leave switched off.
 
 #ifdef NEWREIFY

@@ -118,6 +118,7 @@ PROP_EVENT(ReifyImplyFullCheckUnsat)
 PROP_EVENT(ReifyImplyCheckUnsat)
 PROP_EVENT(ReifyImplyGetSatAssg)
 PROP_EVENT(Clique)
+PROP_EVENT(AlldiffAnyCheckUnsat)
 
 PROP_EVENT(Counter1)
 PROP_EVENT(Counter2)
