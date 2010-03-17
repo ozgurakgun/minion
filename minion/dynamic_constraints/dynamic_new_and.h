@@ -53,8 +53,8 @@ of another constraint, for example in a reification:
 #undef P
 #endif
 
-#define P(x) cout << x << endl
-//#define P(x)
+//#define P(x) cout << x << endl
+#define P(x)
 
 // Similar to watched or, but has no watching phase, just propagates all
 // the time, and propagates all constraints of course.
@@ -200,18 +200,7 @@ struct Dynamic_AND : public ParentConstraint
   }
   
   // This breaks everything.
-  //virtual AbstractConstraint* reverse_constraint();
+  virtual AbstractConstraint* reverse_constraint();
 };
 
-//#include "dynamic_new_or.h"
-
-/*virtual AbstractConstraint* Dynamic_AND::reverse_constraint()
-{ // OR of the reverse of all the child constraints..
-  vector<AbstractConstraint*> con;
-  for(int i=0; i<child_constraints.size(); i++)
-  {
-      con.push_back(child_constraints[i]->reverse_constraint());
-  }
-  return new Dynamic_OR(stateObj, con);
-}*/
 #endif
