@@ -1,7 +1,6 @@
 #include <array>
 using namespace std;
 
-
 struct AndCon
 {
     bool operator()(array<int, 3> a)
@@ -57,9 +56,31 @@ struct GACSum
     static const int domsize = 3;
 };
 
+struct Eqorneq
+{
+    bool operator()(array<int, 4> a)
+    {
+        return (a[0] == a[1]) || (a[2] != a[3]);
+    }
+    
+    static const int vcount = 4;
+    static const int domsize = 2;
+};
+
+struct sumgeqthree
+{
+    bool operator()(array<int, 5> a)
+    {
+        return (a[0]+ a[1]+a[2]+a[3]+a[4])>=3;
+    }
+    
+    static const int vcount = 5;
+    static const int domsize = 2;
+};
+
 //typedef ReifyDiffEqualConCon CurrentConstraint;
 //typedef EqualReifyNotEqual CurrentConstraint;
-typedef GACSum CurrentConstraint;
+typedef sumgeqthree CurrentConstraint;
 
 static const int vcount = CurrentConstraint::vcount;
 static const int domsize = CurrentConstraint::domsize;

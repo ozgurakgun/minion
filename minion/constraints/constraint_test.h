@@ -30,7 +30,7 @@ struct TestConstraint : public AbstractConstraint
   
    typedef typename VarArray::value_type ArrayVarRef;
   
-   array<ArrayVarRef,4> var_array;
+   array<ArrayVarRef,5> var_array;
   
   TestConstraint(StateObj* _stateObj, const VarArray& _var_array) :
     AbstractConstraint(_stateObj)
@@ -39,6 +39,7 @@ struct TestConstraint : public AbstractConstraint
     var_array[1] = _var_array[1];
     var_array[2] = _var_array[2];
     var_array[3] = _var_array[3];
+    var_array[4] = _var_array[4];
   }
   
   virtual triggerCollection setup_internal()
@@ -47,7 +48,7 @@ struct TestConstraint : public AbstractConstraint
     
     for(int i = 0; i < var_array.size(); ++i)
     { // Have to add 1 else the 0th element will be lost.
-      t.push_back(make_trigger(var_array[i], Trigger(this, 2*i), LowerBound));
+      //t.push_back(make_trigger(var_array[i], Trigger(this, 2*i), LowerBound));
       t.push_back(make_trigger(var_array[i], Trigger(this, 2*i+1), UpperBound));
     }
     
@@ -64,73 +65,452 @@ struct TestConstraint : public AbstractConstraint
     
   virtual void full_propagate()
   {
-if(var_array[0].inDomain(0)) {
-  if(var_array[0].inDomain(1)) {
+      // sumgeq3
+      if(var_array[0].inDomain(0)) {
+  if(var_array[1].inDomain(0)) {
     if(var_array[2].inDomain(0)) {
-      if(!var_array[2].inDomain(1)) {
-        if(!var_array[3].inDomain(1)) {
-          if(var_array[1].inDomain(0)) {
-            if(!var_array[1].inDomain(1)) {
-              var_array[0].removeFromDomain(0);
+      if(var_array[3].inDomain(0)) {
+        if(var_array[4].inDomain(0)) {
+          if(var_array[0].inDomain(1)) {
+            if(var_array[3].inDomain(1)) {
+              if(var_array[1].inDomain(1)) {
+                if(!var_array[2].inDomain(1)) {
+                  if(!var_array[4].inDomain(1)) {
+                    var_array[0].removeFromDomain(0);
+                    var_array[1].removeFromDomain(0);
+                    var_array[3].removeFromDomain(0);
+                  }
+                }
+              } else {
+                if(var_array[2].inDomain(1)) {
+                  if(!var_array[4].inDomain(1)) {
+                    var_array[0].removeFromDomain(0);
+                    var_array[2].removeFromDomain(0);
+                    var_array[3].removeFromDomain(0);
+                  }
+                } else {
+                  var_array[0].removeFromDomain(0);
+                  var_array[3].removeFromDomain(0);
+                  var_array[4].removeFromDomain(0);
+                }
+              }
+            } else {
+              if(var_array[1].inDomain(1)) {
+                if(var_array[4].inDomain(1)) {
+                  if(!var_array[2].inDomain(1)) {
+                    var_array[0].removeFromDomain(0);
+                    var_array[1].removeFromDomain(0);
+                    var_array[4].removeFromDomain(0);
+                  }
+                } else {
+                  var_array[0].removeFromDomain(0);
+                  var_array[1].removeFromDomain(0);
+                  var_array[2].removeFromDomain(0);
+                }
+              } else {
+                var_array[0].removeFromDomain(0);
+                var_array[2].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
             }
           } else {
-            var_array[0].removeFromDomain(1);
+            if(var_array[2].inDomain(1)) {
+              if(var_array[1].inDomain(1)) {
+                if(var_array[4].inDomain(1)) {
+                  if(!var_array[3].inDomain(1)) {
+                    var_array[1].removeFromDomain(0);
+                    var_array[2].removeFromDomain(0);
+                    var_array[4].removeFromDomain(0);
+                  }
+                } else {
+                  var_array[1].removeFromDomain(0);
+                  var_array[2].removeFromDomain(0);
+                  var_array[3].removeFromDomain(0);
+                }
+              } else {
+                var_array[2].removeFromDomain(0);
+                var_array[3].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
+            } else {
+              var_array[1].removeFromDomain(0);
+              var_array[3].removeFromDomain(0);
+              var_array[4].removeFromDomain(0);
+            }
+          }
+        } else {
+          if(var_array[0].inDomain(1)) {
+            if(var_array[3].inDomain(1)) {
+              if(!var_array[1].inDomain(1)) {
+                if(!var_array[2].inDomain(1)) {
+                  var_array[0].removeFromDomain(0);
+                  var_array[3].removeFromDomain(0);
+                }
+              }
+            } else {
+              if(var_array[1].inDomain(1)) {
+                if(!var_array[2].inDomain(1)) {
+                  var_array[0].removeFromDomain(0);
+                  var_array[1].removeFromDomain(0);
+                }
+              } else {
+                var_array[0].removeFromDomain(0);
+                var_array[2].removeFromDomain(0);
+              }
+            }
+          } else {
+            if(var_array[1].inDomain(1)) {
+              if(var_array[2].inDomain(1)) {
+                if(!var_array[3].inDomain(1)) {
+                  var_array[1].removeFromDomain(0);
+                  var_array[2].removeFromDomain(0);
+                }
+              } else {
+                var_array[1].removeFromDomain(0);
+                var_array[3].removeFromDomain(0);
+              }
+            } else {
+              var_array[2].removeFromDomain(0);
+              var_array[3].removeFromDomain(0);
+            }
+          }
+        }
+      } else {
+        if(var_array[4].inDomain(0)) {
+          if(var_array[0].inDomain(1)) {
+            if(var_array[1].inDomain(1)) {
+              if(!var_array[2].inDomain(1)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[0].removeFromDomain(0);
+                  var_array[1].removeFromDomain(0);
+                }
+              }
+            } else {
+              if(var_array[2].inDomain(1)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[0].removeFromDomain(0);
+                  var_array[2].removeFromDomain(0);
+                }
+              } else {
+                var_array[0].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
+            }
+          } else {
+            if(var_array[1].inDomain(1)) {
+              if(var_array[2].inDomain(1)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[1].removeFromDomain(0);
+                  var_array[2].removeFromDomain(0);
+                }
+              } else {
+                var_array[1].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
+            } else {
+              var_array[2].removeFromDomain(0);
+              var_array[4].removeFromDomain(0);
+            }
+          }
+        } else {
+          if(var_array[1].inDomain(1)) {
+            if(!var_array[0].inDomain(1)) {
+              if(!var_array[2].inDomain(1)) {
+                var_array[1].removeFromDomain(0);
+              }
+            }
+          } else {
+            if(var_array[0].inDomain(1)) {
+              if(!var_array[2].inDomain(1)) {
+                var_array[0].removeFromDomain(0);
+              }
+            } else {
+              var_array[2].removeFromDomain(0);
+            }
           }
         }
       }
     } else {
-      if(!var_array[3].inDomain(0)) {
-        if(var_array[1].inDomain(0)) {
-          if(!var_array[1].inDomain(1)) {
-            var_array[0].removeFromDomain(0);
+      if(var_array[4].inDomain(0)) {
+        if(var_array[3].inDomain(0)) {
+          if(var_array[0].inDomain(1)) {
+            if(var_array[4].inDomain(1)) {
+              if(!var_array[1].inDomain(1)) {
+                if(!var_array[3].inDomain(1)) {
+                  var_array[0].removeFromDomain(0);
+                  var_array[4].removeFromDomain(0);
+                }
+              }
+            } else {
+              if(var_array[1].inDomain(1)) {
+                if(!var_array[3].inDomain(1)) {
+                  var_array[0].removeFromDomain(0);
+                  var_array[1].removeFromDomain(0);
+                }
+              } else {
+                var_array[0].removeFromDomain(0);
+                var_array[3].removeFromDomain(0);
+              }
+            }
+          } else {
+            if(var_array[1].inDomain(1)) {
+              if(var_array[3].inDomain(1)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[1].removeFromDomain(0);
+                  var_array[3].removeFromDomain(0);
+                }
+              } else {
+                var_array[1].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
+            } else {
+              var_array[3].removeFromDomain(0);
+              var_array[4].removeFromDomain(0);
+            }
           }
         } else {
-          var_array[0].removeFromDomain(1);
+          if(var_array[0].inDomain(1)) {
+            if(!var_array[1].inDomain(1)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[0].removeFromDomain(0);
+              }
+            }
+          } else {
+            if(var_array[1].inDomain(1)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[1].removeFromDomain(0);
+              }
+            } else {
+              var_array[4].removeFromDomain(0);
+            }
+          }
+        }
+      } else {
+        if(var_array[0].inDomain(1)) {
+          if(!var_array[1].inDomain(1)) {
+            if(var_array[3].inDomain(0)) {
+              if(!var_array[3].inDomain(1)) {
+                var_array[0].removeFromDomain(0);
+              }
+            }
+          }
+        } else {
+          if(var_array[3].inDomain(0)) {
+            if(var_array[1].inDomain(1)) {
+              if(!var_array[3].inDomain(1)) {
+                var_array[1].removeFromDomain(0);
+              }
+            } else {
+              var_array[3].removeFromDomain(0);
+            }
+          }
         }
       }
     }
   } else {
-    if(var_array[1].inDomain(1)) {
-      if(var_array[2].inDomain(0)) {
-        if(!var_array[2].inDomain(1)) {
-          if(!var_array[3].inDomain(1)) {
-            var_array[1].removeFromDomain(0);
-          }
-        }
-      } else {
-        if(!var_array[3].inDomain(0)) {
-          var_array[1].removeFromDomain(0);
-        }
-      }
-    } else {
+    if(var_array[0].inDomain(1)) {
       if(var_array[2].inDomain(0)) {
         if(var_array[2].inDomain(1)) {
           if(var_array[3].inDomain(0)) {
             if(!var_array[3].inDomain(1)) {
-              var_array[2].removeFromDomain(0);
+              if(var_array[4].inDomain(0)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[0].removeFromDomain(0);
+                  var_array[2].removeFromDomain(0);
+                }
+              }
             }
-          } else {
-            var_array[2].removeFromDomain(1);
           }
         } else {
-          var_array[3].removeFromDomain(0);
+          if(var_array[3].inDomain(0)) {
+            if(var_array[4].inDomain(0)) {
+              if(var_array[3].inDomain(1)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[0].removeFromDomain(0);
+                  var_array[3].removeFromDomain(0);
+                }
+              } else {
+                var_array[0].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
+            } else {
+              if(!var_array[3].inDomain(1)) {
+                var_array[0].removeFromDomain(0);
+              }
+            }
+          } else {
+            if(var_array[4].inDomain(0)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[0].removeFromDomain(0);
+              }
+            }
+          }
         }
       } else {
-        var_array[3].removeFromDomain(1);
+        if(var_array[3].inDomain(0)) {
+          if(!var_array[3].inDomain(1)) {
+            if(var_array[4].inDomain(0)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[0].removeFromDomain(0);
+              }
+            }
+          }
+        }
+      }
+    } else {
+      if(var_array[2].inDomain(0)) {
+        if(var_array[3].inDomain(0)) {
+          if(var_array[4].inDomain(0)) {
+            if(var_array[2].inDomain(1)) {
+              if(var_array[3].inDomain(1)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[2].removeFromDomain(0);
+                  var_array[3].removeFromDomain(0);
+                }
+              } else {
+                var_array[2].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
+            } else {
+              var_array[3].removeFromDomain(0);
+              var_array[4].removeFromDomain(0);
+            }
+          } else {
+            if(var_array[2].inDomain(1)) {
+              if(!var_array[3].inDomain(1)) {
+                var_array[2].removeFromDomain(0);
+              }
+            } else {
+              var_array[3].removeFromDomain(0);
+            }
+          }
+        } else {
+          if(var_array[4].inDomain(0)) {
+            if(var_array[2].inDomain(1)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[2].removeFromDomain(0);
+              }
+            } else {
+              var_array[4].removeFromDomain(0);
+            }
+          }
+        }
+      } else {
+        if(var_array[3].inDomain(0)) {
+          if(var_array[4].inDomain(0)) {
+            if(var_array[3].inDomain(1)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[3].removeFromDomain(0);
+              }
+            } else {
+              var_array[4].removeFromDomain(0);
+            }
+          }
+        }
       }
     }
   }
 } else {
   if(var_array[1].inDomain(0)) {
-    if(var_array[2].inDomain(0)) {
-      if(!var_array[2].inDomain(1)) {
-        if(!var_array[3].inDomain(1)) {
-          var_array[1].removeFromDomain(1);
+    if(var_array[1].inDomain(1)) {
+      if(var_array[2].inDomain(0)) {
+        if(var_array[2].inDomain(1)) {
+          if(var_array[3].inDomain(0)) {
+            if(!var_array[3].inDomain(1)) {
+              if(var_array[4].inDomain(0)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[1].removeFromDomain(0);
+                  var_array[2].removeFromDomain(0);
+                }
+              }
+            }
+          }
+        } else {
+          if(var_array[3].inDomain(0)) {
+            if(var_array[4].inDomain(0)) {
+              if(var_array[3].inDomain(1)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[1].removeFromDomain(0);
+                  var_array[3].removeFromDomain(0);
+                }
+              } else {
+                var_array[1].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
+            } else {
+              if(!var_array[3].inDomain(1)) {
+                var_array[1].removeFromDomain(0);
+              }
+            }
+          } else {
+            if(var_array[4].inDomain(0)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[1].removeFromDomain(0);
+              }
+            }
+          }
+        }
+      } else {
+        if(var_array[3].inDomain(0)) {
+          if(!var_array[3].inDomain(1)) {
+            if(var_array[4].inDomain(0)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[1].removeFromDomain(0);
+              }
+            }
+          }
         }
       }
     } else {
-      if(!var_array[3].inDomain(0)) {
-        var_array[1].removeFromDomain(1);
+      if(var_array[2].inDomain(0)) {
+        if(var_array[3].inDomain(0)) {
+          if(var_array[4].inDomain(0)) {
+            if(var_array[2].inDomain(1)) {
+              if(var_array[3].inDomain(1)) {
+                if(!var_array[4].inDomain(1)) {
+                  var_array[2].removeFromDomain(0);
+                  var_array[3].removeFromDomain(0);
+                }
+              } else {
+                var_array[2].removeFromDomain(0);
+                var_array[4].removeFromDomain(0);
+              }
+            } else {
+              var_array[3].removeFromDomain(0);
+              var_array[4].removeFromDomain(0);
+            }
+          } else {
+            if(var_array[2].inDomain(1)) {
+              if(!var_array[3].inDomain(1)) {
+                var_array[2].removeFromDomain(0);
+              }
+            } else {
+              var_array[3].removeFromDomain(0);
+            }
+          }
+        } else {
+          if(var_array[4].inDomain(0)) {
+            if(var_array[2].inDomain(1)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[2].removeFromDomain(0);
+              }
+            } else {
+              var_array[4].removeFromDomain(0);
+            }
+          }
+        }
+      } else {
+        if(var_array[3].inDomain(0)) {
+          if(var_array[4].inDomain(0)) {
+            if(var_array[3].inDomain(1)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[3].removeFromDomain(0);
+              }
+            } else {
+              var_array[4].removeFromDomain(0);
+            }
+          }
+        }
       }
     }
   } else {
@@ -138,19 +518,32 @@ if(var_array[0].inDomain(0)) {
       if(var_array[2].inDomain(1)) {
         if(var_array[3].inDomain(0)) {
           if(!var_array[3].inDomain(1)) {
-            var_array[2].removeFromDomain(0);
+            if(var_array[4].inDomain(0)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[2].removeFromDomain(0);
+              }
+            }
           }
-        } else {
-          var_array[2].removeFromDomain(1);
         }
       } else {
-        var_array[3].removeFromDomain(0);
+        if(var_array[3].inDomain(0)) {
+          if(var_array[4].inDomain(0)) {
+            if(var_array[3].inDomain(1)) {
+              if(!var_array[4].inDomain(1)) {
+                var_array[3].removeFromDomain(0);
+              }
+            } else {
+              var_array[4].removeFromDomain(0);
+            }
+          }
+        }
       }
-    } else {
-      var_array[3].removeFromDomain(1);
     }
   }
-}      
+}
+      
+      
+      
   }
   
   virtual BOOL check_assignment(DomainInt* v, int v_size)

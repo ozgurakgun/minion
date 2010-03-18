@@ -2,6 +2,8 @@
 
 from itertools import *
 
+import sys, os, getopt
+
 def increment_list(list, domainsize):
   for i in range(len(list)):
     list[i] += 1
@@ -27,7 +29,14 @@ def print_var(tuple, domainsize):
 def print_constraint(TupleList, name, domainsize) :
 #    print TupleList
     varlist = zip(*TupleList)
-    print "table([" + ', '.join([print_var(a, domainsize) for a in varlist]) + "], " + name + ")"
+    if gentable:
+        print "table([" + ', '.join([print_var(a, domainsize) for a in varlist]) + "], " + name + ")"
+    elif genlighttable:
+        print "lighttable([" + ', '.join([print_var(a, domainsize) for a in varlist]) + "], " + name + ")"
+    elif gentest:
+        print "test([" + ', '.join([print_var(a, domainsize) for a in varlist]) + "])"
+    elif gendecomp:
+        print "Don;t be ksilly"
 
 
 
@@ -72,8 +81,31 @@ diff1    = lambda (x,y): abs(x-y) > 1
 xlessy   = lambda (x,y): x < y
 eqoreq = lambda(a,b,c,d) : (a == b) or (c == d)
 eqorneq = lambda(a,b,c,d) : (a == b) or (c != d)
+sumgeqthree= lambda(a,b,c,d,e): (a+b+c+d+e)>=3
 
 domsize = 2
 
+# check for flags
+
+(optargs, other)=getopt.gnu_getopt(sys.argv, "", ["table", "test", "decomp", "lighttable"])
+
+
+# what type of constraint to print out.
+gentable=False
+gentest=False
+gendecomp=False
+genlighttable=False
+
+for i in optargs:
+    (a1, a2)=i
+    if a1=="--table":
+        gentable=True
+    if a1=="--lighttable":
+        genlighttable=True
+    elif a1=="--test":
+        gentest=True
+    elif a1=="--decomp":
+        gendecomp=True
+
 #generate_indicator([build_table(diff1, 5), build_table(xlessy, 5)], 5, 5)
-generate_indicator([build_table(eqorneq,domsize,4), build_table(eqorneq,domsize,4)], domsize,5, False)
+generate_indicator([build_table(sumgeqthree,domsize,5)], domsize,5, True)

@@ -53,7 +53,7 @@ def gac_prunings2(nogoods, domains):
 def increment_tuple(tup, domains, var, val):
     return
 
-def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder, memotable, var_to_prune=None ):
+def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder, memotable):
     # take a list of unsatisfying tuples within domains_poss & domains_in.
     # a tree node
     # a domain list
@@ -97,22 +97,18 @@ def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder
     whole_domain=[]
     for i in xrange(len(domains_in)):
         whole_domain.append(domains_in[i]+domains_poss[i])
-        whole_domain.sort()
+        whole_domain[i].sort()
     
-    print "About to do GAC."
-    print "tuples:"+str(ct)
-    print "domains_poss:"+str(domains_poss)
-    print "domains_in:"+str(domains_in)
-    print "domains:"+str(whole_domain)
-    
+    #print "About to do GAC."
+    #print "tuples:"+str(ct)
+    #print "domains_poss:"+str(domains_poss)
+    #print "domains_in:"+str(domains_in)
+    #print "domains:"+str(whole_domain)
+    #print "domains_out:"+str(domains_out)
     
     prun=gac_prunings(ct, whole_domain)
     
-    print prun
-    
-    if not var_to_prune==None:
-        prun=filter(lambda (x,y): x==var_to_prune, prun)
-        print prun
+    #print prun
     
     #print "prun:"+str(prun[:])
     if len(prun)>0:
@@ -132,6 +128,18 @@ def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder
             return True # we did do pruning here.
             # Could change this node from some pruning to a fail.
     
+    # If we have complete domain knowledge, then return.
+    if len(filter(lambda x:len(x)>0, domains_poss))==0:
+        if len(prun)==0:
+            memotable[domains_out]=False
+            return False
+        else:
+            return True
+    
+    ########################################################################
+    #
+    #  Branching
+    
     chosenvar=-1
     chosenval=0
     
@@ -149,20 +157,10 @@ def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder
     #        break
     
     
-    # first find out if we should continue building the tree, or do some
-    # domain removals at this node. Can't do both at the moment.
-    
-    continue_tree_building=False
-    
-    # If we have complete domain knowledge, then return.
-    if len(filter(lambda x:len(x)>0, domains_poss))==0:
-        if len(prun)==0:
-            memotable[domains_out]=False
-            return False
-        else:
-            return True
-    
     assert chosenvar!=-1
+    
+    #print "Chosen variable: %d" %chosenvar
+    #print "Chosen value:%d"%chosenval
     
     dom_left_poss=copy.deepcopy(domains_poss)
     dom_right_poss=copy.deepcopy(domains_poss)
@@ -187,14 +185,14 @@ def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder
     prun_right=False
     
     tree['left']=dict()
-    prun_left=build_tree(ct, tree['left'], dom_left_in, dom_left_poss, domains_out, varvalorder, memotable, var_to_prune)
+    prun_left=build_tree(copy.deepcopy(ct), tree['left'], dom_left_in, dom_left_poss, domains_out, varvalorder, memotable)
     if not prun_left:
         del tree['left']
     
     # If we have not emptied the domain in the right branch:
     if len(dom_right_poss[chosenvar])+len(dom_right_in[chosenvar])>0:
         tree['right']=dict()
-        prun_right=build_tree(ct, tree['right'], dom_right_in, dom_right_poss, dom_right_out, varvalorder, memotable, var_to_prune)
+        prun_right=build_tree(copy.deepcopy(ct), tree['right'], dom_right_in, dom_right_poss, dom_right_out, varvalorder, memotable)
         if not prun_right:
             del tree['right']
     
@@ -273,7 +271,7 @@ def generate_tree(ct_nogoods, permlist, domains_init):
         domains_out=tuple([ frozenset() for i in domains_init])
         domains=copy.deepcopy(domains_init)
         memotable=dict()
-        print "About to build tree. "
+        #print "About to build tree, perm: "+str(perm)
         build_tree(copy.deepcopy(ct_nogoods), tree, domains_in, domains, domains_out, perm, memotable)
         cost=tree_cost2(tree)
         if cost<bestcost:
@@ -281,12 +279,8 @@ def generate_tree(ct_nogoods, permlist, domains_init):
             besttree=tree
             print "Better tree found:"
             print_tree(tree)
-        
     
-    #print "//"+str(besttree)
-    
-    #print "// Best tree:"
-    
+    print "// Best tree:"
     print_tree(besttree)
 
 def and_constraint():
@@ -296,6 +290,7 @@ def and_constraint():
     domains_init=[[0,1],[0,1],[0,1]]
     permlist=[]
     gen_all_perms(permlist, [], varvalorder)
+    #permlist=[[(0, 1), (0, 0), (1, 0), (1, 1), (2, 0), (2, 1)]]
     generate_tree(ct_nogoods, permlist, domains_init)
 
 def sports_constraint():
@@ -324,6 +319,24 @@ def sports_constraint():
     permlist=[varvalorder]
     generate_tree(ct_nogoods, permlist, domains_init)
 
+def sumgeqthree():
+    # sumgeq-3 on 5 bool vars.
+    nogoods=[]
+    for a in range(2):
+        for b in range(2):
+            for c in range(2):
+                for d in range(2):
+                    for e in range(2):
+                        if sum([a,b,c,d,e])<3:
+                            nogoods.append([a,b,c,d,e])
+    
+    varvalorder=[(a,b) for a in range(5) for b in range(2) ]
+    
+    domains_init=[[0,1],[0,1],[0,1], [0,1], [0,1]]
+    permlist=[]
+    gen_all_perms(permlist, [], varvalorder)
+    
+    generate_tree(nogoods, permlist, domains_init)
 
 # A tree node is a dictionary containing 'var': 0,1,2.... 'val', 'left', 'right', 'pruning'
 
@@ -332,4 +345,7 @@ def sports_constraint():
 
 #cProfile.run('sports_constraint()')
 
-and_constraint()
+#and_constraint()
+sumgeqthree()
+
+
