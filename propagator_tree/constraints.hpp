@@ -78,9 +78,27 @@ struct sumgeqthree
     static const int domsize = 2;
 };
 
+struct pegsol
+{
+    bool operator()(array<int, 7> a)
+    {
+        if( a[0] && !a[1] && a[2] && !a[3] && !a[4] && a[5])
+        {
+            return a[6];
+        }
+        else
+        {
+            return !a[6];
+        }
+    }
+    
+    static const int vcount=7;
+    static const int domsize=2;
+};
+
 //typedef ReifyDiffEqualConCon CurrentConstraint;
 //typedef EqualReifyNotEqual CurrentConstraint;
-typedef sumgeqthree CurrentConstraint;
+typedef pegsol CurrentConstraint;
 
 static const int vcount = CurrentConstraint::vcount;
 static const int domsize = CurrentConstraint::domsize;

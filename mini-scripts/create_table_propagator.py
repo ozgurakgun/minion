@@ -136,6 +136,24 @@ def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder
         else:
             return True
     
+    # Filter the tuple list again after pruning -- remove any tuples that are not valid
+    # nogoods that are outside the current domains are no longer useful.
+    ct2=[]
+    for t in ct:
+        flag=True
+        for i in xrange(len(t)):
+            if (t[i] not in domains_poss[i]) and (t[i] not in domains_in[i]):
+                flag=False
+                break
+        if flag:
+            ct2.append(t)
+    
+    if ct2 == []:
+        # The constraint is implied.
+        memotable[domains_out]=False
+        assert len(prun)>0  # Should only reach here if tuples lost by pruning.
+        return True
+    
     ########################################################################
     #
     #  Branching
@@ -143,11 +161,27 @@ def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder
     chosenvar=-1
     chosenval=0
     
+    # default ordering
+    if False:
+        for (var, val) in varvalorder:
+            if val in domains_poss[var]:
+                chosenvar=var
+                chosenval=val
+                break
+    
+    # choose the var and val contained in the most remaining nogoods
+    # I.e. if it's not in domain, it will eliminate the most nogoods, pushing towards impliedness.
+    numnogoods=-1
     for (var, val) in varvalorder:
         if val in domains_poss[var]:
-            chosenvar=var
-            chosenval=val
-            break
+            count=len(filter(lambda a: a[var]==val,  ct2))
+            if count>numnogoods:
+                numnogoods=count
+                chosenvar=var
+                chosenval=val
+    
+    assert numnogoods>=0   # Could be that all nogoods have only values in domains_in 
+    # -- in which case, we can do no further propagation, but this case is not noticed. 
     
     # very simple way of choosing var val to start with.
     #for var in xrange(len(domains_poss)):
@@ -185,14 +219,14 @@ def build_tree(ct_init, tree, domains_in, domains_poss, domains_out, varvalorder
     prun_right=False
     
     tree['left']=dict()
-    prun_left=build_tree(copy.deepcopy(ct), tree['left'], dom_left_in, dom_left_poss, domains_out, varvalorder, memotable)
+    prun_left=build_tree(copy.deepcopy(ct2), tree['left'], dom_left_in, dom_left_poss, domains_out, varvalorder, memotable)
     if not prun_left:
         del tree['left']
     
     # If we have not emptied the domain in the right branch:
     if len(dom_right_poss[chosenvar])+len(dom_right_in[chosenvar])>0:
         tree['right']=dict()
-        prun_right=build_tree(copy.deepcopy(ct), tree['right'], dom_right_in, dom_right_poss, dom_right_out, varvalorder, memotable)
+        prun_right=build_tree(copy.deepcopy(ct2), tree['right'], dom_right_in, dom_right_poss, dom_right_out, varvalorder, memotable)
         if not prun_right:
             del tree['right']
     
@@ -229,10 +263,10 @@ def tree_cost(tree):
     # measure the max depth for now.
     l=0
     r=0
-    if tree.has_key['left']:
+    if tree.has_key('left'):
         l=tree_cost(tree['left'])
     
-    if tree.has_key['right']:
+    if tree.has_key('right'):
         r=tree_cost(tree['right'])
     
     return max(l,r)+1
@@ -277,11 +311,12 @@ def generate_tree(ct_nogoods, permlist, domains_init):
         if cost<bestcost:
             bestcost=cost
             besttree=tree
-            print "Better tree found:"
-            print_tree(tree)
+            #print "Better tree found:"
+            #print_tree(tree)
     
-    print "// Best tree:"
-    print_tree(besttree)
+    #print "// Best tree:"
+    #print_tree(besttree)
+    return besttree
 
 def and_constraint():
     # A /\ B = C
@@ -314,10 +349,11 @@ def sports_constraint():
                 if t not in postable:
                     ct_nogoods.append(t)
     
-    domains_init=[ range(1,2), range(1,11), range(1,46)]
+    domains_init=[ range(1,11), range(1,11), range(1,46)]
     varvalorder=[ (0,j) for j in xrange(1,11) ]+[ (1,j) for j in xrange(1,11) ]+[ (2,j) for j in xrange(1,46) ]
     permlist=[varvalorder]
-    generate_tree(ct_nogoods, permlist, domains_init)
+    t=generate_tree(ct_nogoods, permlist, domains_init)
+    print_tree(t)
 
 def sumgeqthree():
     # sumgeq-3 on 5 bool vars.
@@ -338,6 +374,36 @@ def sumgeqthree():
     
     generate_tree(nogoods, permlist, domains_init)
 
+def pegsol():
+    # constraint for peg solitaire.
+    nogoods=[]
+    
+    # One combination satisfies the conjunction.
+    nogoods.append([1,0,1,0,0,1,0])
+    
+    for a in range(2):
+        for b in range(2):
+            for c in range(2):
+                for d in range(2):
+                    for e in range(2):
+                        for f in range(2):
+                            if not (a==1 and b==0 and c==1 and d==0 and e==0 and f==1):
+                                # not satisfies the conjunction
+                                nogoods.append([a,b,c,d,e,f,1])
+    
+    varvalorder=[(a,b) for a in range(7) for b in range(2) ]
+    
+    domains_init=[[0,1],[0,1],[0,1], [0,1], [0,1], [0,1], [0,1]]
+    permlist=[]
+    #gen_all_perms(permlist, [], varvalorder)
+    permlist.append(varvalorder)
+    
+    t=generate_tree(nogoods, permlist, domains_init)
+    print_tree(t)
+    print "Depth: "+str(tree_cost(t))
+    print "Number of nodes: "+str(tree_cost2(t))
+    
+
 # A tree node is a dictionary containing 'var': 0,1,2.... 'val', 'left', 'right', 'pruning'
 
 
@@ -346,6 +412,8 @@ def sumgeqthree():
 #cProfile.run('sports_constraint()')
 
 #and_constraint()
-sumgeqthree()
+pegsol()
+
+#sports_constraint()
 
 
