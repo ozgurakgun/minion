@@ -19,6 +19,7 @@ noMoves=76
 
 
 useTest=False  # Use the test constraint.
+useMin=True    # Use min instead of reify sumgeq
 
 cse=True   # do cse on the eq constraints between bState vars.
 
@@ -120,6 +121,13 @@ def printpegsol(startField):
                             print "bState[%d, %d], bState[%d, %d],"%(step, middlefield, step+1, middlefield)
                             print "bState[%d, %d], bState[%d, %d]"%(step, f2, step+1, f2)
                             print ", moves[%d, %d]])"%(step, mv)
+                        elif useMin:
+                            print "min(["
+                            # six literals on bState vars.
+                            print "bState[%d, %d], !bState[%d, %d],"%(step, f1, step+1, f1)
+                            print "bState[%d, %d], !bState[%d, %d],"%(step, middlefield, step+1, middlefield)
+                            print "!bState[%d, %d], bState[%d, %d]"%(step, f2, step+1, f2)
+                            print "], moves[%d, %d])"%(step, mv)
                         else:
                             print "reify(sumgeq(["
                             # six literals on bState vars.
@@ -162,6 +170,6 @@ def printpegsol(startField):
     print "**EOF**"
 
 
-printpegsol(17)
+printpegsol(9)
 
 
