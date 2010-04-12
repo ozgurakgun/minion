@@ -248,10 +248,10 @@ double get_entropy(const T& data, int pos)
 
     for(int i = 0; i < c_true.first.size(); ++i)
     {
-        entropy += e_log(c_true.first[i]/(1.0*data.maps.size()));
-        entropy += e_log(c_true.second[i]/(1.0*data.maps.size()));
-        entropy += e_log(c_false.first[i]/(1.0*data.maps.size()));
-        entropy += e_log(c_false.second[i]/(1.0*data.maps.size()));
+        entropy += e_log(c_true.first[i]);
+        entropy += e_log(c_true.second[i]);
+        entropy += e_log(c_false.first[i]);
+        entropy += e_log(c_false.second[i]);
     }
 
     return entropy;
@@ -288,9 +288,205 @@ bool is_fail_node(const counts& c)
 
 
 
-TreeVertex* build_tree(const DataList& data, int best_size)
+
+TreeVertex* build_tree_heuristic3(const DataList& data)
 {
-    if(best_size <= 0)
+    counts c = data_count(data.maps);
+    pair<bool, InData> out = can_finish_tree(c);
+    if(out.first)
+    {
+        // Check if we can fail at this node.
+        if(is_fail_node(c))
+            return TreeVertex::FailTreeVertex();
+        else
+            return new TreeVertex(out.second);
+    }
+    else
+    {
+        double entropy = get_entropy(data, 0);
+        int entropy_pos = 0;
+        int second_entropy_pos = 0;
+        int third_entropy_pos = 0;
+        for(int pos = 1; pos < dcount; ++pos)
+        {
+            double new_entropy = get_entropy(data, pos);
+            if(new_entropy < entropy)
+            {
+                entropy = new_entropy;
+                third_entropy_pos = second_entropy_pos;
+                second_entropy_pos = entropy_pos;
+                entropy_pos = pos;
+            }
+        }
+
+        DataSplit s;
+        split_data(data, entropy_pos, s);
+        assert(!s.true_data.empty() && !s.false_data.empty());
+        TreeVertex* true_v = build_tree_heuristic3(s.true_data);
+        TreeVertex* false_v = build_tree_heuristic3(s.false_data);
+        TreeVertex* min_vertex = new TreeVertex(true_v, false_v, entropy_pos);
+        {
+        DataSplit s2;
+        split_data(data, second_entropy_pos, s2);
+        if(!s2.true_data.empty() && !s2.false_data.empty())
+        {
+            TreeVertex* true_v2 = build_tree_heuristic3(s2.true_data);
+            TreeVertex* false_v2 = build_tree_heuristic3(s2.false_data);
+            TreeVertex* min_vertex2 = new TreeVertex(true_v2, false_v2,
+                                                     second_entropy_pos);
+            int s_depth = min_vertex->depth();
+            int s_size = min_vertex->size();
+            int s2_depth = min_vertex2->depth();
+            int s2_size = min_vertex2->size();
+
+            if(s2_depth < s_depth || 
+                    ( (s2_depth == s_depth) && (s2_size < s_size) ))
+            {
+              delete min_vertex;
+              min_vertex = min_vertex2;
+            }
+            else
+                delete min_vertex2;
+        }
+        }
+        {
+         DataSplit s2;
+        split_data(data, third_entropy_pos, s2);
+        if(!s2.true_data.empty() && !s2.false_data.empty())
+        {
+            TreeVertex* true_v2 = build_tree_heuristic3(s2.true_data);
+            TreeVertex* false_v2 = build_tree_heuristic3(s2.false_data);
+            TreeVertex* min_vertex2 = new TreeVertex(true_v2, false_v2,
+                                                     third_entropy_pos);
+            int s_depth = min_vertex->depth();
+            int s_size = min_vertex->size();
+            int s2_depth = min_vertex2->depth();
+            int s2_size = min_vertex2->size();
+
+            if(s2_depth < s_depth || 
+                    ( (s2_depth == s_depth) && (s2_size < s_size) ))
+            {
+              delete min_vertex;
+              min_vertex = min_vertex2;
+            }
+            else
+                delete min_vertex2;
+        }
+        }
+
+        return min_vertex;
+    }
+}
+
+
+TreeVertex* build_tree_heuristic(const DataList& data)
+{
+    counts c = data_count(data.maps);
+    pair<bool, InData> out = can_finish_tree(c);
+    if(out.first)
+    {
+        // Check if we can fail at this node.
+        if(is_fail_node(c))
+            return TreeVertex::FailTreeVertex();
+        else
+            return new TreeVertex(out.second);
+    }
+    else
+    {
+        double entropy = get_entropy(data, 0);
+        int entropy_pos = 0;
+        int second_entropy_pos = 0;
+        for(int pos = 1; pos < dcount; ++pos)
+        {
+            double new_entropy = get_entropy(data, pos);
+            if(new_entropy < entropy)
+            {
+                entropy = new_entropy;
+                second_entropy_pos = entropy_pos;
+                entropy_pos = pos;
+            }
+        }
+
+        DataSplit s;
+        split_data(data, entropy_pos, s);
+        assert(!s.true_data.empty() && !s.false_data.empty());
+        TreeVertex* true_v = build_tree_heuristic(s.true_data);
+        TreeVertex* false_v = build_tree_heuristic(s.false_data);
+        TreeVertex* min_vertex = new TreeVertex(true_v, false_v, entropy_pos);
+
+        return min_vertex;
+    }
+}
+
+TreeVertex* build_tree_heuristic2(const DataList& data, int depth = 2)
+{
+    if(depth == 0)
+        return build_tree_heuristic(data);
+
+    counts c = data_count(data.maps);
+    pair<bool, InData> out = can_finish_tree(c);
+    if(out.first)
+    {
+        // Check if we can fail at this node.
+        if(is_fail_node(c))
+            return TreeVertex::FailTreeVertex();
+        else
+            return new TreeVertex(out.second);
+    }
+    else
+    {
+        double entropy = get_entropy(data, 0);
+        int entropy_pos = 0;
+        int second_entropy_pos = 0;
+        for(int pos = 1; pos < dcount; ++pos)
+        {
+            double new_entropy = get_entropy(data, pos);
+            if(new_entropy < entropy)
+            {
+                entropy = new_entropy;
+                second_entropy_pos = entropy_pos;
+                entropy_pos = pos;
+            }
+        }
+
+        DataSplit s;
+        split_data(data, entropy_pos, s);
+        assert(!s.true_data.empty() && !s.false_data.empty());
+        TreeVertex* true_v = build_tree_heuristic2(s.true_data, depth);
+        TreeVertex* false_v = build_tree_heuristic2(s.false_data, depth);
+        TreeVertex* min_vertex = new TreeVertex(true_v, false_v, entropy_pos);
+
+        DataSplit s2;
+        split_data(data, second_entropy_pos, s2);
+        if(!s2.true_data.empty() && !s2.false_data.empty())
+        {
+            TreeVertex* true_v2 = build_tree_heuristic2(s2.true_data, depth-1);
+            TreeVertex* false_v2 = build_tree_heuristic2(s2.false_data,depth-1);
+            TreeVertex* min_vertex2 = new TreeVertex(true_v2, false_v2,
+                                                     second_entropy_pos);
+            int s_depth = min_vertex->depth();
+            int s_size = min_vertex->size();
+            int s2_depth = min_vertex2->depth();
+            int s2_size = min_vertex2->size();
+
+            if(s2_depth < s_depth || 
+                    ( (s2_depth == s_depth) && (s2_size < s_size) ))
+            {
+              delete min_vertex;
+              min_vertex = min_vertex2;
+            }
+            else
+                delete min_vertex2;
+        }
+        return min_vertex;
+    }
+}
+
+
+template<int useHeuristicAfterFirstLevel =  0>
+TreeVertex* build_tree(const DataList& data, pair<int, int> best_size)
+{
+    if(best_size.first <= 0 || best_size.second <= 0)
       return NULL;
     
 
@@ -307,7 +503,7 @@ TreeVertex* build_tree(const DataList& data, int best_size)
     else
     {
         TreeVertex* min_vertex = NULL;
-        int min_vertex_depth =  best_size - 1;
+        int min_vertex_depth =  best_size.first - 1;
         int min_vertex_size = 0;
         // Split on pos;
         DataSplit s;
@@ -316,10 +512,36 @@ TreeVertex* build_tree(const DataList& data, int best_size)
             split_data(data, pos, s);
             if(!s.true_data.empty() && !s.false_data.empty())
             {
-                TreeVertex* true_v = build_tree(s.true_data, min_vertex_depth);
+
+                TreeVertex* true_v = NULL;
+                switch(useHeuristicAfterFirstLevel)
+                {
+                    case 0:
+                         true_v = build_tree(s.true_data,
+                        make_pair(min_vertex_depth, best_size.second));
+                    break;
+                    case 1:
+                    true_v = build_tree_heuristic(s.true_data);
+                    break;
+                    case 2:
+                    true_v = build_tree_heuristic2(s.true_data);
+                }
                 if(true_v != NULL)
                 {
-                    TreeVertex* false_v = build_tree(s.false_data, min_vertex_depth);
+                    TreeVertex* false_v = NULL;
+                    switch(useHeuristicAfterFirstLevel)
+                    {
+                        case 0:
+                            false_v = build_tree(s.false_data,
+                             make_pair(min_vertex_depth, best_size.second - true_v->size()));
+                        break;
+                        case 1:
+                        false_v = build_tree_heuristic(s.false_data);
+                        break;
+                        case 2:
+                        false_v = build_tree_heuristic2(s.false_data);
+                    }
+
                     if(false_v == NULL)
                     {
                         delete true_v;
@@ -348,42 +570,6 @@ TreeVertex* build_tree(const DataList& data, int best_size)
     }
 }
 
-TreeVertex* build_tree_heuristic(const DataList& data)
-{
-    counts c = data_count(data.maps);
-    pair<bool, InData> out = can_finish_tree(c);
-    if(out.first)
-    {
-        // Check if we can fail at this node.
-        if(is_fail_node(c))
-            return TreeVertex::FailTreeVertex();
-        else
-            return new TreeVertex(out.second);
-    }
-    else
-    {
-        double entropy = get_entropy(data, 0);
-        int entropy_pos = 0;
-        for(int pos = 1; pos < dcount; ++pos)
-        {
-            double new_entropy = get_entropy(data, pos);
-            if(new_entropy < entropy)
-            {
-                entropy = new_entropy;
-                entropy_pos = pos;
-            }
-        }
-
-        DataSplit s;
-        split_data(data, entropy_pos, s);
-        assert(!s.true_data.empty() && !s.false_data.empty());
-        TreeVertex* true_v = build_tree_heuristic(s.true_data);
-        TreeVertex* false_v = build_tree_heuristic(s.false_data);
-        TreeVertex* min_vertex = new TreeVertex(true_v, false_v, entropy_pos);
-        return min_vertex;
-    }
-
-}
 
 void output_tree(TreeVertex* v, const DataList& data, string indent = "")
 {
@@ -404,50 +590,112 @@ void output_tree(TreeVertex* v, const DataList& data, string indent = "")
 
 }
 
+#include <fstream>
 
+vector<array<int, vcount>> read_file(char* filename)
+{
+    ifstream f(filename);
+    int tuples;
+    int arity;
+    f >> tuples;
+    f >> arity;
+    assert(arity == vcount);
+    vector<array<int, vcount>> v;
+    for(int i = 0; i < tuples; ++i)
+    {
+        array<int, vcount> a;
+        for(int i = 0; i < vcount; ++i)
+            f >> a[i];
+        v.push_back(a);
+    }
+    std::sort(v.begin(), v.end());
+    return v;
+}
 
 int main(int argc, char** argv)
 {
-    DataList data = build_datapoints(CurrentConstraint());
+    DataList data;
+    if(argc == 3)
+    {
+      //  readfile RF;
+      //  RF.v = read_file(argv[2]);
+      //  data = build_datapoints(RF);
+    }
+    else
+        data = build_datapoints(CurrentConstraint());
 
-    cerr << "Finished building datapoints" << endl;
 
-    if(argc > 1 && argv[1] == string("-dumpcon"))
+    //cerr << "Finished building datapoints" << endl;
+
+    if(argc != 2 && argc != 3)
+    {
+        cout << "Usage: ./prop_tree [-dumpcon/-split/-heuristic/-optimal] <filename>";
+    }
+    else if(argv[1] == string("-dumpcon"))
     {
         vector<array<int, vcount>> tuples = build_constraint(CurrentConstraint());
 
     }
 
-    if(argc > 1 && argv[1] == string("-split"))
+    else if(argv[1] == string("-split"))
     {
         cout << "switch(lit) {\n";
         for(int i = 0; i < dcount; ++i)
         {
             cout << "case " << i << ":\n";
             DataList lit_data = filterDataList(data, i, false);
-            TreeVertex* v= build_tree(lit_data, 999999);
+            TreeVertex* v= build_tree(lit_data, make_pair(999999, 999999));
             v->print();
            // output_tree(v, lit_data);
            cout << "break;\n";
         }
         cout << "default: abort(); }\n";
     }
-    else if (argc > 1 && argv[1] == string("-heuristic"))
+    else if (argv[1] == string("-heuristic"))
     {
         TreeVertex* v = build_tree_heuristic(data);
-        cerr << "Tree depth:" << v->depth() << "  Tree size: " << v->size() << endl;
+        cout << "// Tree depth:" << v->depth() << "  Tree size: " << v->size() << endl;
         v->print();
        // output_tree(v, data);
     }
-    else
+    else if (argv[1] == string("-heuristic2"))
     {
-        TreeVertex* v = build_tree(data, 999999);
-        cerr << "Tree depth:" << v->depth() << "  Tree size: " << v->size() << endl;
+        TreeVertex* v = build_tree_heuristic2(data);
+        cout << "// Tree depth:" << v->depth() << "  Tree size: " << v->size() << endl;
         v->print();
        // output_tree(v, data);
-
-
     }
+    else if (argv[1] == string("-heuristic3"))
+    {
+        TreeVertex* v = build_tree_heuristic3(data);
+        cout << "// Tree depth:" << v->depth() << "  Tree size: " << v->size() << endl;
+        v->print();
+       // output_tree(v, data);
+    }
+    else if (argv[1] == string("-heuristic2X"))
+    {
+        TreeVertex* v = build_tree<2>(data, make_pair(999999, 999999));
+        cout << "// Tree depth:" << v->depth() << "  Tree size: " << v->size() << endl;
+        v->print();
+       // output_tree(v, data);
+    }
+    else if (argv[1] == string("-heuristicX"))
+    {
+        TreeVertex* v = build_tree<1>(data, make_pair(999999, 999999));
+        cout << "// Tree depth:" << v->depth() << "  Tree size: " << v->size() << endl;
+        v->print();
+       // output_tree(v, data);
+    }
+
+    else if (argv[1] == string("-optimal"))
+    {
+        TreeVertex* v = build_tree(data, make_pair(999999, 999999));
+        cout << "// Tree depth:" << v->depth() << "  Tree size: " << v->size() << endl;
+        v->print();
+       // output_tree(v, data);
+    }
+    else 
+    {  cout << "Usage: ./prop_tree [-dumpcon/-split/-heuristic/-optimal] <filename>"; }
 }
 
 
