@@ -117,6 +117,7 @@ template<typename BoolVar, bool DoWatchAssignment>
 
   virtual void propagate(int i, DomainDelta domain)
   {
+    PROP_INFO_ADDONE(CounterA);
     PROP_INFO_ADDONE(ReifyTrue);
     P("Static propagate start");
     if(constraint_locked)
@@ -174,6 +175,8 @@ template<typename BoolVar, bool DoWatchAssignment>
       return;
     }
 
+    PROP_INFO_ADDONE(CounterC);
+
     if(full_propagate_called)
     {
       P("Pass triggers to children");
@@ -183,6 +186,7 @@ template<typename BoolVar, bool DoWatchAssignment>
     else
     {
       P("Remove unused trigger");
+      PROP_INFO_ADDONE(CounterB);
       // This is an optimisation.
       releaseTrigger(stateObj, trig);
     }
