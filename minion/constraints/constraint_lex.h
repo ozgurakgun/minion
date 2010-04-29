@@ -62,6 +62,8 @@ for a similar constraint with strict lexicographic inequality.
 #ifndef CONSTRAINT_LEX_H
 #define CONSTRAINT_LEX_H
 
+#define DYNAMIC_LEX
+
 template<typename VarArray1, typename VarArray2, BOOL Less = false>
 struct LexLeqConstraint : public AbstractConstraint
 {
@@ -82,7 +84,22 @@ struct LexLeqConstraint : public AbstractConstraint
   LexLeqConstraint(StateObj* _stateObj,const VarArray1& _x, const VarArray2& _y) :
     AbstractConstraint(_stateObj), alpha(_stateObj), beta(_stateObj), F(_stateObj), x(_x), y(_y)
   { D_ASSERT(x.size() == y.size()); }
-  
+ 
+#ifdef DYNAMIC_LEX
+  int dynamic_trigger_count()
+  { return x.size() * 2; }
+
+  void attach_triggers()
+  {
+    DynamicTrigger* dt = dynamic_trigger_start();
+    for(int i = 0; i < x.size(); ++i)
+    {
+        x[i].addDynamicTrigger(dt + (i*2), LowerBound);
+        y[i].addDynamicTrigger(dt + (i*2) + 1, UpperBound);
+    }
+  }
+
+#else
   virtual triggerCollection setup_internal()
   {
     triggerCollection t;
@@ -108,7 +125,7 @@ struct LexLeqConstraint : public AbstractConstraint
     F = 0;
     return t;
   }
-  
+#endif
   virtual AbstractConstraint* reverse_constraint()
   {
     return new LexLeqConstraint<VarArray2, VarArray1,!Less>(stateObj,y,x);
@@ -160,9 +177,20 @@ struct LexLeqConstraint : public AbstractConstraint
     }
     getState(stateObj).setFailed(true);
     
+  
+  }
+  
+  virtual void propagate(DynamicTrigger* dt)
+  {
+      do_propagate( (dt - dynamic_trigger_start()) / 2);
   }
   
   virtual void propagate(int i, DomainDelta)
+  {
+      do_propagate(i);
+  }
+
+  void do_propagate(int i)
   {
     PROP_INFO_ADDONE(Lex);
     if (F)
@@ -267,6 +295,9 @@ struct LexLeqConstraint : public AbstractConstraint
   
   virtual void full_propagate()
   {
+#ifdef DYNAMIC_LEX
+      attach_triggers();
+#endif
     int i, n = x.size() ;
     for (i = 0; i < n; i++) {
       if (!x[i].isAssigned()) break ;    
