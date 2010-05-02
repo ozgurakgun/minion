@@ -1,0 +1,237 @@
+Index: minion/constraints/sum_constraints/constraint_fullsum.h
+===================================================================
+--- minion/constraints/sum_constraints/constraint_fullsum.h	(revision 2539)
++++ minion/constraints/sum_constraints/constraint_fullsum.h	(working copy)
+@@ -141,6 +141,7 @@
+   
+   virtual BOOL check_unsat(int prop_val, DomainDelta domain_change)
+   {
++    PROP_INFO_ADDONE(FullsumCheckUnsat);
+     DomainInt sum = var_array_min_sum;
+     if(prop_val != -1)
+     { // One of the array changed
+@@ -152,6 +153,7 @@
+   
+   virtual BOOL full_check_unsat()
+   {
++    PROP_INFO_ADDONE(FullsumFullCheckUnsat);
+     DomainInt min_sum = get_real_min_sum();
+     DomainInt max_diff = get_real_max_diff();
+     
+@@ -196,6 +198,7 @@
+   
+   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+   {
++    PROP_INFO_ADDONE(FullsumGetSatAssg);
+     P("GSA");
+     int sum_value = 0;
+     int v_size = var_array.size();
+Index: minion/constraints/sum_constraints/constraint_lightsum.h
+===================================================================
+--- minion/constraints/sum_constraints/constraint_lightsum.h	(revision 2539)
++++ minion/constraints/sum_constraints/constraint_lightsum.h	(working copy)
+@@ -62,6 +62,7 @@
+   
+   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+   {
++    PROP_INFO_ADDONE(LightsumGetSatAssg);
+     int sum_value = 0;
+     int v_size = var_array.size();
+     
+@@ -107,11 +108,8 @@
+     for(unsigned i = 0; i < size; ++i)
+       var_array[i].setMax(var_array[i].getMin() + slack);
+   }
+-  
+-  virtual BOOL full_check_unsat()
+-  { return check_unsat(0, 0); }
+-  
+-  virtual BOOL check_unsat(int, DomainDelta)
++
++  inline BOOL check_unsat_int()
+   {
+     DomainInt min_sum = 0;
+     for(unsigned i = 0; i < size; ++i)
+@@ -119,6 +117,18 @@
+     return min_sum > var_sum.getMax();
+   }
+   
++  virtual BOOL full_check_unsat()
++  { 
++    PROP_INFO_ADDONE(LightsumFullCheckUnsat);
++    return check_unsat_int(); 
++  }
++  
++  virtual BOOL check_unsat(int, DomainDelta)
++  {
++    PROP_INFO_ADDONE(LightsumCheckUnsat);
++    return check_unsat_int();
++  }
++  
+   virtual void full_propagate()
+   {
+     propagate(-1,0);
+Index: minion/constraints/reify.h
+===================================================================
+--- minion/constraints/reify.h	(revision 2539)
++++ minion/constraints/reify.h	(working copy)
+@@ -78,7 +78,7 @@
+ //#define P(x) cout << x << endl
+ #define P(x)
+ 
+-#define NEWREIFY
++//#define NEWREIFY
+ //#define NODETRICK   // This is broken! leave switched off.
+ 
+ #ifdef NEWREIFY
+Index: minion/constraints/alldiff_common.h
+===================================================================
+--- minion/constraints/alldiff_common.h	(revision 2539)
++++ minion/constraints/alldiff_common.h	(working copy)
+@@ -257,18 +257,19 @@
+   
+   typedef typename VarArray::value_type VarRef;
+   virtual AbstractConstraint* reverse_constraint()
+-  { // w-or of pairwise equality.
+-      vector<AbstractConstraint*> con;
+-      for(int i=0; i<var_array.size(); i++)
+-      {
+-          for(int j=i+1; j<var_array.size(); j++)
+-          {
+-              EqualConstraint<VarRef, VarRef>* t=new EqualConstraint<VarRef, VarRef>(stateObj, var_array[i], var_array[j]);
+-              con.push_back((AbstractConstraint*) t);
+-          }
+-      }
+-      return new Dynamic_OR(stateObj, con);
+-  }
++  { return new CheckAssignConstraint<VarArray, GacAlldiff>(stateObj, var_array, *this); }
++/*   { // w-or of pairwise equality. */
++/*       vector<AbstractConstraint*> con; */
++/*       for(int i=0; i<var_array.size(); i++) */
++/*       { */
++/*           for(int j=i+1; j<var_array.size(); j++) */
++/*           { */
++/*               EqualConstraint<VarRef, VarRef>* t=new EqualConstraint<VarRef, VarRef>(stateObj, var_array[i], var_array[j]); */
++/*               con.push_back((AbstractConstraint*) t); */
++/*           } */
++/*       } */
++/*       return new Dynamic_OR(stateObj, con); */
++/*   } */
+   
+   smallset to_process;  // set of vars to process.
+   
+@@ -969,6 +970,43 @@
+   
+   virtual BOOL full_check_unsat()
+   { 
++<<<<<<< .mine
++      bool matchok=true;
++      for(int i=0; i<numvars; i++)
++      {
++          if(!var_array[i].inDomain(varvalmatching[i]))
++          {
++              matchok=false;
++              break;
++          }
++      }
++      
++      if(!matchok)
++      {
++          if(numvals<numvars) return false; // there can't be a matching.
++          #ifdef INCGRAPH
++            // update the adjacency lists.
++            for(int i=dom_min; i<=dom_max; i++)
++            {
++                for(int j=0; j<adjlistlength[i-dom_min+numvars]; j++)
++                {
++                    int var=adjlist[i-dom_min+numvars][j];
++                    if(!var_array[var].inDomain(i))
++                    {
++                        // swap with the last element and remove
++                        adjlist_remove(var, i);
++                        j--; // stay in the same place, dont' skip over the 
++                        // value which was just swapped into the current position.
++                    }
++                }
++            }
++          #endif
++          
++          matchok=bfsmatching(0, numvars-1);
++      }
++      
++      return !matchok;
++=======
+     int v_size = var_array.size();
+     for(int i = 0; i < v_size; ++i)
+     {
+@@ -988,9 +1026,13 @@
+     }
+     
+     return false;
++>>>>>>> .r2539
+   }
+   
+   virtual BOOL check_unsat(int i, DomainDelta)
++<<<<<<< .mine
++  { return full_check_unsat(); }
++=======
+   {
+     int v_size = var_array.size();
+     if(!var_array[i].isAssigned()) return false;
+@@ -1007,6 +1049,7 @@
+     }
+     return false;
+   }
++>>>>>>> .r2539
+   
+   virtual void full_propagate()
+   { 
+Index: minion/constraints/constraint_less.h
+===================================================================
+--- minion/constraints/constraint_less.h	(revision 2539)
++++ minion/constraints/constraint_less.h	(working copy)
+@@ -81,10 +81,16 @@
+   }
+   
+   virtual BOOL check_unsat(int,DomainDelta)
+-  { return (x.getMin() > y.getMax() + offset); }
++  { 
++    PROP_INFO_ADDONE(IneqCheckUnsat);
++    return (x.getMin() > y.getMax() + offset); 
++  }
+   
+   virtual BOOL full_check_unsat()
+-  { return (x.getMin() > y.getMax() + offset); }
++  { 
++    PROP_INFO_ADDONE(IneqFullCheckUnsat);
++    return (x.getMin() > y.getMax() + offset); 
++  }
+   
+   virtual void full_propagate()
+   {
+@@ -100,6 +106,7 @@
+   
+   virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+   {
++    PROP_INFO_ADDONE(IneqGetSatAssg);
+     int x_min = x.getMin();
+     int y_max = y.getMax();
+     
+Index: CMakeLists.txt
+===================================================================
+--- CMakeLists.txt	(revision 2539)
++++ CMakeLists.txt	(working copy)
+@@ -346,6 +346,13 @@
+     add_definitions(-DWEIGHTED_TRIGGERS)
+ endif()
+ 
++option(NEWREIFY "" OFF)
++if(NEWREIFY)
++  message(STATUS "Enabling new reify")
++  set(BINARY "${BINARY}-newreify")
++  add_definitions(-DNEWREIFY)
++endif()
++
+ option(INFO "" OFF)
+ if(INFO)
+     message(STATUS "Enabling INFO")
