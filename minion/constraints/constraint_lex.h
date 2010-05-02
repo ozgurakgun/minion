@@ -62,9 +62,7 @@ for a similar constraint with strict lexicographic inequality.
 #ifndef CONSTRAINT_LEX_H
 #define CONSTRAINT_LEX_H
 
-#ifdef NEWREIFY
 #define DYNAMIC_LEX
-#endif
 
 template<typename VarArray1, typename VarArray2, BOOL Less = false>
 struct LexLeqConstraint : public AbstractConstraint
