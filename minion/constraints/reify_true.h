@@ -133,8 +133,6 @@ template<typename BoolVar, bool DoWatchAssignment>
         return;
     }
 
-    PROP_INFO_ADDONE(CounterD);
-
     if(full_propagate_called)
     {
       P("Already doing static full propagate");
