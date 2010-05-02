@@ -153,8 +153,6 @@ template<typename BoolVar, bool DoWatchAssignment>
     if(constraint_locked)
       return;
 
-    PROP_INFO_ADDONE(CounterE);
-
     DynamicTrigger* dt = dynamic_trigger_start();
 
     if(DoWatchAssignment && trig >= dt && trig < dt + dynamic_trigger_count())
@@ -199,7 +197,6 @@ template<typename BoolVar, bool DoWatchAssignment>
   template<typename T, typename Vars, typename Trigger>
   void watch_assignment(const T& assignment, Vars& vars, Trigger* trig)
   {
-      PROP_INFO_ADDONE(CounterF);
     for(int i = 0; i < assignment.size(); ++i)
     {
       D_ASSERT(vars[assignment[i].first].inDomain(assignment[i].second));
