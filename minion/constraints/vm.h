@@ -177,8 +177,8 @@ struct VMConstraint : public AbstractConstraint
   void execute_symmetric_vm(Data* VM_start, int length)
   {
     int InPtr = 0;
-    int domsize = 2;
-    int lits = 20;
+    int domsize = 3;
+    int lits = 30;
     int state = 0;
     int vals[lits];
     int newvals[lits];
@@ -273,7 +273,8 @@ struct VMConstraint : public AbstractConstraint
             }
             break;
             default:
-              FAIL_EXIT("Invalid VM Instruction");
+              P(" Invalid instruction: " << get(InPtr) << " at " << InPtr);
+              FAIL_EXIT("Invalid VM Instruction ");
         }
     }
   }
