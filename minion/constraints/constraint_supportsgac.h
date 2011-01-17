@@ -22,9 +22,10 @@
 // Does it place dynamic triggers for the supports.
 #define SupportsGACUseDT true
 
-// Switches on the zeroVals array. Possibly 
-// This flag is a slowdown on qg-supportsgac-7-9
-#define SupportsGACUseZeroVals false
+// Switches on the zeroVals array. 
+// This flag is a small slowdown on qg-supportsgac-7-9 -findallsols
+// 
+#define SupportsGACUseZeroVals true
 
 template<typename VarArray>
 struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
@@ -124,7 +125,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         for(int i=0; i<vars.size(); i++) {
             zeroVals[i].reserve(numvals);  // reserve the maximum length.
             for(int j=dom_min; j<=dom_max; j++) zeroVals[i].push_back(j);
-            inZeroVals.resize(numvals, true);
+            inZeroVals[i].resize(numvals, true);
         }
         #endif
         
