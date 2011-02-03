@@ -80,9 +80,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     
     void setLit(void* sup, int litnum, pair<int,int> assign) {
         int* litsizeptr=((int*)   (((void**)sup)+(vars.size()*2)) );
-        int litsize=*(litsizeptr);
         pair<int,int>* startptr=((pair<int,int>*)   (litsizeptr+1));
-        D_ASSERT(litnum<litsize);
+        D_ASSERT(litnum<(*(litsizeptr)));
         startptr[litnum]=assign;
     }
     
