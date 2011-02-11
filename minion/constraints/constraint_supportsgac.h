@@ -292,7 +292,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     struct BTRecord {
         bool is_removal;   // removal or addition was made. 
 	// HERE
-	literal_type lit;
+	int var;
+	int val;
         Support* sup;
         
         friend std::ostream& operator<<(std::ostream& o, const BTRecord& rec)
@@ -315,7 +316,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     vector<BTRecord> backtrack_stack;
     
     void mark() {
-        struct BTRecord temp = { false, 0 };
+        struct BTRecord temp = { false, 0, 0, 0 };
         backtrack_stack.push_back(temp);  // marker.
     }
     
@@ -325,6 +326,19 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         while(backtrack_stack.back().sup != 0) {
             BTRecord temp=backtrack_stack.back();
             backtrack_stack.pop_back();
+	    if (! (temp.sup->active)) {
+		 if (hasNoKnownSupport(var,val)) {
+			 addsupportInternal(0,temp.sup)); 
+		 }
+		 else {
+			 temp.sup->numLastSupported--;
+		 }
+			 // we need to add support back in
+	    }
+		    // else there is nothing to do
+
+
+	    if(hasNoKnownSupport)
             if(temp.is_removal) {
                 addSupportInternal(0, temp.sup);
             }
@@ -366,7 +380,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             sup_internal=sup;
         }
         vector<pair<int, int> >& litlist_internal=sup_internal->literals;
-        
+
+
+        sup_internal->active = true; 
+
         //cout << "Adding support (internal) :" << litlist_internal << endl;
         //D_ASSERT(litlist_internal.size()>0);  // It should be possible to deal with empty supports, but currently they wil
         // cause a memory leak. 
@@ -408,11 +425,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     }
     
     void deleteSupport(Support* sup) {
-        struct BTRecord temp;
-        temp.is_removal=true;
-        temp.sup=sup;
-        backtrack_stack.push_back(temp);
-        
         deleteSupportInternal(sup, false);
     }
     
@@ -420,6 +432,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         D_ASSERT(sup!=0);
         
 	sup->active = false; 
+	sup->numLastSupported = 0; 
+	//
+	// oldIndex is where supportsPerVar = numsupports used to be 
+	// Off by 1 error?
+
+	int oldIndex  = supportNumPtrs[supports];
 
         // Remove sup from supportListPerLit
         vector<Support*>& prev=sup->prev;
@@ -427,11 +445,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         vector<pair<int, int> >& litlist=sup->literals;
         //cout << "Removing support (internal) :" << litlist << endl;
         
-	// oldIndex is where supportsPerVar = numsupports used to be 
-	// Off by 1 error?
-
-	int oldIndex  = supportNumPtrs[supports];
-	
         for(int i=0; i<litlist.size(); i++) {
             int var=litlist[i].first;
             int valoffset=litlist[i].second-dom_min;
@@ -469,6 +482,23 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             // Remove trigger if this is the last support containing var,val.
             if(SupportsGACUseDT) { detach_trigger(var, litlist[i].second); }
             }
+
+QUESTION: When literal is deleted and it has an explicit support.   (If not we are not triggered on it.)   
+
+		  THEN 
+		  How do we add exactly one support to BT stack for it.  But not zero and not many?
+
+
+CLAIM: Could check for indomain here because each lit can only be added once we think. 
+
+CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a trigger for a deleted lit, 
+	which is a waste of time.   It won't get called but will get reattached on backtracking.   Busywork.  
+		If we want we can be lazy and wait until a trigger is called and detach it if it is empty.  Because of 
+		backtrack stability we don't need to reattach it. 
+
+		Oops, but how do we know if trigger is reattached or not when we add a support.  Yet another Bool?
+
+
             
             
             // Update partition
@@ -623,13 +653,22 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    
 	    litsWithLostExplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 	    
-	    if(vars[var].inDomain(val) && hasNoKnownSupport(var,val)) {
-		    if (! findSupportsIncrementalHelper(var,val) ) { 
+	    // HERE 
+	    // Need to do out of domain but has known support so it will have support on BT.
+	    
+	    if(vars[var].inDomain(val)) {
+		    if (hasNoKnownSupport(var,val) && ! findSupportsIncrementalHelper(var,val) ) { 
 			    // removed val so must annotate why
 			    // HERE
 			    lastSupportPerLit[var][val-dom_min]->numLastSupported++ ;
-			    deletionQueue.push_back(make_pair(lastSupportPerLit[var][val-dom_min],make_pair(var,val)));
+        		    struct BTRecord backtrackInfo = { false, var, val, lastSupportPerLit[var][val-dom_min] };
+			    backtrack_stack.push_back(backtrackInfo);
 		    }
+	    }
+	    else { 
+		  lastSupportPerLit[var][val-dom_min]->numLastSupported++ ;
+        	  struct BTRecord backtrackInfo = { false, var, val, lastSupportPerLit[var][val-dom_min] };
+		  backtrack_stack.push_back(backtrackInfo);
 	    }
 	}
 
@@ -661,14 +700,23 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    #endif
 		            if (! findSupportsIncrementalHelper(var,val) ) {
 				    lastSupportPerVar[var]->numLastSupported++;
+        		            struct BTRecord backtrackInfo = { false, var, val, lastSupportPerVar[var] };
+			            backtrack_stack.push_back(backtrackInfo);
 			    }
 			    // No longer do we remove j from zerovals in this case if support is found.
 			    // However this is correct as it can be removed lazily next time the list is traversed
 			    // And we might even get lucky and save this small amount of work.
 			} // } to trick vim bracket matching
 			else {
-			    //HERE
+			    // This is a nasty case because we are doing backtrack stability
+			    // var=val has been removed, and it must have been by something outside this 
+			    // constraint.  Therefore when it is restored we need to make sure it has 
+			    // support in this constraint.   Since it has no explicit support, its last 
+			    // support must be this implicit support we are deleting.  So we have to restore
+			    // it on bracktracking.
 			    lastSupportPerVar[var]->numLastSupported++;
+        		    struct BTRecord backtrackInfo = { false, var, val, lastSupportPerVar[var]};
+			    backtrack_stack.push_back(backtrackInfo);
 			}
 		    }    // } to trick vim bracket matching
 		}
@@ -753,7 +801,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     // HERE will need to be changed for backtrack stability, i.e. added even if isAssigned. Or use FL
     
-    #define ADDTOASSIGNMENT(var, val) if(!vars[var].isAssigned()) assignment.push_back(make_pair(var,val));
+    // #define ADDTOASSIGNMENT(var, val) if(!vars[var].isAssigned()) assignment.push_back(make_pair(var,val));
+    #define ADDTOASSIGNMENT(var, val) assignment.push_back(make_pair(var,val));
     
     // For full-length support variant:
     #define ADDTOASSIGNMENTFL(var, val) assignment.push_back(make_pair(var,val));
