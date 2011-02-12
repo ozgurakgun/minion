@@ -19,7 +19,7 @@
 
 #define UseSquarePackingShort false
 #define UseSquarePackingLong false
-#define UseLexLeqShort true
+#define UseLexLeqShort false
 #define UseLexLeqLong false
 #define UseElementShort true
 #define UseElementLong false
@@ -142,7 +142,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         #if SupportsGACUseZeroVals
         zeroVals.resize(vars.size());
         inZeroVals.resize(vars.size());
-        for(int i<vars.size()-1 ; i >= 0; i--) {
+        for(int i=vars.size()-1 ; i >= 0; i--) {
 	    int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
             zeroVals[i].reserve(numvals_i);  // reserve the maximum length.
             for(int j=dom_min; j<=dom_max; j++) zeroVals[i].push_back(j);
@@ -158,7 +158,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	// Pointers to the last implicit/explicit support for a var/literal
 	//
-	lastSupportPerVar.resize(vars.size(),0):	// actually don't think we care what initial val is
+	lastSupportPerVar.resize(vars.size(),0);	// actually don't think we care what initial val is
 	lastSupportPerLit.resize(vars.size());
 	for(int i=vars.size()-1; i >=0 ; i--) { 
 		lastSupportPerLit[i].resize(vars[i].getInitialMax()-vars[i].getInitialMin()+1,0);
@@ -339,16 +339,16 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             BTRecord temp=backtrack_stack.back();
             backtrack_stack.pop_back();
 	    if (! (temp.sup->active)) {
-		 if (hasNoKnownSupport(var,val)) {
+		 if (hasNoKnownSupport(temp.var,temp.val)) {
 			 // we need to add support back in
-			 addsupportInternal(0,temp.sup)); 
+			 addSupportInternal(0,temp.sup); 
 		 }
 		 else {
 			 // could be clever with -- here but let's play safe
-			 if(tempsup->numLastSupported == 1){ 
+			 if(temp.sup->numLastSupported == 1){ 
 				 // we can add tempsup to supportFreeList
-				 tempsup->next[0]=supportFreeList; 
-				 supportFreeList=tempsup;
+				 temp.sup->next[0]=supportFreeList; 
+				 supportFreeList=temp.sup;
 			 }
 			 else { 
 				 temp.sup->numLastSupported--;
@@ -795,6 +795,7 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
     //printStructures();
     D_ASSERT(!SupportsGACUseDT);  // Should not be here if using dynamic triggers.
     
+    /*
     for(int val=dom_min; val<=dom_max; val++) {
         if(!vars[prop_var].inDomain(val) && supportListPerLit[var][val-dom_min].next[var]!=0) {
             updateCounters(prop_var, val);
@@ -802,6 +803,8 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
     }
     
     findSupportsIncremental();
+    */
+    cout << "Not going to work without dynamic triggers, sorry" << endl ; 
   }
   
     virtual void propagate(DynamicTrigger* dt)
