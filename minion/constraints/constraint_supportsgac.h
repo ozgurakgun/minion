@@ -70,6 +70,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     VarArray vars;
     
     int numvals;
+    int numlits;
     int dom_min;
     int dom_max;
     
@@ -114,16 +115,16 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     ShortSupportsGAC(StateObj* _stateObj, const VarArray& _var_array, TupleList* tuples) : AbstractConstraint(_stateObj), 
     vars(_var_array), supportFreeList(0)
     {
-	    // HERE, initialise new data structures
-	    //
         // Register this with the backtracker.
         getState(stateObj).getGenericBacktracker().add(this);
         
         dom_max=vars[0].getInitialMax();
         dom_min=vars[0].getInitialMin();
-        for(int i=vars.size()-1; i > 0 ; i-- {
+	numlits=dom_max-dom_min+1;
+        for(int i=vars.size()-1; i > 0 ; i--) {
             if(vars[i].getInitialMin()<dom_min) dom_min=vars[i].getInitialMin();
             if(vars[i].getInitialMax()>dom_max) dom_max=vars[i].getInitialMax();
+	    numlits += vars[i].getInitialMax()-vars[i].getInitialMin()+1;
         }
         numvals=dom_max-dom_min+1;
         
@@ -133,36 +134,46 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         
         supportListPerLit.resize(vars.size());
         for(int i=0; i<vars.size(); i++) {
-            supportListPerLit[i].resize(numvals);  // blank Support objects.
-            for(int j=0; j<numvals; j++) supportListPerLit[i][j].next.resize(vars.size());
+	    int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
+            supportListPerLit[i].resize(numvals_i);  // blank Support objects.
+            for(int j=0; j<numvals_i; j++) supportListPerLit[i][j].next.resize(vars.size());
         }
         
         #if SupportsGACUseZeroVals
         zeroVals.resize(vars.size());
         inZeroVals.resize(vars.size());
-        for(int i<vars.size()-1 ; i >= 0; i-- {
-            zeroVals[i].reserve(numvals);  // reserve the maximum length.
+        for(int i<vars.size()-1 ; i >= 0; i--) {
+	    int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
+            zeroVals[i].reserve(numvals_i);  // reserve the maximum length.
             for(int j=dom_min; j<=dom_max; j++) zeroVals[i].push_back(j);
-            inZeroVals[i].resize(numvals, true);
+            inZeroVals[i].resize(numvals_i, true);
         }
         #endif
 	
 	// Lists (vectors) of literals/vars that have lost support.
 	// Set this up to insist that everything needs to have support found for it on full propagate.
 	
-        litsWithLostExplicitSupport.reserve(vars.size()*numvals); // max poss size, not necessarily optimal choice here
+        litsWithLostExplicitSupport.reserve(numlits); // max poss size, not necessarily optimal choice here
         varsWithLostImplicitSupport.reserve(vars.size());
-       
+
+	// Pointers to the last implicit/explicit support for a var/literal
+	//
+	lastSupportPerVar.resize(vars.size(),0):	// actually don't think we care what initial val is
+	lastSupportPerLit.resize(vars.size());
+	for(int i=vars.size()-1; i >=0 ; i--) { 
+		lastSupportPerLit[i].resize(vars[i].getInitialMax()-vars[i].getInitialMin()+1,0);
+	}
+
         // Partition
         varsPerSupport.resize(vars.size());
         varsPerSupInv.resize(vars.size());
-        for(int i=vars.size()-1; i>=0 ; i-- {
+        for(int i=vars.size()-1; i>=0 ; i--) {
             varsPerSupport[i]=i;
             varsPerSupInv[i]=i;
         }
         
         // Start with 1 cell in partition, for 0 supports. 
-        supportNumPtrs.resize(vars.size()*numvals+1);
+        supportNumPtrs.resize(numlits+1);
         supportNumPtrs[0]=0;
         for(int i=supportNumPtrs.size(); i>=0 ; i--) supportNumPtrs[i]=vars.size();
         
@@ -291,7 +302,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     
     struct BTRecord {
         bool is_removal;   // removal or addition was made. 
-	// HERE
 	int var;
 	int val;
         Support* sup;
@@ -465,7 +475,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    // Surely don't need to update lost supports on backtracking in non-backtrack-stable code?
 		if (!Backtracking && supportsPerVar[var] == (supports - 1)) {	// since supports not decremented yet
 			litsWithLostExplicitSupport.push_back(make_pair(var,litlist[i].second));
-    			lastSupportPerLit[var,valoffset] = sup;
+    			lastSupportPerLit[var][valoffset] = sup;
 		}
                 #if SupportsGACUseZeroVals
 			// Still need to add to zerovals even if above test is true
@@ -799,7 +809,7 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
       findSupportsIncremental();
   }
 
-    // HERE will need to be changed for backtrack stability, i.e. added even if isAssigned. Or use FL
+    // for backtrack stability we can't delete assigned variables, i.e. added even if isAssigned. 
     
     // #define ADDTOASSIGNMENT(var, val) if(!vars[var].isAssigned()) assignment.push_back(make_pair(var,val));
     #define ADDTOASSIGNMENT(var, val) assignment.push_back(make_pair(var,val));
