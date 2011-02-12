@@ -376,7 +376,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			 // could be clever with -- here but let's play safe
 			 if(temp.sup->numLastSupported == 1){ 
 				 // we can add tempsup to supportFreeList
-				 cout << "adding support to Free List " << temp.sup->literals << endl ; 
+				 // cout << "adding support to Free List " << temp.sup->literals << endl ; 
 				 temp.sup->next[0]=supportFreeList; 
 				 supportFreeList=temp.sup;
 			 }
@@ -431,7 +431,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
         sup_internal->active = true; 
 
-        cout << "Adding support (internal) :" << litlist_internal << endl;
+        // cout << "Adding support (internal) :" << litlist_internal << endl;
 	
         //D_ASSERT(litlist_internal.size()>0);  // It should be possible to deal with empty supports, but currently they wil
         // cause a memory leak. 
@@ -494,7 +494,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         vector<Support*>& next=sup->next;
         vector<pair<int, int> >& litlist=sup->literals;
 
-        cout << "Removing support (internal) :" << litlist << endl;
+        // cout << "Removing support (internal) :" << litlist << endl;
 
         
 	int litlistsize = litlist.size();
