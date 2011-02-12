@@ -115,7 +115,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     ShortSupportsGAC(StateObj* _stateObj, const VarArray& _var_array, TupleList* tuples) : AbstractConstraint(_stateObj), 
     vars(_var_array), supportFreeList(0)
     {
-   //     cout << "entering ShortSupportsGac: " << endl; 
 
         // Register this with the backtracker.
         getState(stateObj).getGenericBacktracker().add(this);
@@ -130,31 +129,29 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         }
         numvals=dom_max-dom_min+1;
         
-	//cout << "SSG 1: numvals = " << numvals << " numlits = " << numlits << endl ; 
         // Initialise counters
         supports=0;
         supportsPerVar.resize(vars.size(), 0);
         
         supportListPerLit.resize(vars.size());
         for(int i=0; i<vars.size(); i++) {
-	    int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
+	    // int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
+	    int numvals_i = vars[i].getInitialMax()-dom_min+1;
             supportListPerLit[i].resize(numvals_i);  // blank Support objects.
             for(int j=0; j<numvals_i; j++) supportListPerLit[i][j].next.resize(vars.size());
-	    //cout << "SSG 2: i = " << i << "numvals_i = " << numvals_i << endl ; 
         }
         
         #if SupportsGACUseZeroVals
         zeroVals.resize(vars.size());
         inZeroVals.resize(vars.size());
         for(int i=vars.size()-1 ; i >= 0; i--) {
-	    int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
+	    int numvals_i = vars[i].getInitialMax()- dom_min+1; // vars[i].getInitialMin()+1;
             zeroVals[i].reserve(numvals_i);  // reserve the maximum length.
-            for(int j=vars[i].getInitialMin(); j<=vars[i].getInitialMin(); j++) zeroVals[i].push_back(j);
+            for(int j=vars[i].getInitialMin(); j<=vars[i].getInitialMax(); j++) zeroVals[i].push_back(j);
             inZeroVals[i].resize(numvals_i, true);
         }
         #endif
 
-	//cout << "SSG 3: " << zeroVals << endl; 
 	
 	// Lists (vectors) of literals/vars that have lost support.
 	// Set this up to insist that everything needs to have support found for it on full propagate.
@@ -162,17 +159,16 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         litsWithLostExplicitSupport.reserve(numlits); // max poss size, not necessarily optimal choice here
         varsWithLostImplicitSupport.reserve(vars.size());
 
-	//cout << "SSG 4: " << litsWithLostExplicitSupport << endl; 
 
 	// Pointers to the last implicit/explicit support for a var/literal
 	//
 	lastSupportPerVar.resize(vars.size(),0);	// actually don't think we care what initial val is
 	lastSupportPerLit.resize(vars.size());
 	for(int i=vars.size()-1; i >=0 ; i--) { 
-		lastSupportPerLit[i].resize(vars[i].getInitialMax()-vars[i].getInitialMin()+1,0);
+		lastSupportPerLit[i].resize(vars[i].getInitialMax()-dom_min+1,0);
+		// lastSupportPerLit[i].resize(vars[i].getInitialMax()-vars[i].getInitialMin()+1,0);
 	}
 
-	//cout << "SSG 5: " << lastSupportPerLit << endl; 
 
         // Partition
         varsPerSupport.resize(vars.size());
@@ -258,12 +254,21 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     // Dtor
     
     virtual ~ShortSupportsGAC() {
+	// HERE
+	// Not deleting new structures here since branch with supportsgac
+	
+	return; 
+
+	cout << "destructor 1 " << endl ; 
+
         //printStructures();
+
         set<Support*> myset;
         
-        // Go through supportFreeList
         for(int var=0; var<vars.size(); var++) {
-            for(int val=dom_min; val<=dom_max; val++) {
+	  cout << "  destructor 2: var= " << var << endl ; 
+            for(int val=dom_min; val<=vars[var].getInitialMax(); val++) {
+	      cout << "     destructor 2: val= " << val << endl ; 
                 Support* sup = supportListPerLit[var][val-dom_min].next[var];
                 while(sup!=0) {
                     vector<Support*>& prev=sup->prev;
@@ -289,18 +294,27 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                 }
             }
         }
+
+	cout << "destructor 3 " << endl ; 
+	/*
         
+        // Go through supportFreeList
         while(supportFreeList!=0) {
             Support* sup=supportFreeList;
             supportFreeList=sup->next[0];
             myset.insert(sup);
         }
+	*/
+
+	cout << "destructor 4 " << endl ; 
         
         for(int i=0; i<backtrack_stack.size(); i++) {
             if(backtrack_stack[i].sup!=0) {
                 myset.insert(backtrack_stack[i].sup);
             }
         }
+
+	cout << "destructor 5 " << endl ; 
         
         typename set<Support*>::iterator it;
         for ( it=myset.begin() ; it != myset.end(); it++ ) {
@@ -359,6 +373,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			 // could be clever with -- here but let's play safe
 			 if(temp.sup->numLastSupported == 1){ 
 				 // we can add tempsup to supportFreeList
+				 cout << "adding support to Free List " << temp.sup->literals << endl ; 
 				 temp.sup->next[0]=supportFreeList; 
 				 supportFreeList=temp.sup;
 			 }
@@ -367,11 +382,14 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			 }
 		 }
 	    }
+
+	    /*
 		    // else there is nothing to do
             if(!temp.is_removal) {
 		    // should not happen in backtrack stable case
                 deleteSupportInternal(temp.sup, true);
             }
+	    */
 
         }
         
@@ -384,6 +402,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     
     Support* addSupport(box<pair<int, DomainInt> >* litlist)
     {
+	// cout << "AddSupport called with support " << litlist << endl;
         Support* newsup=addSupportInternal(litlist, 0);
         return newsup;
     }
@@ -393,6 +412,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     {
         // add a new support given as a vector of literals.
         Support* sup_internal;
+
         
         if(litbox!=0) {
             // copy.
@@ -408,9 +428,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
         sup_internal->active = true; 
 
-        //cout << "Adding support (internal) :" << litlist_internal << endl;
+        cout << "Adding support (internal) :" << litlist_internal << endl;
+	
         //D_ASSERT(litlist_internal.size()>0);  // It should be possible to deal with empty supports, but currently they wil
         // cause a memory leak. 
+
+	// cout << "AddSupportInternal called with support " << litlist_internal << endl;
         
         int litsize=litlist_internal.size();
         for(int i=0; i<litsize; i++) {
@@ -467,7 +490,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         vector<Support*>& prev=sup->prev;
         vector<Support*>& next=sup->next;
         vector<pair<int, int> >& litlist=sup->literals;
-        //cout << "Removing support (internal) :" << litlist << endl;
+
+        cout << "Removing support (internal) :" << litlist << endl;
+
         
 	int litlistsize = litlist.size();
 
@@ -610,9 +635,9 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
         cout << "Supports for each literal:"<<endl;
         for(int var=0; var<vars.size(); var++) {
             cout << "Variable: "<<var<<endl;
-            for(int val=dom_min; val<=dom_max; val++) {
+            for(int val=vars[var].getInitialMin(); val<=dom_max; val++) {
                 cout << "Value: "<<val<<endl;
-                Support* sup=supportListPerLit[var][val-dom_min].next[var];
+                Support* sup=supportListPerLit[var][val-vars[var].getInitialMin()].next[var];
                 while(sup!=0) {
                     cout << "Support: " << sup->literals << endl;
                     bool contains_varval=false;
@@ -673,25 +698,18 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
         // called from Full Propagate
 	// We do not assign responsibility for removals as this is called at the root.
 
-cout << "fSInitial 1: " << endl ; 
 
         for(int i = varsWithLostImplicitSupport.size()-1; i >= 0; i--) { 
-cout << "   i = " << i << endl ; 
 
             int var= varsWithLostImplicitSupport[i];
-cout << "   var = " << i << endl ; 
 	    varsWithLostImplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
-cout << "       fsInitial 2.0" << endl ; 
 
 	    if (supportsPerVar[var] == supports) { 	// otherwise has found implicit support in the meantime
-cout << "       fsInitial 2.1" << endl ; 
 		    #if !SupportsGACUseZeroVals
 		    for(int val=vars[var].getMin(); val<=vars[var].getMax(); val++) {
 		    #else
 		    for(int j=0; j<zeroVals[var].size(); j++) {
-cout << "       2.1 j = " << j << endl ; 
 			int val=zeroVals[var][j];
-cout << "       2.1 val = " << val << endl ; 
                         if(supportListPerLit[var][val-dom_min].next[var] != 0){
 			    // No longer a zero val. remove from vector.
 			    zeroVals[var][j]=zeroVals[var][zeroVals[var].size()-1];
@@ -712,7 +730,6 @@ cout << "       2.1 val = " << val << endl ;
 		    }    // } to trick vim bracket matching
 		}
 	}
-cout << "fSI end: " << endl ; 
     }
 
     void findSupportsIncremental()
@@ -724,28 +741,20 @@ cout << "fSI end: " << endl ;
 	//
         // For each variable where the number of supports is equal to the total...
 
-cout << "fSI 1: " << endl ; 
 
 	for(int i=litsWithLostExplicitSupport.size()-1; i >= 0; i--) { 
-cout << "   .1 i = " << i << endl ; 
 	    int var=litsWithLostExplicitSupport[i].first;
 	    int val=litsWithLostExplicitSupport[i].second;
-cout << "   .2 i = " << i << "var = " << var << " val = " << val << endl ; 
 	    
 	    litsWithLostExplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
-cout << "   .3 i = " << i << endl ; 
 	    
 	    
 	    if(vars[var].inDomain(val)) {
 		    if (hasNoKnownSupport(var,val) && ! findSupportsIncrementalHelper(var,val) ) { 
-cout << "   .4 i = " << i << endl ; 
 			    // removed val so must annotate why
 			    lastSupportPerLit[var][val-dom_min]->numLastSupported++ ;
-cout << "   .5 i = " << i << endl ; 
         		    struct BTRecord backtrackInfo = { false, var, val, lastSupportPerLit[var][val-dom_min] };
-cout << "   .6 i = " << i << endl ; 
 			    backtrack_stack.push_back(backtrackInfo);
-cout << "   .7 i = " << i << endl ; 
 		    }
 		    // else we found another support so we need to record nothing
 	    }
@@ -756,10 +765,8 @@ cout << "   .7 i = " << i << endl ;
 	    }
 	}
 
-cout << "fSI 2: " << endl ; 
 
         for(int i = varsWithLostImplicitSupport.size()-1; i >= 0; i--) { 
-cout << "   i = " << i << endl ; 
 
             int var= varsWithLostImplicitSupport[i];
 	    varsWithLostImplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
@@ -883,8 +890,12 @@ cout << "   i = " << i << endl ;
       int pos=dt-dynamic_trigger_start();
       int var=pos/numvals;
       int val=pos-(var*numvals)+dom_min;
+
+    //  cout << "Propagate called: var= " << var << "val = " << val << endl;
+      //printStructures();
       
       updateCounters(var, val);
+
       
       findSupportsIncremental();
   }
@@ -1713,6 +1724,8 @@ cout << "   i = " << i << endl ;
     
     Support* getFreeSupport() {
         // Either get a Support off the free list or make one.
+	return new Support(vars.size()); 
+
         if(supportFreeList==0) {
             return new Support(vars.size());
         }
@@ -1725,7 +1738,6 @@ cout << "   i = " << i << endl ;
     
     virtual void full_propagate()
     {
-cout << "full propagate 0: " << endl ; 
 
        litsWithLostExplicitSupport.resize(0);
        varsWithLostImplicitSupport.resize(0); 
@@ -1733,10 +1745,8 @@ cout << "full propagate 0: " << endl ;
        for(int i=0; i<vars.size(); i++) { 
 	       varsWithLostImplicitSupport.push_back(i);
        }
-cout << "full propagate 2: " << endl ; 
 
        findSupportsInitial();
-cout << "full propagate 3: " << endl ; 
     }
     
     virtual vector<AnyVarRef> get_vars()
