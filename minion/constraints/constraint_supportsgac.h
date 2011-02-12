@@ -1724,7 +1724,6 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
     
     Support* getFreeSupport() {
         // Either get a Support off the free list or make one.
-	return new Support(vars.size()); 
 
         if(supportFreeList==0) {
             return new Support(vars.size());
