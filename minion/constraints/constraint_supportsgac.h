@@ -121,7 +121,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         
         dom_max=vars[0].getInitialMax();
         dom_min=vars[0].getInitialMin();
-        for(int i=1; i<vars.size(); i++) {
+        for(int i=vars.size()-1; i > 0 ; i-- {
             if(vars[i].getInitialMin()<dom_min) dom_min=vars[i].getInitialMin();
             if(vars[i].getInitialMax()>dom_max) dom_max=vars[i].getInitialMax();
         }
@@ -140,7 +140,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         #if SupportsGACUseZeroVals
         zeroVals.resize(vars.size());
         inZeroVals.resize(vars.size());
-        for(int i=0; i<vars.size(); i++) {
+        for(int i<vars.size()-1 ; i >= 0; i-- {
             zeroVals[i].reserve(numvals);  // reserve the maximum length.
             for(int j=dom_min; j<=dom_max; j++) zeroVals[i].push_back(j);
             inZeroVals[i].resize(numvals, true);
@@ -156,7 +156,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         // Partition
         varsPerSupport.resize(vars.size());
         varsPerSupInv.resize(vars.size());
-        for(int i=0; i<vars.size(); i++) {
+        for(int i=vars.size()-1; i>=0 ; i-- {
             varsPerSupport[i]=i;
             varsPerSupInv[i]=i;
         }
@@ -164,7 +164,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         // Start with 1 cell in partition, for 0 supports. 
         supportNumPtrs.resize(vars.size()*numvals+1);
         supportNumPtrs[0]=0;
-        for(int i=1; i<supportNumPtrs.size(); i++) supportNumPtrs[i]=vars.size();
+        for(int i=supportNumPtrs.size(); i>=0 ; i--) supportNumPtrs[i]=vars.size();
         
         // Extract short supports from tuples if necessary.
         if(tuples->size()>1) {
@@ -357,10 +357,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     Support* addSupport(box<pair<int, DomainInt> >* litlist)
     {
         Support* newsup=addSupportInternal(litlist, 0);
-        struct BTRecord temp;
-        temp.is_removal=false;
-        temp.sup=newsup;
-        backtrack_stack.push_back(temp);
         return newsup;
     }
     
@@ -445,7 +441,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         vector<pair<int, int> >& litlist=sup->literals;
         //cout << "Removing support (internal) :" << litlist << endl;
         
-        for(int i=0; i<litlist.size(); i++) {
+	int litlistsize = litlist.size();
+
+        for(int i=0; i<litlistsize; i++) {
             int var=litlist[i].first;
             int valoffset=litlist[i].second-dom_min;
 	    D_ASSERT(prev[var]!=0);
@@ -483,6 +481,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             if(SupportsGACUseDT) { detach_trigger(var, litlist[i].second); }
             }
 
+	    /*
+
 QUESTION: When literal is deleted and it has an explicit support.   (If not we are not triggered on it.)   
 
 		  THEN 
@@ -498,6 +498,8 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
 
 		Oops, but how do we know if trigger is reattached or not when we add a support.  Yet another Bool?
 
+	     I know all this has no place in codebase but I'm leaving it here for now.
+		*/
 
             
             
@@ -653,19 +655,17 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
 	    
 	    litsWithLostExplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 	    
-	    // HERE 
-	    // Need to do out of domain but has known support so it will have support on BT.
 	    
 	    if(vars[var].inDomain(val)) {
 		    if (hasNoKnownSupport(var,val) && ! findSupportsIncrementalHelper(var,val) ) { 
 			    // removed val so must annotate why
-			    // HERE
 			    lastSupportPerLit[var][val-dom_min]->numLastSupported++ ;
         		    struct BTRecord backtrackInfo = { false, var, val, lastSupportPerLit[var][val-dom_min] };
 			    backtrack_stack.push_back(backtrackInfo);
 		    }
+		    // else we found another support so we need to record nothing
 	    }
-	    else { 
+	    else {  // Need to cover out of domain lits but has known support so it will have support on BT.
 		  lastSupportPerLit[var][val-dom_min]->numLastSupported++ ;
         	  struct BTRecord backtrackInfo = { false, var, val, lastSupportPerLit[var][val-dom_min] };
 		  backtrack_stack.push_back(backtrackInfo);
