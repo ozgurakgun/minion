@@ -115,6 +115,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     ShortSupportsGAC(StateObj* _stateObj, const VarArray& _var_array, TupleList* tuples) : AbstractConstraint(_stateObj), 
     vars(_var_array), supportFreeList(0)
     {
+        cout << "entering ShortSupportsGac: " << endl; 
+
         // Register this with the backtracker.
         getState(stateObj).getGenericBacktracker().add(this);
         
@@ -128,6 +130,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         }
         numvals=dom_max-dom_min+1;
         
+	cout << "SSG 1: numvals = " << numvals << " numlits = " << numlits << endl ; 
         // Initialise counters
         supports=0;
         supportsPerVar.resize(vars.size(), 0);
@@ -137,6 +140,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
             supportListPerLit[i].resize(numvals_i);  // blank Support objects.
             for(int j=0; j<numvals_i; j++) supportListPerLit[i][j].next.resize(vars.size());
+	    cout << "SSG 2: i = " << i << "numvals_i = " << numvals_i << endl ; 
         }
         
         #if SupportsGACUseZeroVals
@@ -149,12 +153,16 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             inZeroVals[i].resize(numvals_i, true);
         }
         #endif
+
+	cout << "SSG 3: " << zeroVals << endl; 
 	
 	// Lists (vectors) of literals/vars that have lost support.
 	// Set this up to insist that everything needs to have support found for it on full propagate.
 	
         litsWithLostExplicitSupport.reserve(numlits); // max poss size, not necessarily optimal choice here
         varsWithLostImplicitSupport.reserve(vars.size());
+
+	cout << "SSG 4: " << litsWithLostExplicitSupport << endl; 
 
 	// Pointers to the last implicit/explicit support for a var/literal
 	//
@@ -163,6 +171,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	for(int i=vars.size()-1; i >=0 ; i--) { 
 		lastSupportPerLit[i].resize(vars[i].getInitialMax()-vars[i].getInitialMin()+1,0);
 	}
+
+	cout << "SSG 5: " << lastSupportPerLit << endl; 
 
         // Partition
         varsPerSupport.resize(vars.size());
@@ -175,7 +185,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         // Start with 1 cell in partition, for 0 supports. 
         supportNumPtrs.resize(numlits+1);
         supportNumPtrs[0]=0;
-        for(int i=supportNumPtrs.size(); i>=0 ; i--) supportNumPtrs[i]=vars.size();
+        for(int i=supportNumPtrs.size()-1; i>0 ; i--) supportNumPtrs[i]=vars.size();
         
         // Extract short supports from tuples if necessary.
         if(tuples->size()>1) {
@@ -240,6 +250,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                 }
             }
         }
+
+        cout << "exiting ShortSupportsGac: " << endl; 
     }
     
     ////////////////////////////////////////////////////////////////////////////
