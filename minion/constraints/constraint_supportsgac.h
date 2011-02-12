@@ -1,3 +1,6 @@
+// Not working is print structure
+// and destruction at end because of free list
+
 /*
 * Minion http://minion.sourceforge.net
 * Copyright (C) 2006-09
