@@ -329,6 +329,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         struct BTRecord temp = { false, 0, 0, 0 };
         backtrack_stack.push_back(temp);  // marker.
     }
+
+    //HERE move things onto support free list
     
     void pop() {
         //cout << "BACKTRACKING:" << endl;
@@ -338,23 +340,27 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             backtrack_stack.pop_back();
 	    if (! (temp.sup->active)) {
 		 if (hasNoKnownSupport(var,val)) {
+			 // we need to add support back in
 			 addsupportInternal(0,temp.sup)); 
 		 }
 		 else {
-			 temp.sup->numLastSupported--;
+			 // could be clever with -- here but let's play safe
+			 if(tempsup->numLastSupported == 1){ 
+				 // we can add tempsup to supportFreeList
+				 tempsup->next[0]=supportFreeList; 
+				 supportFreeList=tempsup;
+			 }
+			 else { 
+				 temp.sup->numLastSupported--;
+			 }
 		 }
-			 // we need to add support back in
 	    }
 		    // else there is nothing to do
-
-
-	    if(hasNoKnownSupport)
-            if(temp.is_removal) {
-                addSupportInternal(0, temp.sup);
-            }
-            else {
+            if(!temp.is_removal) {
+		    // should not happen in backtrack stable case
                 deleteSupportInternal(temp.sup, true);
             }
+
         }
         
         backtrack_stack.pop_back();  // Pop the marker.
