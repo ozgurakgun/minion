@@ -1,8 +1,3 @@
-// FORGOT HERE
-// to destroy supports on way down
-// i.e. deleted supports should be put on a list.  Then at the end of findSupports we shove those onto the free list 
-// which have zero lastsupports.
-// 
 // Not working is print structure
 // and destruction at end because of free list
 
@@ -27,9 +22,9 @@
 
 #define UseSquarePackingShort false
 #define UseSquarePackingLong false
-#define UseLexLeqShort true
+#define UseLexLeqShort false
 #define UseLexLeqLong false
-#define UseElementShort false
+#define UseElementShort true
 #define UseElementLong false
 #define UseList false
 
@@ -871,7 +866,7 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
       releaseTrigger(stateObj, dt );   // BT_CALL_BACKTRACK
   }
 
-  inline void addToSupporFreeList(Support* sup)
+  inline void addToSupportFreeList(Support* sup)
   { 
 	  sup->next[0]=supportFreeList; 
 	  supportFreeList=sup;
