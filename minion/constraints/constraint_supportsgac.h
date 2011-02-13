@@ -96,6 +96,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     vector<vector<Support*> >  lastSupportPerLit;
     vector<Support*> lastSupportPerVar;
+
+    vector<Support*> deletedSupports;
     
     // For each variable, a vector of values with 0 supports (or had 0 supports
     // when added to the vector).
@@ -177,6 +179,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		// lastSupportPerLit[i].resize(vars[i].getInitialMax()-vars[i].getInitialMin()+1,0);
 	}
 
+	deletedSupports.reserve(numlits);   // max poss size, not necessarily best choice
 
         // Partition
         varsPerSupport.resize(vars.size());
@@ -382,8 +385,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			 if(temp.sup->numLastSupported == 1){ 
 				 // we can add tempsup to supportFreeList
 				 // cout << "adding support to Free List " << temp.sup->literals << endl ; 
-				 temp.sup->next[0]=supportFreeList; 
-				 supportFreeList=temp.sup;
+				 addToSupportFreeList(temp.sup);
 			 }
 			 else { 
 				 temp.sup->numLastSupported--;
@@ -597,13 +599,13 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
 			varsWithLostImplicitSupport.push_back(varsPerSupport[i]);
 			lastSupportPerVar[varsPerSupport[i]] = sup ;
 		}
+		deletedSupports.push_back(sup);
 	} 
 	else { 
             // We are Backtracking 
 	    // Can re-use the support when it is removed by BT. 
             // Stick it on the free list using next[0] as the next ptr.
-            sup->next[0]=supportFreeList;
-            supportFreeList=sup;
+            addToSupportFreeList(sup); 
         }
         // else can't re-use it because a ptr to it is on the BT stack. 
     }
@@ -868,6 +870,12 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
       dt=dt+(var*numvals)+(val-dom_min);
       releaseTrigger(stateObj, dt );   // BT_CALL_BACKTRACK
   }
+
+  inline void addToSupporFreeList(Support* sup)
+  { 
+	  sup->next[0]=supportFreeList; 
+	  supportFreeList=sup;
+  }
     
   virtual void propagate(int prop_var, DomainDelta)
   {
@@ -901,11 +909,19 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
 
     //  cout << "Propagate called: var= " << var << "val = " << val << endl;
       //printStructures();
+
+      deletedSupports.resize(0);
       
       updateCounters(var, val);
 
-      
       findSupportsIncremental();
+
+      while(deletedSupports.size() > 0) { 
+	      if (deletedSupports.back()->numLastSupported == 0) {
+		      addToSupportFreeList(deletedSupports.back());
+	      }
+	      deletedSupports.pop_back();
+      }
   }
 
     // for backtrack stability we can't delete assigned variables, i.e. added even if isAssigned. 
