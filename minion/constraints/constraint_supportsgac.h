@@ -267,7 +267,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	// HERE
 	// Not deleting new structures here since branch with supportsgac
 
-	return; 
+	 
 	
 	cout << "destructor 1 " << endl ; 
 
