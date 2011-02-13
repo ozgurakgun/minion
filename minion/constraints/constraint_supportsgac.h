@@ -141,9 +141,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         supportListPerLit.resize(vars.size());
         for(int i=0; i<vars.size(); i++) {
 	    // int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
+	     cout << "     i " << i << " Initial Max " << vars[i].getInitialMax() << endl ; 
 	    int numvals_i = vars[i].getInitialMax()-dom_min+1;
             supportListPerLit[i].resize(numvals_i);  // blank Support objects.
-            for(int j=0; j<numvals_i; j++) supportListPerLit[i][j].next.resize(vars.size());
+            for(int j=0; j<numvals_i; j++) {
+		    supportListPerLit[i][j].next.resize(vars.size());
+	      cout << "     i j SupportListPerLit[var][val].next = " << i << " " << j << " " << supportListPerLit[i][j].next << endl ; 
+	    }
         }
         
         #if SupportsGACUseZeroVals
@@ -263,26 +267,41 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	// HERE
 	// Not deleting new structures here since branch with supportsgac
 	
-	return; 
-
 	cout << "destructor 1 " << endl ; 
 
         //printStructures();
 
         set<Support*> myset;
+
+        for(int i=0; i<vars.size(); i++) {
+	    cout << "     i " << i << " Initial Max " << vars[i].getInitialMax() << endl ; 
+	    int numvals_i = vars[i].getInitialMax()-dom_min+1;
+            for(int j=0; j<numvals_i; j++) {
+	      cout << "     i j SupportListPerLit[var][val].next = " << i << " " << j << " " << supportListPerLit[i][j].next << endl ; 
+	    }
+        }
         
         for(int var=0; var<vars.size(); var++) {
-	  cout << "  destructor 2: var= " << var << endl ; 
+	  cout << "  destructor 2: var= " << var << " original var " << vars[var] << endl ; 
             for(int val=dom_min; val<=vars[var].getInitialMax(); val++) {
-	      cout << "     destructor 2: val= " << val << endl ; 
+	      cout << "     destructor 2: val= " << val << "val - dom_min = " << val - dom_min << endl ; 
+	      // cout << "     SupportListPerLit = " << supportListPerLit << endl ; 
+	      // cout << "     SupportListPerLit[var] = " << supportListPerLit[var] << endl ; 
+	      // cout << "     SupportListPerLit[var][val] = " << supportListPerLit[var][val-dom_min] << endl ; 
+	      cout << "     SupportListPerLit[var][val].next = " << supportListPerLit[var][val-dom_min].next << endl ; 
                 Support* sup = supportListPerLit[var][val-dom_min].next[var];
+	      cout << "     destructor 2: sup*= " << sup << endl ; 
                 while(sup!=0) {
                     vector<Support*>& prev=sup->prev;
+	            cout << "       destructor 2.1: prev*= " << prev << endl ; 
                     vector<Support*>& next=sup->next;
+	            cout << "       destructor 2.2: next*= " << next << endl ; 
                     vector<pair<int, int> >& litlist=sup->literals;
                     // Unstitch supList from all lists it is in.
                     for(int i=0; i<litlist.size(); i++) {
+	                cout << "         destructor 2.2.1: i = " << i << endl ; 
                         int var=litlist[i].first;
+	                cout << "         destructor 2.2.2: var = " << var << endl ; 
                         //D_ASSERT(prev[var]!=0);  // Only for igac. Here it might not be in the list.
                         if(prev[var]!=0) {
                             prev[var]->next[var]=next[var];
@@ -302,7 +321,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         }
 
 	cout << "destructor 3 " << endl ; 
-	/*
         
         // Go through supportFreeList
         while(supportFreeList!=0) {
@@ -310,7 +328,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             supportFreeList=sup->next[0];
             myset.insert(sup);
         }
-	*/
 
 	cout << "destructor 4 " << endl ; 
         
@@ -866,11 +883,6 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
       releaseTrigger(stateObj, dt );   // BT_CALL_BACKTRACK
   }
 
-  inline void addToSupportFreeList(Support* sup)
-  { 
-	  sup->next[0]=supportFreeList; 
-	  supportFreeList=sup;
-  }
     
   virtual void propagate(int prop_var, DomainDelta)
   {
@@ -1752,6 +1764,12 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
             supportFreeList=supportFreeList->next[0];
             return temp;
         }
+    }
+
+    inline void addToSupportFreeList(Support* sup)
+    { 
+	  sup->next[0]=supportFreeList; 
+	  supportFreeList=sup;
     }
     
     virtual void full_propagate()
