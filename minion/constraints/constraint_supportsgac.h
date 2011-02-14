@@ -269,12 +269,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	 
 	
-	cout << "destructor 1 " << endl ; 
+	// cout << "destructor 1 " << endl ; 
 
         //printStructures();
 
         set<Support*> myset;
 
+	/* 
         for(int i=0; i<vars.size(); i++) {
 	    cout << "     i " << i << " Initial Max " << vars[i].getInitialMax() << endl ; 
 	    int numvals_i = vars[i].getInitialMax()-dom_min+1;
@@ -282,28 +283,26 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	      cout << "     i j SupportListPerLit[var][val].next = " << i << " " << j << " " << supportListPerLit[i][j].next << endl ; 
 	    }
         }
+	*/
         
         for(int var=0; var<vars.size(); var++) {
 	  cout << "  destructor 2: var= " << var << " original var " << vars[var] << endl ; 
             for(int val=dom_min; val<=vars[var].getInitialMax(); val++) {
-	      cout << "     destructor 2: val= " << val << "val - dom_min = " << val - dom_min << endl ; 
-	      // cout << "     SupportListPerLit = " << supportListPerLit << endl ; 
-	      // cout << "     SupportListPerLit[var] = " << supportListPerLit[var] << endl ; 
-	      // cout << "     SupportListPerLit[var][val] = " << supportListPerLit[var][val-dom_min] << endl ; 
-	      cout << "     SupportListPerLit[var][val].next = " << supportListPerLit[var][val-dom_min].next << endl ; 
+	      // cout << "     destructor 2: val= " << val << "val - dom_min = " << val - dom_min << endl ; 
+	      // cout << "     SupportListPerLit[var][val].next = " << supportListPerLit[var][val-dom_min].next << endl ; 
                 Support* sup = supportListPerLit[var][val-dom_min].next[var];
-	      cout << "     destructor 2: sup*= " << sup << endl ; 
+	      // cout << "     destructor 2: sup*= " << sup << endl ; 
                 while(sup!=0) {
                     vector<Support*>& prev=sup->prev;
-	            cout << "       destructor 2.1: prev*= " << prev << endl ; 
+	            // cout << "       destructor 2.1: prev*= " << prev << endl ; 
                     vector<Support*>& next=sup->next;
-	            cout << "       destructor 2.2: next*= " << next << endl ; 
+	            // cout << "       destructor 2.2: next*= " << next << endl ; 
                     vector<pair<int, int> >& litlist=sup->literals;
                     // Unstitch supList from all lists it is in.
                     for(int i=0; i<litlist.size(); i++) {
-	                cout << "         destructor 2.2.1: i = " << i << endl ; 
+	                // cout << "         destructor 2.2.1: i = " << i << endl ; 
                         int var=litlist[i].first;
-	                cout << "         destructor 2.2.2: var = " << var << endl ; 
+	                // cout << "         destructor 2.2.2: var = " << var << endl ; 
                         //D_ASSERT(prev[var]!=0);  // Only for igac. Here it might not be in the list.
                         if(prev[var]!=0) {
                             prev[var]->next[var]=next[var];
@@ -322,7 +321,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             }
         }
 
-	cout << "destructor 3 " << endl ; 
+	// cout << "destructor 3 " << endl ; 
         
         // Go through supportFreeList
         while(supportFreeList!=0) {
@@ -331,7 +330,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             myset.insert(sup);
         }
 
-	cout << "destructor 4 " << endl ; 
+	// cout << "destructor 4 " << endl ; 
         
         for(int i=0; i<backtrack_stack.size(); i++) {
             if(backtrack_stack[i].sup!=0) {
@@ -339,7 +338,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             }
         }
 
-	cout << "destructor 5 " << endl ; 
+	// cout << "destructor 5 " << endl ; 
         
         typename set<Support*>::iterator it;
         for ( it=myset.begin() ; it != myset.end(); it++ ) {
