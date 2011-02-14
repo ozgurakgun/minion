@@ -340,7 +340,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	*/
         
         for(int var=0; var<vars.size(); var++) {
-	  cout << "  destructor 2: var= " << var << " original var " << vars[var] << endl ; 
+	  // cout << "  destructor 2: var= " << var << " original var " << vars[var] << endl ; 
             for(int val=dom_min; val<=vars[var].getInitialMax(); val++) {
 	      // cout << "     destructor 2: val= " << val << "val - dom_min = " << val - dom_min << endl ; 
 	      // cout << "     SupportListPerLit[var][val].next = " << supportListPerLit[var][val-dom_min].next << endl ; 
@@ -406,8 +406,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     
     struct BTRecord {
         bool is_removal;   // removal or addition was made. 
-	int var;
-	int val;
         Support* sup;
         
         friend std::ostream& operator<<(std::ostream& o, const BTRecord& rec)
@@ -430,7 +428,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     vector<BTRecord> backtrack_stack;
     
     void mark() {
-        struct BTRecord temp = { false, 0, 0, 0 };
+        struct BTRecord temp = { false, 0 };
         backtrack_stack.push_back(temp);  // marker.
     }
 
@@ -443,9 +441,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             BTRecord temp=backtrack_stack.back();
             backtrack_stack.pop_back();
 	    if (! (temp.sup->active)) {
-		 if (hasNoKnownSupport(temp.var,temp.val)) {
+		 // if (hasNoKnownSupport(temp.var,temp.val)) {
 			 // we need to add support back in
 			 addSupportInternal(0,temp.sup); 
+	 /*
 		 }
 		 else {
 			 // could be clever with -- here but let's play safe
@@ -458,6 +457,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 				 temp.sup->numLastSupported--;
 			 }
 		 }
+		 */
 	    }
 
 	    /*
@@ -830,14 +830,14 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
 		    if (hasNoKnownSupport(var,val) && ! findSupportsIncrementalHelper(var,val) ) { 
 			    // removed val so must annotate why
 			    lastSupportPerLit[var][val-dom_min]->numLastSupported++ ;
-        		    struct BTRecord backtrackInfo = { false, var, val, lastSupportPerLit[var][val-dom_min] };
+        		    struct BTRecord backtrackInfo = { false, lastSupportPerLit[var][val-dom_min] };
 			    backtrack_stack.push_back(backtrackInfo);
 		    }
 		    // else we found another support so we need to record nothing
 	    }
 	    else {  // Need to cover out of domain lits but has known support so it will have support on BT.
 		  lastSupportPerLit[var][val-dom_min]->numLastSupported++ ;
-        	  struct BTRecord backtrackInfo = { false, var, val, lastSupportPerLit[var][val-dom_min] };
+        	  struct BTRecord backtrackInfo = { false, lastSupportPerLit[var][val-dom_min] };
 		  backtrack_stack.push_back(backtrackInfo);
 	    }
 	}
@@ -871,7 +871,7 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
 		    #endif
 		            if (! findSupportsIncrementalHelper(var,val) ) {
 				    lastSupportPerVar[var]->numLastSupported++;
-        		            struct BTRecord backtrackInfo = { false, var, val, lastSupportPerVar[var] };
+        		            struct BTRecord backtrackInfo = { false, lastSupportPerVar[var] };
 			            backtrack_stack.push_back(backtrackInfo);
 			    }
 			    // No longer do we remove j from zerovals in this case if support is found.
@@ -886,7 +886,7 @@ CLAIM: We can be lazy about detaching triggers.   Because sometimes we detach a 
 			    // support must be this implicit support we are deleting.  So we have to restore
 			    // it on bracktracking.
 			    lastSupportPerVar[var]->numLastSupported++;
-        		    struct BTRecord backtrackInfo = { false, var, val, lastSupportPerVar[var]};
+        		    struct BTRecord backtrackInfo = { false, lastSupportPerVar[var]};
 			    backtrack_stack.push_back(backtrackInfo);
 			}
 		    }    // } to trick vim bracket matching
