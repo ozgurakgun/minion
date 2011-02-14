@@ -340,7 +340,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	*/
         
         for(int var=0; var<vars.size(); var++) {
-	  cout << "  destructor 2: var= " << var << " original var " << vars[var] << endl ; 
+	  // cout << "  destructor 2: var= " << var << " original var " << vars[var] << endl ; 
             for(int val=dom_min; val<=vars[var].getInitialMax(); val++) {
 	      // cout << "     destructor 2: val= " << val << "val - dom_min = " << val - dom_min << endl ; 
 	      // cout << "     SupportListPerLit[var][val].next = " << supportListPerLit[var][val-dom_min].next << endl ; 
