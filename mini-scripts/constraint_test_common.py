@@ -440,6 +440,22 @@ import random
 
 sys.setrecursionlimit(5000)
 
+class testlexleq:
+    def printtable(self, domains, less=False):
+        cross=[]
+        crossprod(domains, [], cross)
+        out=[]
+        for l in cross:
+            l1=l[:len(l)/2]
+            l2=l[len(l)/2:]
+            
+            if (not less and l1 <= l2) or (less and l1<l2):
+                out.append(l)
+        return out
+    
+    def runtest(self, options=dict()):
+        return runtestgeneral("lexleq", True, options, [4,4], ["smallnum", "smallnum"], self, True)
+
 class testmodulo:
     def printtable(self, domains): 
         out=[]
@@ -500,6 +516,54 @@ class testgac2delement:
 class testwatchelement(testgacelement__minus__deprecated):
     def runtest(self, options=dict()):
         return runtestgeneral("watchelement", False, options, [4,1,1], ["smallnum", "num", "num"], self, not options['reify'])
+        
+# test supportsgac constraint assuming it is an element.
+class testsupportsgac(testgacelement__minus__deprecated):
+    def runtest(self, options=dict()):
+        return runtestgeneral("supportsgac", False, options, [6], ["smallnum"], self, not options['reify'])
+
+
+# test supportsgac constraint assuming it is lex
+#class testsupportsgac(testlexleq):
+#    def printtable(self, domains):
+#        return testlexleq.printtable(self, domains, less=True)
+#    
+#    def runtest(self, options=dict()):
+#        return runtestgeneral("supportsgac", False, options, [8], ["smallnum"], self, not options['reify'])
+
+#class testsupportsgac(testlexleq):
+#    def printtable(self, domains):
+#        return testlexleq.printtable(self, domains, less=False)
+#    
+#    def runtest(self, options=dict()):
+#        return runtestgeneral("supportsgac", False, options, [8], ["smallnum"], self, not options['reify'])
+
+# test consttructive disjunction constraint assuming it is an element.
+#class testconstructiveor(testgacelement__minus__deprecated):
+#    def runtest(self, options=dict()):
+#        return runtestgeneral("constructiveor", False, options, [6], ["smallnum"], self, not options['reify'])
+
+# test consttructive disjunction constraint assuming it is an element.
+class testconstructiveor(testlexleq):
+    def printtable(self, domains):
+        return testlexleq.printtable(self, domains, less=False)
+    
+    def runtest(self, options=dict()):
+        return runtestgeneral("constructiveor", False, options, [8], ["smallnum"], self, not options['reify'])
+
+# test gacschema constraint assuming it is an element.
+#class testgacschema(testgacelement__minus__deprecated):
+#    def runtest(self, options=dict()):
+#        return runtestgeneral("gacschema", False, options, [6], ["smallnum"], self, not options['reify'])
+
+#... assuming it is lexleq
+class testgacschema(testlexleq):
+    def printtable(self, domains):
+        return testlexleq.printtable(self, domains, less=False)
+    
+    def runtest(self, options=dict()):
+        return runtestgeneral("gacschema", False, options, [8], ["smallnum"], self, not options['reify'])
+
 
 class testelement(testgacelement__minus__deprecated):
     def runtest(self, options=dict()):
@@ -795,6 +859,10 @@ class testeq:
     def runtest(self, options=dict()):
         return runtestgeneral("eq", True, options, [1,1], ["num", "num"], self, False)
 
+class testgaceq(testeq):
+    def runtest(self, options=dict()):
+        return runtestgeneral("eq", True, options, [1,1], ["num", "num"], self, True)
+
 class testwatchneq:
     def printtable(self, domains):
         cross=[]
@@ -899,22 +967,6 @@ class testlitsumgeq:
     def runtest(self, options=dict()):
         return runtestgeneral("litsumgeq", False, options, [6,6,1], ["smallnum", "const", "smallconst"], self, False)
         # Supposed to be GAC except when a variable occurs more than once in the list of literals.
-
-class testlexleq:
-    def printtable(self, domains, less=False):
-        cross=[]
-        crossprod(domains, [], cross)
-        out=[]
-        for l in cross:
-            l1=l[:len(l)/2]
-            l2=l[len(l)/2:]
-            
-            if (not less and l1 <= l2) or (less and l1<l2):
-                out.append(l)
-        return out
-    
-    def runtest(self, options=dict()):
-        return runtestgeneral("lexleq", True, options, [4,4], ["smallnum", "smallnum"], self, True)
 
 class testlexleq_quick:
     def printtable(self, domains, less=False):
@@ -1479,6 +1531,12 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
             curvar+=1
     
     constraint=constraint[:-1]+")"   # hack off the last comma and put a bracket
+    
+    #  hacks to deal with extra arguments in supportsgac and gacschema
+    if constraintname=="supportsgac":
+        constraint=constraint[:-1]+",{<-1, -1>})"    # Pass empty list when testing supportsgac with method.
+    if constraintname=="gacschema":
+        constraint=constraint[:-1]+",[])"    # Pass empty list when testing supportsgac with method.
     
     if reify:
         constraint="reify("+constraint+", x0)"
