@@ -141,12 +141,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         supportListPerLit.resize(vars.size());
         for(int i=0; i<vars.size(); i++) {
 	    // int numvals_i = vars[i].getInitialMax()-vars[i].getInitialMin()+1;
-	     cout << "     i " << i << " Initial Max " << vars[i].getInitialMax() << endl ; 
+	     // cout << "     i " << i << " Initial Max " << vars[i].getInitialMax() << endl ; 
 	    int numvals_i = vars[i].getInitialMax()-dom_min+1;
             supportListPerLit[i].resize(numvals_i);  // blank Support objects.
             for(int j=0; j<numvals_i; j++) {
 		    supportListPerLit[i][j].next.resize(vars.size());
-	      cout << "     i j SupportListPerLit[var][val].next = " << i << " " << j << " " << supportListPerLit[i][j].next << endl ; 
+	      // cout << "     i j SupportListPerLit[var][val].next = " << i << " " << j << " " << supportListPerLit[i][j].next << endl ; 
 	    }
         }
         
