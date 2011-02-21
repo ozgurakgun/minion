@@ -688,7 +688,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			if(vars[var].inDomain(val) && supportsPerLit[var][val-dom_min]==0) {
 		    #else
 			if(vars[var].inDomain(val)) {	// tested supportsPerLit above
-		    #endif
+		    #endif 
 		            findSupportsIncrementalHelper(var,val);
 			    // No longer do we remove j from zerovals in this case if support is found.
 			    // However this is correct as it can be removed lazily next time the list is traversed
