@@ -520,6 +520,7 @@ class testwatchelement(testgacelement__minus__deprecated):
 # test supportsgac constraint assuming it is an element.
 class testsupportsgac(testgacelement__minus__deprecated):
     def runtest(self, options=dict()):
+        options['fixlength'] = True
         return runtestgeneral("supportsgac", False, options, [6], ["smallnum"], self, not options['reify'])
 
 
@@ -529,6 +530,7 @@ class testsupportsgac(testgacelement__minus__deprecated):
 #        return testlexleq.printtable(self, domains, less=True)
 #    
 #    def runtest(self, options=dict()):
+#        options['fixlength'] = True
 #        return runtestgeneral("supportsgac", False, options, [8], ["smallnum"], self, not options['reify'])
 
 #class testsupportsgac(testlexleq):
@@ -536,6 +538,7 @@ class testsupportsgac(testgacelement__minus__deprecated):
 #        return testlexleq.printtable(self, domains, less=False)
 #    
 #    def runtest(self, options=dict()):
+#        options['fixlength'] = True
 #        return runtestgeneral("supportsgac", False, options, [8], ["smallnum"], self, not options['reify'])
 
 # test consttructive disjunction constraint assuming it is an element.
