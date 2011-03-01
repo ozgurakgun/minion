@@ -1,11 +1,12 @@
 // LIST BASED CODE WONT BE WORKING
 
-// Started on git branch  supportsgac+bstable+adaptive
+// Started on git branch  supportsgac+bstable+adaptive+lazy
 //  	intended for supportsgac 
 //  	+ long supports 
 //  	+ better memory 
 //  	+ backtrack stability
 //  	+ adaptive use or ignoring of full length supports
+// 	+ lazy updating of supports
 
 /*
 * Minion http://minion.sourceforge.net
@@ -113,8 +114,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     struct Literal { 
 	int var ; 
 	int val ;
-	SupportCell* supportCellList; 
-	int nextPrimeLit; 
+	SupportCell supportCellList; 
+	int nextPrimeLit; 	// could use literal in SupportCell
 //	Literal() { supportCellList = 0 ;} 
     };
 
@@ -128,7 +129,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	bool active;  
 	int  numLastSupported;
 
-	int firstPrimeLit;
+	int nextPrimeLit;
         
         Support()
         {
@@ -137,7 +138,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    nextFree=0;
 	    active = true;  
 	    numLastSupported=0;
-	    firstPrimeLit=-1;
+	    nextPrimeLit=-1;
         }
     };
     
@@ -225,7 +226,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    literalList.resize(litCounter+1);
 		    literalList[litCounter].var = i; 
 		    literalList[litCounter].val = j+thisvalmin; 
-		    literalList[litCounter].supportCellList = 0;
+		    literalList[litCounter].supportCell = {litcounter, 0, 0, 0};
+		    literalList[litCounter].nextPrimeLit = -1;
 		    litCounter++;
 	    }
         }
@@ -723,11 +725,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	else {
 		// it's a full length support 
 
-		for(int i=0; i<supArity; i++) {
+		for(int lit = sup->nextPrimeLit ; lit >= 0 ; lit=literalList[lit].nextPrimeLit) {  
 
-		    SupportCell& supCell = supCells[i];
-		    int lit=supCell.literal;
-		    int var=literalList[lit].var ;
+		    // int lit=supCell.literal;
+		    literalList[lit].supportCellList = unStitchToNextActive(supportCellList); 
+			    
+			    int var=literalList[lit].var ;
 
 		    if(supCell.prev==0) { 	// this was the first support in list
 
