@@ -1,4 +1,10 @@
+// For efficiency of memory can tidy up Literal.primeSupport and Literal.nextPrimeLit 0 with care.
+//
+// deletesupport internal does not need BT argument but can't face removing it just now
 // LIST BASED CODE WONT BE WORKING
+//
+// Do we have an invariant - at quiescence everything has prime support or supportspervar < supports?   Should do really, right?
+
 
 // Started on git branch  supportsgac+bstable+adaptive+lazy
 //  	intended for supportsgac 
@@ -115,8 +121,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	int var ; 
 	int val ;
 	SupportCell supportCellList; 
-	int nextPrimeLit; 	// could use literal in SupportCell
-//	Literal() { supportCellList = 0 ;} 
+	int nextPrimeLit;      // could use literal in SupportCell
+	Support* primeSupport; // could use sup in SupportCell
     };
 
     struct Support {
@@ -357,7 +363,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	// Want to find all active support objects so we can delete them 
         for(int lit=0; lit<numlits; lit++) {
-               SupportCell* supCell = literalList[lit].supportCellList; 
+               SupportCell* supCell = literalList[lit].supportCellList.next; 
 
 	      // cout << "     destructor 2: sup*= " << sup << endl ; 
                 while(supCell!=0) {
@@ -527,14 +533,14 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    
             supCells[i].prev = 0;
             supCells[i].next = literalList[lit].supportCellList;  
-            if(literalList[lit].supportCellList!=0) {
+            if(literalList[lit].supportCellList.next!=0) {
                 literalList[lit].supportCellList->prev = &(supCells[i]);
             }
 	    else { 
             // Attach trigger if this is the first support containing var,val.
                 attach_trigger(var, literalList[lit].val, lit);
             }
-	    literalList[lit].supportCellList = &(supCells[i]);
+	    literalList[lit].supportCellList.next = &(supCells[i]);
 
             //update counters
             supportsPerVar[var]++;
@@ -575,42 +581,75 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         // return sup_internal;
     }
     
-    void deleteSupport(Support* sup) {
-        deleteSupportInternal(sup, false);
+    // At time this is called new prime support is first in list and active
+    // But at a later time we can't guarantee that prime support is first in the list
+    //
+    void makePrimeSupport(int lit) {
+	        Support* sup = literalList[lit].supportCellList.next->sup; 
+		literalList[lit].nextPrimeLit = sup->nextPrimeLit; 
+		sup->nextPrimeLit = lit; 
+		literalList[lit].primeSupport = sup; 
     }
+    
+    BOOL hasNoKnownSupport(int var,int lit) {
+	    //
+	    // Either implicitly supported or counter is non zero
+	    // Note that even if we have an explicit support which may be invalid, we can return true
+	    // i.e. code does not guarantee that it has a valid support, only that it has a support.
+	    // If we have no valid supports then (if algorithms are right) we will eventually delete
+	    // the last known valid support and at that time start looking for a new one.
 
-    // 
-    inline void	unStitchOneCell(Support* supCell) { 
-	   if (supCell->prev != 0) { 
-		   supCell->prev->next = supCell->next; 
-	   }
-	   if (supCell->next != 0) { 
-		   supCell->next->prev = supCell->prev; 
-	   }
-    }
+	    D_ASSERT(var == literalList[lit].var); 
 
-    inline SupportCell*  unStitchToNextActive(SupportCell* supCell) { 
-	    while (supCell != 0 && !supCell->sup->active) { 
-	            unStitchOneCell(supCell);
-		    supCell = supCell->next;
+	    if (supportsPerVar[var] < supports || literalList[lit].primeSupport != 0) { 
+		    return false; 
 	    }
-	    return sup ;
+	    else { 
+		    unStitchToNextActive(literalList[lit].supportCellList, lit);
+	            if (literalList[lit].supportCellList.next == 0) {
+			    return true;}
+		    else { 
+			    makePrimeSupport(lit);
+			    return false
+		    };
+	    }
     }
 
-    inline void forceUnStitch (SupportCell* sup) { 
+    inline void unStitchToNextActive(SupportCell& supCell, int lit) { 
+	    while (supCell.next != 0 && !supCell.next->sup->active) { 
+		    supCell.next->prev = 0 ; // so we'll know it's unstitched
+		    supCell.next = supCell.next->next;
+	    }
+	    if(supCell.next != 0) {
+		    supCell.next->prev = &supCell ; 
+	    }
+	    else
+	    {
+		   // Remove trigger since this is the last support containing var,val.
+	            if(SupportsGACUseDT) { detach_trigger(lit); }
+	    }
+    }
+
+
+    inline void forceUnStitch (Support* sup) { 
 	  int arity = sup->arity;
 	  vector<supportCell>& supCells = sup->supCells; 
 
 	  for(int i=0; i < arity ; i++) { 
-		  if(supCells[i].prev->next == supCells[i]) {
-			  if(supCells[i].prev != 0)
-				  supCells[i]->next = supCells[i].next ;
+		  if(supCells[i].prev != 0) {
+			  supCells[i].prev->next = supCells[i].next ;
 			  if(supCells[i].next != 0) { 
 				  supCells[i].next->prev = supCells[i].prev;
 			  }
 		  }
 	  }  
     }
+
+    void deleteSupport(Support* sup) {
+        deleteSupportInternal(sup, false);
+    }
+
+    // 
     
     void deleteSupportInternal(Support* sup, bool Backtracking) {
         D_ASSERT(sup!=0);
@@ -663,8 +702,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 				    zeroLits[var].push_back(lit);
 				}
 				#endif
-			    // Remove trigger since this is the last support containing var,val.
-			       if(SupportsGACUseDT) { detach_trigger(lit); }
 			    }
 			    else { 
 				    supCell.next->prev=0;
@@ -725,18 +762,14 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	else {
 		// it's a full length support 
 
-		for(int lit = sup->nextPrimeLit ; lit >= 0 ; lit=literalList[lit].nextPrimeLit) {  
+		for(int lit = sup->nextPrimeLit ; lit >= 0 ; ) {  
 
 		    // int lit=supCell.literal;
-		    literalList[lit].supportCellList = unStitchToNextActive(supportCellList); 
+		    unStitchToNextActive(literalList[lit].supportCellList,lit);
 			    
-			    int var=literalList[lit].var ;
+		    int oldlit = lit ; 
 
-		    if(supCell.prev==0) { 	// this was the first support in list
-
-			    literalList[lit].supportCellList = supCell.next; 
-
-			    if(supCell.next==0) { 
+		    if(literalList[lit].supportCellList.next==0) { 
 				    // We have lost the last support for lit
 				    //
 		    // I believe that each literal can only be marked once here in a call to update_counters.
@@ -745,7 +778,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    // As long as we do not actually call find_new_support.
 		    // So probably should shove things onto a list and then call find supports later
 
-				if (!Backtracking && supportsPerVar[var] == supports) {		// supports won't be decremented
+				if (!Backtracking && supportsPerVar[literalList[lit]].var == supports) {		// supports won't be decremented
 					litsWithLostExplicitSupport.push_back(lit);
 					lastSupportPerLit[lit] = sup;
 				}
@@ -759,21 +792,19 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 				    zeroLits[var].push_back(lit);
 				}
 				#endif
-			    // Remove trigger since this is the last support containing var,val.
-			       if(SupportsGACUseDT) { detach_trigger(lit); }
-			    }
-			    else { 
-				    supCell.next->prev=0;
-			    }
+
+		               lit=literalList[lit].nextPrimeLit; 
+			       literalList[oldlit].nextPrimeLit = -1; 
+			       literalList[oldlit].primeSupport = 0;
 		    }
+			    
 		    else {
-			    supCell.prev->next = supCell.next;
-			    if(supCell.next!=0){
-				    supCell.next->prev = supCell.prev;
-			    }
+			    // we have found a replacement prime support ; 
+		               lit=literalList[lit].nextPrimeLit; 
+			       makePrimeSupport(oldlit); 
 		    }
-		    
 		}
+		sup->nextPrimeLit = -1; 
 		
 		// Since this was a full length supports no var has lost its last implicit support
 		
@@ -790,18 +821,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     }
 
 
-    BOOL hasNoKnownSupport(int var,int lit) {
-	    //
-	    // Either implicitly supported or counter is non zero
-	    // Note that even if we have an explicit support which may be invalid, we can return true
-	    // i.e. code does not guarantee that it has a valid support, only that it has a support.
-	    // If we have no valid supports then (if algorithms are right) we will eventually delete
-	    // the last known valid support and at that time start looking for a new one.
-
-	    D_ASSERT(var == literalList[lit].var); 
-
-	    return supportsPerVar[var] == supports && (literalList[lit].supportCellList == 0);
-    }
     //
     ////////////////////////////////////////////////////////////////////////////
     // 
@@ -947,8 +966,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    
 	    litsWithLostExplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 	    
-	    
 	    if(vars[var].inDomain(val)) {
+		    // might have added implicit or explicit support since we worked out it had lost support
 		    if (hasNoKnownSupport(var,lit) && ! findSupportsIncrementalHelper(var,val) ) { 
 			    // removed val so must annotate why
 			    lastSupportPerLit[lit]->numLastSupported++ ;
