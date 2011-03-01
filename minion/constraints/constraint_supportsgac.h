@@ -596,7 +596,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         deleteSupportInternal(sup, false);
     }
 
-    void deleteSupportInternalPrimary(Support* sup) {
+    void deleteSupportInternalPrimary(Support* sup, bool Backtracking) {
         D_ASSERT(sup!=0);
         
 	sup->active = false; 
