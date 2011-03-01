@@ -578,7 +578,37 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     }
 
     // 
+    inline void	unStitchOneCell(Support* supCell) { 
+	   if (supCell->prev != 0) { 
+		   supCell->prev->next = supCell->next; 
+	   }
+	   if (supCell->next != 0) { 
+		   supCell->next->prev = supCell->prev; 
+	   }
+    }
 
+    inline SupportCell*  unStitchToNextActive(SupportCell* supCell) { 
+	    while (supCell != 0 && !supCell->sup->active) { 
+	            unStitchOneCell(supCell);
+		    supCell = supCell->next;
+	    }
+	    return sup ;
+    }
+
+    inline void forceUnStitch (SupportCell* sup) { 
+	  int arity = sup->arity;
+	  vector<supportCell>& supCells = sup->supCells; 
+
+	  for(int i=0; i < arity ; i++) { 
+		  if(supCells[i].prev->next == supCells[i]) {
+			  if(supCells[i].prev != 0)
+				  supCells[i]->next = supCells[i].next ;
+			  if(supCells[i].next != 0) { 
+				  supCells[i].next->prev = supCells[i].prev;
+			  }
+		  }
+	  }  
+    }
     
     void deleteSupportInternal(Support* sup, bool Backtracking) {
         D_ASSERT(sup!=0);
@@ -589,7 +619,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         vector<SupportCell>& supCells=sup->supportCells;
 	int supArity = sup->arity; 
 
-	if(supCells.size() < vars.size() ) { 
+	if(supArity < vars.size() ) { 
 		// it's a short support 
 
 		int oldIndex  = supportNumPtrs[supports];
@@ -1915,6 +1945,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     inline void addToSupportFreeList(Support* sup)
     { 
+	  forceUnstitch(sup); 
 	  sup->nextFree=supportFreeList; 
 	  supportFreeList=sup;
     }
