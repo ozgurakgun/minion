@@ -114,6 +114,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	int var ; 
 	int val ;
 	SupportCell* supportCellList; 
+	int nextPrimeLit; 
 //	Literal() { supportCellList = 0 ;} 
     };
 
@@ -126,6 +127,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	Support* nextFree ; // for when Support is in Free List.
 	bool active;  
 	int  numLastSupported;
+
+	int firstPrimeLit;
         
         Support()
         {
@@ -134,6 +137,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    nextFree=0;
 	    active = true;  
 	    numLastSupported=0;
+	    firstPrimeLit=-1;
         }
     };
     
@@ -572,6 +576,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     void deleteSupport(Support* sup) {
         deleteSupportInternal(sup, false);
     }
+
+    // 
+
     
     void deleteSupportInternal(Support* sup, bool Backtracking) {
         D_ASSERT(sup!=0);
