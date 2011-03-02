@@ -526,26 +526,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		// it's a short support, so update supportsPerVar and supports 
           for(int i=0; i<litsize; i++) {
 
-	    int lit=supCells[i].literal;
-	    int var=literalList[lit].var;
-	    
-            // Stitch it into the start of literalList.supportCellList
-	    
-            supCells[i].prev = &(literalList[lit].supportCellList);
-            supCells[i].next = literalList[lit].supportCellList.next;  
-	    if(literalList[lit].supportCellList.next!=0) {
-                literalList[lit].supportCellList.next->prev = &(supCells[i]);
-            }
-	    else { 
-            // Attach trigger if this is the first support containing var,val.
-                attach_trigger(var, literalList[lit].val, lit);
-            }
-	    literalList[lit].supportCellList.next = &(supCells[i]);
+	    addSupportInternalHelperExplicit(sup_internal,supCells[i]);
 
-            if(supportsPerVar[var] == supports && literalList[lit].primeSupport == 0) { 
-		    makePrimeSupport(lit,sup_internal);
-	    }
-
+	    int var=literalList[supCells[i].literal].var;
             //update counters
             supportsPerVar[var]++;
             // Update partition
@@ -633,6 +616,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    }
     }
 
+    // HERE: really only need to point first cell at last one in list
+
     inline void unStitchToNextActive(SupportCell& supCell, int lit) { 
 	    while (supCell.next != 0 && !supCell.next->sup->active) { 
 		    supCell.next->prev = 0 ; // so we'll know it's unstitched
@@ -649,15 +634,22 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     }
 
 
+    // Thing is still stitched IF prev is not zero 
+    // 			     AND thing pointed to by prev points here.
+
     inline void forceUnStitch (Support* sup) { 
 	  int arity = sup->arity;
 	  vector<supportCell>& supCells = sup->supCells; 
 
 	  for(int i=0; i < arity ; i++) { 
 		  if(supCells[i].prev != 0) {
-			  supCells[i].prev->next = supCells[i].next ;
+			  if(supCells[i].prev->next == &(supCells[i])) { 
+				  supCells[i].prev->next = supCells[i].next ;
+			  }
 			  if(supCells[i].next != 0) { 
-				  supCells[i].next->prev = supCells[i].prev;
+				  if(supCells[i].next->prev == &(supCells[i])) { 
+					  supCells[i].next->prev = supCells[i].prev;
+				  }
 			  }
 		  }
 	  }  
@@ -1041,18 +1033,30 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	}
     }
 
+    // This is only called from propagate, and so literal is deleted.   
+    // Don't even both to unstitch here because we will never traverse this list again
+    // until it is restored on backtracking.
+    // Furthermore we now that when we are done all supCells are inactive.  So 
+    // we can force supCellList to be empty if we want, to save work in unstitchToActive
+    // later on.
+    // However this then complicates flush unstitching
+    //
+
     inline void updateCounters(int lit) {
 
-        SupportCell* supCellList = literalList[lit].supportCellList ;
+        SupportCell* supCellList = literalList[lit].supportCellList.next ;
 
         litsWithLostExplicitSupport.resize(0);   
         varsWithLostImplicitSupport.resize(0);
 
         while(supCellList != 0) {
             SupportCell* next=supCellList->next;
-            deleteSupport(supCellList->sup);
+            if(supCellList->sup->active){ 
+		    deleteSupport(supCellList->sup);
+	    }
             supCellList=next;
         }
+	literalList[lit].supportCellList.next = 0;
     }
     
     
