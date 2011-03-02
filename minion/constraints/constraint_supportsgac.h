@@ -367,6 +367,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     virtual ~ShortSupportsGAC() {
         //printStructures();
         set<Support*> myset;
+	
+	return; 	// HERE to fix
 
 	/* 
         for(int i=0; i<vars.size(); i++) {
@@ -589,6 +591,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             if(supportsPerVar[var] == supports && literalList[lit].primeSupport == 0) { 
 		    makePrimeSupport(lit,sup);
 	    }
+
+	    cout << "aSIHE a " << lit << " " << &(literalList[lit].supportCellList) << " " << &supCell << " " << supCell.prev << " " << supCell.next << " " << literalList[lit].supportCellList.next << endl; 
+
     }
 
         
@@ -636,10 +641,11 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     // is added back in.
 
     inline void unStitchToNextActive(SupportCell& supCell, int lit) { 
+	    cout << "uSTNA Is it here " << lit << endl ;
 	    SupportCell* tempCell = supCell.next; 
 
 	    while (tempCell != 0 && !tempCell->sup->active) { 
-	//	    supCell.next->prev = 0 ; // so we'll know it's unstitched
+		    // supCell.next->prev = 0 ; // so we'll know it's unstitched
 		    tempCell = tempCell->next;
 	    }
 	    supCell.next = tempCell; 
@@ -651,6 +657,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		   // Remove trigger since this is the last support containing var,val.
 	            if(SupportsGACUseDT) { detach_trigger(lit); }
 	    }
+	    cout << "uSTNA Is it here " << lit << " " << &supCell << " " << &tempCell << endl ;
     }
 
 
@@ -764,6 +771,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	for(int lit = sup->nextPrimeLit ; lit >= 0 ; ) {  
 
+	    cout << "Is it here " << lit << endl ;
 	    int oldlit = lit ; 
 	    int var = literalList[lit].var;
 
@@ -1066,15 +1074,22 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
         SupportCell* supCellList = literalList[lit].supportCellList.next ;
 
+	cout << "uC Is it here a " << lit << " " << &(literalList[lit].supportCellList) << " " 
+		<< supCellList << " " ; 
+	
+	if (supCellList !=0) { cout << supCellList->next << endl ; } else cout << endl ; 
+
         litsWithLostExplicitSupport.resize(0);   
         varsWithLostImplicitSupport.resize(0);
 
         while(supCellList != 0) {
             SupportCell* next=supCellList->next;
+	    cout << "uC Is it here b " << lit << " " << supCellList << " " << next << endl ;
             if(supCellList->sup->active){ 
 		    deleteSupport(supCellList->sup);
 	    }
-            supCellList=next;
+            if(supCellList==next) { cout << flush ; exit(1); } 
+	    supCellList=next;
         }
 	literalList[lit].supportCellList.next = 0;
     }
