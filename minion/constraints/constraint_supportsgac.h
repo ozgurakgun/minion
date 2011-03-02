@@ -115,6 +115,23 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    Support* sup ; 
 	    SupportCell* next ; 
 	    SupportCell* prev ; 
+	    
+	    SupportCell(int lit) 
+	    {
+		    literal = lit; 
+		    sup = 0;
+		    next = 0; 
+		    prev = 0;
+	    }
+
+	    SupportCell() 
+	    {
+		    literal = -1; 
+		    sup = 0;
+		    next = 0; 
+		    prev = 0;
+	    }
+
     };
 
     struct Literal { 
@@ -232,7 +249,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    literalList.resize(litCounter+1);
 		    literalList[litCounter].var = i; 
 		    literalList[litCounter].val = j+thisvalmin; 
-		    literalList[litCounter].supportCell = {litcounter, 0, 0, 0};
+		    literalList[litCounter].supportCellList = SupportCell(litCounter);
+		    literalList[litCounter].primeSupport = 0;
 		    literalList[litCounter].nextPrimeLit = -1;
 		    litCounter++;
 	    }
@@ -395,7 +413,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     
     ////////////////////////////////////////////////////////////////////////////
-    {
     // Backtracking mechanism
     
     struct BTRecord {
@@ -574,13 +591,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    }
     }
 
-
         
-        //printStructures();
-        
-        // return sup_internal;
-    }
-    
     // At time this is called new prime support is first in list and active
     // But at a later time we can't guarantee that prime support is first in the list
     //
@@ -614,8 +625,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			    return true;}
 		    else { 
 			    makePrimeSupport(lit); // only known support is explicit so must be notified.
-			    return false
-		    };
+			    return false;
+		    }
 	    }
     }
 
@@ -625,7 +636,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     // is added back in.
 
     inline void unStitchToNextActive(SupportCell& supCell, int lit) { 
-	    Support* tempCell = supCell.next; 
+	    SupportCell* tempCell = supCell.next; 
 
 	    while (tempCell != 0 && !tempCell->sup->active) { 
 	//	    supCell.next->prev = 0 ; // so we'll know it's unstitched
@@ -645,9 +656,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     // Thing is still stitched if thing pointed to by prev points here and/or same for next
 
-    inline void forceUnStitch (Support* sup) { 
+    inline void forceUnstitch (Support* sup) { 
 	  int arity = sup->arity;
-	  vector<supportCell>& supCells = sup->supCells; 
+	  vector<SupportCell>& supCells = sup->supportCells; 
 
 	  for(int i=0; i < arity ; i++) { 
 		  if(supCells[i].prev != 0) {
@@ -754,8 +765,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	for(int lit = sup->nextPrimeLit ; lit >= 0 ; ) {  
 
 	    int oldlit = lit ; 
+	    int var = literalList[lit].var;
 
-	    if(supportsPerVar[literalList[lit].var] < supports) { 
+
+	    if(supportsPerVar[var] < supports) { 
 		// Don't even need to unstitch if supports > supportspervar
 		// just shove onto zeroLits even though it might not be zero
 		// And need to make unprime
@@ -997,7 +1010,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			// Note that we might have found an implicit support in the meantime
                         if(!hasNoKnownSupport(var,lit)) { 
 			     // No longer a zero val if known support is explicit. remove from vector.
-			    if(literalListPerVar[lit].primeSupport != 0) {
+			    if(literalList[lit].primeSupport != 0) {
 				    zeroLits[var][j]=zeroLits[var][zeroLits[var].size()-1];
 				    zeroLits[var].pop_back();
 				    inZeroLits[lit]=false;
