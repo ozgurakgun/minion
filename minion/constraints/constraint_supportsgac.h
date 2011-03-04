@@ -1115,7 +1115,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             if(supCellList->sup->active){ 
 		    deleteSupport(supCellList->sup);
 	    }
-            if(supCellList==next) { cout << flush ; exit(1); } 
+            if(supCellList==next) { cout << "We have a circular loop" << flush ; exit(1); } 
 	    supCellList=next;
         }
 	literalList[lit].supportCellList.next = 0;
@@ -1136,9 +1136,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
       DynamicTrigger* dt = dynamic_trigger_start();
       // find the trigger for var, val.
       dt=dt+lit;
+      if(dt->isAttached()) { 
+		cout << "Trigger is attached when trying to attach: lit: " << lit << " var " << var << " val " << val << " dt " << dt <<  endl ; 
+	}
+      else { 
       D_ASSERT(!dt->isAttached());
-      
       vars[var].addDynamicTrigger(dt, DomainRemoval, val );   //BT_CALL_BACKTRACK
+      }
   }
   
   inline void detach_trigger(int lit)
@@ -1149,7 +1153,14 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
       
       DynamicTrigger* dt = dynamic_trigger_start();
       dt=dt+lit;
+
+      if(!dt->isAttached()) { 
+		cout << "Trigger is detached when trying to detach: lit: " << lit << " dt " << dt <<  endl ; 
+	}
+      else { 
+      D_ASSERT(dt->isAttached());
       releaseTrigger(stateObj, dt);   // BT_CALL_BACKTRACK
+      }
   }
     
   virtual void propagate(int prop_var, DomainDelta)
