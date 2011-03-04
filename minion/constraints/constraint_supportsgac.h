@@ -670,7 +670,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	    while (tempCell != 0 && !tempCell->sup->active) { 
 		    tempCell->prev = 0 ; // so we'll know it's unstitched
+		    SupportCell* lastCell = tempCell;
 		    tempCell = tempCell->next;
+		    lastCell->next = 0;
 	    }
 	    supCell.next = tempCell; 
 	    if(tempCell != 0) {
@@ -1112,6 +1114,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
         while(supCellList != 0) {
             SupportCell* next=supCellList->next;
+	    supCellList->prev = 0 ; // so we will know it's unstitched
 	    // cout << "uC Is it here b " << lit << " " << supCellList << " " << next << endl ;
             if(supCellList->sup->active){ 
 		    deleteSupport(supCellList->sup);
