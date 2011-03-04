@@ -365,7 +365,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     // Dtor
     
     virtual ~ShortSupportsGAC() {
-        //printStructures();
+        cout << "Entered destructor " << endl ; printStructures();
         set<Support*> myset;
 	
 //	return; 	// HERE to fix
@@ -446,13 +446,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     void mark() {
         struct BTRecord temp = { 0, 0, 0 };
         backtrack_stack.push_back(temp);  // marker.
-	// printStructures();
+	printStructures();
     }
     
     void pop() {
-        // cout << "Before BACKTRACKING:" << endl;
-	// printStructures();
-        //cout << backtrack_stack <<endl;
+        cout << "Before BACKTRACKING:" << endl;
+	printStructures();
+        cout << backtrack_stack <<endl;
         while(backtrack_stack.back().sup != 0) {
             BTRecord temp=backtrack_stack.back();
             backtrack_stack.pop_back();
@@ -478,9 +478,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         }
         
         backtrack_stack.pop_back();  // Pop the marker.
-        // cout << "After BACKTRACKING:" << endl;
-	// printStructures();
-        //cout << "END OF BACKTRACKING." << endl;
+        cout << "After BACKTRACKING:" << endl;
+	 printStructures();
+        cout << "END OF BACKTRACKING." << endl;
     }
     
     ////////////////////////////////////////////////////////////////////////////
@@ -576,11 +576,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    int lit=supCell.literal;
 	    int var=literalList[lit].var;
 
-	    /* 
-	     * cout << "aSIHE a " << lit << " " << &(literalList[lit].supportCellList) << " " << &supCell << " " << supCell.prev << " " << supCell.next << " " << literalList[lit].supportCellList.next << " "; 
+	     cout << "aSIHE a " << lit << " " << &(literalList[lit].supportCellList) << " " << &supCell << " " << supCell.prev << " " << supCell.next << " " << literalList[lit].supportCellList.next << " "; 
 	    if(supCell.prev) { cout << supCell.prev->next; } ;
 	    cout << endl; 
-	    */
 
 	    if (!Backtracking || supCell.prev == 0 || supCell.prev->next!=&supCell) { 
 		    // otherwise 
@@ -612,11 +610,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    makePrimeSupport(lit,sup);
 	    }
 
-	    /*
 	    cout << "aSIHE b " << lit << " " << &(literalList[lit].supportCellList) << " " << &supCell << " " << supCell.prev << " " << supCell.next << " " << literalList[lit].supportCellList.next ; 
-	    if(supCell.prev) { cout << supCell.prev->next; } ;
+	    if(supCell.prev) { cout << " " << supCell.prev->next; } ;
 	    cout << endl; 
-	    */
 
     }
 
@@ -665,7 +661,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     // is added back in.
 
     inline void unStitchToNextActive(SupportCell& supCell, int lit) { 
-	    // cout << "uSTNA Is it here " << lit << endl ;
+	    cout << "uSTNA Is it here " << lit << endl ;
 	    SupportCell* tempCell = supCell.next; 
 
 	    while (tempCell != 0 && !tempCell->sup->active) { 
@@ -683,7 +679,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		   // Remove trigger since this is the last support containing var,val.
 	            if(SupportsGACUseDT) { detach_trigger(lit); }
 	    }
-	    // cout << "uSTNA Is it here " << lit << " " << &supCell << " " << &tempCell << endl ;
+	    cout << "uSTNA Is it here " << lit << " " << &supCell << " " << &tempCell << endl ;
     }
 
 
@@ -797,7 +793,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	for(int lit = sup->nextPrimeLit ; lit >= 0 ; ) {  
 
-	    // cout << "Is it here " << lit << endl ;
+	    cout << "Is it here " << lit << endl ;
 	    int oldlit = lit ; 
 	    int var = literalList[lit].var;
 
@@ -1104,10 +1100,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
         SupportCell* supCellList = literalList[lit].supportCellList.next ;
 
-	// cout << "uC Is it here a " << lit << " " << &(literalList[lit].supportCellList) << " " 
-	// 	<< supCellList << " " ; 
+	cout << "uC Is it here a " << lit << " " << &(literalList[lit].supportCellList) << " " 
+	 	<< supCellList << " " ; 
 	
-	// if (supCellList !=0) { cout << supCellList->next << endl ; } else cout << endl ; 
+	if (supCellList !=0) { cout << supCellList->next << endl ; } else cout << endl ; 
 
         litsWithLostExplicitSupport.resize(0);   
         varsWithLostImplicitSupport.resize(0);
@@ -1115,7 +1111,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         while(supCellList != 0) {
             SupportCell* next=supCellList->next;
 	    supCellList->prev = 0 ; // so we will know it's unstitched
-	    // cout << "uC Is it here b " << lit << " " << supCellList << " " << next << endl ;
+	    cout << "uC Is it here b " << lit << " " << supCellList << " " << next << endl ;
             if(supCellList->sup->active){ 
 		    deleteSupport(supCellList->sup);
 	    }
@@ -1182,7 +1178,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
   
     virtual void propagate(DynamicTrigger* dt)
   {
-	  // printStructures();
+	   printStructures();
       int lit=dt-dynamic_trigger_start();
 
     //  cout << "Propagate called: var= " << var << "val = " << val << endl;
@@ -1200,7 +1196,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	      }
 	      deletedSupports.pop_back();
       }
-      // printStructures();
+      printStructures();
   }
 
     // for backtrack stability we can't delete assigned variables, i.e. added even if isAssigned. 
@@ -2060,7 +2056,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
        }
 
        findSupportsInitial();
-       // printStructures();
+       printStructures();
     }
     
     virtual vector<AnyVarRef> get_vars()
