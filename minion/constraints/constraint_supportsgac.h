@@ -661,9 +661,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     // is added back in.
 
     inline void unStitchToNextActive(SupportCell& supCell, int lit) { 
-	    cout << "uSTNA Is it here " << lit << endl ;
 	    SupportCell* tempCell = supCell.next; 
 
+	    if (tempCell == 0) { 
+		    return ; // nothing to do, don't risk detaching a trigger.
+	    }
+	    cout << "uSTNA Is it here a " << lit << endl ;
 	    while (tempCell != 0 && !tempCell->sup->active) { 
 		    tempCell->prev = 0 ; // so we'll know it's unstitched
 		    SupportCell* lastCell = tempCell;
@@ -679,7 +682,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		   // Remove trigger since this is the last support containing var,val.
 	            if(SupportsGACUseDT) { detach_trigger(lit); }
 	    }
-	    cout << "uSTNA Is it here " << lit << " " << &supCell << " " << &tempCell << endl ;
+	    cout << "uSTNA Is it here b" << lit << " " << &supCell << " " << &tempCell << endl ;
     }
 
 
