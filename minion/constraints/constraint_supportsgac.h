@@ -156,6 +156,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         
         Support()
         {
+            supportCells.reserve(vars.size());	// HERE possibly inefficient
             supportCells.resize(0);
 	    arity=0;
 	    nextFree=0;
@@ -1102,6 +1103,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     inline void updateCounters(int lit) {
 
         SupportCell* supCellList = literalList[lit].supportCellList.next ;
+
+	if(supCellList == 0) { 
+		return ; // nothing to do and don't want to try detaching triggers
+	}
 
 	cout << "uC Is it here a " << lit << " " << &(literalList[lit].supportCellList) << " " 
 	 	<< supCellList << " " ; 
