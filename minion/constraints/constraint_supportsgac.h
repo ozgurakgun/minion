@@ -156,7 +156,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         
         Support()
         {
-            supportCells.reserve(vars.size());	// HERE possibly inefficient
+    //        supportCells.reserve(vars.size());	// HERE possibly inefficient
             supportCells.resize(0);
 	    arity=0;
 	    nextFree=0;
@@ -581,6 +581,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    if(supCell.prev) { cout << supCell.prev->next; } ;
 	    cout << endl; 
 
+	    if(literalList[lit].supportCellList.next == 0) {
+		    attach_trigger(var,literalList[lit].val,lit);
+	    }
 	    if (!Backtracking || supCell.prev == 0 || supCell.prev->next!=&supCell) { 
 		    // otherwise 
 		    // cell has never been unstitched and (I claim) is still accessible from lit list
@@ -602,7 +605,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    }
 		    else { 
 		    // Attach trigger if this is the first support containing var,val.
-			attach_trigger(var, literalList[lit].val, lit);
+			// attach_trigger(var, literalList[lit].val, lit);
 		    }
 		    literalList[lit].supportCellList.next = &(supCell);
 	    }
@@ -681,7 +684,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    else
 	    {
 		   // Remove trigger since this is the last support containing var,val.
-	            if(SupportsGACUseDT) { detach_trigger(lit); }
+	            // if(SupportsGACUseDT) { detach_trigger(lit); }
 	    }
 	    cout << "uSTNA Is it here b" << lit << " " << &supCell << " " << &tempCell << endl ;
     }
@@ -689,6 +692,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     // Thing is still stitched if thing pointed to by prev points here and/or same for next
 
+    // HERE shouldn't we detach trigger if something is a final one
+    
     inline void forceUnstitch (Support* sup) { 
 	  int arity = sup->arity;
 	  vector<SupportCell>& supCells = sup->supportCells; 
@@ -1195,6 +1200,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     findSupportsIncremental();
     */
   }
+
+  // HERE 
+  // Might be better to literally do it on empty list.
+  // I.e. when list is empty - active or not - and we add anything we attach a trigger
+  // When propagate is called and list is empty, we detach the trigger.
+
   
     virtual void propagate(DynamicTrigger* dt)
   {
