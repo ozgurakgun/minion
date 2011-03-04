@@ -1119,6 +1119,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    supCellList=next;
         }
 	literalList[lit].supportCellList.next = 0;
+	detach_trigger(lit);
     }
     
     
