@@ -142,6 +142,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	Support* primeSupport; // could use sup in SupportCell
     };
 
+    int numVars;
+
     struct Support {
         vector<SupportCell> supportCells ;   // Size can't be more than r, but can be less.
 
@@ -156,7 +158,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         
         Support()
         {
-    //        supportCells.reserve(vars.size());	// HERE possibly inefficient
             supportCells.resize(0);
 	    arity=0;
 	    nextFree=0;
@@ -222,6 +223,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     vars(_var_array), supportFreeList(0)
     {
 	int numvars = vars.size(); 
+	numVars = numvars;
 	
 	// literalsScratch.reserve(numvars);
 
@@ -1011,10 +1013,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         // For each variable where the number of supports is equal to the total...
 
 
+	cout << "Entering FSI" << endl ; 
+
 	for(int i=litsWithLostExplicitSupport.size()-1; i >= 0; i--) { 
 	    int lit=litsWithLostExplicitSupport[i];
 	    int var=literalList[lit].var;
 	    int val=literalList[lit].val;
+	cout << "  LostExplicit i/lit/var/val = " << i << " " << lit << " " << var << " " << val   << endl ; 
 	    
 	    litsWithLostExplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 	    
@@ -1043,26 +1048,34 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             int var= varsWithLostImplicitSupport[i];
 	    varsWithLostImplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 
+	cout << "  LostImplicit i/var= " << i << " " << var << "spv " << supportsPerVar[var] << " sup " << supports << endl ; 
+
 	    if (supportsPerVar[var] == supports) { 	// otherwise var has found implicit support in the meantime
 		    #if !SupportsGACUseZeroVals
 		    for(int val=vars[var].getMin(); val<=vars[var].getMax(); val++) {
 			int lit=firstLiteralPerVar[var]+val-vars[var].getInitialMin();
 		    #else
+		cout << "    spv = sup " << endl ; 
+
 		    for(int j=0; j<zeroLits[var].size(); j++) {
 			int lit=zeroLits[var][j];
+		cout << "      ZeroLits j/lit/size " << j << " " << lit << " " << zeroLits[var].size() << endl ; 
 			// Note that we might have found an implicit support in the meantime
                         if(!hasNoKnownSupport(var,lit)) { 
 			     // No longer a zero val if known support is explicit. remove from vector.
 			    if(literalList[lit].primeSupport != 0) {
+		cout << "      had prime support " << endl ; 
 				    zeroLits[var][j]=zeroLits[var][zeroLits[var].size()-1];
 				    zeroLits[var].pop_back();
 				    inZeroLits[lit]=false;
+			            j--;
 			    }
-			    j--;
 			    continue;
 			}
 			int val=literalList[lit].val;
 		    #endif
+
+
 
 		    #if !SupportsGACUseZeroVals
 			if(vars[var].inDomain(val) && (literalList[lit].supportCellList.next == 0)){
@@ -1070,7 +1083,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			if(vars[var].inDomain(val)) {	// Know it has no support here
 		    #endif
 
+		cout << "      About to call fSIH var/val = " << var << " " << val << endl ; 
+
 		         if (! findSupportsIncrementalHelper(var,val) ) {
+				 cout << "       failed " << endl ;
 				    // fSIH calls addsupport which will set up the prime support if it is explicit support 
 				    lastSupportPerVar[var]->numLastSupported++;
         		            struct BTRecord backtrackInfo = { var, lit, lastSupportPerVar[var] };
@@ -2061,7 +2077,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     Support* getFreeSupport() {
         // Either get a Support off the free list or make one.
         if(supportFreeList==0) {
-            return new Support();
+	    
+            Support* newSup =  new Support();
+            newSup->supportCells.reserve(numVars);	// HERE possibly inefficient
+	    return newSup;
         }
         else {
             Support* temp=supportFreeList;
