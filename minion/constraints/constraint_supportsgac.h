@@ -948,7 +948,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	}
 	sup->nextPrimeLit = -1; 
 
-	cout << "   dsip exit " << sup << " bool " << Backtracking << endl; 
     }
 
 
@@ -1285,10 +1284,7 @@ cout << "uc entering loop supcell = " << supCellList << endl ;
 	*/
 	
 	
-	cout << "update counter loop ended "  << endl ; 
-	cout << "about to detach trigger"  << endl ; 
 	detach_trigger(lit);
-	cout << "update counter about to exit"  << endl ; 
     }
     
     
