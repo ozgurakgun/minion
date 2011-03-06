@@ -712,6 +712,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 #if PrintingStructures
 	    cout << " uSTNA Is it here loop  " << lit << " " << tempCell << " " << last << " " << end << endl ;
+#endif
 
 		    last = tempCell; 
 #if PrintingStructures
@@ -797,7 +798,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     void deleteSupportInternal(Support* sup, bool Backtracking) {
         D_ASSERT(sup!=0);
 
-	cout << " dsi 1 " << sup << " bool " << Backtracking << endl; 
                 
 	sup->active = false; 		
 	sup->numLastSupported = 0; 	// HERE: is this right?   
@@ -806,18 +806,14 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         vector<SupportCell>& supCells=sup->supportCells;
 	int supArity = sup->arity; 
 
-	cout << " dsi 3 " << sup << " bool " << Backtracking << endl; 
 	if(supArity < vars.size() ) { 
 		// it's a short support 
 
-	cout << " dsi 4 " << sup << " bool " << Backtracking << endl; 
 		deleteSupportInternalPrimes(sup,Backtracking) ;	// Do this before updating supportsPerVar
 								// and supports so they are consistent
-	cout << " dsi 5 " << sup << " bool " << Backtracking << endl; 
 		int oldIndex  = supportNumPtrs[supports];
 		for(int i=0; i<supArity; i++) {
 
-	cout << "   dsi 6 " << sup << " bool " << Backtracking << endl; 
 		    SupportCell& supCell = supCells[i];
 		    int lit=supCell.literal;
 		    int var=literalList[lit].var ;
@@ -879,16 +875,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    addToSupportFreeList(sup); 
 		}
 	}
-	cout << " dsi exit " << sup << " bool " << Backtracking << endl; 
     }
 
     void deleteSupportInternalPrimes(Support* sup, bool Backtracking) { 
 
-	cout << " dsiP 1 " << sup << " bool " << Backtracking << endl; 
 
 	for(int lit = sup->nextPrimeLit ; lit >= 0 ; ) {  
 
-	cout << "  dsiP 2 " << sup << " bool " << Backtracking << " " << lit << endl; 
 
 #if PrintingStructures
 	    cout << "Is it here " << lit << endl ;
