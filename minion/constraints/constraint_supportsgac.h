@@ -1238,20 +1238,18 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	deletedSups.clear();
 
-// #if PrintingStructures
+#if PrintingStructures
 	cout << "uC Is it here a " << lit << " start " << &(literalList[lit].supportCellList) << " supCellList " 
 	 	<< supCellList << " end " << end ; 
 	
 	if (supCellList !=0) { cout << " sCL->next " << supCellList->next << endl ; } else cout << endl ; 
-// #endif
+#endif
 
         litsWithLostExplicitSupport.resize(0);   
         varsWithLostImplicitSupport.resize(0);
 
         while(supCellList != end) {
-cout << "uc entering loop supcell = " << supCellList << endl ;
-            SupportCell* next=supCellList->next;
-cout << "about to zero  " << next << endl ;
+          SupportCell* next=supCellList->next;
 	  supCellList->next = 0 ; // so we will know it's unstitched
 #if PrintingStructures
 	    cout << "uC Is it here b " << lit << " supCellList " << supCellList << " next " << next << endl ;
@@ -1380,16 +1378,10 @@ cout << "uc entering loop supcell = " << supCellList << endl ;
       //printStructures();
 
       deletedSupports.resize(0);
-      
-      cout << "propagate before UC" << endl; 
 
       updateCounters(lit);
 
-      cout << "propagate after UC before FSI" << endl; 
-
       findSupportsIncremental();
-
-      cout << "propagate after FSI" << endl; 
 
       while(deletedSupports.size() > 0) { 
 	      if (deletedSupports.back()->numLastSupported == 0) {
