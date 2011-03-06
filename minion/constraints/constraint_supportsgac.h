@@ -247,9 +247,16 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    int thisvalmin = vars[i].getInitialMin();
 	    int numvals_i = vars[i].getInitialMax()-thisvalmin+1;
 	    if(numvals_i > numvals) numvals = numvals_i;
+	    litCounter += numvals_i; 
+        }
 
+	literalList.resize(litCounter); 
+
+	litCounter = 0 ; 
+        for(int i=0; i<numvars; i++) {
+	    int thisvalmin = vars[i].getInitialMin();
+	    int numvals_i = vars[i].getInitialMax()-thisvalmin+1;
             for(int j=0; j<numvals_i; j++) {
-		    literalList.resize(litCounter+1);
 		    literalList[litCounter].var = i; 
 		    literalList[litCounter].val = j+thisvalmin; 
 		    literalList[litCounter].supportCellList = SupportCell(litCounter);
@@ -364,6 +371,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                 }
             }
         }
+#if PrintingStructures
+        cout << "exiting constructor: " << endl ; printStructures();
+#endif
     }
     
     ////////////////////////////////////////////////////////////////////////////
@@ -595,18 +605,22 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    int var=literalList[lit].var;
 
 #if PrintingStructures
-	     cout << "aSIHE a " << lit << " " << &(literalList[lit].supportCellList) << " " << &supCell << " " << supCell.prev << " " << supCell.next << " " << literalList[lit].supportCellList.next << " "; 
-	    if(supCell.prev) { cout << supCell.prev->next; } ;
+	     cout << "aSIHE a " << lit << " " << &(literalList[lit].supportCellList) << " " << &supCell << " " << supCell.next << " " << literalList[lit].supportCellList.next << " "; 
 	    cout << endl; 
 
 	   #endif
 
 	    if(endOfSupportCellList(literalList[lit].supportCellList.next,lit)) {
+#if PrintingStructures
 		    cout << "attaching trigger " << lit << " " << sup << endl; 
+#endif
 		    attach_trigger(var,literalList[lit].val,lit);
 	    }
+#if PrintingStructures
 	    else { cout << "not attaching trigger " << lit << " " << sup << endl; } 
-	    if (!Backtracking || supCell.next==0) { 
+#endif
+	     if ( supCell.next==0) { 
+	    // if (!Backtracking || supCell.next==0) { 
 	    //if (!Backtracking || supCell.prev == 0 || supCell.prev->next!=&supCell) { 
 		    // otherwise 
 		    // cell has never been unstitched and (I claim) is still accessible from lit list
@@ -630,8 +644,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    }
 
 #if PrintingStructures
-	    cout << "aSIHE b " << lit << " " << &(literalList[lit].supportCellList) << " " << &supCell << " " << supCell.prev << " " << supCell.next << " " << literalList[lit].supportCellList.next ; 
-	    if(supCell.prev) { cout << " " << supCell.prev->next; } ;
+	    cout << "aSIHE b " << lit << " " << &(literalList[lit].supportCellList) << " " << &supCell << " " << supCell.next << " " << literalList[lit].supportCellList.next ; 
 	    cout << endl; 
 
 	   #endif
@@ -692,19 +705,26 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    return ; // nothing to do, don't risk detaching a trigger.
 	    }
 	    */
-// #if PrintingStructures
+#if PrintingStructures
 	    cout << "uSTNA Is it here a " << lit << endl ;
-// #endif
+#endif
 	    while (tempCell != end && !tempCell->sup->active) { 
 
+#if PrintingStructures
 	    cout << " uSTNA Is it here loop  " << lit << " " << tempCell << " " << last << " " << end << endl ;
 
 		    last = tempCell; 
+#if PrintingStructures
 	    cout << " uSTNA Is it here loop1 " << lit << " " << tempCell << " " << last << " " << end << endl ;
+#endif
 		    tempCell = tempCell->next;
+#if PrintingStructures
 	    cout << " uSTNA Is it here loop2 " << lit << " " << tempCell << " " << last << " " << end << endl ;
+#endif
 		    last->next = 0 ; // so we'll know it's unstitched
+#if PrintingStructures
 	    cout << " uSTNA Is it here loop end " << lit << " " << tempCell << " " << last << " " << end << " " << tempCell->sup << endl ;
+#endif
 	    }
 	    supCell.next = tempCell; 
 	    /*
@@ -717,9 +737,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	            // if(SupportsGACUseDT) { detach_trigger(lit); }
 	    }
 	    */
-// #if PrintingStructures
+#if PrintingStructures
 	    cout << "uSTNA Is it here b" << lit << " " << &supCell << " " << &tempCell << endl ;
-// #endif
+#endif
     }
 
 
@@ -733,7 +753,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    bool skipped = false; 
 	    SupportCell* end = &(literalList[lit].supportCellEnd);
 
+#if PrintingStructures
 	    cout << "unstitchLitearlList going on " << endl ; 
+#endif
 
 	    while (tempCell != end) { 
 		    if(tempCell->sup->active) {
@@ -780,7 +802,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	sup->active = false; 		
 	sup->numLastSupported = 0; 	// HERE: is this right?   
         
-	cout << " dsi 2 " << sup << " bool " << Backtracking << endl; 
 
         vector<SupportCell>& supCells=sup->supportCells;
 	int supArity = sup->arity; 
@@ -969,18 +990,24 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		cout << "  Lit: "<<lit<< " Prime: "<< literalList[lit].primeSupport << " nextPrimeLit: " << 
 			literalList[lit].nextPrimeLit << endl;
                 SupportCell* supCell= literalList[lit].supportCellList.next;
+		cout << "  SupCell = " << supCell << endl; 
 		int count = 0 ;
                 while(supCell !=0) {
 		    Support* sup = supCell->sup; 
+		    cout << "  SupCell = " << supCell << " sup " << sup << endl; 
+                    if(sup!=0) { 
+			    cout << "    Support " << ++count << " " << sup << ": nextPrime " << sup->nextPrimeLit << ": active? " << sup->active << " literals: "; 
+		    if(sup == 0) continue ; 
                     cout << "    Support " << ++count << " " << sup << ": nextPrime " << sup->nextPrimeLit << ": active? " << sup->active << " literals: "; 
 
 		    for(int i=0; i < sup->arity; i++) { 
 			    int lit2 = sup->supportCells[i].literal;
 			    cout << " " << lit2 << " " << &(sup->supportCells[i]) << " " << literalList[lit2].var << " " << literalList[lit2].val << ":";
 		    }
+		    cout << endl; 
+		    }
 
                     supCell=supCell->next;
-		    cout << endl; 
                 }
             }
         }
@@ -1215,6 +1242,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		return ; // nothing to do and don't want to try detaching triggers
 	}
 
+	vector<Support*> deletedSups; 
+	deletedSups.clear();
+
 // #if PrintingStructures
 	cout << "uC Is it here a " << lit << " start " << &(literalList[lit].supportCellList) << " supCellList " 
 	 	<< supCellList << " end " << end ; 
@@ -1228,22 +1258,43 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         while(supCellList != end) {
 cout << "uc entering loop supcell = " << supCellList << endl ;
             SupportCell* next=supCellList->next;
-// cout << "about to zero  " << next << endl ;
-	  //   supCellList->next = 0 ; // so we will know it's unstitched
+cout << "about to zero  " << next << endl ;
+	  supCellList->next = 0 ; // so we will know it's unstitched
+#if PrintingStructures
+	    cout << "uC Is it here b " << lit << " supCellList " << supCellList << " next " << next << endl ;
+	   #endif
+            if(supCellList->sup->active){ 
+		    deletedSups.push_back(supCellList->sup) ; 
+	    }
+#if PrintingStructures
+            if(supCellList==next) { cout << "We have a circular loop" << flush ; exit(1); } 
+	   #endif
+	    supCellList=next;
+        }
+ 	literalList[lit].supportCellList.next = end;
+
+	while(!deletedSups.empty()) { 
+		    deleteSupport(deletedSups.back());
+		    deletedSups.pop_back();
+	}
+	/*
+        while(supCellList != end) {
+cout << "uc entering loop supcell = " << supCellList << endl ;
+            SupportCell* next=supCellList->next;
+ cout << "about to zero  " << next << endl ;
+	     supCellList->next = 0 ; // so we will know it's unstitched
 // #if PrintingStructures
 	    cout << "uC Is it here b " << lit << " supCellList " << supCellList << " next " << next << endl ;
 	   // #endif
-            if(supCellList->sup->active){ 
-		    deleteSupport(supCellList->sup);
-	    }
 // #if PrintingStructures
             if(supCellList==next) { cout << "We have a circular loop" << flush ; exit(1); } 
 	   // #endif
 	    supCellList=next;
         }
+	*/
+	
 	
 	cout << "update counter loop ended "  << endl ; 
-	// literalList[lit].supportCellList.next = end;
 	cout << "about to detach trigger"  << endl ; 
 	detach_trigger(lit);
 	cout << "update counter about to exit"  << endl ; 
