@@ -175,6 +175,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     VarArray vars;
 
     vector<pair<int,int> > literalsScratch;   // used instead of per-Support list, as scratch space
+    vector<Support*> deletedSups; 	      // Could be local var to updateCounters
     
     int numvals;
     int numlits;
@@ -574,7 +575,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	
 	sup_internal->active = true;   
 		
-	if(litsize < vars.size() ) {	
+	if(litsize < numVars ) {	
 		// it's a short support, so update supportsPerVar and supports 
           for(int i=0; i<litsize; i++) {
 
@@ -806,7 +807,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         vector<SupportCell>& supCells=sup->supportCells;
 	int supArity = sup->arity; 
 
-	if(supArity < vars.size() ) { 
+	if(supArity < numVars ) { 
 		// it's a short support 
 
 		deleteSupportInternalPrimes(sup,Backtracking) ;	// Do this before updating supportsPerVar
@@ -1235,7 +1236,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		return ; // nothing to do and don't want to try detaching triggers
 	}
 
-	vector<Support*> deletedSups; 
 	deletedSups.clear();
 
 // #if PrintingStructures
