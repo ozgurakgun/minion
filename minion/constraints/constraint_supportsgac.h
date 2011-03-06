@@ -116,14 +116,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    int literal ; 
 	    Support* sup ; 
 	    SupportCell* next ; 
-	    SupportCell* prev ; 
 	    
 	    SupportCell(int lit) 
 	    {
 		    literal = lit; 
 		    sup = 0;
 		    next = 0; 
-		    prev = 0;
 	    }
 
 	    SupportCell() 
@@ -131,7 +129,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    literal = -1; 
 		    sup = 0;
 		    next = 0; 
-		    prev = 0;
 	    }
 
     };
@@ -140,6 +137,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	int var ; 
 	int val ;
 	SupportCell supportCellList; 
+	SupportCell supportCellEnd; 
 	int nextPrimeLit;      // could use literal in SupportCell
 	Support* primeSupport; // could use sup in SupportCell
     };
@@ -255,6 +253,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    literalList[litCounter].var = i; 
 		    literalList[litCounter].val = j+thisvalmin; 
 		    literalList[litCounter].supportCellList = SupportCell(litCounter);
+		    literalList[litCounter].supportCellEnd = SupportCell(-1);
+		    literalList[litCounter].supportCellList.next = &(literalList[litCounter].supportCellEnd);
 		    literalList[litCounter].primeSupport = 0;
 		    literalList[litCounter].nextPrimeLit = -1;
 		    litCounter++;
@@ -375,7 +375,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 #endif
         set<Support*> myset;
 	
-//	return; 	// HERE to fix
+	return; 	// HERE to fix
 
 	/* 
         for(int i=0; i<vars.size(); i++) {
@@ -502,6 +502,11 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     // don't need argument?   Just use litlist member?  
     //
     //Support* addSupport(box<pair<int, DomainInt> >* litlist)
+ 
+    inline BOOL endOfSupportCellList(SupportCell* sup, int lit) { 
+	    return sup == &(literalList[lit].supportCellEnd);
+    }
+
     void addSupport()
     {
        Support* newsup = getFreeSupport(); 
@@ -596,10 +601,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	   #endif
 
-	    if(literalList[lit].supportCellList.next == 0) {
+	    if(endOfSupportCellList(literalList[lit].supportCellList.next,lit)) {
+		    cout << "attaching trigger " << lit << " " << sup << endl; 
 		    attach_trigger(var,literalList[lit].val,lit);
 	    }
-	    if (!Backtracking || supCell.prev == 0) { 
+	    else { cout << "not attaching trigger " << lit << " " << sup << endl; } 
+	    if (!Backtracking || supCell.next==0) { 
 	    //if (!Backtracking || supCell.prev == 0 || supCell.prev->next!=&supCell) { 
 		    // otherwise 
 		    // cell has never been unstitched and (I claim) is still accessible from lit list
@@ -614,15 +621,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    // BUT We have to do this or we get an infinite loop - when stitching something back in that
 	    // is already in the list.
 
-		    supCell.prev = &(literalList[lit].supportCellList);
 		    supCell.next = literalList[lit].supportCellList.next;  
-		    if(supCell.next!=0) {
-			supCell.next->prev = &(supCell);
-		    }
-		    else { 
-		    // Attach trigger if this is the first support containing var,val.
-			// attach_trigger(var, literalList[lit].val, lit);
-		    }
 		    literalList[lit].supportCellList.next = &(supCell);
 	    }
 
@@ -669,7 +668,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    }
 	    else { 
 		    unStitchToNextActive(literalList[lit].supportCellList, lit);
-	            if (literalList[lit].supportCellList.next == 0) {
+	            if (endOfSupportCellList(literalList[lit].supportCellList.next,lit)) {
 			    return true;}
 		    else { 
 			    makePrimeSupport(lit); // only known support is explicit so must be notified.
@@ -685,18 +684,30 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     inline void unStitchToNextActive(SupportCell& supCell, int lit) { 
 	    SupportCell* tempCell = supCell.next; 
+	    SupportCell* last = tempCell; 
+	    SupportCell* end = &(literalList[lit].supportCellEnd);
 
-	    if (tempCell == 0) { 
+	    /*
+	    if (tempCell == end) { 
 		    return ; // nothing to do, don't risk detaching a trigger.
 	    }
-#if PrintingStructures
+	    */
+// #if PrintingStructures
 	    cout << "uSTNA Is it here a " << lit << endl ;
-#endif
-	    while (tempCell != 0 && !tempCell->sup->active) { 
-		    tempCell->prev = 0 ; // so we'll know it's unstitched
+// #endif
+	    while (tempCell != end && !tempCell->sup->active) { 
+
+	    cout << " uSTNA Is it here loop  " << lit << " " << tempCell << " " << last << " " << end << endl ;
+
+		    last = tempCell; 
+	    cout << " uSTNA Is it here loop1 " << lit << " " << tempCell << " " << last << " " << end << endl ;
 		    tempCell = tempCell->next;
+	    cout << " uSTNA Is it here loop2 " << lit << " " << tempCell << " " << last << " " << end << endl ;
+		    last->next = 0 ; // so we'll know it's unstitched
+	    cout << " uSTNA Is it here loop end " << lit << " " << tempCell << " " << last << " " << end << " " << tempCell->sup << endl ;
 	    }
 	    supCell.next = tempCell; 
+	    /*
 	    if(tempCell != 0) {
 		    tempCell->prev = &supCell ; 
 	    }
@@ -705,33 +716,53 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		   // Remove trigger since this is the last support containing var,val.
 	            // if(SupportsGACUseDT) { detach_trigger(lit); }
 	    }
-#if PrintingStructures
+	    */
+// #if PrintingStructures
 	    cout << "uSTNA Is it here b" << lit << " " << &supCell << " " << &tempCell << endl ;
-#endif
+// #endif
     }
 
 
-    // Thing is still stitched if thing pointed to by prev points here and/or same for next
-
-    // HERE shouldn't we detach trigger if something is a final one
+    // Just going to slam through list all the way, even past the cell that made us call this
+    // Could stop at the cell that called this, or rather the first active cell after that.
     
-    inline void forceUnstitch (Support* sup) { 
+    inline void unstitchLiteralSupportList (int lit) { 
+	    SupportCell* tempCell = literalList[lit].supportCellList.next; 
+	    SupportCell* lastActive = &(literalList[lit].supportCellList); 
+	    SupportCell* last; 
+	    bool skipped = false; 
+	    SupportCell* end = &(literalList[lit].supportCellEnd);
+
+	    cout << "unstitchLitearlList going on " << endl ; 
+
+	    while (tempCell != end) { 
+		    if(tempCell->sup->active) {
+			    if(skipped) { lastActive->next=tempCell; }
+			    lastActive = tempCell ; 
+			    skipped = false; 
+		            tempCell = tempCell->next;
+		    }
+		    else { 
+		            last = tempCell; 
+		            tempCell = tempCell->next;
+		            last->next = 0 ; // so we'll know it's unstitched
+			    skipped = true; 
+		    }
+	    }
+	    if(skipped){lastActive->next=end;}
+    }
+
+    // Thing is still stitched if next != 0
+    //
+    void forceUnstitch (Support* sup) { 
 	  int arity = sup->arity;
 	  vector<SupportCell>& supCells = sup->supportCells; 
 
 	  for(int i=0; i < arity ; i++) { 
-		  if(supCells[i].prev != 0) {	// never unstitched
-
-			  if(supCells[i].prev->next == &(supCells[i])) { 
-				  supCells[i].prev->next = supCells[i].next ;
-			  }
-			  if(supCells[i].next != 0) { 
-				  if(supCells[i].next->prev == &(supCells[i])) { 
-					  supCells[i].next->prev = supCells[i].prev;
-				  }
-			  supCells[i].prev = 0 ; // now it has been unstitched
-			  }
+		  if(supCells[i].next != 0) {	// never unstitched
+			 unstitchLiteralSupportList(supCells[i].literal);
 		  }
+
 	  }  
     }
 
@@ -743,21 +774,29 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     
     void deleteSupportInternal(Support* sup, bool Backtracking) {
         D_ASSERT(sup!=0);
+
+	cout << " dsi 1 " << sup << " bool " << Backtracking << endl; 
                 
 	sup->active = false; 		
 	sup->numLastSupported = 0; 	// HERE: is this right?   
         
+	cout << " dsi 2 " << sup << " bool " << Backtracking << endl; 
+
         vector<SupportCell>& supCells=sup->supportCells;
 	int supArity = sup->arity; 
 
+	cout << " dsi 3 " << sup << " bool " << Backtracking << endl; 
 	if(supArity < vars.size() ) { 
 		// it's a short support 
 
+	cout << " dsi 4 " << sup << " bool " << Backtracking << endl; 
 		deleteSupportInternalPrimes(sup,Backtracking) ;	// Do this before updating supportsPerVar
 								// and supports so they are consistent
+	cout << " dsi 5 " << sup << " bool " << Backtracking << endl; 
 		int oldIndex  = supportNumPtrs[supports];
 		for(int i=0; i<supArity; i++) {
 
+	cout << "   dsi 6 " << sup << " bool " << Backtracking << endl; 
 		    SupportCell& supCell = supCells[i];
 		    int lit=supCell.literal;
 		    int var=literalList[lit].var ;
@@ -819,11 +858,16 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    addToSupportFreeList(sup); 
 		}
 	}
+	cout << " dsi exit " << sup << " bool " << Backtracking << endl; 
     }
 
     void deleteSupportInternalPrimes(Support* sup, bool Backtracking) { 
 
+	cout << " dsiP 1 " << sup << " bool " << Backtracking << endl; 
+
 	for(int lit = sup->nextPrimeLit ; lit >= 0 ; ) {  
+
+	cout << "  dsiP 2 " << sup << " bool " << Backtracking << " " << lit << endl; 
 
 #if PrintingStructures
 	    cout << "Is it here " << lit << endl ;
@@ -853,7 +897,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 		    unStitchToNextActive(literalList[lit].supportCellList,lit);
 			    
-		    if(literalList[lit].supportCellList.next==0) { 
+		    if(endOfSupportCellList(literalList[lit].supportCellList.next,lit)) { 
 				    // We have lost the last support for lit
 				    //
 		    // I believe that each literal can only be marked once here in a call to update_counters.
@@ -888,6 +932,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    }
 	}
 	sup->nextPrimeLit = -1; 
+
+	cout << "   dsip exit " << sup << " bool " << Backtracking << endl; 
     }
 
 
@@ -1004,7 +1050,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    for(int j=0; j<zeroLits[var].size(); j++) {
 			int lit=zeroLits[var][j];
 			// but we are in initial so no don't need to unstitch list.
-                        if(literalList[lit].supportCellList.next != 0){
+                        if(!endOfSupportCellList(literalList[lit].supportCellList.next,lit)){
 			    // No longer a zero val. remove from vector.
 			    zeroLits[var][j]=zeroLits[var][zeroLits[var].size()-1];
 			    zeroLits[var].pop_back();
@@ -1016,7 +1062,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    #endif
 
 		    #if !SupportsGACUseZeroVals
-			if(vars[var].inDomain(val) && (literalList[lit].supportCellList.next == 0)){
+			if(vars[var].inDomain(val) && (endOfSupportCellList(literalList[lit].supportCellList.next,lit))){
 		    #else
 			if(vars[var].inDomain(val)) {	// tested supportCellList  above
 		    #endif
@@ -1113,7 +1159,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 
 		    #if !SupportsGACUseZeroVals
-			if(vars[var].inDomain(val) && (literalList[lit].supportCellList.next == 0)){
+			if(vars[var].inDomain(val) && (endOfSupportCellList(literalList[lit].supportCellList.next,lit))){
 		    #else
 			if(vars[var].inDomain(val)) {	// Know it has no support here
 		    #endif
@@ -1163,37 +1209,44 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     inline void updateCounters(int lit) {
 
         SupportCell* supCellList = literalList[lit].supportCellList.next ;
+        SupportCell* end = &(literalList[lit].supportCellEnd); 
 
-	if(supCellList == 0) { 
+	if(supCellList == end) { 
 		return ; // nothing to do and don't want to try detaching triggers
 	}
 
-#if PrintingStructures
-	cout << "uC Is it here a " << lit << " " << &(literalList[lit].supportCellList) << " " 
-	 	<< supCellList << " " ; 
+// #if PrintingStructures
+	cout << "uC Is it here a " << lit << " start " << &(literalList[lit].supportCellList) << " supCellList " 
+	 	<< supCellList << " end " << end ; 
 	
-	if (supCellList !=0) { cout << supCellList->next << endl ; } else cout << endl ; 
-#endif
+	if (supCellList !=0) { cout << " sCL->next " << supCellList->next << endl ; } else cout << endl ; 
+// #endif
 
         litsWithLostExplicitSupport.resize(0);   
         varsWithLostImplicitSupport.resize(0);
 
-        while(supCellList != 0) {
+        while(supCellList != end) {
+cout << "uc entering loop supcell = " << supCellList << endl ;
             SupportCell* next=supCellList->next;
-	    supCellList->prev = 0 ; // so we will know it's unstitched
-#if PrintingStructures
-	    cout << "uC Is it here b " << lit << " " << supCellList << " " << next << endl ;
-	   #endif
+// cout << "about to zero  " << next << endl ;
+	  //   supCellList->next = 0 ; // so we will know it's unstitched
+// #if PrintingStructures
+	    cout << "uC Is it here b " << lit << " supCellList " << supCellList << " next " << next << endl ;
+	   // #endif
             if(supCellList->sup->active){ 
 		    deleteSupport(supCellList->sup);
 	    }
-#if PrintingStructures
+// #if PrintingStructures
             if(supCellList==next) { cout << "We have a circular loop" << flush ; exit(1); } 
-	   #endif
+	   // #endif
 	    supCellList=next;
         }
-	literalList[lit].supportCellList.next = 0;
+	
+	cout << "update counter loop ended "  << endl ; 
+	// literalList[lit].supportCellList.next = end;
+	cout << "about to detach trigger"  << endl ; 
 	detach_trigger(lit);
+	cout << "update counter about to exit"  << endl ; 
     }
     
     
@@ -1284,9 +1337,15 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
       deletedSupports.resize(0);
       
+      cout << "propagate before UC" << endl; 
+
       updateCounters(lit);
 
+      cout << "propagate after UC before FSI" << endl; 
+
       findSupportsIncremental();
+
+      cout << "propagate after FSI" << endl; 
 
       while(deletedSupports.size() > 0) { 
 	      if (deletedSupports.back()->numLastSupported == 0) {
@@ -2138,13 +2197,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         else {
             Support* temp=supportFreeList;
             supportFreeList=supportFreeList->nextFree;
+	    forceUnstitch(temp); 
             return temp;
         }
     }
 
     inline void addToSupportFreeList(Support* sup)
     { 
-	  forceUnstitch(sup); 
 	  sup->nextFree=supportFreeList; 
 	  supportFreeList=sup;
     }
