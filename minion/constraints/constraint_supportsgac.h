@@ -249,9 +249,16 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    int thisvalmin = vars[i].getInitialMin();
 	    int numvals_i = vars[i].getInitialMax()-thisvalmin+1;
 	    if(numvals_i > numvals) numvals = numvals_i;
+	    litCounter += numvals_i; 
+        }
 
+	literalList.resize(litCounter); 
+
+	litCounter = 0 ; 
+        for(int i=0; i<numvars; i++) {
+	    int thisvalmin = vars[i].getInitialMin();
+	    int numvals_i = vars[i].getInitialMax()-thisvalmin+1;
             for(int j=0; j<numvals_i; j++) {
-		    literalList.resize(litCounter+1);
 		    literalList[litCounter].var = i; 
 		    literalList[litCounter].val = j+thisvalmin; 
 		    literalList[litCounter].supportCellList = SupportCell(litCounter);
