@@ -17,7 +17,36 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+
 // GAC Schema implementation, adapted from Supports GAC.
+
+// Default will be LexLeq.   
+// If any special case is defined LexLeq will be switched off
+// If two options given compile errors are expected to result.
+
+#define UseElementLong false
+#define UseLexLeqLong true
+#define UseSquarePackingLong false
+
+#ifdef SUPPORTSGACELEMENTLONG
+#undef UseElementLong
+#undef UseLexLeqLong
+#define UseElementLong true
+#define UseLexLeqLong false
+#endif
+
+#ifdef SUPPORTSGACSQUAREPACKLONG
+#undef UseSquarePackingLong
+#undef UseLexLeqLong
+#define UseSquarePackingLong true
+#define UseLexLeqLong false
+#endif
+
+#ifdef SUPPORTSGACLEXLONG
+#undef UseLexLeqLong
+#define UseLexLeqLong true
+#endif
+
 
 // Does it place dynamic triggers for the supports.
 //#define SupportsGACUseDT true
@@ -526,7 +555,8 @@ struct GACSchema : public AbstractConstraint, Backtrackable
     // Methods for element
     // Changed compared to supportsgac version to return full tuple.
     
-    /*
+#if UseElementLong
+
     bool findNewSupport(box<pair<int, DomainInt> >& assignment, int var, int val) {
         typedef typename VarArray::value_type VarRef;
         VarRef idxvar=vars[vars.size()-2];
@@ -602,13 +632,15 @@ struct GACSchema : public AbstractConstraint, Backtrackable
         if(idx<0 || idx>=array_size-2) return false;
         return v[v[array_size-2]] == v[array_size-1];
     }
-    */
+#endif
     
     
     
     ////////////////////////////////////////////////////////////////////////////
     //
     //  Lexleq with full-length supports.
+
+#if UseLexLeqLong
     
     bool findNewSupport(box<pair<int, DomainInt> >& assignment, int var, int val) {
         D_ASSERT(vars[var].inDomain(val));
@@ -714,12 +746,15 @@ struct GACSchema : public AbstractConstraint, Backtrackable
         }
         return true;
     }
+#endif
     
     
     ////////////////////////////////////////////////////////////////////////////
     // 
     // Square packing
-    /*
+
+#if UseSquarePackingLong
+
     bool findNewSupport(box<pair<int, DomainInt> >& assignment, int var, int val) {
         D_ASSERT(constants.size()==2);
         
@@ -872,7 +907,8 @@ struct GACSchema : public AbstractConstraint, Backtrackable
         }
         return false;
     }
-    */
+#endif
+
     ////////////////////////////////////////////////////////////////////////////
     // Memory management.
     
