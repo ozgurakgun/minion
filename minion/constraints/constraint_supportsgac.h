@@ -115,6 +115,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	int arity; 		// could use vector.size() but don't want to destruct SupportCells when arity decreases
 				// or reconstruct existing ones when it increases.
+	bool fullLength;
 
 	Support* nextFree ; // for when Support is in Free List.
 
@@ -124,6 +125,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             supportCells.resize(0);
 	    arity=0;
 	    nextFree=0;
+	    fullLength=false; 
         }
     };
     
@@ -418,10 +420,23 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     void addSupport()
     {
        Support* newsup = getFreeSupport(); 
+
+       if(literalsScratch.size() == vars.size() ) {
+	       newsup->fullLength=true;
+       }
+       else {
+	       newsup->fullLength=false;
+       }
+
        vector<SupportCell>& supCells=newsup->supportCells;
        int oldsize = supCells.size() ;
-       int newsize = literalsScratch.size() ;
 
+       for(int i=literalsScratch.size()-1; i >= 0; i--) { 
+	       if(vars[literalsScratch[i].first]){
+
+
+
+       int newsize = literalsScratch.size() ;
        newsup->arity = newsize;
 
        if(newsize > oldsize) { 
@@ -867,7 +882,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     // HERE will need to be changed for backtrack stability, i.e. added even if isAssigned. Or use FL
     
-    #define ADDTOASSIGNMENT(var, val) if(!vars[var].isAssigned()) literalsScratch.push_back(make_pair(var,val));
+    // #define ADDTOASSIGNMENT(var, val) if(!vars[var].isAssigned()) literalsScratch.push_back(make_pair(var,val));
+    #define ADDTOASSIGNMENT(var, val) literalsScratch.push_back(make_pair(var,val));
     
     // For full-length support variant:
     #define ADDTOASSIGNMENTFL(var, val) literalsScratch.push_back(make_pair(var,val));
