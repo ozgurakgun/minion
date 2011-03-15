@@ -870,7 +870,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     #define ADDTOASSIGNMENT(var, val) if(!vars[var].isAssigned()) literalsScratch.push_back(make_pair(var,val));
     
     // For full-length support variant:
-    #define ADDTOASSIGNMENTFL(var, val) literalsScratch.push_back(make_pair(var,val));
+    #define ADDTOASSIGNMENTFL(var, val) if(!vars[var].isAssigned()) literalsScratch.push_back(make_pair(var,val));
+    // #define ADDTOASSIGNMENTFL(var, val) literalsScratch.push_back(make_pair(var,val));
     
     
     // Macro to add either the lower bound or the specified value for a particular variable vartopad
