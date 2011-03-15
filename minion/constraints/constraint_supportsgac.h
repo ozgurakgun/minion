@@ -1023,10 +1023,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                             ADDTOASSIGNMENTFL(vars.size()-1, j);
                             for(int k=0; k<vars.size()-2; k++) {
                                 if(k!=i) {
-                                    if(k==var)
-                                        ADDTOASSIGNMENTFL(k, val);
-                                    else
-                                        ADDTOASSIGNMENTFL(k, vars[k].getMin());
+                                    if(k==var) { 
+                                        ADDTOASSIGNMENTFL(k, val); } 
+                                    else { 
+                                        ADDTOASSIGNMENTFL(k, vars[k].getMin());} 
                                 }
                             }
                             return true;
@@ -1047,7 +1047,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                     ADDTOASSIGNMENTFL(vars.size()-1, i);
                     ADDTOASSIGNMENTFL(val, i);
                     for(int k=0; k<vars.size()-2; k++) {
-                        if(k!=val) ADDTOASSIGNMENTFL(k, vars[k].getMin());
+                        if(k!=val) {ADDTOASSIGNMENTFL(k, vars[k].getMin()); }
                     }
                     return true;
                 }
@@ -1062,7 +1062,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                     ADDTOASSIGNMENTFL(vars.size()-1, val);
                     ADDTOASSIGNMENTFL(i, val);
                     for(int k=0; k<vars.size()-2; k++) {
-                        if(k!=i) ADDTOASSIGNMENTFL(k, vars[k].getMin());
+                        if(k!=i) { ADDTOASSIGNMENTFL(k, vars[k].getMin()); } 
                     }
                     return true;
                 }
