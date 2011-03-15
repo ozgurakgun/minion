@@ -876,7 +876,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     
     // Macro to add either the lower bound or the specified value for a particular variable vartopad
     // Intended to pad out an assignment to a full-length support.
-    #define PADOUT(vartopad) if(var==vartopad) literalsScratch.push_back(make_pair(var, val)); else literalsScratch.push_back(make_pair(vartopad, vars[vartopad].getMin()));
+    #define PADOUT(vartopad) if(var==vartopad) { ADDTOASSIGNMENTFL(var, val);}  else { ADDTOASSIGNMENTFL(vartopad, vars[vartopad].getMin());} 
     
     ////////////////////////////////////////////////////////////////////////////
     // Methods for pair-equals. a=b or c=d.
