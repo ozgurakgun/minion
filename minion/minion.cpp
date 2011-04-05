@@ -378,7 +378,9 @@ void worker()
 int main(int argc, char** argv) {
 // Wrap main in a try/catch just to stop exceptions leaving main,
 // as windows gets really annoyed when that happens.
+#ifdef THREADSAFE
 boost::thread t(worker);
+#endif
 try {
   StateObj* stateObj = new StateObj();
 
