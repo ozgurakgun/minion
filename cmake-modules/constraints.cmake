@@ -3,7 +3,8 @@ set(ALL_CONSTRAINTS "element" "element_one" "watchelement" "watchelement_one"
                     "diseq" "__reify_diseq" "eq" "__reify_eq" "minuseq" "__reify_minuseq"
                     "abs" "ineq" "watchless" "lexleq[rv]" "lexleq[quick]" "lexleq" "lexless" "lexless[quick]"
                     "max" "min" "occurrence"
-                    "occurrenceleq" "occurrencegeq" "product" "difference"
+                    "occurrenceleq" "occurrencegeq" "watchoccurrenceleq" 
+                    "product" "difference"
                     "weightedsumleq" "weightedsumgeq" "sumgeq" "sumleq" "watchsumgeq"
                     "watchsumleq" "table" "negativetable" "watchvecneq" "staticvecneq" "litsumgeq"
                     "pow" "div" "modulo" "gadget" "disabled-or"
@@ -106,6 +107,9 @@ set(NAME_READ_occurrence "read_list" "read_constant" "read_var")
 
 set(NAME_ID_occurrenceleq "CT_LEQ_OCCURRENCE")
 set(NAME_READ_occurrenceleq "read_list" "read_constant" "read_constant")
+
+set(NAME_ID_watchoccurrenceleq "CT_WATCHED_OCCURLEQ")
+set(NAME_READ_watchoccurrenceleq "read_list" "read_constant" "read_constant")
 
 set(NAME_ID_occurrencegeq "CT_GEQ_OCCURRENCE")
 set(NAME_READ_occurrencegeq "read_list" "read_constant" "read_constant")

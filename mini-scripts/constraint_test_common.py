@@ -1028,6 +1028,15 @@ class testoccurrenceleq:
         # note that the constant generated may be completely inappropriate. e.g. some value which is not even in the domains.
         return runtestgeneral("occurrenceleq", False, options, [6,1,1], ["smallnum", "smallconst", "smallconst"], self, not options['reify'] and not options['reifyimply'])
 
+class testwatchoccurrenceleq(testoccurrenceleq):
+    def printtable(self, domains):
+        return testoccurrenceleq.printtable(self, domains, leq=True, geq=False)
+    
+    def runtest(self, options=dict()):
+        # note that the constant generated may be completely inappropriate. e.g. some value which is not even in the domains.
+        options['notree']=True
+        return runtestgeneral("watchoccurrenceleq", False, options, [6,1,1], ["smallnum", "smallconst", "smallconst"], self, False)
+
 class testoccurrencegeq(testoccurrenceleq):
     def printtable(self, domains):
         return testoccurrenceleq.printtable(self, domains, leq=False, geq=True)
@@ -1487,7 +1496,7 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
     
 
     tree_choice = random.randint(0,5)    
-    while tree_choice <= 1:
+    while tree_choice <= 1 and not options["notree"]:
       treesame = False
       if tree_choice==0:
           constraint = "watched-and({"+ ",".join([constraint] * random.randint(1,5)) +"})"
