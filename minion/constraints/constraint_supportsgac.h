@@ -304,6 +304,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             }
             
             setup_tuple_list();
+            tuple_list_pos.resize(vars.size());
+            for(int var=0; var<vars.size(); var++) {
+                tuple_list_pos[var].resize(numvals, 0);
+            }
         }
         #endif
     }
