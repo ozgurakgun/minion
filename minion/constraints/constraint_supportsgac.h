@@ -28,7 +28,8 @@
 #define UseLexLeqLong false
 #define UseSquarePackingShort false
 #define UseSquarePackingLong false
-#define UseList true
+#define UseList false
+#define UseNDOneList true
 
 #ifdef SUPPORTSGACELEMENT
 #undef UseElementShort
@@ -145,8 +146,14 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     
     Support* supportFreeList;       // singly-linked list of spare Support objects.
     
+    #if UseList
     vector<vector<vector<vector<pair<int,int> > > > > tuple_lists;  // tuple_lists[var][val] is a vector 
     // of short supports for that var, val. Includes any supports that do not contain var at all.
+    #endif
+    
+    #if UseNDOneList
+    vector<vector<tuple<int,int,int> > > tuple_nd_list; // The inner type is var,val,next-different-pos.
+    #endif
     
     vector<vector<int> > tuple_list_pos;    // current position in tuple_lists (for each var and val). Wraps around.
     
@@ -207,6 +214,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             cout << "Tuple list passed to supportgac constraint should only contain one tuple, encoding a list of short supports." << endl; 
             abort();
         }
+        
+        #if UseList
         if(tuples->size()==1) {
             vector<DomainInt> encoded = tuples->get_vector(0);
             vector<vector<pair<int, int> > > shortsupports;
@@ -264,6 +273,39 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                 }
             }
         }
+        #endif
+        
+        #if UseNDOneList
+        if(tuples->size()==1) {
+            vector<DomainInt> encoded = tuples->get_vector(0);
+            vector<tuple<int, int, int> > temp;
+            for(int i=0; i<encoded.size(); i=i+2) {
+                if(encoded[i]==-1) {
+                    // end of a short support.
+                    if(encoded[i+1]!=-1) {
+                        cout << "Split marker is -1,-1 in tuple for supportsgac." << endl;
+                        abort();
+                    }
+                    tuple_nd_list.push_back(temp);
+                    temp.clear();
+                }
+                else
+                {
+                    if(encoded[i]<0 || encoded[i]>=vars.size()) {
+                        cout << "Tuple passed into supportsgac does not correctly encode a set of short supports." << endl;
+                        abort();
+                    }
+                    temp.push_back(make_tuple(encoded[i], encoded[i+1], 0)); 
+                }
+            }
+            if(encoded[encoded.size()-2]!=-1 || encoded[encoded.size()-1]!=-1) {
+                cout << "Last -1,-1 marker missing from tuple in supportsgac."<< endl;
+                abort();
+            }
+            
+            setup_tuple_list();
+        }
+        #endif
     }
     
     ////////////////////////////////////////////////////////////////////////////
@@ -1173,6 +1215,125 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         return false;
     }
     
+    
+    virtual BOOL check_assignment(DomainInt* v, int array_size)
+    {
+        // argh, how to do this.
+        // test with element first
+        
+        int idx=v[array_size-2];
+        if(idx<0 || idx>=array_size-2) return false;
+        return v[v[array_size-2]] == v[array_size-1];
+    }
+
+#endif
+
+#if UseNDOneList
+
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    //  Table of short supports passed in. Use ND-onelist from AAAI paper.
+    
+    // Add the forward pointers to the the tuple_nd_list
+    void setup_tuple_list()
+    {
+        // Uses fact that no forward pointer can ever be 0.
+        for(int i=0; i<tuple_nd_list.size(); i++) {
+            vector<tuple<int,int,int> > & tup=tuple_nd_list[i];
+            
+            for(int j=i+1; j<tuple_nd_list.size(); j++) {
+                bool all_lits_ptr_set=true;
+                
+                // Iterate through tup and set some ptrs to j if possible.
+                for(int litnum=0; litnum<tup.size(); litnum++) {
+                    if(tup[litnum].get<2>()==0) {
+                        int var=tup[litnum].get<0>();
+                        int val=tup[litnum].get<1>();
+                        // Is j different for var 
+                        bool jdiff=true;
+                        for(int litnumj=0; litnumj<tuple_nd_list[j].size(); litnumj++) {
+                            if(tuple_nd_list[j][litnumj].get<0>()==var && tuple_nd_list[j][litnumj].get<1>()==val) {
+                                jdiff=false;  // Found the exact same literal. So tuple j is same for var.
+                                break;
+                            }
+                        }
+                        if(jdiff) {
+                            tup[litnum].get<2>()=j;
+                        }
+                        else {
+                            all_lits_ptr_set=false;
+                        }
+                    }
+                }
+                
+                if(all_lits_ptr_set) break;
+            }
+            
+            // set any remaining 0's to infinity -- i.e. jump past the end.
+            for(int litnum=0; litnum<tup.size(); litnum++) {
+                if(tup[litnum].get<2>()==0) {
+                    tup[litnum].get<2>()=tuple_nd_list.size();
+                }
+            }
+        }
+    }
+    
+    bool findNewSupport(box<pair<int, DomainInt> >& assignment, int var, int val) {
+        int pos=tuple_list_pos[var][val-dom_min];
+        int listsize=tuple_nd_list.size();
+        
+        while(pos<listsize) {
+            vector<tuple<int,int,int> > & tup=tuple_nd_list[pos];
+            bool valid=true;
+            
+            for(int j=0; j<tup.size(); j++) {
+                // If the literal is out of domain, OR includes var but not val, then jump.
+                if((! vars[tup[j].get<0>()].inDomain(tup[j].get<1>()) ) || 
+                    (tup[j].get<0>()==var && tup[j].get<1>()!=val) ) {
+                    pos=tup[j].get<2>();  
+                    valid=false;
+                    break;
+                }
+            }
+            if(valid) {
+                // Found a support
+                for(int j=0; j<tup.size(); j++) {
+                    ADDTOASSIGNMENT(tup[j].get<0>(), tup[j].get<1>());
+                }
+                tuple_list_pos[var][val-dom_min]=pos;
+                return true;
+            }
+        }
+        
+        // Restart at position 0
+        pos=0;
+        
+        int oldpos=tuple_list_pos[var][val-dom_min];
+        
+        while(pos<oldpos) {
+            vector<tuple<int,int,int> > & tup=tuple_nd_list[pos];
+            bool valid=true;
+            
+            for(int j=0; j<tup.size(); j++) {
+                // If the literal is out of domain, OR includes var but not val, then jump.
+                if((! vars[tup[j].get<0>()].inDomain(tup[j].get<1>()) ) || 
+                    (tup[j].get<0>()==var && tup[j].get<1>()!=val) ) {
+                    pos=tup[j].get<2>();  
+                    valid=false;
+                    break;
+                }
+            }
+            if(valid) {
+                // Found a support
+                for(int j=0; j<tup.size(); j++) {
+                    ADDTOASSIGNMENT(tup[j].get<0>(), tup[j].get<1>());
+                }
+                tuple_list_pos[var][val-dom_min]=pos;
+                return true;
+            }
+        }
+        return false;
+    }
     
     virtual BOOL check_assignment(DomainInt* v, int array_size)
     {
