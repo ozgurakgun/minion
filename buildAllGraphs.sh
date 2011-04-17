@@ -1,17 +1,20 @@
 #!/bin/bash
 
 echo -n $2
-for i in GeneratorsBasic FullGroup StabChainGap StabComplete OrbitComplete StabChainME; do
-    echo -n ' '`do_time.sh generateGraph.sh $1 $2 $i`
+for i in GeneratorsBasic FullGroup StabChainGap StabComplete OrbitComplete StabChainME StabChainReduced; do
+    echo -n ' '`do_time.sh generateGraph.sh $1 $2 $i 1`
 done
 
 for i in StabCompleteN OrbitCompleteN; do
-    echo -n ' '`do_time.sh generateGraph.sh $1 $2 $i 1`
-    echo -n ' '`do_time.sh generateGraph.sh $1 $2 $i 2`
-    echo -n ' '`do_time.sh generateGraph.sh $1 $2 $i 3`
+    echo -n ' '`do_time.sh generateGraph.sh $1 $2 $i 1 1`
+    echo -n ' '`do_time.sh generateGraph.sh $1 $2 $i 1 2`
+    echo -n ' '`do_time.sh generateGraph.sh $1 $2 $i 1 3`
 done
 
-for i in 2 3 5 10 20 30 40 50; do
-    echo -n ' '`do_time.sh generateGraph.sh $1 $2 RandomElem $i`
+for seed in 1 2 3 4 5 6 7; do
+	echo -n ' '`do_time.sh generateGraph.sh $1 $2 RandomGens $seed`
+	for i in 2 3 5 10 20 30 40 50; do
+    	echo -n ' '`do_time.sh generateGraph.sh $1 $2 RandomElem $seed $i`
+	done
 done
 echo
