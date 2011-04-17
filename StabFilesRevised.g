@@ -1,4 +1,4 @@
-FullGroup := function(GeneratorsList)
+FullGroup := function(GeneratorsList,VarOrderList)
         local g;
 
         g := Group(GeneratorsList);
@@ -102,5 +102,21 @@ RandomElem := function(n, GeneratorsList)
 
         NewGeneratorsList := DuplicateFreeList(NewGeneratorsListDup);
         return NewGeneratorsList;
+end;
+
+RandomGens := function(GeneratorsList)
+    local G,H,HGens,perm;
+    G := Group(GeneratorsList);
+    HGens := [()];
+    H := Group(HGens);
+    while Size(G) <> Size(H) do
+        perm := Random(G);
+        while (perm in H) do
+            perm := Random(G);
+        od;
+        Add(HGens, perm);
+        H := Group(HGens);
+    od;
+    return HGens;
 end;
 
