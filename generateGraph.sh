@@ -13,7 +13,7 @@ if [ "X$4" != "X" ]; then
 fi
 
 case $3 in
-GeneratorsBasic|FullGroup|StabChainGap|StabComplete|OrbitComplete|StabChainME|StabChainReduced|RandomGens)
+GeneratorsBasic|FullGroup|StabChainGap|StabComplete|OrbitComplete|StabChainME|StabChainReduced|RandomGens|ArityOne)
   GAPCOMMAND="$3(generators)";;
 
 StabCompleteN|OrbitCompleteN|RandomElem)
