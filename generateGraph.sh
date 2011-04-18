@@ -9,7 +9,7 @@ SEED=0
 PRINTSEED=
 if [ "X$4" != "X" ]; then
 	SEED=$4
-	PRINTSEED=$4.
+	PRINTSEED=.$4x
 fi
 
 case $3 in
