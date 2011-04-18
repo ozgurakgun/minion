@@ -63,6 +63,24 @@ StabChainReduced := function(GeneratorsList)
         return NewGeneratorsList;
 end;
 
+ArityOne := function(GeneratorsList)
+    local gens, perm, newgens, val;
+    gens := StabChainReduced(GeneratorsList);
+    newgens := [];
+    for perm in gens do
+        for val in [1..LargestMovedPoint(perm)] do
+            if val <> val^perm then
+                Add(newgens, (val, val^perm));
+                Print((val, val^perm));
+                break;
+            fi;
+        od;
+        Print("NewPerm");
+    od;
+
+    return newgens;
+end;
+
 StabComplete := function(GeneratorsList)
         local g, NewGeneratorsList, n, Elem, i, NewGeneratorsListDup;
 
