@@ -51,14 +51,16 @@ gen_constraints := function(list, varnames, a)
   set := Set(set);
 
   for vecs in set do
-    PrintTo(a, "lexleq( [");
-    for j in vecs[1] do
-      PrintTo(a, varnames[j], ",");
-    od;
-    PrintTo(a, "], [");
-    for j in vecs[2] do
-      PrintTo(a, varnames[j], ",");
-    od;
-    PrintTo(a, "] )\n");
+    if Size(vecs[1]) <> 0 then
+      PrintTo(a, "lexleq( [");
+      for j in vecs[1] do
+        PrintTo(a, varnames[j], ",");
+      od;
+      PrintTo(a, "], [");
+      for j in vecs[2] do
+        PrintTo(a, varnames[j], ",");
+      od;
+      PrintTo(a, "] )\n");
+    fi;
   od;
 end;

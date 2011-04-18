@@ -48,6 +48,7 @@ StabChainReduced := function(GeneratorsList)
             fi;
         od;    
         
+        NewGeneratorsListDup := Reversed(NewGeneratorsListDup);
         MappedTo := [];
         FinalGens := [];
         Print(NewGeneratorsListDup);
