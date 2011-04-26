@@ -195,7 +195,7 @@ RandomElem := function(n, GeneratorsList)
 end;
 
 RandomGens := function(GeneratorsList)
-    local G,H,HGens,perm;
+    local G,H,HGens,perm,i;
     G := Group(GeneratorsList);
     HGens := [()];
     H := Group(HGens);
@@ -207,5 +207,25 @@ RandomGens := function(GeneratorsList)
         Add(HGens, perm);
         H := Group(HGens);
     od;
+
+    for i in [1..Length(HGens)] do
+        perm := HGens[i];
+        HGens[i] := ();
+        H := Group(HGens);
+        if Size(G) <> Size(H) then
+            HGens[i] := perm;
+        fi;	
+    od;
+
     return HGens;
+end;
+
+CheckRandomElems := function(n,GeneratorsList)
+    local perms;
+    perms := RandomElem(n,GeneratorsList);
+    if Size(Group(GeneratorsList)) = Size(Group(perms)) then
+      Print("\n",1, "\n");
+    else
+      Print("\n",0, "\n");
+    fi;
 end;
