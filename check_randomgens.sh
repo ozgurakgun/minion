@@ -20,8 +20,7 @@ fi
 if [ $rannodes -lt $gennodes ]; then
 	rancount=$((rancount + 1))
 fi
-
-echo $gennodes ' ' $rannodes
+echo $cons ' ' $gennodes ' ' $rannodes
 done
 
 # echo $gencount ' ' $rancount ' ' $gentot ' ' $rantot
