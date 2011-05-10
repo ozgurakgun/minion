@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo -n $2
-for i in GeneratorsBasic FullGroup StabChainGap StabComplete OrbitComplete StabChainME StabChainReduced ArityOne; do
+for i in FullGroup GeneratorsBasic  StabChainGap  StabChainME StabChainReduced ArityOne; do
     echo -n ' '`do_time.sh ./generateGraph.sh $1 $2 $i 1`
 done
 

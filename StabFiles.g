@@ -182,15 +182,14 @@ end;
 RandomElem := function(n, GeneratorsList)
         local NewGeneratorsList, NewGeneratorsListDup, i, g, RepElem;
 
-        NewGeneratorsListDup := [];
+        NewGeneratorsList := [];
         g := Group(GeneratorsList);
-
-        for i in [1..n] do
-            RepElem := Random(g);
-            Add(NewGeneratorsListDup, RepElem);
+	
+	while Length(NewGeneratorsList) <> n do
+		Add(NewGeneratorsList, Random(g));
+		NewGeneratorsList := DuplicateFreeList(NewGeneratorsList);
         od;
 
-        NewGeneratorsList := DuplicateFreeList(NewGeneratorsListDup);
         return NewGeneratorsList;
 end;
 
