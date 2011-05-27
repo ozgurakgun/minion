@@ -28,54 +28,68 @@
 #define UseLexLeqLong false
 #define UseSquarePackingShort false
 #define UseSquarePackingLong false
-#define UseList false
-#define UseNDOneList true
+#define UseList true
+#define UseNDOneList false
 
 #ifdef SUPPORTSGACELEMENT
 #undef UseElementShort
 #undef UseList
+#undef UseNDOneList
 #define UseElementShort true
 #define UseList false
+#define UseNDOneList false
 #endif
 
 #ifdef SUPPORTSGACELEMENTLONG
 #undef UseElementLong
 #undef UseList
+#undef UseNDOneList
 #define UseElementLong true
 #define UseList false
+#define UseNDOneList false
 #endif
 
 #ifdef SUPPORTSGACLEX
 #undef UseLexLeqShort
 #undef UseList
+#undef UseNDOneList
 #define UseLexLeqShort true
 #define UseList false
+#define UseNDOneList false
 #endif
 
 #ifdef SUPPORTSGACLEXLONG
 #undef UseLexLeqLong
 #undef UseList
+#undef UseNDOneList
 #define UseLexLeqLong true
 #define UseList false
+#define UseNDOneList false
 #endif
 
 #ifdef SUPPORTSGACSQUAREPACK
 #undef UseSquarePackingShort
 #undef UseList
+#undef UseNDOneList
 #define UseSquarePackingShort true
 #define UseList false
+#define UseNDOneList false
 #endif
 
 #ifdef SUPPORTSGACSQUAREPACKLONG
 #undef UseSquarePackingLong
 #undef UseList
+#undef UseNDOneList
 #define UseSquarePackingLong true
 #define UseList false
+#define UseNDOneList false
 #endif
 
 #ifdef SUPPORTSGACLIST
 #undef UseList
+#undef UseNDOneList
 #define UseList true
+#define UseNDOneList false
 #endif
 
 // The algorithm iGAC or short-supports-gac
@@ -267,7 +281,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                         if(!varin || valmatches) {
                             // If the support doesn't include the var, or it 
                             // does include var,val then add it to the list.
-                            tuple_lists[var][val-dom_min].push_back(shortsupports[i]);
+                            tuple_lists[var][val-dom_min].push_back(shortsupports[i]);   /// This should put a reference, not a copy !!!
                         }
                     }
                 }
