@@ -1311,7 +1311,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             vector<tuple<int,int,int> > & tup=tuple_nd_list[pos];
             bool valid=true;
             
-            for(int j=0; j<tup.size(); j++) {
+            int tupsize=tup.size();
+            for(int j=0; j<tupsize; j++) {
                 // If the literal is out of domain, OR includes var but not val, then jump.
                 if((! vars[tup[j].get<0>()].inDomain(tup[j].get<1>()) ) || 
                     (tup[j].get<0>()==var && tup[j].get<1>()!=val) ) {
@@ -1322,7 +1323,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             }
             if(valid) {
                 // Found a support
-                for(int j=0; j<tup.size(); j++) {
+                for(int j=0; j<tupsize; j++) {
                     ADDTOASSIGNMENT(tup[j].get<0>(), tup[j].get<1>());
                 }
                 tuple_list_pos[var][val-dom_min]=pos;
@@ -1339,7 +1340,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             vector<tuple<int,int,int> > & tup=tuple_nd_list[pos];
             bool valid=true;
             
-            for(int j=0; j<tup.size(); j++) {
+            int tupsize=tup.size();
+            for(int j=0; j<tupsize; j++) {
                 // If the literal is out of domain, OR includes var but not val, then jump.
                 if((! vars[tup[j].get<0>()].inDomain(tup[j].get<1>()) ) || 
                     (tup[j].get<0>()==var && tup[j].get<1>()!=val) ) {
@@ -1350,7 +1352,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             }
             if(valid) {
                 // Found a support
-                for(int j=0; j<tup.size(); j++) {
+                for(int j=0; j<tupsize; j++) {
                     ADDTOASSIGNMENT(tup[j].get<0>(), tup[j].get<1>());
                 }
                 tuple_list_pos[var][val-dom_min]=pos;
