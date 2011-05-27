@@ -92,6 +92,13 @@
 #define UseNDOneList false
 #endif
 
+#ifdef SUPPORTSGACNDLIST
+#undef UseList
+#undef UseNDOneList
+#define UseList false
+#define UseNDOneList true
+#endif
+
 // The algorithm iGAC or short-supports-gac
 
 // Does it place dynamic triggers for the supports.
