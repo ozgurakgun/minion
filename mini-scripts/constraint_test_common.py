@@ -1412,9 +1412,9 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
         # add extra bool variable.
         varnums=[1]+varnums
         if random.randint(0,3)==0:
-            vartypes=["othernum"]
+            vartypes=["othernum"]+vartypes
         else:
-            vartypes=["boolean"]+vartypes # no longer bool since all var types now allowed.
+            vartypes=["boolean"]+vartypes # no longer bool but 01
     
     isvector=[a>1 for a in varnums]  # Is it to be printed as a vector. This seems to suffice at the moment.
     
@@ -1640,6 +1640,7 @@ def runminion(filename, outfilename, minionbin, variables, constraint, tuplelist
     return os.system(cmd)
 
 def generatevariables(varblocks, types, boundallowed):
+    assert len(types)==len(varblocks)
     # generate a set of variables with random domains and types
     # Varblocks specifies the groups which should be of the same type
     # sum(varblocks) is the total number of variables/constants.
@@ -1649,7 +1650,6 @@ def generatevariables(varblocks, types, boundallowed):
     st_table=""
     domainlists=[]
     constants=[]
-    typesinczero=["num", "smallnum", "quitesmallnum",  "nonnegnum", "boolean"]
     typesconst=["const", "smallconst", "smallconst_distinct"]
     varblocks2=varblocks[:]
     for (i,t) in zip(range(len(varblocks)), types):
@@ -1660,15 +1660,15 @@ def generatevariables(varblocks, types, boundallowed):
         # randomly choose the type of the variables
         if types[i] not in typesconst:
             if boundallowed:
-                if types[i] in typesinczero:
+                if types[i]=="boolean":
                     t=random.randint(1,4)  # bound sparsebound bool or discrete
                 else:
-                    t=random.randint(1,3)  # must be of type posnum, so not allowed to be a bool.
+                    t=random.randint(1,3)  # bound sparsebound, discrete
             else:
-                if types[i] in typesinczero:
+                if types[i]=="boolean":
                     t=random.randint(1,2)*2   # discrete or bool
                 else:
-                    t=2   # can't be bool, must be discrete.
+                    t=2   # discrete
             
             if t==1:
                 ty="BOUND "
