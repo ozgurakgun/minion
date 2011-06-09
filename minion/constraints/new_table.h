@@ -211,9 +211,11 @@ struct NewTableConstraint : public AbstractConstraint
   TableDataType* data;
 
   TableStateType state;
+  
+  TupleList* tuples;
 
   NewTableConstraint(StateObj* stateObj, const VarArray& _vars, TupleList* _tuples) :
-  AbstractConstraint(stateObj), vars(_vars), data(new TableDataType(_tuples)), state(data)
+  AbstractConstraint(stateObj), vars(_vars), data(new TableDataType(_tuples)), state(data), tuples(_tuples)
   {
     CheckNotBound(vars, "table constraint");
       if(_tuples->tuple_size()!=_vars.size())
@@ -325,6 +327,29 @@ struct NewTableConstraint : public AbstractConstraint
         }
       }
     }
+  }
+  
+      virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+  {
+      
+      for(DomainInt x = vars[0].getMin(); x <= vars[0].getMax(); ++x)
+      {
+        vector<DomainInt>* support = state.findSupportingTuple(vars, Literal(0, x));
+        if(support)
+        {
+            for(int i=0; i<vars.size(); i++) {
+                assignment.push_back(make_pair(i, (*support)[i]));
+            }
+            return true;
+        }
+      }
+      
+      return false;
+  }
+  
+  virtual AbstractConstraint* reverse_constraint()
+  {
+    return GACNegativeTableCon(stateObj, vars, tuples);
   }
 
   virtual BOOL check_assignment(DomainInt* v, int v_size)

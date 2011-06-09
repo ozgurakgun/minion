@@ -225,6 +225,35 @@ struct GACTableConstraint : public AbstractConstraint
       // cout << endl; cout << "  fp: finished finding supports: " << endl ;
   }
   
+    virtual bool get_satisfying_assignment(box<pair<int,DomainInt> >& assignment)
+  {
+      DomainInt max = vars[0].getMax();
+      for(DomainInt i = vars[0].getMin(); i <= max; ++i) 
+      {
+          int literal = tuples->get_literal(0, i);
+          int sup;
+          if(negative) {
+              sup = tupleTrieArrayptr->getTrie(0).       
+                        nextSupportingTupleNegative(i, vars, trie_current_support[literal], recyclableTuple);
+          }
+          else
+          {
+              sup = tupleTrieArrayptr->getTrie(0).       
+                        nextSupportingTuple(i, vars, trie_current_support[literal]);
+          }
+          
+          if(sup>=0) {
+              if(!negative) tupleTrieArrayptr->getTrie(0).reconstructTuple(recyclableTuple,trie_current_support[literal]);
+              for(int j=0; j<vars.size(); j++) {
+                  assignment.push_back(make_pair(j, recyclableTuple[j]));
+              }
+              return true;
+          }
+      }
+      
+      return false;
+  }
+  
   virtual BOOL check_assignment(DomainInt* v, int v_size)
   {
     if(negative==0)
