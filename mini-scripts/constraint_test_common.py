@@ -1530,47 +1530,75 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
         # as being a case that the constraint is not specified to work on.
         return True
     
-    if reify:
-        tuplelist2=[]
-        cross=[]
-        crossprod(domlists[1:], [], cross)
-        for c in cross:
-            if c in tuplelist:
-                if 1 in domlists[0]:
-                    tuplelist2.append([1]+c)
-            else:
-                if 0 in domlists[0]:
-                    tuplelist2.append([0]+c)
-        tuplelist=tuplelist2
-    if reifyimply:
-        tuplelist2=[]
-        cross=[]
-        crossprod(domlists[1:], [], cross)
-        for c in cross:
-            if c in tuplelist:
-                if 1 in domlists[0]:
-                    tuplelist2.append([1]+c)
-                if 0 in domlists[0]:
-                    tuplelist2.append([0]+c)   # compatible with both values of the reification var.
-            else:
-                if 0 in domlists[0]:
-                    tuplelist2.append([0]+c)
-        tuplelist=tuplelist2
-    
-    # now convert tuplelist into a string.
-    tuplestring="modtable %d %d \n"%(len(tuplelist), sum(varnums2))
-    for l in tuplelist:
-        for e in l:
-            tuplestring+="%d "%e
-        tuplestring+="\n"
-    
-    # tuplelist is actually a set of lists(not yet), so that it can be reformed for reify or reifyimply
-    
-    constrainttable="table(["
-    for i in range(sum(varnums2)):
-        constrainttable+="x%d"%i
-        if i<(sum(varnums2)-1): constrainttable+=","
-    constrainttable+="], modtable)"
+    if random.randint(0,1)==0:
+        # Deal with reify and reifyimply in the old way, i.e. tack an extra
+        # variable onto the table constraint and extend the table.
+        if reify:
+            tuplelist2=[]
+            cross=[]
+            crossprod(domlists[1:], [], cross)
+            for c in cross:
+                if c in tuplelist:
+                    if 1 in domlists[0]:
+                        tuplelist2.append([1]+c)
+                else:
+                    if 0 in domlists[0]:
+                        tuplelist2.append([0]+c)
+            tuplelist=tuplelist2
+        if reifyimply:
+            tuplelist2=[]
+            cross=[]
+            crossprod(domlists[1:], [], cross)
+            for c in cross:
+                if c in tuplelist:
+                    if 1 in domlists[0]:
+                        tuplelist2.append([1]+c)
+                    if 0 in domlists[0]:
+                        tuplelist2.append([0]+c)   # compatible with both values of the reification var.
+                else:
+                    if 0 in domlists[0]:
+                        tuplelist2.append([0]+c)
+            tuplelist=tuplelist2
+        
+        # now convert tuplelist into a string.
+        tuplestring="modtable %d %d \n"%(len(tuplelist), sum(varnums2))
+        for l in tuplelist:
+            for e in l:
+                tuplestring+="%d "%e
+            tuplestring+="\n"
+        
+        # tuplelist is actually a set of lists(not yet), so that it can be reformed for reify or reifyimply
+        
+        constrainttable="table(["
+        for i in range(sum(varnums2)):
+            constrainttable+="x%d"%i
+            if i<(sum(varnums2)-1): constrainttable+=","
+        constrainttable+="], modtable)"
+    else:
+        # Deal with reify or reifyimply by using reify(table(...)) or reifyimply(table(..))
+        
+        # now convert tuplelist into a string.
+        tuplestring="modtable %d %d \n"%(len(tuplelist), sum(varnums2))
+        for l in tuplelist:
+            for e in l:
+                tuplestring+="%d "%e
+            tuplestring+="\n"
+        
+        # tuplelist is actually a set of lists(not yet), so that it can be reformed for reify or reifyimply
+        constrainttable=""
+        if reify:
+            constrainttable="reify("
+        if reifyimply:
+            constrainttable="reifyimply("
+        
+        constrainttable+="table(["
+        for i in range(sum(varnums2)):
+            constrainttable+="x%d"%i
+            if i<(sum(varnums2)-1): constrainttable+=","
+        constrainttable+="], modtable)"
+        
+        if reify or reifyimply:
+            constrainttable+=")"
     
     constraintlist = []
     # add some other constraints at random into the constraint and constrainttable strings
