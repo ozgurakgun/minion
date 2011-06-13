@@ -652,7 +652,7 @@ class testnegativetable:
         tablegen=self
         treesame=True
         
-        (domlists, modvars, tablevars, constants)=generatevariables(varnums, vartypes, False)
+        (domlists, modvars, tablevars, constants, diseq_constraints)=generatevariables(varnums, vartypes, False)
         
         curvar=0
         constraint=constraintname+"("
