@@ -450,6 +450,13 @@ if(SUPPORTSGACNDLIST)
     add_definitions(-DSUPPORTSGACNDLIST)
 endif()
 
+option(SUPPORTSGACLISTNOCOPY "" OFF)
+if(SUPPORTSGACLISTNOCOPY)
+    message(STATUS "Enabling SUPPORTSGACLISTNOCOPY")
+    set(BINARY "${BINARY}-igac-listnc")
+    add_definitions(-DSUPPORTSGACLISTNOCOPY)
+endif()
+
 if(DEFINED ENV{CPU})
     message(STATUS "Using CPU-specific flags $ENV{CPU}")
     set(CFLAGS "${CFLAGS} $ENV{CPU}")
