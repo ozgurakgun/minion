@@ -20,7 +20,7 @@
 #include <algorithm>
 #include "boost/tuple/tuple_comparison.hpp"
 
-// Default will be List.   
+// Default will be No-Copy-List.   
 // If any special case is defined list will be switched off
 // If two options given compile errors are expected to result.
 
@@ -32,64 +32,78 @@
 #define UseSquarePackingLong false
 #define UseList true
 #define UseNDOneList false
+#define SupportsGacNoCopyList true
 
 #ifdef SUPPORTSGACELEMENT
 #undef UseElementShort
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseElementShort true
 #define UseList false
 #define UseNDOneList false
+#define SupportsGacNoCopyList false
 #endif
 
 #ifdef SUPPORTSGACELEMENTLONG
 #undef UseElementLong
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseElementLong true
 #define UseList false
 #define UseNDOneList false
+#define SupportsGacNoCopyList false
 #endif
 
 #ifdef SUPPORTSGACLEX
 #undef UseLexLeqShort
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseLexLeqShort true
 #define UseList false
 #define UseNDOneList false
+#define SupportsGacNoCopyList false
 #endif
 
 #ifdef SUPPORTSGACLEXLONG
 #undef UseLexLeqLong
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseLexLeqLong true
 #define UseList false
 #define UseNDOneList false
+#define SupportsGacNoCopyList false
 #endif
 
 #ifdef SUPPORTSGACSQUAREPACK
 #undef UseSquarePackingShort
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseSquarePackingShort true
 #define UseList false
 #define UseNDOneList false
+#define SupportsGacNoCopyList false
 #endif
 
 #ifdef SUPPORTSGACSQUAREPACKLONG
 #undef UseSquarePackingLong
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseSquarePackingLong true
 #define UseList false
 #define UseNDOneList false
+#define SupportsGacNoCopyList false
 #endif
 
 #ifdef SUPPORTSGACLIST
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseList true
 #define UseNDOneList false
 #define SupportsGacNoCopyList false
@@ -98,6 +112,7 @@
 #ifdef SUPPORTSGACNDLIST
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseList false
 #define UseNDOneList true
 #define SupportsGacNoCopyList false
@@ -106,6 +121,7 @@
 #ifdef SUPPORTSGACLISTNOCOPY
 #undef UseList
 #undef UseNDOneList
+#undef SupportsGacNoCopyList
 #define UseList true
 #define UseNDOneList false
 #define SupportsGacNoCopyList true
