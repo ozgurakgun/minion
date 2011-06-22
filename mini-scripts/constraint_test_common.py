@@ -1549,7 +1549,7 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
     
 
     tree_choice = random.randint(0,5)    
-    while tree_choice <= 1:
+    while tree_choice <= -1:   # hack this out to test supportsgac
       treesame = False
       if tree_choice==0:
           constraint = "watched-and({"+ ",".join([constraint] * random.randint(1,5)) +"})"
