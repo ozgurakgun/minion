@@ -224,7 +224,7 @@ struct NewTableConstraint : public AbstractConstraint
           FAIL_EXIT();
       }
   }
-
+  
   LiteralSpecificLists* lists;
 
   MemOffset _current_support;

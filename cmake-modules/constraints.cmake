@@ -12,7 +12,7 @@ set(ALL_CONSTRAINTS "element" "element_one" "watchelement" "watchelement_one"
                     "w-notliteral" "reify" "reifyimply-quick" "reifyimply" "reifyimply-old"
                     "reifyimply-new" "true" "false" "check[gsa]" "check[assign]"
                     "watchvecexists_less" "lighttable"
-                    "supportsgac" "gacschema" "constructiveor" "gaceq"
+                    "supportsgac" "gacschema" "gacschemalist" "constructiveor" "gaceq"
                     )
 
 set(GEN_FILES_DIR "${PROJECT_SOURCE_DIR}/minion/build_constraints")
@@ -230,6 +230,9 @@ set(NAME_READ_supportsgac "read_list" "read_tuples")
 
 set(NAME_ID_gacschema "CT_GACSCHEMA")
 set(NAME_READ_gacschema "read_list" "read_constant_list")
+
+set(NAME_ID_gacschemalist "CT_GACSCHEMALIST")
+set(NAME_READ_gacschemalist "read_list" "read_tuples")
 
 set(NAME_ID_constructiveor "CT_CONSTRUCTIVE_OR")
 set(NAME_READ_constructiveor "read_list")
