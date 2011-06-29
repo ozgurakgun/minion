@@ -23,6 +23,7 @@
 // Default will be LexLeq.   
 // If any special case is defined LexLeq will be switched off
 // If two options given compile errors are expected to result.
+// If this is built with the template option UseList set to true, then these flags are ignored.
 
 #define UseElementLong false
 #define UseLexLeqLong true
@@ -47,15 +48,11 @@
 #define UseLexLeqLong true
 #endif
 
-
-// Does it place dynamic triggers for the supports.
-//#define SupportsGACUseDT true
-
-template<typename VarArray>
+template<typename VarArray, bool UseList=false>
 struct GACSchema : public AbstractConstraint, Backtrackable
 {
     struct Support {
-        vector<Support*> prev;   // Size r -- some entries null.
+        vector<Support*> prev;   // Size r
         vector<Support*> next;   
         
         int id;
@@ -104,6 +101,11 @@ struct GACSchema : public AbstractConstraint, Backtrackable
     
     vector<DomainInt> constants;   // For constraints where the method to produce supports requires constants. e.g. Square packing, the sizes of the two squares.
     
+    // Stuff to do with tuples.
+    TupleList* tuples;
+    vector<vector<vector<vector<int> * > > > tuple_lists;
+    vector<MoveableArray<unsigned int> > tuple_list_pos;  // indexed by var, val.
+    
     ////////////////////////////////////////////////////////////////////////////
     // Ctor
     
@@ -128,8 +130,57 @@ struct GACSchema : public AbstractConstraint, Backtrackable
             supportListPerLit[i].resize(numvals);  // blank Support objects.
             for(int j=0; j<numvals; j++) supportListPerLit[i][j].next.resize(vars.size());
         }
+    }
+    
+    GACSchema(StateObj* _stateObj, const VarArray& _var_array, TupleList* _tuples) : AbstractConstraint(_stateObj), 
+    vars(_var_array), supportFreeList(0), tuples(_tuples)
+    {
+        // Register this with the backtracker.
+        getState(stateObj).getGenericBacktracker().add(this);
         
+        if(vars.size()>0) {
+            dom_max=vars[0].getInitialMax();
+            dom_min=vars[0].getInitialMin();
+            for(int i=1; i<vars.size(); i++) {
+                if(vars[i].getInitialMin()<dom_min) dom_min=vars[i].getInitialMin();
+                if(vars[i].getInitialMax()>dom_max) dom_max=vars[i].getInitialMax();
+            }
+            numvals=dom_max-dom_min+1;
+        }
         
+        supportListPerLit.resize(vars.size());
+        for(int i=0; i<vars.size(); i++) {
+            supportListPerLit[i].resize(numvals);  // blank Support objects.
+            for(int j=0; j<numvals; j++) supportListPerLit[i][j].next.resize(vars.size());
+        }
+        
+        // List-specific things
+        tuple_list_pos.resize(vars.size());
+        
+        // populate tuple_lists
+        tuple_lists.resize(vars.size());
+        for(int var=0; var<vars.size(); var++) {
+            tuple_list_pos[var]=getMemory(_stateObj).backTrack().template requestArray<unsigned int>(vars[var].getInitialMax()-vars[var].getInitialMin()+1);
+            for(int validx=0; validx<vars[var].getInitialMax()-vars[var].getInitialMin()+1; validx++) {
+                tuple_list_pos[var][validx]=0;
+            }
+            tuple_lists[var].resize(vars[var].getInitialMax()-vars[var].getInitialMin()+1);
+        }
+        
+        int numtuples=tuples->size();
+        int* tupdata=tuples->getPointer();
+        for(int i=0; i<numtuples; i++) {
+            vector<int>* tup=new vector<int>(tupdata, tupdata+vars.size() );
+            
+            for(int var=0; var<vars.size(); var++) {
+                int val=(*tup)[var];
+                if(val>= vars[var].getInitialMin() && val<= vars[var].getInitialMax()) {
+                    tuple_lists[var][val-vars[var].getInitialMin()].push_back(tup);
+                }
+            }
+            
+            tupdata+=vars.size();
+        }
     }
     
     ////////////////////////////////////////////////////////////////////////////
@@ -482,8 +533,15 @@ struct GACSchema : public AbstractConstraint, Backtrackable
                   }
                   else {
                       typedef pair<int,DomainInt> temptype;
-                      MAKE_STACK_BOX(newsupportbox, temptype, vars.size()); 
-                      bool foundsupport=findNewSupport(newsupportbox, lit.first, lit.second);
+                      MAKE_STACK_BOX(newsupportbox, temptype, vars.size());
+                      bool foundsupport;
+                      if(UseList) {
+                          foundsupport=findNewSupportList(newsupportbox, lit.first, lit.second);
+                      }
+                      else{
+                          foundsupport=findNewSupport(newsupportbox, lit.first, lit.second);
+                      }
+                      
                       if(foundsupport) {
                           Support* sp=addSupport(&newsupportbox);
                           addToLitsPerSupport(sp, lit.first, lit.second);
@@ -504,54 +562,38 @@ struct GACSchema : public AbstractConstraint, Backtrackable
     #define ADDTOASSIGNMENTFL(var, val) assignment.push_back(make_pair(var,val));
     
     ////////////////////////////////////////////////////////////////////////////
-    // Methods for pair-equals. a=b or c=d.
+    //
+    //  Positive List instantiation a la Bessiere and Regin.
+    //  This method has a different name and is switched on by the template argument rather than a #define.
     
-    /*
-    bool findNewSupport(box<pair<int, DomainInt> >& assignment, int var, int val) {
-        // a=b or c=d
+    bool findNewSupportList(box<pair<int, DomainInt> >& assignment, int var, int val) {
         D_ASSERT(vars[var].inDomain(val));
-        D_ASSERT(vars.size()==4);
-        int othervar;
-        if(var<=1) othervar=1-var;
-        else othervar=(var==2? 3: 2);
         
-        if(vars[othervar].inDomain(val)) {
-            // If can satisfy the equality with var in it
-            assignment.push_back(make_pair(var, val));
-            assignment.push_back(make_pair(othervar, val));
-            return true;
-        }
+        vector<vector<int>* > & tups=tuple_lists[var][val-vars[var].getInitialMin()];
         
-        // Otherwise, try to satisfy the other equality.
-        if(var<=1) {
-            for(int otherval=vars[2].getMin(); otherval<=vars[2].getMax(); otherval++) {
-                if(vars[2].inDomain(otherval) && vars[3].inDomain(otherval)) {
-                    assignment.push_back(make_pair(2, otherval));
-                    assignment.push_back(make_pair(3, otherval));
-                    return true;
+        int cur=tuple_list_pos[var][val-vars[var].getInitialMin()];
+        int numtups=tups.size();
+        int numvars=vars.size();
+        for( ; cur<numtups; cur++) {
+            vector<int>& tup=*(tups[cur]);
+            bool valid=true;
+            for(int i=0; i<numvars; i++) {
+                if(!vars[i].inDomain(tup[i])) {
+                    valid=false;
+                    break;
                 }
             }
-        }
-        else {
-            for(int otherval=vars[0].getMin(); otherval<=vars[0].getMax(); otherval++) {
-                if(vars[0].inDomain(otherval) && vars[1].inDomain(otherval)) {
-                    assignment.push_back(make_pair(0, otherval));
-                    assignment.push_back(make_pair(1, otherval));
-                    return true;
+            if(valid) {
+                // Copy into the box
+                for(int i=0; i<numvars; i++) {
+                    assignment.push_back(make_pair(i,tup[i]));
                 }
+                tuple_list_pos[var][val-vars[var].getInitialMin()]=cur;
+                return true;
             }
         }
         return false;
     }
-    
-    virtual BOOL check_assignment(DomainInt* v, int array_size)
-    {
-      D_ASSERT(array_size == 4);
-      
-      if(v[0]==v[1] || v[2]==v[3]) return true;
-      return false;
-      
-    }*/
     
     ////////////////////////////////////////////////////////////////////////////
     // Methods for element
@@ -948,7 +990,14 @@ struct GACSchema : public AbstractConstraint, Backtrackable
                       else {
                           typedef pair<int,DomainInt> temptype;
                           MAKE_STACK_BOX(newsupportbox, temptype, vars.size());
-                          bool foundsupport=findNewSupport(newsupportbox, var, val);
+                          bool foundsupport;
+                          if(UseList) {
+                              foundsupport=findNewSupportList(newsupportbox, var, val);
+                          }
+                          else{
+                              foundsupport=findNewSupport(newsupportbox, var, val);
+                          }
+                          
                           if(foundsupport) {
                               Support* sp=addSupport(&newsupportbox);
                               addToLitsPerSupport(sp, var,val);
