@@ -466,7 +466,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     ShortSupportsGAC(StateObj* _stateObj, const VarArray& _var_array, TupleList* tuples, int) : AbstractConstraint(_stateObj), 
     vars(_var_array), supportFreeList(0)
     {
-	int numvars = vars.size(); 
+        int numvars = vars.size(); 
 	
 	// literalsScratch.reserve(numvars);
 
@@ -494,7 +494,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         }
 
 	literalList.resize(litCounter); 
-	supportsPerLit.resize(litCounter,0); 
 
 	litCounter = 0 ; 
         for(int i=0; i<numvars; i++) {
@@ -510,7 +509,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	numlits = litCounter;
         
-        
         #if SupportsGACUseZeroVals
         zeroLits.resize(numvars);
         for(int i=0 ; i < numvars ; i++) {
@@ -520,9 +518,15 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    int thisvarstart = firstLiteralPerVar[i];
             for(int j=0 ; j < numvals_i; j++) zeroLits[i].push_back(j+thisvarstart);
         }
-        inZeroLits.resize(numlits,1); 
+        inZeroLits.resize(numlits,true); 
         #endif
-        
+	
+	// Lists (vectors) of literals/vars that have lost support.
+	// Set this up to insist that everything needs to have support found for it on full propagate.
+	
+        litsWithLostExplicitSupport.reserve(numlits); // max poss size, not necessarily optimal choice here
+        varsWithLostImplicitSupport.reserve(vars.size());
+       
         // Partition
         varsPerSupport.resize(vars.size());
         varsPerSupInv.resize(vars.size());
