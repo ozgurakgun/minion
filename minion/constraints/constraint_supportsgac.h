@@ -2073,6 +2073,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                 // If the literal is out of domain, OR includes var but not val, then jump.
                 if((! vars[tup[j].get<0>()].inDomain(tup[j].get<1>()) ) || 
                     (tup[j].get<0>()==var && tup[j].get<1>()!=val) ) {
+                    D_ASSERT(tup[j].get<2>() > pos);
                     pos=tup[j].get<2>();  
                     valid=false;
                     break;
@@ -2102,6 +2103,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
                 // If the literal is out of domain, OR includes var but not val, then jump.
                 if((! vars[tup[j].get<0>()].inDomain(tup[j].get<1>()) ) || 
                     (tup[j].get<0>()==var && tup[j].get<1>()!=val) ) {
+                    D_ASSERT(tup[j].get<2>() > pos);
                     pos=tup[j].get<2>();  
                     valid=false;
                     break;
