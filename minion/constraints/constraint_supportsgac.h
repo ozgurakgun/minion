@@ -2093,6 +2093,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         pos=0;
         
         int oldpos=tuple_list_pos[var][val-vars[var].getInitialMin()];
+        D_ASSERT(oldpos<listsize);
         
         while(pos<oldpos) {
             vector<tuple<int,int,int> > & tup=tuple_nd_list[pos];
