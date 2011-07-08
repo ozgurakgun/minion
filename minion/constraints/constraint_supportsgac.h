@@ -646,7 +646,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 #endif
         
 #if UseNDOneList
-        D_ASSERT(tuples->size()==1);
         
         vector<tuple<int, int,int> > temp;
         for(int i=0; i<tuples->size(); i++) {
