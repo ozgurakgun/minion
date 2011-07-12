@@ -27,6 +27,32 @@
 
 #include "../preprocess.h"
 
+
+#define UseElementLong false
+#define UseLexLeqLong true
+#define UseSquarePackingLong false
+
+#ifdef SUPPORTSGACELEMENTLONG
+#undef UseElementLong
+#undef UseLexLeqLong
+#define UseElementLong true
+#define UseLexLeqLong false
+#endif
+
+#ifdef SUPPORTSGACSQUAREPACKLONG
+#undef UseSquarePackingLong
+#undef UseLexLeqLong
+#define UseSquarePackingLong true
+#define UseLexLeqLong false
+#endif
+
+#ifdef SUPPORTSGACLEXLONG
+#undef UseLexLeqLong
+#define UseLexLeqLong true
+#endif
+
+
+
 // Whether to propagate incrementally.
 #define CORINCREMENTAL true
 
@@ -413,7 +439,9 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
     ////////////////////////////////////////////////////////////////////////////
     //
     //  Element
-    /*
+    
+#if UseElementLong
+    
     void make_disjunct_csps()
     {
         // Copy variables 
@@ -476,12 +504,13 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
                 inner_vars[i].push_back(get_AnyVarRef_from_Var(gadget_stateObj[i], vars[j]));
         }
     }
-    */
+#endif
     
     ////////////////////////////////////////////////////////////////////////////
     //
     //  Square packing.
-    /*
+#if UseSquarePackingLong
+
     void make_disjunct_csps()
     {
         // Copy variables 
@@ -580,12 +609,14 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
             for(int j=0; j<var_array.size(); j++)
                 inner_vars[i].push_back(get_AnyVarRef_from_Var(gadget_stateObj[i], vars[j]));
         }
-    }*/
+    }
+#endif
     
     ////////////////////////////////////////////////////////////////////////////
     //
     //  Lexleq
-    
+
+#if UseLexLeqLong
     void make_disjunct_csps()
     {
         // Copy variables 
@@ -654,7 +685,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
                 inner_vars[i].push_back(get_AnyVarRef_from_Var(gadget_stateObj[i], vars[j]));
         }
     }
-    
+#endif
     
 };
 
