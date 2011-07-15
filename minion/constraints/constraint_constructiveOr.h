@@ -51,8 +51,6 @@
 #define UseLexLeqLong true
 #endif
 
-
-
 // Whether to propagate incrementally.
 #define CORINCREMENTAL true
 
@@ -411,14 +409,14 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         cvars[1].push_back(var2);
         
         
-        ConstraintBlob cblob(&(constraint_list[11]), cvars);  // diseq.
+        ConstraintBlob cblob(get_constraint(CT_DISEQ), cvars);  // diseq.
         
         cspi.add_constraint(cblob);
         
         BuildCSP(diseq_stateObj, cspi);
         
         // Stick an abs in there instead
-        ConstraintBlob cblob2(&(constraint_list[17]), cvars);  // abs.
+        ConstraintBlob cblob2(get_constraint(CT_ABS), cvars);  // abs.
         
         cspi.add_constraint(cblob2);
         
@@ -484,13 +482,13 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
             eqvars[0].push_back(vars[var_array.size()-1]);
             eqvars[1].push_back(vars[i]);
             
-            ConstraintBlob eqblob(&(constraint_list[72]), eqvars);    // GACeq
+            ConstraintBlob eqblob(get_constraint(CT_GACEQ), eqvars);    // GACeq
             
             vector<vector<Var> > litvars;
             litvars.resize(1);
             litvars[0].push_back(vars[var_array.size()-2]);
             
-            ConstraintBlob litblob(&(constraint_list[56]), litvars);   // w-literal
+            ConstraintBlob litblob(get_constraint(CT_WATCHED_LIT), litvars);   // w-literal
             
             litblob.constants.resize(1);
             litblob.constants[0].push_back(i);
@@ -550,7 +548,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         ineqvars[0].push_back(vars[0]);
         ineqvars[1].push_back(vars[2]);
         
-        ConstraintBlob ineqblob(&(constraint_list[18]), ineqvars);   // ineq
+        ConstraintBlob ineqblob(get_constraint(CT_INEQ), ineqvars);   // ineq
         
         ineqblob.constants.resize(1);
         ineqblob.constants[0].push_back(-var_array[4].getInitialMin());
@@ -564,7 +562,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         ineqvars[0].push_back(vars[2]);
         ineqvars[1].push_back(vars[0]);
         
-        ConstraintBlob ineqblob(&(constraint_list[18]), ineqvars);   // ineq
+        ConstraintBlob ineqblob(get_constraint(CT_INEQ), ineqvars);   // ineq
         
         ineqblob.constants.resize(1);
         ineqblob.constants[0].push_back(-var_array[5].getInitialMin());
@@ -578,7 +576,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         ineqvars[0].push_back(vars[1]);
         ineqvars[1].push_back(vars[3]);
         
-        ConstraintBlob ineqblob(&(constraint_list[18]), ineqvars);   // ineq
+        ConstraintBlob ineqblob(get_constraint(CT_INEQ), ineqvars);   // ineq
         
         ineqblob.constants.resize(1);
         ineqblob.constants[0].push_back(-var_array[4].getInitialMin());
@@ -592,7 +590,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         ineqvars[0].push_back(vars[3]);
         ineqvars[1].push_back(vars[1]);
         
-        ConstraintBlob ineqblob(&(constraint_list[18]), ineqvars);   // ineq
+        ConstraintBlob ineqblob(get_constraint(CT_INEQ), ineqvars);   // ineq
         
         ineqblob.constants.resize(1);
         ineqblob.constants[0].push_back(-var_array[5].getInitialMin());
@@ -661,7 +659,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
                 eqvars[0].push_back(vars[j]);
                 eqvars[1].push_back(vars[j+var_array.size()/2]);
                 
-                ConstraintBlob eqblob(&(constraint_list[72]), eqvars);    // GACeq
+                ConstraintBlob eqblob(get_constraint(CT_GACEQ), eqvars);    // GACeq
                 cspi.add_constraint(eqblob);
             }
             
@@ -671,7 +669,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
                 litvars[0].push_back(vars[i]);
                 litvars[1].push_back(vars[i+var_array.size()/2]);
                 
-                ConstraintBlob litblob(&(constraint_list[18]), litvars);   // ineq
+                ConstraintBlob litblob(get_constraint(CT_INEQ), litvars);   // ineq
                 
                 litblob.constants.resize(1);
                 litblob.constants[0].push_back(-1);
