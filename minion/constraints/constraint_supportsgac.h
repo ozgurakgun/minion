@@ -1109,6 +1109,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    #else
 			if(vars[var].inDomain(val)) {	// tested literalList  above
 		    #endif
+		    D_ASSERT(hasNoKnownSupport(var, lit));
 		            findSupportsIncrementalHelper(var,val);
 			    // No longer do we remove lit from zerolits in this case if support is found.
 			    // However this is correct as it can be removed lazily next time the list is traversed
