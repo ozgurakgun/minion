@@ -1076,7 +1076,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    
 	    litsWithLostExplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 	    
-	    if(vars[var].inDomain(val) && hasNoKnownSupport(var,lit)) {
+	    if( hasNoKnownSupport(var,lit) &&  vars[var].inDomain(val) ) {
 		    findSupportsIncrementalHelper(var,val);
 	    }
 	}
@@ -1091,9 +1091,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    for(int val=vars[var].getMin(); val<=vars[var].getMax(); val++) {
 			int lit=firstLiteralPerVar[var]+val-vars[var].getInitialMin();
 		    #else
-		    for(int j=0; j<zeroLits[var].size(); j++) {
+		    for(int j=0; j<zeroLits[var].size() && supportsPerVar[var]==supports; j++) {
 			int lit=zeroLits[var][j];
-                        if(literalList[lit].supportCellList != 0){
+            if(literalList[lit].supportCellList != 0){
 			    // No longer a zero val. remove from vector.
 			    zeroLits[var][j]=zeroLits[var][zeroLits[var].size()-1];
 			    zeroLits[var].pop_back();
@@ -1109,6 +1109,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    #else
 			if(vars[var].inDomain(val)) {	// tested literalList  above
 		    #endif
+		    D_ASSERT(hasNoKnownSupport(var, lit));
+		    PROP_INFO_ADDONE(CounterA);
 		            findSupportsIncrementalHelper(var,val);
 			    // No longer do we remove lit from zerolits in this case if support is found.
 			    // However this is correct as it can be removed lazily next time the list is traversed
