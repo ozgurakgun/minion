@@ -1281,7 +1281,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 		    for(int val=vars[var].getMin(); val<=vars[var].getMax(); val++) {
 			int lit=firstLiteralPerVar[var]+val-vars[var].getInitialMin();
 		    #else
-		    for(int j=0; j<zeroLits[var].size(); j++) {
+		    for(int j=0; j<zeroLits[var].size() && supportsPerVar[var] == supports; j++) {
 			int lit=zeroLits[var][j];
                         if(literalList[lit].supportCellList != 0){
 			    // No longer a zero val. remove from vector.
