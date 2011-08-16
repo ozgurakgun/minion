@@ -499,6 +499,7 @@ struct GACSchema : public AbstractConstraint, Backtrackable
   
   virtual void propagate(DynamicTrigger* dt)
   {
+    PROP_INFO_ADDONE(DynGACTable);
       int pos=dt-dynamic_trigger_start();
       int var=pos/numvals;
       int val=pos-(var*numvals)+dom_min;
