@@ -346,6 +346,10 @@ To resume the solving of problem.minion from the file resume.minion do
 Do not write a resume file on timeout or being killed.
 */
 
+/** @help switches;-makeresume Description
+Write a resume file on timeout or being killed.
+*/
+
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //Entrance:
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

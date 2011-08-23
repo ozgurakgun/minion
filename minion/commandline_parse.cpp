@@ -275,6 +275,10 @@ void parse_command_line(StateObj* stateObj, SearchMethod& args, int argc, char**
     {
       getOptions(stateObj).noresumefile = true;
     }
+    else if(command == string("-makeresume"))
+    {
+      getOptions(stateObj).noresumefile = false;
+    }
     else if(command[0] == '-' && command != string("--"))
     {
       cout << "I don't understand '" << command << "'. Sorry. " << endl;
