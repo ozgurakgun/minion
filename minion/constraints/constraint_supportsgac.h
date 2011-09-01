@@ -764,10 +764,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
        newsup->arity = newsize;
 
        if(fullArityScratch == vars.size()) { 
-	   isShortSupport = false ; 
+	   newsup->isShortSupport = false ; 
        }
        else { 
-	   isShortSupport = true ;
+	   newsup->isShortSupport = true ;
        }
 
        if(newsize > oldsize) { 
@@ -903,7 +903,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	// HERE 
 	//
-       if(sup_internal->isShortSupport){ 
+       if(sup->isShortSupport){ 
 	int oldIndex  = supportNumPtrs[supports];
 	
         for(int i=0; i<supArity; i++) {
