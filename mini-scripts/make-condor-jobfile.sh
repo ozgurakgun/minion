@@ -36,6 +36,8 @@ for i in $*; do
     TMP=`basename $i`
     echo "arguments = \" $ARGUMENTS $TMP\""
     echo "output = $BBIN-$TMP.out.\$(Cluster).\$(Process)"
+    echo "error = $BBIN-$TMP.err.\$(Cluster).\$(Process)"
+    echo "log = $BBIN-$TMP.log.\$(Cluster).\$(Process)"
     echo "Queue $NUMBER"
     echo ""
     shift
