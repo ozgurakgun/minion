@@ -155,6 +155,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	int var ; 
 	int val ;
 	SupportCell* supportCellList; 
+
 //	Literal() { supportCellList = 0 ;} 
     };
 
@@ -163,6 +164,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	int arity; 		// could use vector.size() but don't want to destruct SupportCells when arity decreases
 				// or reconstruct existing ones when it increases.
+	BOOL isShortSupport;
 
 	Support* nextFree ; // for when Support is in Free List.
 
@@ -172,6 +174,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             supportCells.resize(0);
 	    arity=0;
 	    nextFree=0;
+	    isShortSupport=true;
         }
     };
     
@@ -183,6 +186,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     VarArray vars;
 
     vector<pair<int,int> > literalsScratch;   // used instead of per-Support list, as scratch space
+
+    int fullArityScratch; 
     
     int numvals;
     int numlits;
@@ -758,6 +763,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
        newsup->arity = newsize;
 
+       if(fullArityScratch == vars.size()) { 
+	   isShortSupport = false ; 
+       }
+       else { 
+	   isShortSupport = true ;
+       }
+
        if(newsize > oldsize) { 
 	       supCells.resize(newsize) ; 
 	       // make sure pointers to support cell are correct
@@ -809,7 +821,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	int litsize = sup_internal->arity;
 
-        for(int i=0; i<litsize; i++) {
+       if(sup_internal->isShortSupport){ 
+
+	for(int i=0; i<litsize; i++) {
 
 	    int lit=supCells[i].literal;
 	    int var=literalList[lit].var;
@@ -838,6 +852,30 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             supportNumPtrs[supportsPerVar[var]]--;
         }
         supports++;
+       } 
+       else // it's a long support
+       { 
+	for(int i=0; i<litsize; i++) {
+
+	    int lit=supCells[i].literal;
+	    int var=literalList[lit].var;
+	    
+            // Stitch it into the start of literalList.supportCellList
+	    
+            supCells[i].prev = 0;
+            supCells[i].next = literalList[lit].supportCellList;  
+            if(literalList[lit].supportCellList!=0) {
+                literalList[lit].supportCellList->prev = &(supCells[i]);
+            }
+	    else { 
+            // Attach trigger if this is the first support containing var,val.
+                attach_trigger(var, literalList[lit].val, lit);
+            }
+	    literalList[lit].supportCellList = &(supCells[i]);
+
+        }
+       }
+
         
         //printStructures();
         
@@ -863,6 +901,9 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	// oldIndex is where supportsPerVar = numsupports used to be 
 	// Off by 1 error?
 
+	// HERE 
+	//
+       if(sup_internal->isShortSupport){ 
 	int oldIndex  = supportNumPtrs[supports];
 	
         for(int i=0; i<supArity; i++) {
@@ -959,6 +1000,69 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             supportFreeList=sup;
         }
         // else can't re-use it because a ptr to it is on the BT stack. 
+       }
+       else // it's a long support
+       {
+        for(int i=0; i<supArity; i++) {
+
+	    SupportCell& supCell = supCells[i];
+	    int lit=supCell.literal;
+            int var=literalList[lit].var ;
+
+	    // D_ASSERT(prev[var]!=0);
+            // decrement counters
+
+	    if(supCell.prev==0) { 	// this was the first support in list
+
+		    literalList[lit].supportCellList = supCell.next; 
+
+		    if(supCell.next==0) { 
+			    // We have lost the last support for lit
+			    //
+	    // I believe that each literal can only be marked once here in a call to update_counters.
+	    // so we should be able to push it onto a list
+	    //
+	    // As long as we do not actually call find_new_support.
+	    // So probably should shove things onto a list and then call find supports later
+	// Surely don't need to update lost supports on backtracking in non-backtrack-stable code?
+			if (!Backtracking && supportsPerVar[var] == supports) {	// since supports not decremented yet
+				litsWithLostExplicitSupport.push_back(lit);
+			}
+			#if SupportsGACUseZeroVals
+				// Still need to add to zerovals even if above test is true
+				// because we might find a new implicit support, later lose it, and then it will 
+				// be essential that it is in zerovals.  Obviously if an explicit support is 
+				// found then it will later get deleted from zerovals.
+			if(!inZeroLits[lit]) {
+			    inZeroLits[lit]=true;
+			    zeroLits[var].push_back(lit);
+			}
+			#endif
+		    // Remove trigger since this is the last support containing var,val.
+		       if(SupportsGACUseDT) { detach_trigger(lit); }
+		    }
+		    else { 
+			    supCell.next->prev=0;
+		    }
+	    }
+	    else {
+		    supCell.prev->next = supCell.next;
+		    if(supCell.next!=0){
+			    supCell.next->prev = supCell.prev;
+		    }
+	    }
+        }
+	
+	if (Backtracking) {
+            // We are Backtracking 
+	    // Can re-use the support when it is removed by BT. 
+            // Stick it on the free list 
+            sup->nextFree=supportFreeList;
+            supportFreeList=sup;
+        }
+        // else can't re-use it because a ptr to it is on the BT stack. 
+       }
+
     }
 
     BOOL hasNoKnownSupport(int var,int lit) {
@@ -1045,6 +1149,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    typedef pair<int,DomainInt> temptype;
 	    // MAKE_STACK_BOX(newsupportbox, temptype, vars.size()); 
 	    literalsScratch.clear(); 
+	    fullArityScratch = 0;
 	    // bool foundsupport=findNewSupport(newsupportbox, var, val);
 	    bool foundsupport=findNewSupport(var, val);
 	    
@@ -1203,10 +1308,10 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     // HERE will need to be changed for backtrack stability, i.e. added even if isAssigned. Or use FL
     
-    #define ADDTOASSIGNMENT(var, val) if(!vars[var].isAssigned()) literalsScratch.push_back(make_pair(var,val));
+    #define ADDTOASSIGNMENT(var, val) {fullArityScratch++; if(!vars[var].isAssigned()) literalsScratch.push_back(make_pair(var,val));}
     
     // For full-length support variant:
-    #define ADDTOASSIGNMENTFL(var, val) if(!vars[var].isAssigned()) literalsScratch.push_back(make_pair(var,val));
+    #define ADDTOASSIGNMENTFL(var, val) {fullArityScratch++; if(!vars[var].isAssigned()) literalsScratch.push_back(make_pair(var,val));}
     // #define ADDTOASSIGNMENTFL(var, val) literalsScratch.push_back(make_pair(var,val));
     
     
