@@ -31,6 +31,8 @@ This is the real-valued network flow algorithm, not Regin's algorithm.
 #include <algorithm>
 #include <utility>
 
+#include <queue>
+
 using namespace std;
 
 #include "alldiff_gcc_shared.h"
@@ -144,7 +146,7 @@ struct GacAlldiffConstraint2 : public FlowConstraint<VarArray, true>
     using FlowConstraint<VarArray, true>::hopcroft2_setup;
     
     virtual string constraint_name()
-    { 
+    {
         return "GacAlldiff2";
     }
     
@@ -1094,6 +1096,319 @@ struct GacAlldiffConstraint2 : public FlowConstraint<VarArray, true>
       }
   }
     */
+    
+//===============================================================================================================
+    // New stuff with cost-based propagator
+    // After a literal is deleted, the flow for that literal is taken out...
+    
+    // Then bfs_cost is called to re-maximise the flow. If this causes any 
+    // literals to have zero flow, they are then deleted. 
+    
+    // Find an augmenting path by searching back from the unsaturated value to 
+    // vars 
+    
+#define VISITNODE2 { \
+    heap.push_back(make_pair(-newnodecost, newnode)); \
+    push_heap(heap.begin(), heap.end()); \
+    visited.insert(newnode); \
+    prev[newnode]=curnode; \
+    if(newnode==end)  \
+    { \
+        augpath.clear();  \
+        augpath.push_back(end); \
+        while(newnode!=start) \
+        { \
+            newnode=prev[newnode]; \
+            augpath.push_back(newnode); \
+        } \
+        std::reverse(augpath.begin(), augpath.end()); \
+        return &augpath; \
+    } \
+}
+    
+    
+    void cost_propagator() {
+        // Need a list of pruned lits.
+        vector<int> vars_to_process;
+        
+        /*for(int i=0; i<numvars; i++) {
+            for(int adjlistidx=0; adjlistidx<adjlistlength[i]; adjlistidx++) {
+                int val=adjlist[i][adjlistidx];
+                if(!var_array[i].inDomain(val)) {
+                    adjlist_remove(i, val);
+                    adjlistidx--;
+                    
+                    vars_to_process.push_back(i);
+                    
+                    // Reduce the flow accordingly.
+                    flow_s_var[i]=flow_s_var[i]-flow_var_val[i][val-dom_min];
+                    flow_val_t[val-dom_min]=flow_val_t[val-dom_min]-flow_var_val[i][val-dom_min];
+                    flow_var_val[i][val-dom_min]=0;
+                }
+            }
+        }*/
+        cost_propagator_reset_flow();
+        for(int i=0; i<numvars; i++) vars_to_process.push_back(i);
+        
+        check_adjacency_lists();
+        print_flow();
+        
+        for(int j=0; j<vars_to_process.size(); j++) {
+            int var=vars_to_process[j];
+            
+            
+            while(flow_s_var[var]<numvals) {
+                vector<int>* path=find_augpath_cost(var, numvars+numvals+1);
+                
+                if(path==0){
+                    getState(stateObj).setFailed(true);
+                    return;
+                }
+                
+                // Add s to the path. 
+                std::reverse((*path).begin(), (*path).end());
+                (*path).push_back(numvars+numvals);
+                std::reverse((*path).begin(), (*path).end());
+                
+                cout << *path << endl;
+                
+                apply_path_cost(*path);
+                
+            }
+        }
+    }
+    
+    void cost_propagator_reset_flow() {
+        for(int i=0; i<numvars; i++) {
+            for(int adjlistidx=0; adjlistidx<adjlistlength[i]; adjlistidx++) {
+                int val=adjlist[i][adjlistidx];
+                if(!var_array[i].inDomain(val)) {
+                    adjlist_remove(i, val);
+                    adjlistidx--;
+                }
+                else {
+                    flow_var_val[i][val-dom_min]=1;
+                }
+            }
+        }
+        
+        for(int i=0; i<numvals; i++) {
+            flow_val_t[i]=adjlistlength[i+numvars];
+        }
+        for(int i=0; i<numvars; i++) {
+            flow_s_var[i]=adjlistlength[i];
+        }
+    }
+    
+    vector<int>* find_augpath_cost(int start, int end) {
+        
+        // Start with unsaturated variable. 
+        D_ASSERT(start<numvars);
+        D_ASSERT(flow_s_var[start]<numvals);
+        
+        // end with t
+        D_ASSERT(end==numvars+numvals+1);
+        
+        // First search for an augmenting path that does not take any literal flow to 0.
+        
+        vector<pair<int, int> >  heap;   // First int is the cost, second is the node number.
+        
+        heap.push_back(make_pair(0,start));
+        
+        //fifo.clear(); fifo.push_back(var);
+        visited.clear();
+        visited.insert(start);
+        
+        while(heap.size()>0)
+        {
+            pair<int,int> curnodepair = heap.front();
+            int curnode=curnodepair.second;
+            int curnodecost=-curnodepair.first;
+            pop_heap(heap.begin(), heap.end()); heap.pop_back();
+            
+            // Now cases for each type of node.
+            if(curnode==numvars+numvals)
+            {   // s.
+                // All variables.  No circulating edge.
+                for(int newnode=0;  newnode<numvars; newnode++)
+                {
+                    if(!visited.in(newnode) && flow_s_var[newnode]<numvals && (curnode!=start || newnode!=end))  // should have a list unsaturated variables...
+                    {
+                        int newnodecost=curnodecost;
+                        VISITNODE2
+                    }
+                }
+            }
+            else if(curnode==numvars+numvals+1)
+            {   // t
+                // Link to all vals that are above 0 flow.
+                
+                for(int i=dom_min; i<=dom_max; i++)
+                {
+                    int newnode=i-dom_min+numvars;
+                    if(!visited.in(newnode) && flow_val_t[newnode-numvars]>0 && (curnode!=start || newnode!=end))
+                    {
+                        int newnodecost=curnodecost;
+                        VISITNODE2
+                    }
+                }
+            }
+            else if(curnode<numvars)
+            {
+                // a variable
+                // link to all values 
+                int len=adjlistlength[curnode];
+                for(int adjlistidx=0; adjlistidx<len; adjlistidx++)
+                {
+                    int val=adjlist[curnode][adjlistidx];
+                    int newnode=val-dom_min+numvars;
+                    if(!visited.in(newnode) && flow_var_val[curnode][val-dom_min]<numvals && (curnode!=start || newnode!=end))
+                    {
+                        int newnodecost=curnodecost;
+                        VISITNODE2
+                    }
+                }
+                
+                // Link to s.
+                /*int newnode=numvars+numvals; ///s
+                if(!visited.in(newnode) && flow_s_var[curnode]>0 && (curnode!=start || newnode!=end))
+                {
+                    VISITNODE2
+                }*/
+            }
+            else
+            {
+                D_ASSERT( curnode>=numvars && curnode<numvars+numvals);
+                // a value
+                // link to t if edge not saturated
+                int newnode=numvars+numvals+1; ///t
+                if(!visited.in(newnode) && flow_val_t[curnode-numvars]<numvals && (curnode!=start || newnode!=end))
+                {
+                    int newnodecost=curnodecost;
+                    VISITNODE2
+                }
+                
+                // All variables where the flow on the edge can be reduced. >1.
+                int len=adjlistlength[curnode];
+                for(int adjlistidx=0; adjlistidx<len; adjlistidx++)
+                {
+                    int newnode=adjlist[curnode][adjlistidx];
+                    if(!visited.in(newnode) && (flow_var_val[newnode][curnode-numvars]>0) && (curnode!=start || newnode!=end))
+                    {
+                        int newnodecost=curnodecost;
+                        if(flow_var_val[newnode][curnode-numvars] == 1) {
+                            newnodecost++;
+                            cout << "incremented cost when moving from val:"<< curnode-numvars+dom_min << " to var:" << newnode <<  ", new cost:" << newnodecost << endl;
+                        }
+                        VISITNODE2
+                    }
+                }
+            }
+        }
+        
+        return 0;
+    }
+    
+    int apply_path_cost(vector<int>& path)
+    {
+        P("Augmenting path:" << path);
+        
+        num augamount = numvals;
+        for(int i=0; i<path.size()-1; i++)
+        {
+            int from=path[i];
+            int to=path[i+1];
+            int diff=-1000000;
+            if(from==numvars+numvals)
+            {   // edge from s to a var.
+                diff=numvals-flow_s_var[to];
+            }
+            else if(from==numvars+numvals+1)
+            {   // t to a val
+                diff=flow_val_t[to-numvars];  // it can be reduced by the flow amount.
+            }
+            else if(from<numvars)
+            {
+                if(to==numvars+numvals)
+                {
+                    diff=flow_s_var[from]; 
+                }
+                else
+                {
+                    D_ASSERT(to>=numvars && to<numvars+numvals);
+                    diff=numvals-flow_var_val[from][to-numvars];
+                }
+            }
+            else
+            {   // from is a value.
+                if(to==numvars+numvals+1)
+                {
+                    diff=numvals-flow_val_t[from-numvars];
+                }
+                else
+                {
+                    D_ASSERT(to<numvars);
+                    // value to var -- this is the tricky case
+                    // Don't take the flow of a literal down to 0 unless it is 1. 
+                    if(flow_var_val[to][from-numvars]==1) {
+                        diff=1;
+                    }
+                    else {
+                        diff=flow_var_val[to][from-numvars]-1;
+                    }
+                }
+            }
+            D_ASSERT(diff>0);
+            augamount=( diff<augamount ? diff : augamount );
+        }
+        
+        P("Augmenting flow by: " << augamount);
+        
+        for(int i=0; i<path.size()-1; i++)
+        {
+            int from=path[i];
+            int to=path[i+1];
+            if(from==numvars+numvals)
+            {   // edge from s to a var.
+                flow_s_var[to]+=augamount;
+            }
+            else if(from==numvars+numvals+1)
+            {   // t to a val
+                flow_val_t[to-numvars]-=augamount;  // it can be reduced by the flow amount.
+            }
+            else if(from<numvars)
+            {
+                if(to==numvars+numvals)
+                {
+                    flow_s_var[from]=flow_s_var[from]-augamount;
+                }
+                else
+                {
+                    D_ASSERT(to>=numvars && to<numvars+numvals);
+                    flow_var_val[from][to-numvars]=flow_var_val[from][to-numvars]+augamount;
+                }
+            }
+            else
+            {   // from is a value.
+                if(to==numvars+numvals+1)
+                {
+                    flow_val_t[from-numvars]+=augamount;
+                }
+                else
+                {
+                    D_ASSERT(to<numvars);
+                    flow_var_val[to][from-numvars]=flow_var_val[to][from-numvars]-augamount;
+                    if(flow_var_val[to][from-numvars]==0) {
+                        var_array[to].removeFromDomain(from-numvars+dom_min);
+                        cout << "ALLDIFF pruning value var:"<< to << "," << from-numvars+dom_min << endl; 
+                    }
+                }
+            }
+            
+        }
+        
+        return augamount;
+    }
     
 };  // end of class
 
