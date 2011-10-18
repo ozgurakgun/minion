@@ -2140,7 +2140,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
     //
     //  Square packing.
     // Expects x1,y1, x2,y2, boxsize1, boxsize2 (constant)
-
+    //   ADAPTED FOR THIS BRANCH -- REMOVED EMPTY SUPPORT WHEN CONSTRAINT ENTAILED.
     // bool findNewSupport(box<pair<int, DomainInt> >& assignment, int var, int val) {
     bool findNewSupport(int var, int val) {
         D_ASSERT(vars[4].isAssigned());
@@ -2148,17 +2148,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         
         int i=vars[4].getAssignedValue();
         int j=vars[5].getAssignedValue();
-        
-        // If objects totally disjoint in either dimension...
-        // x
-        if( (vars[0].getMax()+i <= vars[2].getMin()) 
-            || (vars[2].getMax()+j <= vars[0].getMin())
-        // y
-            || (vars[1].getMax()+i <= vars[3].getMin()) 
-            || (vars[3].getMax()+j <= vars[1].getMin()) )
-        {
-            return true;
-        }
         
         // object i below object j.
 
