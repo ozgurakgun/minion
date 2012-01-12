@@ -422,16 +422,14 @@ def build_tree(ct_init, tree, domains_in, domains_poss, varvalorder, heuristic):
     
     domains_in[chosenvar].remove(chosenval)
     
-    # If we have not emptied the domain in the right branch:
-    if len(domains_poss[chosenvar])+len(domains_in[chosenvar])>0:
-        tree['right']=dict()
-        tree['right']['nodelabel'] = getnodenum()
-        prun_right=build_tree(ct2, tree['right'], domains_in, domains_poss, varvalorder, heuristic)
-        if not prun_right:
-            if checktreecutoff:
-                print "deleting subtree of size: %d"%(tree_cost2(tree['right']))
-            markEmpty(tree['right']['nodelabel'])
-            del tree['right']
+    tree['right']=dict()
+    tree['right']['nodelabel'] = getnodenum()
+    prun_right=build_tree(ct2, tree['right'], domains_in, domains_poss, varvalorder, heuristic)
+    if not prun_right:
+        if checktreecutoff:
+            print "deleting subtree of size: %d"%(tree_cost2(tree['right']))
+        markEmpty(tree['right']['nodelabel'])
+        del tree['right']
     
     if (not prun_left) and (not prun_right) and (not tree.has_key('pruning')):
         return False
