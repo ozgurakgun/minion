@@ -24,11 +24,14 @@
 #undef P
 #endif
 
-#define P(x) cout << x << endl
-//#define P(x)
+//#define P(x) cout << x << endl
+#define P(x)
 
-//#define D(X,V) X[V]
+#ifdef MINION_DEBUG
 #define D(X,V) X.at(V)
+#else
+#define D(X,V) X[V]
+#endif
 
 #define SPECIAL_VM
 
@@ -132,7 +135,7 @@ struct VMConstraint : public AbstractConstraint
         for(set<int>::iterator it = domains[i].begin(); it != domains[i].end(); ++it)
         {
           D(D(domain_vals,i), (*it - domain_min[i]) ) = literal;
-          D(literal_map,literal) = std::pair<signed char, signed char>(i, domain_vals[i][*it]);
+          D(literal_map,literal) = std::pair<signed char, signed char>(i, *it);
           literal++;
         }
       }
@@ -258,8 +261,8 @@ struct VMConstraint : public AbstractConstraint
   inline pair<int,int> get_varval_from_lit(int lit)
   {
     D_ASSERT(lit >= 0 && lit < MaxVarSize * MaxDomSize);
-    D_ASSERT(vars[literal_map[lit].first].getInitialMin() <= literal_ma[lit].second);
-    D_ASSERT(vars[literal_map[lit].first].getInitialMax() >= literal_ma[lit].second);
+    D_ASSERT(vars[literal_map[lit].first].getInitialMin() <= literal_map[lit].second);
+    D_ASSERT(vars[literal_map[lit].first].getInitialMax() >= literal_map[lit].second);
     
     return D(literal_map,lit); 
   }
