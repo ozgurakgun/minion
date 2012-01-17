@@ -33,7 +33,7 @@
 #define D(X,V) X[V]
 #endif
 
-#define SPECIAL_VM
+//#define SPECIAL_VM
 
 #define UseStatePtr false
 // UseStatePtr not finished:at least have to do the Jump instruction and also make sure the vm is not using Perm instructions.
