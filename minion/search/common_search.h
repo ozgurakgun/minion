@@ -244,40 +244,29 @@ namespace Controller
 
     int i = 0;
     for(vector<string>::iterator s = splits.begin(); s != splits.end(); s++) {
-        string basename = getOptions(stateObj).instance_name;
-        size_t mpos = basename.find(".minion");
-        size_t rpos = basename.find("-resume-");
-        if(rpos != string::npos) {
-            basename = basename.substr(0, rpos);
-        } else if(mpos != string::npos) {
-            basename = basename.substr(0, mpos);
-        }
-        string filename = basename + "-resume-" + to_string(time(NULL)) + "-" + to_string(getpid()) + "-" + curvar + "-" + to_string(i++) + ".minion";
-        cout << "Output resume file to \"" << filename << "\"" << endl;
-        ofstream fileout(filename.c_str());
-        fileout << "# original instance: " << getOptions(stateObj).instance_name << endl;
-        fileout << inst;
-        fileout << *s;
+        cerr << "# original instance: " << getOptions(stateObj).instance_name << endl;
+        cerr << inst;
+        cerr << *s;
         vector<triple> left_branches_so_far;
         left_branches_so_far.reserve(branches.size());
         for(vector<triple>::const_iterator curr = branches.begin(); curr != branches.end(); curr++) {
           if(curr->isLeft) {
             left_branches_so_far.push_back(*curr);
           } else {
-            fileout << "watched-or({";
+            cerr << "watched-or({";
             for(vector<triple>::const_iterator lb = left_branches_so_far.begin();
                 lb != left_branches_so_far.end();
                 lb++) {
-              fileout << "w-notliteral(";
-              inputPrint(fileout, stateObj, var_array[lb->var].getBaseVar());
-              fileout << "," << lb->val << "),";
+              cerr << "w-notliteral(";
+              inputPrint(cerr, stateObj, var_array[lb->var].getBaseVar());
+              cerr << "," << lb->val << "),";
             }
-            fileout << "w-notliteral(";
-            inputPrint(fileout, stateObj, var_array[curr->var].getBaseVar());
-            fileout << "," << curr->val << ")})" << endl;
+            cerr << "w-notliteral(";
+            inputPrint(cerr, stateObj, var_array[curr->var].getBaseVar());
+            cerr << "," << curr->val << ")})" << endl;
           }
         }
-        fileout << "**EOF**" << endl;
+        cerr << "**EOF**" << endl;
     }
   }
    
