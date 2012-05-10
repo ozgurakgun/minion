@@ -1,3 +1,6 @@
+// CHECK full length and short support segments of code
+//
+//
 // LIST BASED CODE WONT BE WORKING
 
 // Started on git branch  supportsgac+bstable+adaptive
@@ -144,6 +147,7 @@
 // Switches on the zeroLits array. 
 // This flag is a small slowdown on qg-supportsgac-7-9 -findallsols
 // 
+// No longer supported with SupportsGACUseZeroVals false
 #define SupportsGACUseZeroVals true
 
 template<typename VarArray>
@@ -787,6 +791,13 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			 }
 		 }
 	    }
+	    // Might possibly have to add lit back onto zeroLits 
+	    //
+	    // Hard to be certain zeroLits is correct so play safe and test it
+	    if(!inZeroLits[temp.lit] && literalList[temp.lit].supportCellList == 0){
+		    inZeroLits[temp.lit]=true; 
+		    zeroLits[temp.var].push_back(temp.lit); 
+	    }
 
         }
         
@@ -962,14 +973,19 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 					lastSupportPerLit[lit] = sup;
 				}
 				#if SupportsGACUseZeroVals
+				// PREVIOUSLY we added to zerolits here
+				// But now we don't because if we remove the value then we would remove it from zerolits
+				// and put it back on going back throug hthe backtrack stack.
+				//
+				// Only case where we need to add it is if we DO find a new support which is implicit
+				// And that case is covered elsewhere - search for NOTEAAA
+				//
+				// Out of date note follows: 
+				//
 					// Still need to add to zerovals even if above test is true
 					// because we might find a new implicit support, later lose it, and then it will 
 					// be essential that it is in zerovals.  Obviously if an explicit support is 
 					// found then it will later get deleted from zerovals.
-				if(!inZeroLits[lit]) {
-				    inZeroLits[lit]=true;
-				    zeroLits[var].push_back(lit);
-				}
 				#endif
 			    // Remove trigger since this is the last support containing var,val.
 			       if(SupportsGACUseDT) { detach_trigger(lit); }
@@ -1057,14 +1073,19 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 					lastSupportPerLit[lit] = sup;
 				}
 				#if SupportsGACUseZeroVals
+				// PREVIOUSLY we added to zerolits here
+				// But now we don't because if we remove the value then we would remove it from zerolits
+				// and put it back on going back throug hthe backtrack stack.
+				//
+				// Only case where we need to add it is if we DO find a new support which is implicit
+				// And that case is covered elsewhere - search for NOTEAAA
+				//
+				// Out of date note follows: 
+				//
 					// Still need to add to zerovals even if above test is true
 					// because we might find a new implicit support, later lose it, and then it will 
 					// be essential that it is in zerovals.  Obviously if an explicit support is 
 					// found then it will later get deleted from zerovals.
-				if(!inZeroLits[lit]) {
-				    inZeroLits[lit]=true;
-				    zeroLits[var].push_back(lit);
-				}
 				#endif
 			    // Remove trigger since this is the last support containing var,val.
 			       if(SupportsGACUseDT) { detach_trigger(lit); }
@@ -1196,6 +1217,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    }
 	    return foundsupport;
     }
+
+
     
     void findSupportsInitial()
     {
@@ -1208,10 +1231,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    varsWithLostImplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 
 	    if (supportsPerVar[var] == supports) { 	// otherwise has found implicit support in the meantime
-		    #if !SupportsGACUseZeroVals
-		    for(int val=vars[var].getMin(); val<=vars[var].getMax(); val++) {
-			int lit=firstLiteralPerVar[var]+val-vars[var].getInitialMin();
-		    #else
+		    #if SupportsGACUseZeroVals
 		    for(int j=0; j<zeroLits[var].size(); j++) {
 			int lit=zeroLits[var][j];
                         if(literalList[lit].supportCellList != 0){
@@ -1225,14 +1245,12 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			int val=literalList[lit].val;
 		    #endif
 
-		    #if !SupportsGACUseZeroVals
-			if(vars[var].inDomain(val) && (literalList[lit].supportCellList == 0)){
-		    #else
+		    #if SupportsGACUseZeroVals
 			if(vars[var].inDomain(val)) {	// tested supportCellList  above
 		    #endif
 		            findSupportsIncrementalHelper(var,val) ;
-			} // } to trick vim bracket matching
-		    }    // } to trick vim bracket matching
+			} 
+		    }    
 		}
 	}
     }
@@ -1262,7 +1280,17 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
         		    struct BTRecord backtrackInfo = { var, lit, lastSupportPerLit[lit] };
 			    backtrack_stack.push_back(backtrackInfo);
 		    }
-		    // else we found another support so we need to record nothing
+		    else {  // We now have an alternative support for this literal 
+			    // so we need to do nothing EXCEPT ... 
+			    //  ... add it to zeroLits if necessary
+			    //
+			    //  Note this is the only case where we need to add the lit to zeroLits from NOTEAAA
+
+			    if(!inZeroLits[lit] && literalList[lit].supportCellList == 0){
+				    inZeroLits[lit]=true;
+				    zeroLits[var].push_back(lit); 
+			    }
+		    }
 	    }
 	    else {  // Need to cover out of domain lits but has known support so it will have support on BT.
 		  lastSupportPerLit[lit]->numLastSupported++ ;
@@ -1277,10 +1305,7 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    varsWithLostImplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 
 	    if (supportsPerVar[var] == supports) { 	// otherwise has found implicit support in the meantime
-		    #if !SupportsGACUseZeroVals
-		    for(int val=vars[var].getMin(); val<=vars[var].getMax(); val++) {
-			int lit=firstLiteralPerVar[var]+val-vars[var].getInitialMin();
-		    #else
+		    #if SupportsGACUseZeroVals
 		    for(int j=0; j<zeroLits[var].size() && supportsPerVar[var] == supports; j++) {
 			int lit=zeroLits[var][j];
                         if(literalList[lit].supportCellList != 0){
@@ -1294,20 +1319,26 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			int val=literalList[lit].val;
 		    #endif
 
-		    #if !SupportsGACUseZeroVals
-			if(vars[var].inDomain(val) && (literalList[lit].supportCellList] == 0)){
-		    #else
+		    #if SupportsGACUseZeroVals
 			if(vars[var].inDomain(val)) {	// tested literalList  above
 		    #endif
 		            if (! findSupportsIncrementalHelper(var,val) ) {
 				    lastSupportPerVar[var]->numLastSupported++;
         		            struct BTRecord backtrackInfo = { var, lit, lastSupportPerVar[var] };
 			            backtrack_stack.push_back(backtrackInfo);
+			            // No longer in domain.  remove from zeroLits vector.
+			            zeroLits[var][j]=zeroLits[var][zeroLits[var].size()-1];
+			            zeroLits[var].pop_back();
+			            inZeroLits[lit]=false;
+			            j--;
+			            continue;
 			    }
-			    // No longer do we remove j from zerovals in this case if support is found.
+			    // Else we have found new implicit or explicit support is found 
+			    //
+			    // No longer do we remove j from zerovals in this case if explicit support is found.
 			    // However this is correct as it can be removed lazily next time the list is traversed
 			    // And we might even get lucky and save this small amount of work.
-			} // } to trick vim bracket matching
+			} 
 			else {
 			    // This is a nasty case because we are doing backtrack stability
 			    // var=val has been removed, and it must have been by something outside this 
@@ -1318,8 +1349,14 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			    lastSupportPerVar[var]->numLastSupported++;
         		    struct BTRecord backtrackInfo = { var, lit, lastSupportPerVar[var]};
 			    backtrack_stack.push_back(backtrackInfo);
+			    // No longer in domain. remove from vector.
+			    zeroLits[var][j]=zeroLits[var][zeroLits[var].size()-1];
+			    zeroLits[var].pop_back();
+			    inZeroLits[lit]=false;
+			    j--;
+			    continue;
 			}
-		    }    // } to trick vim bracket matching
+		    }    
 		}
 	}
     }
