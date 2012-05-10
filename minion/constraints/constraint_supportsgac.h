@@ -964,22 +964,19 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 					litsWithLostExplicitSupport.push_back(lit);
 					lastSupportPerLit[lit] = sup;
 				}
+				else 
+				
+				// PREVIOUSLY there was no else here.   We had to add to zerolits even if above true
 				//
-				// FOLLOWING COMMENT LED TO BUG: IGNORE:
-				//
-				// PREVIOUSLY we added to zerolits here
 				// But now we don't because if we remove the value then we would remove it from zerolits
 				// and put it back on going back throug hthe backtrack stack.
 				//
 				// Only case where we need to add it is if we DO find a new support which is implicit
 				// And that case is covered elsewhere - search for NOTEAAA.   
 				//
-				// END OF BUGGED COMMENT,  SINCE BUGGED SHOULD CHECK NOTEAAA too
+				// However if test above is false then we have to check for zeroLits 
 				//
-					// Still need to add to zerovals even if above test is true
-					// because we might find a new implicit support, later lose it, and then it will 
-					// be essential that it is in zerovals.  Obviously if an explicit support is 
-					// found then it will later get deleted from zerovals.
+
 				if(!inZeroLits[lit]) {
 				    inZeroLits[lit]=true;
 				    zeroLits[var].push_back(lit);
@@ -1069,22 +1066,19 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 					litsWithLostExplicitSupport.push_back(lit);
 					lastSupportPerLit[lit] = sup;
 				}
+				else 
+				
+				// PREVIOUSLY there was no else here.   We had to add to zerolits even if above true
 				//
-				// FOLLOWING COMMENT LED TO BUG: IGNORE:
-				//
-				// PREVIOUSLY we added to zerolits here
 				// But now we don't because if we remove the value then we would remove it from zerolits
 				// and put it back on going back throug hthe backtrack stack.
 				//
 				// Only case where we need to add it is if we DO find a new support which is implicit
 				// And that case is covered elsewhere - search for NOTEAAA.   
 				//
-				// END OF BUGGED COMMENT,  SINCE BUGGED SHOULD CHECK NOTEAAA too
+				// However if test above is false then we have to check for zeroLits 
 				//
-					// Still need to add to zerovals even if above test is true
-					// because we might find a new implicit support, later lose it, and then it will 
-					// be essential that it is in zerovals.  Obviously if an explicit support is 
-					// found then it will later get deleted from zerovals.
+
 				if(!inZeroLits[lit]) {
 				    inZeroLits[lit]=true;
 				    zeroLits[var].push_back(lit);
