@@ -147,8 +147,6 @@
 // Switches on the zeroLits array. 
 // This flag is a small slowdown on qg-supportsgac-7-9 -findallsols
 // 
-// No longer supported with SupportsGACUseZeroVals false
-#define SupportsGACUseZeroVals true
 
 template<typename VarArray>
 struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
@@ -220,10 +218,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
     // For each variable, a vector of values with 0 supports (or had 0 supports
     // when added to the vector).
-    #if SupportsGACUseZeroVals
     vector<vector<int> > zeroLits;
     vector<char> inZeroLits;  // is a literal in zeroVals
-    #endif
     
     // Partition of variables by number of supports.
     vector<int> varsPerSupport;    // Permutation of the variables
@@ -307,7 +303,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	numlits = litCounter;
         
-        #if SupportsGACUseZeroVals
         zeroLits.resize(numvars);
         for(int i=0 ; i < numvars ; i++) {
 	    int numvals_i = vars[i].getInitialMax()- vars[i].getInitialMin()+1; 
@@ -317,7 +312,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             for(int j=0 ; j < numvals_i; j++) zeroLits[i].push_back(j+thisvarstart);
         }
         inZeroLits.resize(numlits,true); 
-        #endif
 	
 	// Lists (vectors) of literals/vars that have lost support.
 	// Set this up to insist that everything needs to have support found for it on full propagate.
@@ -534,7 +528,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 
 	numlits = litCounter;
         
-        #if SupportsGACUseZeroVals
         zeroLits.resize(numvars);
         for(int i=0 ; i < numvars ; i++) {
 	    int numvals_i = vars[i].getInitialMax()- vars[i].getInitialMin()+1; 
@@ -544,7 +537,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             for(int j=0 ; j < numvals_i; j++) zeroLits[i].push_back(j+thisvarstart);
         }
         inZeroLits.resize(numlits,true); 
-        #endif
 	
 	// Lists (vectors) of literals/vars that have lost support.
 	// Set this up to insist that everything needs to have support found for it on full propagate.
@@ -972,21 +964,26 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 					litsWithLostExplicitSupport.push_back(lit);
 					lastSupportPerLit[lit] = sup;
 				}
-				#if SupportsGACUseZeroVals
+				//
+				// FOLLOWING COMMENT LED TO BUG: IGNORE:
+				//
 				// PREVIOUSLY we added to zerolits here
 				// But now we don't because if we remove the value then we would remove it from zerolits
 				// and put it back on going back throug hthe backtrack stack.
 				//
 				// Only case where we need to add it is if we DO find a new support which is implicit
-				// And that case is covered elsewhere - search for NOTEAAA
+				// And that case is covered elsewhere - search for NOTEAAA.   
 				//
-				// Out of date note follows: 
+				// END OF BUGGED COMMENT,  SINCE BUGGED SHOULD CHECK NOTEAAA too
 				//
 					// Still need to add to zerovals even if above test is true
 					// because we might find a new implicit support, later lose it, and then it will 
 					// be essential that it is in zerovals.  Obviously if an explicit support is 
 					// found then it will later get deleted from zerovals.
-				#endif
+				if(!inZeroLits[lit]) {
+				    inZeroLits[lit]=true;
+				    zeroLits[var].push_back(lit);
+				}
 			    // Remove trigger since this is the last support containing var,val.
 			       if(SupportsGACUseDT) { detach_trigger(lit); }
 			    }
@@ -1072,21 +1069,26 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 					litsWithLostExplicitSupport.push_back(lit);
 					lastSupportPerLit[lit] = sup;
 				}
-				#if SupportsGACUseZeroVals
+				//
+				// FOLLOWING COMMENT LED TO BUG: IGNORE:
+				//
 				// PREVIOUSLY we added to zerolits here
 				// But now we don't because if we remove the value then we would remove it from zerolits
 				// and put it back on going back throug hthe backtrack stack.
 				//
 				// Only case where we need to add it is if we DO find a new support which is implicit
-				// And that case is covered elsewhere - search for NOTEAAA
+				// And that case is covered elsewhere - search for NOTEAAA.   
 				//
-				// Out of date note follows: 
+				// END OF BUGGED COMMENT,  SINCE BUGGED SHOULD CHECK NOTEAAA too
 				//
 					// Still need to add to zerovals even if above test is true
 					// because we might find a new implicit support, later lose it, and then it will 
 					// be essential that it is in zerovals.  Obviously if an explicit support is 
 					// found then it will later get deleted from zerovals.
-				#endif
+				if(!inZeroLits[lit]) {
+				    inZeroLits[lit]=true;
+				    zeroLits[var].push_back(lit);
+				}
 			    // Remove trigger since this is the last support containing var,val.
 			       if(SupportsGACUseDT) { detach_trigger(lit); }
 			    }
@@ -1147,10 +1149,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
             cout << endl;
             if(supportNumPtrs[i+1]==vars.size()) break;
         }
-        #if SupportsGACUseZeroLits
         cout << "zeroLits:" << zeroLits << endl;
         cout << "inZeroLits:" << inZeroLits << endl;
-        #endif
 	/*
         
         cout << "Supports for each literal:"<<endl;
@@ -1231,7 +1231,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    varsWithLostImplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 
 	    if (supportsPerVar[var] == supports) { 	// otherwise has found implicit support in the meantime
-		    #if SupportsGACUseZeroVals
 		    for(int j=0; j<zeroLits[var].size(); j++) {
 			int lit=zeroLits[var][j];
                         if(literalList[lit].supportCellList != 0){
@@ -1243,11 +1242,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			    continue;
 			}
 			int val=literalList[lit].val;
-		    #endif
 
-		    #if SupportsGACUseZeroVals
 			if(vars[var].inDomain(val)) {	// tested supportCellList  above
-		    #endif
 		            findSupportsIncrementalHelper(var,val) ;
 			} 
 		    }    
@@ -1305,7 +1301,6 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 	    varsWithLostImplicitSupport.pop_back(); // actually probably unnecessary - will get resized to 0 later
 
 	    if (supportsPerVar[var] == supports) { 	// otherwise has found implicit support in the meantime
-		    #if SupportsGACUseZeroVals
 		    for(int j=0; j<zeroLits[var].size() && supportsPerVar[var] == supports; j++) {
 			int lit=zeroLits[var][j];
                         if(literalList[lit].supportCellList != 0){
@@ -1317,11 +1312,8 @@ struct ShortSupportsGAC : public AbstractConstraint, Backtrackable
 			    continue;
 			}
 			int val=literalList[lit].val;
-		    #endif
 
-		    #if SupportsGACUseZeroVals
 			if(vars[var].inDomain(val)) {	// tested literalList  above
-		    #endif
 		            if (! findSupportsIncrementalHelper(var,val) ) {
 				    lastSupportPerVar[var]->numLastSupported++;
         		            struct BTRecord backtrackInfo = { var, lit, lastSupportPerVar[var] };
