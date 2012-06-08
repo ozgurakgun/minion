@@ -1,0 +1,22 @@
+#include "../minion.h"
+/* Minion Constraint Solver
+   http://minion.sourceforge.net
+   
+   For Licence Information see file LICENSE.txt 
+*/
+
+#include "../constraints/constraint_stochastic_chance.h"
+
+
+template<typename VarArray>
+AbstractConstraint*
+BuildCT_STOCHASTIC_CHANCE(StateObj* stateObj, const VarArray& var_array, ConstraintBlob& b)
+{
+    #ifndef REENTER
+        INPUT_ERROR("This Stochastic Chance constraint requires REENTER support."); return NULL;
+    #endif
+    return new StochasticChance<VarArray>(stateObj, var_array, b.constants[0], b.constants[1]); 
+}
+
+BUILD_CT(CT_STOCHASTIC_CHANCE, 1)
+
