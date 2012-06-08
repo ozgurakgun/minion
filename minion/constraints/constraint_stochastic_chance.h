@@ -22,19 +22,16 @@
 
 // Variables are duplicated into the gadget for each sub-csp 
 
-#ifndef CONSTRAINT_CONSTRUCTIVEOR_H
-#define CONSTRAINT_CONSTRUCTIVEOR_H
+#ifndef CONSTRAINT_STOCHASTICCHANCE_H
+#define CONSTRAINT_STOCHASTICCHANCE_H
 
 #include "../preprocess.h"
 
-// Whether to propagate incrementally.
-#define CORINCREMENTAL true
-
 template<typename VarArray>
-struct ConstructiveOr : public AbstractConstraint, Backtrackable
+struct StochasticChance : public AbstractConstraint, Backtrackable
 {
   virtual string constraint_name()
-  { return "ConstructiveOr"; }
+  { return "StochasticChance"; }
   
   VarArray var_array;
   
@@ -42,13 +39,17 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
   
   vector<StateObj*> gadget_stateObj;   //  stateObj for each sub-csp.
   
-  vector<vector<vector<AnyVarRef> > > inner_vars;
+  vector<vector<AnyVarRef> > inner_vars;
+  
+  vector<int> scenarios;
+  vector<int> scenario_probs;   // probabilities out of 1000000
   
   int numvals;
     int dom_min;
     int dom_max;
     
-    ConstructiveOr(StateObj* _stateObj, const VarArray& _var_array) : AbstractConstraint(_stateObj), var_array(_var_array)
+    StochasticChance(StateObj* _stateObj, const VarArray& _var_array, vector<int> _scenarios, vector<int> _scenario_probabilities) : AbstractConstraint(_stateObj), 
+    var_array(_var_array), scenarios(_scenarios), scenario_probs(_scenario_probabilities)
     {
         getState(stateObj).getGenericBacktracker().add(this);
         
@@ -64,9 +65,6 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         }
         numvals=dom_max-dom_min+1;
     }
-    
-    
-    
     
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -104,9 +102,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         }
     }
     
-  
-  
-  virtual ~ConstructiveOr()
+  virtual ~StochasticChance()
   { for(int i=0; i<gadget_stateObj.size(); i++) delete gadget_stateObj[i]; }
   
   virtual AbstractConstraint* reverse_constraint()
@@ -116,21 +112,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
   }
   
   int dynamic_trigger_count() { 
-      if(CORINCREMENTAL)
-          return var_array.size()*numvals;
-      else
-          return 0;
-  }
-  
-  virtual triggerCollection setup_internal()
-  {
-    triggerCollection t;
-    if(!CORINCREMENTAL) {
-        for(int i = 0; i < var_array.size(); ++i) {
-            t.push_back(make_trigger(var_array[i], Trigger(this, i), DomainChanged));
-        }
-    }
-    return t;
+      return var_array.size()*numvals;
   }
   
   inline void attach_trigger(int var, int val) {
@@ -159,16 +141,8 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
     return vars;
   }
   
-  virtual void propagate(int i, DomainDelta domain)
-  {
-    D_ASSERT(!CORINCREMENTAL);
-    do_prop();
-  }
-  
   virtual void propagate(DynamicTrigger* dt)
   {
-      D_ASSERT(CORINCREMENTAL);
-      
       if(getState(stateObj).isFailed()) return;
       
       int pos=dt-dynamic_trigger_start();
@@ -196,114 +170,42 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
       //for(int i=0; i<gadget_stateObj.size(); i++) D_ASSERT(!getState(gadget_stateObj[i]).isFailed());
       // Actually child constraints can already be failed since BuildCSP does an initial propagation.
       
-      if(CORINCREMENTAL) {
-          if(getState(stateObj).isFailed()) return;
-          
-          // Copy domains
-          for(int i = 0; i < var_array.size(); ++i)
-          {
-              DomainInt min_val = var_array[i].getMin();
-              DomainInt max_val = var_array[i].getMax();
-              for(int j=0; j<inner_vars.size(); j++) {
-                  inner_vars[j][i].setMin(min_val);
-                  inner_vars[j][i].setMax(max_val);
-              }
-              
-              for(int j = min_val + 1; j < max_val; ++j)
-              if(!var_array[i].inDomain(j)) {
-                  for(int k=0; k<inner_vars.size(); k++) {
-                      inner_vars[k][i].removeFromDomain(j);
-                  }
-              }
+      if(getState(stateObj).isFailed()) return;
+      
+      // Copy domains
+      for(int i = 0; i < var_array.size(); ++i)
+      {
+          DomainInt min_val = var_array[i].getMin();
+          DomainInt max_val = var_array[i].getMax();
+          for(int j=0; j<inner_vars.size(); j++) {
+              inner_vars[j][i].setMin(min_val);
+              inner_vars[j][i].setMax(max_val);
           }
           
-          //for(int i=0; i<gadget_stateObj.size(); i++) D_ASSERT(!getState(gadget_stateObj[i]).isFailed());
-          
-          do_prop_incremental();
-          
-          for(int var=0; var<var_array.size(); var++) {
-              for(int val=dom_min; val<=dom_max; val++) {
-                  if(var_array[var].inDomain(val)) {
-                      attach_trigger(var, val);
-                  }
+          for(int j = min_val + 1; j < max_val; ++j)
+          if(!var_array[i].inDomain(j)) {
+              for(int k=0; k<inner_vars.size(); k++) {
+                  inner_vars[k][i].removeFromDomain(j);
               }
           }
-          
-      }
-      else {
-          do_prop();
-      }
-  }
-  
-  // Non-incremental just to get it working.
-  void do_prop()
-  { 
-    D_ASSERT(!CORINCREMENTAL);
-    for(int i=0; i<gadget_stateObj.size(); i++) {
-        if(getState(gadget_stateObj[i]).isFailed()) {
-            getState(gadget_stateObj[i]).setFailed(false);
-        }
-        
-        
-        Controller::world_push(gadget_stateObj[i]);
-    }
-    
-    for(int i = 0; i < var_array.size(); ++i)
-    {
-      DomainInt min_val = var_array[i].getMin();
-      DomainInt max_val = var_array[i].getMax();
-      for(int j=0; j<inner_vars.size(); j++) {
-          inner_vars[j][i].setMin(min_val);
-          inner_vars[j][i].setMax(max_val);
       }
       
-      for(int j = min_val + 1; j < max_val; ++j)
-      if(!var_array[i].inDomain(j)) {
-          for(int k=0; k<inner_vars.size(); k++) {
-              inner_vars[k][i].removeFromDomain(j);
+      //for(int i=0; i<gadget_stateObj.size(); i++) D_ASSERT(!getState(gadget_stateObj[i]).isFailed());
+      
+      do_prop_incremental();
+      
+      for(int var=0; var<var_array.size(); var++) {
+          for(int val=dom_min; val<=dom_max; val++) {
+              if(var_array[var].inDomain(val)) {
+                  attach_trigger(var, val);
+              }
           }
       }
-    }
-    
-    for(int i=0; i<gadget_stateObj.size(); i++) {
-        //cout << "About to propagate CSP "<< i << endl;
-        //cout << "x0:" << inner_vars[i][0].getMin() << "," <<inner_vars[i][0].getMax()<<endl;
-        //cout << "x1:" << inner_vars[i][1].getMin() << "," <<inner_vars[i][1].getMax()<<endl;
-        
-        PropogateCSP(gadget_stateObj[i], PropLevel_GAC, inner_vars[i]);
-        
-    }
-    
-    for(int i=0; i<var_array.size(); i++) {
-        for(int val=var_array[i].getMin(); val<=var_array[i].getMax(); val++) {
-            // Search for a disjunct supporting val.
-            bool supported=false;
-            
-            for(int j=0; j<gadget_stateObj.size(); j++) {
-                //if(getState(gadget_stateObj[j]).isFailed()) cout << "Child CSP " << j << " failed."<<endl;
-                
-                if(!(getState(gadget_stateObj[j]).isFailed()) && inner_vars[j][i].inDomain(val)) {
-                    supported=true; break;
-                }
-            }
-            if(!supported) {
-                //cout << "Var,val not supported: "<< i<< "," <<val<<endl;
-                var_array[i].removeFromDomain(val);
-            }
-        }
-    }
-    
-    for(int i=0; i<gadget_stateObj.size(); i++) {
-        Controller::world_pop(gadget_stateObj[i]);
-    }
-    
-    
+      
   }
-  
   
   void do_prop_incremental()
   { 
-    D_ASSERT(CORINCREMENTAL);
     // Assume domains of child CSPs have already been updated by propagate function.
     // Propagate the child CSPs
     
@@ -317,7 +219,6 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
             }
         }
     }*/
-    
     
     for(int i=0; i<gadget_stateObj.size(); i++) {
         if(!getState(gadget_stateObj[i]).isFailed()) {
@@ -351,8 +252,6 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
     }
     
   }
-  
-  //vector<vector<int> > support_pos;   // support_pos[var][val-dom_min] is the last support for that val.
   
   //////////////////////////////////////////////////////////////////////////////
   // diseq or abs.
@@ -595,7 +494,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         // Four scenarios. 
         
         int numcopyvars=2;
-        int scenarios=4;
+        int numscenarios=4;
         
         // Copy variables 
         vector<Bounds> varbounds;
@@ -610,7 +509,7 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
         }
         
         // One disjunct per variable in each vector
-        for(int i=0; i<scenarios; i++) {
+        for(int i=0; i<numscenarios; i++) {
             StateObj* temp=new StateObj();
             gadget_stateObj.push_back(temp);
         }
@@ -631,31 +530,35 @@ struct ConstructiveOr : public AbstractConstraint, Backtrackable
             
         }
         
-        // put in constant 30.
-        Var vari = cspi.vars.getNewVar(VAR_CONSTANT, 30);
+        // put in constant 30. 
+        vector<int> bnds; bnds.push_back(30); bnds.push_back(30); 
+        Var vari = cspi.vars.getNewVar(VAR_BOUND, bnds);
         cspi.vars.addSymbol(string("constant30"), vari);
-        cspi.all_vars_list.push_back(make_vec(vari);
+        cspi.all_vars_list.push_back(make_vec(vari));
         vars.push_back(vari);
         
         
         // Put constraint into cspi
-        inner_vars.resize(scenarios);
+        inner_vars.resize(numscenarios);
         
-        for(int i=0; i<scenarios; i++) {
+        for(int i=0; i<numscenarios; i++) {
             vector<vector<int> > constblob;
             vector<vector<Var> > eqvars;
             
             eqvars.resize(2);
             
             for(int k=0; k<numcopyvars; k++) {
-                eqvars[0].push_back(vars[j]);
+                eqvars[0].push_back(vars[k]);
             }
             
             eqvars[1].push_back(vars[numcopyvars]);
             
+            vector<int> scenario;
             
+            for(int j=numcopyvars*i; j<numcopyvars*(i+1); j++) scenario.push_back(scenarios[j]);
             
             ConstraintBlob eqblob(&(constraint_list[32]), eqvars);    // weighted sum geq
+            eqblob.constants.push_back(scenario);
             cspi.add_constraint(eqblob);
             
             BuildCSP(gadget_stateObj[i], cspi);
