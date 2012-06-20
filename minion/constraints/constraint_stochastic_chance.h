@@ -42,14 +42,18 @@ struct StochasticChance : public AbstractConstraint, Backtrackable
   vector<vector<AnyVarRef> > inner_vars;
   
   vector<int> scenarios;
-  vector<int> scenario_probs;   // probabilities out of 1000000
+  vector<int> scenario_probs;   // probabilities as an integer -- same range as alpha.
+  int alpha;  // Threshold probability
+  int numscenarios;  
+  
+  int sumconst;   // sum >= sumconst
   
   int numvals;
     int dom_min;
     int dom_max;
     
-    StochasticChance(StateObj* _stateObj, const VarArray& _var_array, vector<int> _scenarios, vector<int> _scenario_probabilities) : AbstractConstraint(_stateObj), 
-    var_array(_var_array), scenarios(_scenarios), scenario_probs(_scenario_probabilities)
+    StochasticChance(StateObj* _stateObj, const VarArray& _var_array, vector<int> _scenarios, vector<int> _scenario_probabilities, vector<int> sumconst_alpha) : AbstractConstraint(_stateObj), 
+    var_array(_var_array), scenarios(_scenarios), scenario_probs(_scenario_probabilities), sumconst(sumconst_alpha[0]), alpha(sumconst_alpha[1])
     {
         getState(stateObj).getGenericBacktracker().add(this);
         
@@ -107,7 +111,7 @@ struct StochasticChance : public AbstractConstraint, Backtrackable
   
   virtual AbstractConstraint* reverse_constraint()
   {
-    cerr << "You can't reverse a constructive disjunction constraint!";
+    cerr << "You can't reverse a stochastic chance constraint!";
     FAIL_EXIT();
   }
   
@@ -173,7 +177,7 @@ struct StochasticChance : public AbstractConstraint, Backtrackable
       if(getState(stateObj).isFailed()) return;
       
       // Copy domains
-      for(int i = 0; i < var_array.size(); ++i)
+      for(int i = 0; i < (var_array.size()/numscenarios) ; ++i)
       {
           DomainInt min_val = var_array[i].getMin();
           DomainInt max_val = var_array[i].getMax();
@@ -190,11 +194,9 @@ struct StochasticChance : public AbstractConstraint, Backtrackable
           }
       }
       
-      //for(int i=0; i<gadget_stateObj.size(); i++) D_ASSERT(!getState(gadget_stateObj[i]).isFailed());
-      
       do_prop_incremental();
       
-      for(int var=0; var<var_array.size(); var++) {
+      for(int var=0; var< (var_array.size()/numscenarios) ; var++) {
           for(int val=dom_min; val<=dom_max; val++) {
               if(var_array[var].inDomain(val)) {
                   attach_trigger(var, val);
@@ -233,20 +235,27 @@ struct StochasticChance : public AbstractConstraint, Backtrackable
         
     }
     
-    for(int i=0; i<var_array.size(); i++) {
+    
+    
+    for(int i=0; i< (var_array.size()/numscenarios); i++) {
         for(int val=var_array[i].getMin(); val<=var_array[i].getMax(); val++) {
             if(var_array[i].inDomain(val)) {
-                // Search for a disjunct supporting val.
-                bool supported=false;
+                
+                // Count the scenarios where val is supported.  Counters should be incremental but they aren't.
+                
+                int support_probability=0;
                 
                 for(int j=0; j<gadget_stateObj.size(); j++) {
                     if(!(getState(gadget_stateObj[j]).isFailed()) && inner_vars[j][i].inDomain(val)) {
-                        supported=true; break;
+                        support_probability+=scenario_probs[i];
                     }
                 }
-                if(!supported) {
+                
+                if(support_probability<alpha) {
+                    // prune the value. 
                     var_array[i].removeFromDomain(val);
                 }
+                
             }
         }
     }
@@ -494,7 +503,7 @@ struct StochasticChance : public AbstractConstraint, Backtrackable
         // Four scenarios. 
         
         int numcopyvars=2;
-        int numscenarios=4;
+        numscenarios=4;
         
         // Copy variables 
         vector<Bounds> varbounds;
@@ -531,9 +540,9 @@ struct StochasticChance : public AbstractConstraint, Backtrackable
         }
         
         // put in constant 30. 
-        vector<int> bnds; bnds.push_back(30); bnds.push_back(30); 
-        Var vari = cspi.vars.getNewVar(VAR_BOUND, bnds);
-        cspi.vars.addSymbol(string("constant30"), vari);
+        vector<int> bnds; bnds.push_back(sumconst); bnds.push_back(sumconst); 
+        Var vari = cspi.vars.getNewVar(VAR_DISCRETE, bnds);
+        cspi.vars.addSymbol(string("sumconst"), vari);
         cspi.all_vars_list.push_back(make_vec(vari));
         vars.push_back(vari);
         
@@ -563,7 +572,7 @@ struct StochasticChance : public AbstractConstraint, Backtrackable
             
             BuildCSP(gadget_stateObj[i], cspi);
             
-            for(int j=0; j<var_array.size(); j++)
+            for(int j=0; j<numcopyvars; j++)
                 inner_vars[i].push_back(get_AnyVarRef_from_Var(gadget_stateObj[i], vars[j]));
         }
     }
