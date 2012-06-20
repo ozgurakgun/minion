@@ -239,7 +239,7 @@ set(NAME_ID_constructiveor "CT_CONSTRUCTIVE_OR")
 set(NAME_READ_constructiveor "read_list")
 
 set(NAME_ID_stochasticchance "CT_STOCHASTIC_CHANCE")
-set(NAME_READ_stochasticchance "read_list" "read_constant_list" "read_constant_list")
+set(NAME_READ_stochasticchance "read_list" "read_constant_list" "read_constant_list" "read_constant_list" )
 
 set(NAME_ID_gaceq "CT_GACEQ")
 set(NAME_READ_gaceq "read_var" "read_var")
