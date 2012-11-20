@@ -230,11 +230,7 @@ set(NAME_READ_false )
 
 macro(select_constraints)
     message(STATUS "Generating constraints:")
-    file(GLOB CONSTRAINT_SRCS "${GEN_FILES_DIR}/CT*.cpp")
-    list(LENGTH CONSTRAINT_SRCS CONSTRAINT_SRCS_NUM)
-    if(${CONSTRAINT_SRCS_NUM} GREATER 0)
-        file(REMOVE ${CONSTRAINT_SRCS})
-    endif()
+ 
     file(REMOVE ${CONSTRAINT_DEFS})
     file(REMOVE ${CONSTRAINT_ENUM})
     file(REMOVE ${BUILD_START})
@@ -282,10 +278,7 @@ macro(select_constraints)
             file(APPEND ${BUILD_START} "AbstractConstraint* build_constraint_${NAME_ID_${constraint}}(StateObj* stateObj, ConstraintBlob&);\n")
             # BuildStaticStart.h
             file(APPEND ${BUILD_STATIC_START} "case ${NAME_ID_${constraint}}: return build_constraint_${NAME_ID_${constraint}}(stateObj, b);\n")
-            # CT_*.cpp
-            configure_file("${GEN_FILES_DIR}/${NAME_ID_${constraint}}.tmpl"
-                           "${GEN_FILES_DIR}/${NAME_ID_${constraint}}.cpp"
-                           COPYONLY)
+
         endif()
     endforeach()
     message(STATUS "${msg}")
