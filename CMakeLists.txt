@@ -116,7 +116,8 @@ list(APPEND SRCS ${PROJECT_SOURCE_DIR}/minion/BuildVariables.cpp
                  ${PROJECT_SOURCE_DIR}/minion/preprocess.cpp
                  ${PROJECT_SOURCE_DIR}/minion/build_constraints/BuildStaticStart.cpp
                  ${PROJECT_SOURCE_DIR}/minion/system/trigger_timer.cpp
-                 ${PROJECT_SOURCE_DIR}/minion/help/help.cpp)
+                 ${PROJECT_SOURCE_DIR}/minion/help/help.cpp
+                 ${PROJECT_SOURCE_DIR}/minion/dump_state.cpp)
 
 set(BINARY minion)
 
@@ -153,24 +154,36 @@ else()
     set(BOOST_COMPONENTS iostreams)
 endif()
 
-
-option(NAUTY "" ON)
-if(NAUTY)
-  message(STATUS "Please be naughty")
-  add_definitions(-DUSE_NAUTY)
-  list(APPEND SRCS ${PROJECT_SOURCE_DIR}/nauty24b7/nautycxx.cpp
-                   ${PROJECT_SOURCE_DIR}/nauty24b7/nauty.c
-                   ${PROJECT_SOURCE_DIR}/nauty24b7/nautil.c
-                   ${PROJECT_SOURCE_DIR}/nauty24b7/nausparse.c)
+if(DOMAINS64)
+    option(NAUTY "" OFF)
+    set(BINARY "${BINARY}-dom64")
+    add_definitions(-DDOMAINS64)
+else()
+    option(NAUTY "" ON)
 endif()
 
+#if(NAUTY)
+#  message(STATUS "Please be naughty")
+#  add_definitions(-DUSE_NAUTY)
+#  list(APPEND SRCS ${PROJECT_SOURCE_DIR}/nauty24b7/nautycxx.cpp
+#                   ${PROJECT_SOURCE_DIR}/nauty24b7/nauty.c
+#                   ${PROJECT_SOURCE_DIR}/nauty24b7/nautil.c
+#                   ${PROJECT_SOURCE_DIR}/nauty24b7/nausparse.c)
+#endif()
+
 # This used to be in Static, but there is no reason not to always do it
+
+if(MACRELEASE)
+    set(CFLAGS "${CFLAGS} -m32 -mtune=prescott -march=prescott -ffast-math")
+    set(CMAKE_CXX_COMPILER "g++-4.2")
+    set(CMAKE_C_COMPILER "gcc-4.2")
+endif()
 
 if(APPLEMAC)
     set(Boost_USE_STATIC_LIBS true)
 #    add_definitions(-mmacosx-version-min=10.5)
 #    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -mmacosx-version-min=10.5 )
-endif()
+ endif()
 
 option(STATIC "" OFF)
 if(STATIC)
@@ -302,7 +315,7 @@ option(GPROF "" OFF)
 if(PROFILE)
     message(STATUS "Enabling profiling")
     set(BINARY "${BINARY}-profile")
-    set(CFLAGS "${CFLAGS} -O -g -fno-inline -fno-inline-functions")
+    set(CFLAGS "${CFLAGS} -g -fno-inline -fno-inline-functions")
     if(GPROF)
         message(STATUS "Enabling gprof")
         set(CFLAGS "${CFLAGS} -pg")
@@ -312,6 +325,7 @@ endif()
 
 option(UNOPTIMISED "" OFF)
 option(COVERAGE "" OFF)
+option(SKYESTATICFIX "" OFF)
 if(COVERAGE)
   set(CFLAGS "${CFLAGS} -ftest-coverage -fprofile-arcs")
   set(BINARY "${BINARY}-coverage")
@@ -336,7 +350,9 @@ else()
             set(CFLAGS "${CFLAGS} -mdynamic-no-pic")
         endif()
     endif()
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s")
+    if (NOT SKYESTATICFIX)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s")
+    endif()
 endif()
 
 
@@ -394,6 +410,69 @@ if(REENTER)
     message(STATUS "Enabling REENTER")
     set(BINARY "${BINARY}-reenter")
     add_definitions(-DREENTER)
+endif()
+
+option(SUPPORTSGACELEMENT "" OFF)
+if(SUPPORTSGACELEMENT)
+    message(STATUS "Enabling SUPPORTSGACELEMENT")
+    set(BINARY "${BINARY}-igac-element")
+    add_definitions(-DSUPPORTSGACELEMENT)
+endif()
+
+option(SUPPORTSGACELEMENTLONG "" OFF)
+if(SUPPORTSGACELEMENTLONG)
+    message(STATUS "Enabling SUPPORTSGACELEMENTLONG")
+    set(BINARY "${BINARY}-igac-elementlong")
+    add_definitions(-DSUPPORTSGACELEMENTLONG)
+endif()
+
+option(SUPPORTSGACLEX "" OFF)
+if(SUPPORTSGACLEX)
+    message(STATUS "Enabling SUPPORTSGACLEX")
+    set(BINARY "${BINARY}-igac-lex")
+    add_definitions(-DSUPPORTSGACLEX)
+endif()
+
+option(SUPPORTSGACLEXLONG "" OFF)
+if(SUPPORTSGACLEXLONG)
+    message(STATUS "Enabling SUPPORTSGACLEXLONG")
+    set(BINARY "${BINARY}-igac-lexlong")
+    add_definitions(-DSUPPORTSGACLEXLONG)
+endif()
+
+option(SUPPORTSGACSQUAREPACK "" OFF)
+if(SUPPORTSGACSQUAREPACK)
+    message(STATUS "Enabling SUPPORTSGACSQUAREPACK")
+    set(BINARY "${BINARY}-igac-squarepack")
+    add_definitions(-DSUPPORTSGACSQUAREPACK)
+endif()
+
+option(SUPPORTSGACSQUAREPACKLONG "" OFF)
+if(SUPPORTSGACSQUAREPACKLONG)
+    message(STATUS "Enabling SUPPORTSGACSQUAREPACKLONG")
+    set(BINARY "${BINARY}-igac-squarepacklong")
+    add_definitions(-DSUPPORTSGACSQUAREPACKLONG)
+endif()
+
+option(SUPPORTSGACLIST "" OFF)
+if(SUPPORTSGACLIST)
+    message(STATUS "Enabling SUPPORTSGACLIST")
+    set(BINARY "${BINARY}-igac-list")
+    add_definitions(-DSUPPORTSGACLIST)
+endif()
+
+option(SUPPORTSGACNDLIST "" OFF)
+if(SUPPORTSGACNDLIST)
+    message(STATUS "Enabling SUPPORTSGACNDLIST")
+    set(BINARY "${BINARY}-igac-ndlist")
+    add_definitions(-DSUPPORTSGACNDLIST)
+endif()
+
+option(SUPPORTSGACLISTNOCOPY "" OFF)
+if(SUPPORTSGACLISTNOCOPY)
+    message(STATUS "Enabling SUPPORTSGACLISTNOCOPY")
+    set(BINARY "${BINARY}-igac-listnc")
+    add_definitions(-DSUPPORTSGACLISTNOCOPY)
 endif()
 
 if(DEFINED ENV{CPU})

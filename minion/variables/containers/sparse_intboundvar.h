@@ -55,8 +55,11 @@ struct SparseBoundVarRef_internal
   static string name() { return "SparseBound"; }
   BOOL isBound() const
   { return true;}
+
+  AnyVarRef popOneMapper() const
+  { FATAL_REPORTABLE_ERROR(); }
   
-  int var_num;
+  SysInt var_num;
 
   
 #ifdef MANY_VAR_CONTAINERS
@@ -65,8 +68,8 @@ struct SparseBoundVarRef_internal
   SparseBoundVarRef_internal() : var_num(-1), sparseCon(NULL)
   { }
 
-  explicit SparseBoundVarRef_internal(SparseBoundVarContainer<DomType>* con, int i) : 
-  var_num(i), sparseCon(con)
+  explicit SparseBoundVarRef_internal(SparseBoundVarContainer<DomType>* con, DomainInt i) : 
+  var_num(checked_cast<SysInt>(i)), sparseCon(con)
   { }
   
 #else
@@ -74,8 +77,8 @@ struct SparseBoundVarRef_internal
   SparseBoundVarRef_internal() : var_num(-1)
   { }
 
-  explicit SparseBoundVarRef_internal(SparseBoundVarContainer<DomType>*, int i) : 
-  var_num(i)
+  explicit SparseBoundVarRef_internal(SparseBoundVarContainer<DomType>*, DomainInt i) : 
+  var_num(checked_cast<SysInt>(i))
   { }
 #endif
 };
@@ -92,12 +95,12 @@ struct SparseBoundVarContainer {
   MoveablePointer bound_data;
   TriggerList trigger_list;
   vector<vector<BoundType> > domains;
-  vector<int> domain_reference;
+  vector<DomainInt> domain_reference;
   vector<vector<AbstractConstraint*> > constraints;
 #ifdef WDEG
-  vector<unsigned int> wdegs;
+  vector<UnsignedSysInt> wdegs;
 #endif
-  unsigned var_count_m;
+  UnsignedSysInt var_count_m;
   BOOL lock_m;
 
 #ifdef THREADSAFE
@@ -111,10 +114,10 @@ struct SparseBoundVarContainer {
   { }
   
   vector<BoundType>& get_domain(SparseBoundVarRef_internal<BoundType> i)
-  { return domains[domain_reference[i.var_num]]; }
+  { return domains[checked_cast<SysInt>(domain_reference[i.var_num])]; }
  
-  vector<BoundType>& get_domain_from_int(int i)
-  { return domains[domain_reference[i]]; }
+  vector<BoundType>& get_domain_from_int(SysInt i)
+  { return domains[checked_cast<SysInt>(domain_reference[i])]; }
   
   const BoundType& lower_bound(SparseBoundVarRef_internal<BoundType> i) const
   { return static_cast<const BoundType*>(bound_data.get_ptr())[i.var_num*2]; }
@@ -171,7 +174,7 @@ struct SparseBoundVarContainer {
     lock_m = true;
  }
 
-  void addVariables(const vector<pair<int, vector<int> > >& new_domains)
+  void addVariables(const vector<pair<SysInt, vector<DomainInt> > >& new_domains)
 {
   D_ASSERT(!lock_m);
   
@@ -184,20 +187,20 @@ struct SparseBoundVarContainer {
   DomainInt min_domain_val = DomainInt_Min;
   DomainInt max_domain_val = DomainInt_Max;
 
-  for(int i = 0; i < new_domains.size(); ++i)
+  for(SysInt i = 0; i < new_domains.size(); ++i)
   {
     D_ASSERT(new_domains[i].second.front() >= DomainInt_Min);
     D_ASSERT(new_domains[i].second.back() <= DomainInt_Max);
     
-    for(int loop=0;loop<(int)(new_domains[i].second.size()) - 1; ++loop) 
+    for(SysInt loop=0;loop<(SysInt)(new_domains[i].second.size()) - 1; ++loop) 
     { D_ASSERT(new_domains[i].second[loop] < new_domains[i].second[loop+1]); }
   
     vector<BoundType> t_dom(new_domains[i].second.size());
-    for(unsigned int j = 0; j < new_domains[i].second.size(); ++j)
+    for(UnsignedSysInt j = 0; j < new_domains[i].second.size(); ++j)
       t_dom[j] = new_domains[i].second[j];
           
     domains.push_back(t_dom);
-    for(int j = 0; j < new_domains[i].first; ++j)
+    for(SysInt j = 0; j < new_domains[i].first; ++j)
       domain_reference.push_back(i);
 
     min_domain_val = mymin(t_dom.front(), min_domain_val);
@@ -215,7 +218,7 @@ struct SparseBoundVarContainer {
 
   bound_data = getMemory(stateObj).backTrack().request_bytes(var_count_m*2*sizeof(BoundType));
   BoundType* bound_ptr = static_cast<BoundType*>(bound_data.get_ptr());
-  for(unsigned int i = 0; i < var_count_m; ++i)
+  for(UnsignedSysInt i = 0; i < var_count_m; ++i)
   {
     bound_ptr[2*i] = get_domain_from_int(i).front();
     bound_ptr[2*i+1] = get_domain_from_int(i).back();
@@ -256,11 +259,17 @@ struct SparseBoundVarContainer {
       D_ASSERT(lock_m);
       // use binary search to find if the value is in the domain vector.
       //const vector<BoundType>& dom = get_domain(ref);  // why does this not work?
-      const vector<BoundType>& dom = domains[domain_reference[ref.var_num]];
+      const vector<BoundType>& dom = domains[checked_cast<SysInt>(domain_reference[checked_cast<SysInt>(ref.var_num)])];
       
       return std::binary_search( dom.begin(), dom.end(), i );
   }
   
+  DomainInt getDomSize(SparseBoundVarRef_internal<BoundType> d) const
+  {
+    assert(0);
+    return 0; // Just to shut up compiler complaints.
+  }
+
   DomainInt getMin(SparseBoundVarRef_internal<BoundType> d) const
   { LOCK_CON_MUTEX
     D_ASSERT(lock_m);
@@ -396,7 +405,13 @@ struct SparseBoundVarContainer {
 //  SparseBoundVarRef get_new_var();
   template<typename T>
   SparseBoundVarRef get_new_var(const vector<T>&);
-  SparseBoundVarRef get_var_num(int i);
+  SparseBoundVarRef get_var_num(DomainInt i);
+
+  vector<DomainInt> get_raw_domain(DomainInt i)
+  { return this->domains[checked_cast<SysInt>(i)]; }
+
+  UnsignedSysInt var_count()
+  { return var_count_m; }
 
   void addTrigger(SparseBoundVarRef_internal<BoundType> b, Trigger t, TrigType type)
   { LOCK_CON_MUTEX
@@ -424,8 +439,12 @@ struct SparseBoundVarContainer {
   Var getBaseVar(const SparseBoundVarRef_internal<BoundType>& b) const
   { return Var(VAR_SPARSEBOUND, b.var_num); }
 
+  vector<Mapper> getMapperStack() const
+  { return vector<Mapper>(); }
+
+
 #ifdef WDEG
-  int getBaseWdeg(const SparseBoundVarRef_internal<BoundType>& b)
+  SysInt getBaseWdeg(const SparseBoundVarRef_internal<BoundType>& b)
   { return wdegs[b.var_num]; }
 
   void incWdeg(const SparseBoundVarRef_internal<BoundType>& b)
@@ -449,8 +468,8 @@ struct SparseBoundVarContainer {
   {
     D_ASSERT(lock_m);
     stringstream s;
-    int char_count = 0;
-    for(unsigned int i=0;i<var_count_m;i++)
+    SysInt char_count = 0;
+    for(UnsignedSysInt i=0;i<var_count_m;i++)
     {
       if(!isAssigned(SparseBoundVarRef_internal<BoundType>(i)))
     s << "X";
@@ -469,7 +488,7 @@ struct SparseBoundVarContainer {
 
 template<typename T>
 inline SparseBoundVarRef
-SparseBoundVarContainer<T>::get_var_num(int i)
+SparseBoundVarContainer<T>::get_var_num(DomainInt i)
 {
   D_ASSERT(i < var_count_m);
   return SparseBoundVarRef(SparseBoundVarRef_internal<T>(this, i));

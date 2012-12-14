@@ -52,7 +52,10 @@ struct BigRangeVarRef_internal_template
   BOOL isBound() const
   { return false;}
   
-  int var_num;
+  AnyVarRef popOneMapper() const
+  { FATAL_REPORTABLE_ERROR(); }
+
+  SysInt var_num;
 
 #ifdef MANY_VAR_CONTAINERS
   BigRangeVarContainer<d_type>* rangeCon;
@@ -61,16 +64,16 @@ struct BigRangeVarRef_internal_template
   BigRangeVarRef_internal_template() : var_num(-1), rangeCon(NULL)
   {}
 
-  explicit BigRangeVarRef_internal_template(BigRangeVarContainer<d_type>* con, int i) : 
-  var_num(i), rangeCon(con)
+  explicit BigRangeVarRef_internal_template(BigRangeVarContainer<d_type>* con, DomainInt i) : 
+  var_num(checked_cast<SysInt>(i)), rangeCon(con)
   {}  
 #else
   static BigRangeVarContainer<d_type>& getCon_Static();
   BigRangeVarRef_internal_template() : var_num(-1)
   {}
   
-  explicit BigRangeVarRef_internal_template(BigRangeVarContainer<d_type>*, int i) : 
-  var_num(i)
+  explicit BigRangeVarRef_internal_template(BigRangeVarContainer<d_type>*, DomainInt i) : 
+  var_num(checked_cast<SysInt>(i))
   {}    
 #endif  
 
@@ -110,25 +113,42 @@ struct BigRangeVarContainer {
   TriggerList trigger_list;
 
   /// Initial bounds of each variable
-  vector<pair<int,int> > initial_bounds;
+  vector<pair<DomainInt,DomainInt> > initial_bounds;
   /// Position in the variable data (in counts of d_type) of where each variable starts
-  vector<int> var_offset;
+  vector<DomainInt> var_offset;
   /// Constraints variable participates in
   vector<vector<AbstractConstraint*> > constraints;
 #ifdef WDEG
-  vector<unsigned int> wdegs;
+  vector<DomainInt> wdegs;
 #endif
   
  
-  unsigned var_count_m;
+  UnsignedSysInt var_count_m;
   BOOL lock_m;
-  
+
+#ifdef SLOW_DOM_SIZE
+#define BOUND_DATA_SIZE 2
+#else
+#define BOUND_DATA_SIZE 3
+#endif
+
   domain_bound_type& lower_bound(BigRangeVarRef_internal i) const
-  { return static_cast<domain_bound_type*>(bound_data.get_ptr())[i.var_num*2]; }
+  { return static_cast<domain_bound_type*>(bound_data.get_ptr())[i.var_num*BOUND_DATA_SIZE]; }
   
   domain_bound_type& upper_bound(BigRangeVarRef_internal i) const
-  { return static_cast<domain_bound_type*>(bound_data.get_ptr())[i.var_num*2 + 1]; }
-    
+  { return static_cast<domain_bound_type*>(bound_data.get_ptr())[i.var_num*BOUND_DATA_SIZE + 1]; }
+
+#ifdef SLOW_DOM_SIZE
+  void reduce_dom_size(BigRangeVarRef_internal i)
+  {}
+#else    
+  domain_bound_type& dom_size(BigRangeVarRef_internal i) const
+  { return static_cast<domain_bound_type*>(bound_data.get_ptr())[i.var_num*BOUND_DATA_SIZE + 2]; }
+
+  void reduce_dom_size(BigRangeVarRef_internal i)
+  { dom_size(i)-=1; }
+#endif
+
   /// Find new "true" upper bound.
   /// This should be used by first setting the value of upper_bound(d), then calling
   /// this function to move this value past any removed values.
@@ -190,15 +210,15 @@ struct BigRangeVarContainer {
     //bms_array->lock(stateObj); // gets locked in constraint_setup.cpp
  }
 
-  void addVariables(const vector<pair<int, Bounds> >& new_domains)
+  void addVariables(const vector<pair<SysInt, Bounds> >& new_domains)
   {
     D_ASSERT(!lock_m);
-    for(int i = 0; i < new_domains.size(); ++i)
+    for(SysInt i = 0; i < new_domains.size(); ++i)
     {
-      for(int j = 0; j < new_domains[i].first; ++j)
+      for(DomainInt j = 0; j < new_domains[i].first; ++j)
       {
         initial_bounds.push_back(make_pair(new_domains[i].second.lower_bound, new_domains[i].second.upper_bound));
-        int domain_size;
+        DomainInt domain_size;
         domain_size = new_domains[i].second.upper_bound - new_domains[i].second.lower_bound + 1;
         var_offset.push_back( var_offset.back() + domain_size);
         var_count_m++;
@@ -209,33 +229,34 @@ struct BigRangeVarContainer {
 #endif
     }
 
- 
-    bound_data = getMemory(stateObj).backTrack().request_bytes(var_count_m * 2 * sizeof(domain_bound_type));
-    int temp1=bms_array->request_storage(var_offset.back());
+    bound_data = getMemory(stateObj).backTrack().request_bytes(var_count_m * BOUND_DATA_SIZE * sizeof(domain_bound_type));
+    DomainInt temp1=bms_array->request_storage(var_offset.back());
     
     // correct var_offsets to start at the start of our block.
     if(temp1>0)
     {
-        for(int i=0;i<var_offset.size(); i++) var_offset[i]+=temp1;
+        for(SysInt i=0;i<var_offset.size(); ++i) var_offset[i]+=temp1;
     }
     
-    for(DomainInt j = 0; j < var_count_m; j++) {
+    for(SysInt j = 0; j < var_count_m; ++j) {
            var_offset[j] = var_offset[j] - initial_bounds[j].first;  
     };
     
     domain_bound_type* bound_ptr = static_cast<domain_bound_type*>(bound_data.get_ptr());
     
-    int min_domain_val = 0;
-    int max_domain_val = 0;
+    DomainInt min_domain_val = 0;
+    DomainInt max_domain_val = 0;
     if(!initial_bounds.empty())
     {
       min_domain_val = initial_bounds[0].first;
       max_domain_val = initial_bounds[0].second;
-      for(unsigned int i = 0; i < var_count_m; ++i)
+      for(UnsignedSysInt i = 0; i < var_count_m; ++i)
       {
-        bound_ptr[2*i] = initial_bounds[i].first;
-        bound_ptr[2*i+1] = initial_bounds[i].second;
-      
+        bound_ptr[BOUND_DATA_SIZE*i] = initial_bounds[i].first;
+        bound_ptr[BOUND_DATA_SIZE*i+1] = initial_bounds[i].second;
+#ifndef SLOW_DOM_SIZE
+        bound_ptr[BOUND_DATA_SIZE*i+2] = initial_bounds[i].second - initial_bounds[i].first + 1;
+#endif
         min_domain_val = mymin(initial_bounds[i].first, min_domain_val);
         max_domain_val = mymax(initial_bounds[i].second, max_domain_val);
       }
@@ -272,6 +293,23 @@ struct BigRangeVarContainer {
     D_ASSERT(i >= lower_bound(d));
     D_ASSERT(i <= upper_bound(d));
     return bms_array->isMember(var_offset[d.var_num] + i );
+  }
+
+  DomainInt getDomSize_Check(BigRangeVarRef_internal d) const
+  {
+    DomainInt dom_size = 0;
+    for(DomainInt i = this->getMin(d); i <= this->getMax(d); ++i)
+    {
+      if(this->inDomain(d,i))
+        dom_size++;
+    }
+    return dom_size;
+  }
+
+  DomainInt getDomSize(BigRangeVarRef_internal d) const
+  {
+    D_ASSERT(getDomSize_Check(d) == dom_size(d));
+    return dom_size(d);
   }
   
   DomainInt getMin(BigRangeVarRef_internal d) const
@@ -315,6 +353,7 @@ if((i < lower_bound(d)) || (i > upper_bound(d)) || ! (bms_array->ifMember_remove
     }
 #ifdef FULL_DOMAIN_TRIGGERS
     trigger_list.push_domain_removal(d.var_num, i);
+    reduce_dom_size(d);
 #endif
 #ifndef NO_DOMAIN_TRIGGERS
     trigger_list.push_domain_changed(d.var_num);
@@ -397,12 +436,13 @@ private:
   {
 #ifdef FULL_DOMAIN_TRIGGERS
     // TODO : Optimise this function to only check values in domain.
-    int domainOffset = var_offset[d.var_num] /*- initial_bounds[d.var_num].first*/;
+    DomainInt domainOffset = var_offset[d.var_num] /*- initial_bounds[d.var_num].first*/;
     for(DomainInt loop = lower; loop <= upper; ++loop)
     {
       // def of inDomain: bms_array->isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
       if(bms_array->isMember(loop + domainOffset) && loop != offset) {
         trigger_list.push_domain_removal(d.var_num, loop);
+        reduce_dom_size(d);
       }
     }
 #endif
@@ -451,12 +491,13 @@ public:
     {
 #ifdef FULL_DOMAIN_TRIGGERS
       // TODO : Optimise this function to only check values in domain.
-      int domainOffset = var_offset[d.var_num] /*- initial_bounds[d.var_num].first*/;
+      DomainInt domainOffset = var_offset[d.var_num] /*- initial_bounds[d.var_num].first*/;
       for(DomainInt loop = offset + 1; loop <= up_bound; ++loop)
       {
         // Def of inDomain: bms_array->isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
         if(bms_array->isMember(domainOffset + loop)) {
           trigger_list.push_domain_removal(d.var_num, loop);
+          reduce_dom_size(d);
         }
       }
 #endif   
@@ -507,12 +548,13 @@ public:
     {
 #ifdef FULL_DOMAIN_TRIGGERS
       // TODO : Optimise this function to only check values in domain.
-      int domainOffset = var_offset[d.var_num] /*- initial_bounds[d.var_num].first*/;
+      DomainInt domainOffset = var_offset[d.var_num] /*- initial_bounds[d.var_num].first*/;
       for(DomainInt loop = low_bound; loop < offset; ++loop)
       {
         // def of inDomain: bms_array->isMember(var_offset[d.var_num] + i - initial_bounds[d.var_num].first);
         if(bms_array->isMember(loop + domainOffset)) {
           trigger_list.push_domain_removal(d.var_num, loop);
+          reduce_dom_size(d);
         }
       }
 #endif
@@ -540,8 +582,12 @@ public:
 #endif
   }
   
-  BigRangeVarRef get_var_num(int i);
-  BigRangeVarRef get_new_var(int i, int j);
+  BigRangeVarRef get_var_num(DomainInt i);
+  
+  UnsignedSysInt var_count()
+  { return var_count_m; }
+
+  BigRangeVarRef get_new_var(DomainInt i, DomainInt j);
 
   void addTrigger(BigRangeVarRef_internal b, Trigger t, TrigType type)
   { LOCK_CON_MUTEX D_ASSERT(lock_m); trigger_list.add_trigger(b.var_num, t, type);  }
@@ -551,7 +597,7 @@ public:
   {   LOCK_CON_MUTEX
     D_ASSERT(lock_m);
     D_ASSERT(b.var_num >= 0);
-    D_ASSERT(b.var_num <= (int)var_count_m);
+    D_ASSERT(b.var_num <= (SysInt)var_count_m);
     D_ASSERT(type != DomainRemoval || (pos >= getInitialMin(b) && pos <= getInitialMax(b)));
     trigger_list.addDynamicTrigger(b.var_num, t, type, pos BT_CALL); 
   }
@@ -577,8 +623,12 @@ public:
   Var getBaseVar(const BigRangeVarRef_internal& b) const
   { return Var(VAR_DISCRETE, b.var_num); }
 
+  vector<Mapper> getMapperStack() const
+  { return vector<Mapper>(); }
+
+
 #ifdef WDEG
-  int getBaseWdeg(const BigRangeVarRef_internal& b)
+  DomainInt getBaseWdeg(const BigRangeVarRef_internal& b)
   { return wdegs[b.var_num]; }
 
   void incWdeg(const BigRangeVarRef_internal& b)
@@ -586,7 +636,7 @@ public:
 #endif
 
   ~BigRangeVarContainer() { 
-    for(unsigned i=0; i < var_count_m ; i++) {
+    for(UnsignedSysInt i=0; i < var_count_m ; i++) {
          // should delete space really!
     } ;
   }
@@ -594,7 +644,7 @@ public:
 
 template<typename T>
 inline BigRangeVarRef
-BigRangeVarContainer<T>::get_var_num(int i)
+BigRangeVarContainer<T>::get_var_num(DomainInt i)
 {
   D_ASSERT(i < var_count_m);
   return BigRangeVarRef(BigRangeVarRef_internal(this, i));

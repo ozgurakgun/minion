@@ -40,6 +40,9 @@ struct VarRefType
   
   BOOL isBound() const
   { return data.isBound();}
+
+  AnyVarRef popOneMapper() const
+  { FATAL_REPORTABLE_ERROR(); }
   
   VarRefType(const InternalRefType& _data) : data(_data)
   {}
@@ -68,6 +71,9 @@ struct VarRefType
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { return GET_CONTAINER().inDomain_noBoundCheck(data, b); }
   
+  DomainInt getDomSize() const
+  { return GET_CONTAINER().getDomSize(data); }
+
   DomainInt getMax() const
   { return GET_CONTAINER().getMax(data); }
   
@@ -110,11 +116,14 @@ struct VarRefType
   DomainInt getBaseVal(DomainInt v) const
   { return GET_CONTAINER().getBaseVal(data, v); }
 
+  vector<Mapper> getMapperStack() const
+  { return vector<Mapper>(); }
+
   Var getBaseVar() const
   { return GET_CONTAINER().getBaseVar(data); }
 
 #ifdef WDEG
-  int getBaseWdeg()
+  SysInt getBaseWdeg()
   { return GET_CONTAINER().getBaseWdeg(data); }
 
   void incWdeg()
@@ -124,7 +133,7 @@ struct VarRefType
   friend std::ostream& operator<<(std::ostream& o, const VarRefType& v)
   { return o << InternalRefType::name() << v.data.var_num; }
     
-  int getDomainChange(DomainDelta d)
+  DomainInt getDomainChange(DomainDelta d)
   { return d.XXX_get_domain_diff(); }
   
 #ifdef DYNAMICTRIGGERS
@@ -146,6 +155,9 @@ struct QuickVarRefType
   static const BoundType isBoundConst = InternalRefType::isBoundConst;
   InternalRefType data;
   
+  AnyVarRef popOneMapper() const
+  { FATAL_REPORTABLE_ERROR(); }
+
   BOOL isBound() const
   { return data.isBound();}
   
@@ -175,6 +187,9 @@ struct QuickVarRefType
   BOOL inDomain_noBoundCheck(DomainInt b) const
   { LOCK_CON return data.inDomain_noBoundCheck(b); }
 
+  DomainInt getDomSize() const
+  { return data.getDomSize(); }
+  
   DomainInt getMax() const
   { LOCK_CON return data.getMax(); }
   
@@ -220,8 +235,11 @@ struct QuickVarRefType
   Var getBaseVar() const
   { return data.getBaseVar(); }
 
+  vector<Mapper> getMapperStack() const
+  { return vector<Mapper>(); }
+
 #ifdef WDEG
-  int getBaseWdeg()
+  SysInt getBaseWdeg()
   { return GET_CONTAINER().getBaseWdeg(data); }
 
   void incWdeg()
@@ -231,7 +249,7 @@ struct QuickVarRefType
   friend std::ostream& operator<<(std::ostream& o, const QuickVarRefType& b)
   { return o << "Bool:" << b.data; }
   
-  int getDomainChange(DomainDelta d)
+  DomainInt getDomainChange(DomainDelta d)
   { return d.XXX_get_domain_diff(); }
   
 #ifdef DYNAMICTRIGGERS

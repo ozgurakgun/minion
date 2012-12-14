@@ -112,6 +112,24 @@ Achieves arc consistency.
 diseq(v0,v1)
 \end{verbatim}
 }
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+Constrain two variables to take different values.
+\end{verbatim}
+}
+\paragraph{Notes}
+{\footnotesize
+\begin{verbatim}
+Achieves arc consistency.
+\end{verbatim}
+}
+\paragraph{Example}
+{\footnotesize
+\begin{verbatim}
+diseq(v0,v1)
+\end{verbatim}
+}
 \section{constraints div}
 \paragraph{Description}
 {\footnotesize
@@ -121,18 +139,48 @@ The constraint
    div(x,y,z)
 
 ensures that floor(x/y)=z.
-\end{verbatim}
-}
-\paragraph{Notes}
-{\footnotesize
-\begin{verbatim}
-This constraint is only available for positive domains x, y and z.
+
+For example:
+
+10/3 = 3
+(-10)/3 = -4
+10/(-3) = -4
+(-10)/(-3) = 3
+
+div and mod satisfy together the condition that:
+
+y*(x/y) + x % y = x
+
+The constraint is always false when y = 0
 \end{verbatim}
 }
 \paragraph{References}
 {\footnotesize
 \begin{verbatim}
 help constraints modulo
+\end{verbatim}
+}
+\section{constraints div\textunderscore undefzero}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+The constraint
+ 
+   div_undefzero(x,y,z)
+
+is the same as div (it ensures that floor(x/y)=z)
+except the constraint is always true when y = 0,
+instead of false.
+
+This constraint exists for certain special requirements.
+In general, if you are unsure what constraint to use,
+then what you want is a plain div constraint!
+\end{verbatim}
+}
+\paragraph{References}
+{\footnotesize
+\begin{verbatim}
+help constraints div
 \end{verbatim}
 }
 \section{constraints element}
@@ -245,6 +293,30 @@ Achieves bounds consistency.
 help constraints minuseq
 \end{verbatim}
 }
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+Constrain two variables to take equal values.
+\end{verbatim}
+}
+\paragraph{Example}
+{\footnotesize
+\begin{verbatim}
+eq(x0,x1)
+\end{verbatim}
+}
+\paragraph{Notes}
+{\footnotesize
+\begin{verbatim}
+Achieves bounds consistency.
+\end{verbatim}
+}
+\paragraph{Reference}
+{\footnotesize
+\begin{verbatim}
+help constraints minuseq
+\end{verbatim}
+}
 \section{constraints gacalldiff}
 \paragraph{Description}
 {\footnotesize
@@ -271,60 +343,16 @@ gacalldiff(myVec)
 This constraint enforces generalized arc consistency.
 \end{verbatim}
 }
-\section{constraints gaclexleq}
+\section{constraints gacschema}
 \paragraph{Description}
 {\footnotesize
 \begin{verbatim}
-  The constraint
+An extensional constraint that enforces GAC. The constraint is
+specified via a list of tuples.
 
-  gaclexleq(vec0, vec1)
-
-  takes two vectors vec0 and vec1 of the same length and ensures that
-  vec0 is lexicographically less than or equal to vec1 in any solution.
-\end{verbatim}
-}
-\paragraph{Notes}
-{\footnotesize
-\begin{verbatim}
-  This constraints achieves GAC.
-\end{verbatim}
-}
-\paragraph{References}
-{\footnotesize
-\begin{verbatim}
-  See also
-
-  help constraints gaclexless
-
-  for a similar constraint with strict lexicographic inequality.
-\end{verbatim}
-}
-\section{constraints gaclexless}
-\paragraph{Description}
-{\footnotesize
-\begin{verbatim}
-  The constraint
-
-  gaclexless(vec0, vec1)
-
-  takes two vectors vec0 and vec1 of the same length and ensures that
-  vec0 is lexicographically less than vec1 in any solution.
-\end{verbatim}
-}
-\paragraph{Notes}
-{\footnotesize
-\begin{verbatim}
-  This constraint maintains GAC.
-\end{verbatim}
-}
-\paragraph{References}
-{\footnotesize
-\begin{verbatim}
-  See also
-
-  help constraints gaclexleq
-
-  for a similar constraint with non-strict lexicographic inequality.
+The format, and usage of gacschema, is identical to the 'table' constraint.
+It is difficult to predict which out of 'table' and 'gacschema' will be faster
+for any particular problem.
 \end{verbatim}
 }
 \section{constraints gcc}
@@ -426,6 +454,80 @@ The consistency over the capacity variables is weaker than the gcc constraint,
 hence the name gccweak.
 \end{verbatim}
 }
+\section{constraints haggisgac}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+An extensional constraint that enforces GAC. This constraint make uses
+of 'short tuples', which allow some values to be marked as don't care.
+When this allows the set of tuples to be reduced in size, this leads to
+performance gains.
+
+The variables used in the constraint have to be BOOL or DISCRETE variables.
+Other types are not supported.
+\end{verbatim}
+}
+\paragraph{Example}
+{\footnotesize
+\begin{verbatim}
+
+Consider the constraint 'min([x1,x2,x3],x4)'' on Booleans variables
+x1,x2,x3,x4.
+
+Represented as a TUPLELIST for a table or gacschema constraint, this would
+look like:
+
+**TUPLELIST**
+mycon 8 4
+0 0 0 0
+0 0 1 0
+0 1 0 0
+0 1 1 0
+1 0 0 0
+1 0 1 0
+1 1 0 0
+1 1 1 1
+
+Short tuples give us a way of shrinking this list. Short tuples consist
+of pairs (x,y), where x is a varible position, and y is a value for that 
+variable. For example:
+
+[(0,0),(3,0)]
+
+Represents 'If the variable at index 0 is 0, and the variable at index
+3 is 0, then the constraint is true'.
+
+This allows us to represent our constraint as follows:
+
+**SHORTTUPLELIST**
+mycon 4
+[(0,0),(3,0)]
+[(1,0),(3,0)]
+[(2,0),(3,0)]
+[(0,1),(1,1),(2,1),(3,1)]
+
+Note that some tuples are double-represented here. The first 3 short
+tuples all allow the assignment '0 0 0 0'. This is fine. The important
+thing for efficency is to try to give a small list of short tuples.
+
+
+We use this tuple by writing:
+
+haggisgac([x1,x2,x3,x4], mycon)
+
+and now the variables [x1,x2,x3,x4] will satisfy the constraint mycon.
+\end{verbatim}
+}
+\section{constraints haggisgac-stable}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+An extensional constraint that enforces GAC. haggisgac-stable
+is a variant of haggisgac which uses less memory in some cases,
+and can also be faster (or slower). The input is identical to
+haggisgac.
+\end{verbatim}
+}
 \section{constraints hamming}
 \paragraph{Description}
 {\footnotesize
@@ -488,6 +590,37 @@ See also
    help constraints lexless
 
 for a similar constraint with strict lexicographic inequality.
+\end{verbatim}
+}
+\section{constraints lexleq[rv]}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+  The constraint
+
+  lexle[rv](vec0, vec1)
+
+  takes two vectors vec0 and vec1 of the same length and ensures that
+  vec0 is lexicographically less than or equal to vec1 in any solution.
+\end{verbatim}
+}
+\paragraph{Notes}
+{\footnotesize
+\begin{verbatim}
+  This constraint achieves GAC even when some variables are repeated in
+  vec0 and vec1. However, the extra propagation this achieves is rarely 
+  worth the extra work.
+\end{verbatim}
+}
+\paragraph{References}
+{\footnotesize
+\begin{verbatim}
+  See also
+
+  help constraints lexleq[quick]
+
+  for a much faster logically identical constraint, with lower
+  propagation.
 \end{verbatim}
 }
 \section{constraints lexless}
@@ -623,6 +756,22 @@ ensures that x=-y.
 help constraints eq
 \end{verbatim}
 }
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+Constraint
+
+   minuseq(x,y)
+
+ensures that x=-y.
+\end{verbatim}
+}
+\paragraph{Reference}
+{\footnotesize
+\begin{verbatim}
+help constraints eq
+\end{verbatim}
+}
 \section{constraints modulo}
 \paragraph{Description}
 {\footnotesize
@@ -632,18 +781,44 @@ The constraint
    modulo(x,y,z)
 
 ensures that x%y=z i.e. z is the remainder of dividing x by y.
-\end{verbatim}
-}
-\paragraph{Notes}
-{\footnotesize
-\begin{verbatim}
-This constraint is only available for positive domains x, y and z.
+For negative values, we ensure that:
+
+y(x/y) + x%y = x
+
+To be fully concrete, here are some examples:
+
+3 % 5 = 3
+-3 % 5 = 2
+3 % -5 = -2
+-3 % -5 = -3
 \end{verbatim}
 }
 \paragraph{References}
 {\footnotesize
 \begin{verbatim}
 help constraints div
+\end{verbatim}
+}
+\section{constraints mod\textunderscore undefzero}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+The constraint
+ 
+   mod_undefzero(x,y,z)
+
+is the same as mod except the constraint is always 
+true when y = 0, instead of false.
+
+This constraint exists for certain special requirements.
+In general, if you are unsure what constraint to use,
+then what you want is a plain mod constraint!
+\end{verbatim}
+}
+\paragraph{References}
+{\footnotesize
+\begin{verbatim}
+help constraints mod
 \end{verbatim}
 }
 \section{constraints negativetable}
@@ -858,6 +1033,28 @@ ensures that sum(vec) <= c.
 \end{verbatim}
 }
 \section{constraints table}
+\paragraph{References}
+{\footnotesize
+\begin{verbatim}
+help input tuplelist
+help input table
+help input haggisgac
+\end{verbatim}
+}
+\paragraph{References}
+{\footnotesize
+\begin{verbatim}
+help input haggisgac-stable
+\end{verbatim}
+}
+\paragraph{References}
+{\footnotesize
+\begin{verbatim}
+help input shorttuplelist
+help input negativetable
+help input haggisgac
+\end{verbatim}
+}
 \paragraph{Description}
 {\footnotesize
 \begin{verbatim}
@@ -907,7 +1104,9 @@ table(myvec, {<0,0,0>,<1,0,0>,<0,1,0>,<0,0,1>})
 {\footnotesize
 \begin{verbatim}
 help input tuplelist
+help input gacschema
 help input negativetable
+help input haggisgac
 \end{verbatim}
 }
 \section{constraints watched-and}
@@ -1003,6 +1202,42 @@ See entry
    help constraints watchelement
 
 for details of watchelement which watchelement_one is based on.
+\end{verbatim}
+}
+\section{constraints watchelement\textunderscore undefzero}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+The constraint 
+
+   watchelement_undefzero(vec, i, e)
+
+specifies that, in any solution, either:
+a)  vec[i] = e and i is in the range [0 .. |vec|-1]
+b)  i is outside the index range of vec, and e = 0
+
+Unlike watchelement (and element) which are false if i is outside
+the index range of vec.
+
+In general, use watchelement unless you have a special reason to
+use this constraint!
+\end{verbatim}
+}
+\paragraph{Notes}
+{\footnotesize
+\begin{verbatim}
+Enforces generalised arc consistency.
+\end{verbatim}
+}
+\paragraph{References}
+{\footnotesize
+\begin{verbatim}
+See entry
+
+   help constraints watchelement
+
+for details of the standard element constraint, which is false
+when the array value is out of bounds.
 \end{verbatim}
 }
 \section{constraints watchless}
@@ -1239,6 +1474,7 @@ InputSection::= <VariablesSection>
               | <SearchSection>
               | <ConstraintsSection> 
               | <TuplelistSection>
+              | <ShortTuplelistSection>
 
 i.e. 'MINION 3' followed by any number of variable, search,
 constraints and tuplelists sections (can repeat) followed by
@@ -1490,11 +1726,77 @@ See also
    switches -varorder
 \end{verbatim}
 }
+\section{input shorttuplelist}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+A shorttuplelist section lists of allowed tuples for haggisgac
+and other constraints which accept short tuple lists.
+
+The required format is
+
+TuplelistSection::= **TUPLELIST**
+                    <Tuplelist>*
+
+Tuplelist::= <name> <num_tuples> <short_tuple>+
+
+short_tuple ::= [ <literal>*, ]
+
+literal ::= (<num>, <num>)
+\end{verbatim}
+}
+\paragraph{Example}
+{\footnotesize
+\begin{verbatim}
+**SHORTTUPLELIST**
+mycon 4
+[(0,0),(3,0)]
+[(1,0),(3,0)]
+[(2,0),(3,0)]
+[(0,1),(1,1),(2,1),(3,1)]
+
+Represents the same constraint as:
+
+**TUPLELIST**
+mycon 8 4
+0 0 0 0
+0 0 1 0
+0 1 0 0
+0 1 1 0
+1 0 0 0
+1 0 1 0
+1 1 0 0
+1 1 1 1
+
+Short tuples give us a way of shrinking this list. Short tuples consist
+of pairs (x,y), where x is a varible position, and y is a value for that 
+variable. For example:
+
+[(0,0),(3,0)]
+
+Represents 'If the variable at index 0 is 0, and the variable at index
+3 is 0, then the constraint is true'.
+
+
+Note that some tuples are double-represented in the example 'mycon'.
+The first 3 short tuples all allow the assignment '0 0 0 0'. This is fine.
+The important thing for efficency is to try to give a small list of 
+short tuples.
+\end{verbatim}
+}
+\paragraph{References}
+{\footnotesize
+\begin{verbatim}
+help constraints haggisgac
+help constraints haggisgac-stable
+help input tuplelist
+\end{verbatim}
+}
 \section{input tuplelist}
 \paragraph{Description}
 {\footnotesize
 \begin{verbatim}
-In a tuplelist section lists of allowed tuples for table constraints
+A tuplelist section lists of allowed tuples for table constraints
 can be specified. This technique is preferable to specifying the
 tuples in the constraint declaration, since the tuplelists can be
 shared between constraints and named for readability.
@@ -1522,6 +1824,7 @@ AtMostOne 4 3
 {\footnotesize
 \begin{verbatim}
 help constraints table
+help input shorttuplelist
 \end{verbatim}
 }
 \section{input variables}
@@ -1632,6 +1935,13 @@ search tree.
 Only available in a DEBUG executable.
 \end{verbatim}
 }
+\section{switches -makeresume}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+Write a resume file on timeout or being killed.
+\end{verbatim}
+}
 \section{switches -nocheck}
 \paragraph{Description}
 {\footnotesize
@@ -1674,7 +1984,24 @@ Do not print solutions.
 \paragraph{Description}
 {\footnotesize
 \begin{verbatim}
-Do not write a resume file on timeout or being killed.
+Do not write a resume file on timeout or being killed. (default)
+\end{verbatim}
+}
+\section{switches -outputCompressed}
+\paragraph{Description}
+{\footnotesize
+\begin{verbatim}
+Output a Minion instance with some basic reasoning performed to
+reduce the size of the file. This file should produce identical
+output the original instance but may solve faster.
+\end{verbatim}
+}
+\paragraph{Example}
+{\footnotesize
+\begin{verbatim}
+To compress a file 'infile.minion' to a file 'smaller.minion'
+
+   minion infile.minion -outputCompressed smaller.minion
 \end{verbatim}
 }
 \section{switches -preprocess}
@@ -1876,6 +2203,8 @@ The new input files can be run without any special flags.
 This flag is intended to be used with the -timelimit, -sollimit, -nodelimit
 ,-searchlimit or -cpulimit flags. Please note that changing other flags between
 runs (such as -varorder) may have unintended consequences.
+
+Implies -makeresume.
 \end{verbatim}
 }
 \section{switches -tableout}

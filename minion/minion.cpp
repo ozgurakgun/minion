@@ -60,6 +60,18 @@ below contains all available switches. For example to see help on
 replacing 'minion' by the name of the executable you're using.
 */
 
+/** @help switches;-outputCompressed Description
+Output a Minion instance with some basic reasoning performed to
+reduce the size of the file. This file should produce identical
+output the original instance but may solve faster.
+*/
+
+/** @help switches;-outputCompressed Example
+To compress a file 'infile.minion' to a file 'smaller.minion'
+
+   minion infile.minion -outputCompressed smaller.minion
+*/
+
 /** @help switches;-redump Description
 Print the minion input instance file to standard out. No search is
 carried out when this switch is used.
@@ -338,7 +350,11 @@ specified a random permutation of all the variables is used.
 */
 
 /** @help switches;-noresume Description
-Do not write a resume file on timeout or being killed.
+Do not write a resume file on timeout or being killed. (default)
+*/
+
+/** @help switches;-makeresume Description
+Write a resume file on timeout or being killed.
 */
 
 /** @help switches;-split Description
@@ -366,6 +382,8 @@ The new input files can be run without any special flags.
 This flag is intended to be used with the -timelimit, -sollimit, -nodelimit
 ,-searchlimit or -cpulimit flags. Please note that changing other flags between
 runs (such as -varorder) may have unintended consequences.
+
+Implies -makeresume.
 */
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -398,7 +416,7 @@ void worker()
 }
 
 template<typename Con>
-void munge_container(Con& con, int type)
+void munge_container(Con& con, SysInt type)
 {
   switch(type)
   {
@@ -409,7 +427,7 @@ void munge_container(Con& con, int type)
     case 2:
     {
       Con con2;
-      int size = con.size();
+      SysInt size = con.size();
       if(size%2==1)
       {
         size--;
@@ -419,7 +437,7 @@ void munge_container(Con& con, int type)
       else
         size-=2;
 
-      for(int i = size/2; i >= 0; --i)
+      for(SysInt i = size/2; i >= 0; --i)
       {
         con2.push_back(con[i]);
         con2.push_back(con[con.size() - i - 1]);
@@ -460,7 +478,7 @@ try {
     return EXIT_SUCCESS;
   }
 
-  if(!strcmp(argv[1], "help")) {
+  if(argv[1] == string("help") || argv[1] == string("--help") || argv[1] == string("-help") || argv[1] == string("-h")) {
     std::string sect("");
     if(argc != 2) {
       for(size_t i = 2; i < argc - 1; i++)
@@ -496,7 +514,7 @@ try {
     cout << "# Mailing list at: https://mailman.cs.st-andrews.ac.uk/mailman/listinfo/mug" << endl;
     cout << "# Input filename: " << getOptions(stateObj).instance_name << endl;
     cout << "# Command line: " ;
-    for (int i=0; i < argc; ++i) { cout << argv[i] << " " ; }
+    for (SysInt i=0; i < argc; ++i) { cout << argv[i] << " " ; }
     cout << endl;
   }
 
@@ -529,6 +547,8 @@ try {
       
       // Do the minimal amount of setting up to create the constraint objects.
       getState(stateObj).setTupleListContainer(instance.tupleListContainer);
+      getState(stateObj).setShortTupleListContainer(instance.shortTupleListContainer);
+      
       BuildCon::build_variables(stateObj, instance.vars);
       
       // Create Constraints

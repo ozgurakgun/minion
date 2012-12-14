@@ -26,6 +26,8 @@
 
 #include "StateObj_forward.h"
 
+#include "memory_management/GenericBacktracker.h"
+
 // Some advanced definitions, we don't actually need to know anything about these
 // types for SearchState, simply that they exist.
 class AbstractConstraint;
@@ -54,10 +56,6 @@ class SearchState
   
   vector<set<AbstractConstraint*> > constraints_to_propagate;
   
-#ifdef DYNAMICTRIGGERS
-  vector<AbstractConstraint*> dynamic_constraints;
-#endif
-  
   long long int solutions;
   
   bool dynamic_triggers_used;
@@ -71,20 +69,26 @@ class SearchState
   
   TimerClass oldtimer;
   
-  shared_ptr<TupleListContainer> tupleListContainer;
+  minion_shared_ptr<TupleListContainer> tupleListContainer;
+  minion_shared_ptr<ShortTupleListContainer> shortTupleListContainer;
 
   bool is_locked;
   
   volatile bool alarm_trigger;
   
   volatile bool ctrl_c_pressed;
-    
+  
+  GenericBacktracker generic_backtracker;
 public:
 
   std::string storedSolution;
   
   vector<vector<AnyVarRef> >& getPrintMatrix()
   { return print_matrix; }
+  
+  GenericBacktracker& getGenericBacktracker() {
+      return generic_backtracker;
+  }
   
   ProbSpec::CSPInstance* getInstance() { return csp_instance; }
    
@@ -143,9 +147,13 @@ public:
   jmp_buf* getJmpBufPtr() { return &g_env; }
   
   TupleListContainer* getTupleListContainer() { return &*tupleListContainer; }
+  ShortTupleListContainer* getShortTupleListContainer() { return &*shortTupleListContainer; }
   
-  void setTupleListContainer(shared_ptr<TupleListContainer> _tupleList) 
+  void setTupleListContainer(minion_shared_ptr<TupleListContainer> _tupleList) 
   { tupleListContainer = _tupleList; }
+
+  void setShortTupleListContainer(minion_shared_ptr<ShortTupleListContainer> _tupleList) 
+  { shortTupleListContainer = _tupleList; }
                           
   SearchState(StateObj* _stateObj) : stateObj(_stateObj), nodes(0), optimise_var(NULL), 
     raw_optimise_var(NULL),
@@ -169,7 +177,7 @@ public:
   void clearAlarm()
   { alarm_trigger = false; }  
   
-  void setupAlarm(bool alarm_active, int timeout, bool CPU_time)
+  void setupAlarm(bool alarm_active, SysInt timeout, bool CPU_time)
   { activate_trigger(&alarm_trigger, alarm_active, timeout, CPU_time);}
   
   bool isCtrlcPressed()
@@ -260,13 +268,19 @@ public:
   bool split;
 
   // The format of output used (-1 for default)
-  int outputType;
+  SysInt outputType;
   
+  /// Output a compressed file
+  string outputCompressed;
+  
+  /// output a compressed list of domains
+  bool outputCompressedDomains;
+
   /// Disable the use of linux timers
   bool noTimers;
   
-  int Xvarmunge;
-  int Xsymmunge;
+  SysInt Xvarmunge;
+  SysInt Xsymmunge;
 
 
 
@@ -284,8 +298,8 @@ public:
     time_limit_is_CPU_time(false),
     randomise_valvarorder(false), parser_verbose(false), 
     redump(false), graph(false), instance_stats(false), 
-    noresumefile(false), split(false),
-    outputType(-1), noTimers(false),
+    noresumefile(true), split(false),
+    outputType(-1), outputCompressedDomains(false), noTimers(false),
     Xvarmunge(-1), Xsymmunge(-1)
   {}
   

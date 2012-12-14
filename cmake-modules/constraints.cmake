@@ -1,4 +1,4 @@
-set(ALL_CONSTRAINTS "element" "element_one" "watchelement" "watchelement_one"
+set(ALL_CONSTRAINTS "element" "element_one" "watchelement" "watchelement_one" "watchelement_undefzero"
                     "gacelement-deprecated" "alldiff" "gacalldiff" "gcc" "gccweak" "watchneq"
                     "diseq" "__reify_diseq" "eq" "__reify_eq" "minuseq" "__reify_minuseq"
                     "abs" "ineq" "watchless" "lexleq[rv]" "lexleq[quick]" "lexleq" "lexless" "lexless[quick]"
@@ -6,12 +6,13 @@ set(ALL_CONSTRAINTS "element" "element_one" "watchelement" "watchelement_one"
                     "occurrenceleq" "occurrencegeq" "product" "difference"
                     "weightedsumleq" "weightedsumgeq" "sumgeq" "sumleq" "watchsumgeq"
                     "watchsumleq" "table" "negativetable" "watchvecneq" "staticvecneq" "litsumgeq"
-                    "pow" "div" "modulo" "gadget" "disabled-or"
+                    "pow" "div" "div_undefzero" "modulo" "modulo_undefzero" "gadget" "disabled-or"
                     "hamming" "not-hamming" "watched-or" "watched-and"
                     "w-inset" "w-notinset" "w-inrange" "w-notinrange" "w-literal"
-                    "w-notliteral" "reify" "reifyimply-quick" "reifyimply" "reifyimply-old"
-                    "reifyimply-new" "true" "false" "check[gsa]" "check[assign]"
+                    "w-notliteral" "reify" "reifyimply-quick" "reifyimply"
+                    "true" "false" "check[gsa]" "check[assign]"
                     "watchvecexists_less" "lighttable"
+                    "haggisgac" "haggisgac-stable" "eggshell" "gaceq" "gacschema"
                     )
 
 set(GEN_FILES_DIR "${PROJECT_SOURCE_DIR}/minion/build_constraints")
@@ -31,6 +32,9 @@ set(NAME_READ_element_one "read_list" "read_var" "read_var")
 
 set(NAME_ID_watchelement "CT_WATCHED_ELEMENT")
 set(NAME_READ_watchelement "read_list" "read_var" "read_var")
+
+set(NAME_ID_watchelement_undefzero "CT_WATCHED_ELEMENT_UNDEFZERO")
+set(NAME_READ_watchelement_undefzero "read_list" "read_var" "read_var")
 
 set(NAME_ID_watchelement_one "CT_WATCHED_ELEMENT_ONE")
 set(NAME_READ_watchelement_one "read_list" "read_var" "read_var")
@@ -137,11 +141,23 @@ set(NAME_READ_watchsumleq "read_list" "read_constant")
 set(NAME_ID_table "CT_WATCHED_TABLE")
 set(NAME_READ_table "read_list" "read_tuples")
 
+set(NAME_ID_haggisgac "CT_HAGGISGAC")
+set(NAME_READ_haggisgac "read_list" "read_short_tuples")
+
+set(NAME_ID_haggisgac-stable "CT_HAGGISGAC_STABLE")
+set(NAME_READ_haggisgac-stable "read_list" "read_short_tuples")
+
+set(NAME_ID_eggshell "CT_EGGSHELL")
+set(NAME_READ_eggshell "read_list" "read_short_tuples")
+
 set(NAME_ID_negativetable "CT_WATCHED_NEGATIVE_TABLE")
 set(NAME_READ_negativetable "read_list" "read_tuples")
 
 set(NAME_ID_lighttable "CT_LIGHTTABLE")
 set(NAME_READ_lighttable "read_list" "read_tuples")
+
+set(NAME_ID_gacschema "CT_GACSCHEMA")
+set(NAME_READ_gacschema "read_list" "read_tuples")
 
 set(NAME_ID_watchvecneq "CT_WATCHED_VECNEQ")
 set(NAME_READ_watchvecneq "read_list" "read_list")
@@ -158,8 +174,15 @@ set(NAME_READ_pow "read_2_vars" "read_var")
 set(NAME_ID_div "CT_DIV")
 set(NAME_READ_div "read_2_vars" "read_var")
 
+set(NAME_ID_div_undefzero "CT_DIV_UNDEFZERO")
+set(NAME_READ_div_undefzero "read_2_vars" "read_var")
+
 set(NAME_ID_modulo "CT_MODULO")
 set(NAME_READ_modulo "read_2_vars" "read_var")
+
+set(NAME_ID_modulo_undefzero "CT_MODULO_UNDEFZERO")
+set(NAME_READ_modulo_undefzero "read_2_vars" "read_var")
+
 
 set(NAME_ID_gadget "CT_GADGET")
 set(NAME_READ_gadget "read_list")
@@ -212,25 +235,18 @@ set(NAME_READ_check[assign] "read_constraint")
 set(NAME_ID_reifyimply "CT_REIFYIMPLY")
 set(NAME_READ_reifyimply "read_constraint" "read_var")
 
-set(NAME_ID_reifyimply-old "CT_REIFYIMPLY_OLD")
-set(NAME_READ_reifyimply-old "read_constraint" "read_var")
-
-set(NAME_ID_reifyimply-new "CT_REIFYIMPLY_NEW")
-set(NAME_READ_reifyimply-new "read_constraint" "read_var")
-
 set(NAME_ID_true "CT_TRUE")
 set(NAME_READ_true )
 
 set(NAME_ID_false "CT_FALSE")
 set(NAME_READ_false )
 
+set(NAME_ID_gaceq "CT_GACEQ")
+set(NAME_READ_gaceq "read_var" "read_var")
+
 macro(select_constraints)
     message(STATUS "Generating constraints:")
-    file(GLOB CONSTRAINT_SRCS "${GEN_FILES_DIR}/CT*.cpp")
-    list(LENGTH CONSTRAINT_SRCS CONSTRAINT_SRCS_NUM)
-    if(${CONSTRAINT_SRCS_NUM} GREATER 0)
-        file(REMOVE ${CONSTRAINT_SRCS})
-    endif()
+ 
     file(REMOVE ${CONSTRAINT_DEFS})
     file(REMOVE ${CONSTRAINT_ENUM})
     file(REMOVE ${BUILD_START})
@@ -278,10 +294,7 @@ macro(select_constraints)
             file(APPEND ${BUILD_START} "AbstractConstraint* build_constraint_${NAME_ID_${constraint}}(StateObj* stateObj, ConstraintBlob&);\n")
             # BuildStaticStart.h
             file(APPEND ${BUILD_STATIC_START} "case ${NAME_ID_${constraint}}: return build_constraint_${NAME_ID_${constraint}}(stateObj, b);\n")
-            # CT_*.cpp
-            configure_file("${GEN_FILES_DIR}/${NAME_ID_${constraint}}.tmpl"
-                           "${GEN_FILES_DIR}/${NAME_ID_${constraint}}.cpp"
-                           COPYONLY)
+
         endif()
     endforeach()
     message(STATUS "${msg}")
