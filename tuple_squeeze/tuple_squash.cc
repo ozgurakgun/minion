@@ -265,20 +265,23 @@ void print(std::string name, std::string type, const std::set<Vint>& tuples)
 {
     std::cout << "# " << name << " " << type << "\n";
     std::cout << "# " << tuples.size() << "\n";
-    std::cout << "**TUPLELIST**\n";
-    Vint output;
+    std::cout << "**SHORTTUPLELIST**\n";
+    std::cout << "constraint " << 1 << " " << tuples.size() << "\n";
+
     for(auto tuple : tuples)
     {
+        std::cout << "[";
+        bool first = true;
         for(auto i : Range(tuple.size()))
         {
             if(tuple[i] != free_value)
-                push_back(output, i, tuple[i]);
+            {
+                if(first) first=false; else std::cout << ", ";
+                std::cout << "(" << i << "," << tuple[i] << ")";
+            }
         }
-        push_back(output, -1, -1);
+        std::cout << "]\n";
     }
-    std::cout << "constraint " << 1 << " " << output.size() << "\n";
-    for(auto i : output)
-        std::cout << i << " ";
     std::cout << "\n";
 }
 
