@@ -266,7 +266,7 @@ void print(std::string name, std::string type, const std::set<Vint>& tuples)
     std::cout << "# " << name << " " << type << "\n";
     std::cout << "# " << tuples.size() << "\n";
     std::cout << "**SHORTTUPLELIST**\n";
-    std::cout << "constraint " << 1 << " " << tuples.size() << "\n";
+    std::cout << "constraint " << " " << tuples.size() << "\n";
 
     for(auto tuple : tuples)
     {
