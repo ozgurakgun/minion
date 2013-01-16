@@ -248,6 +248,12 @@ std::set<Vint> make_brain_tuples()
             push_back(cpy, 0, 1);
             life.insert(cpy);
         }
+        else
+        {
+            auto cpy = outside;
+            push_back(cpy, 0, 0);
+            life.insert(cpy);
+        }
 
         {
             auto cpy = outside;
