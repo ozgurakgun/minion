@@ -752,7 +752,8 @@ def gen_all_perms(permlist, perm, objects):
             objects2=objects[:i]+objects[i+1:]
             gen_all_perms(permlist, perm2, objects2)
 
-def generate_tree(ct_nogoods, domains_init, heuristic):
+def generate_tree(table, domains_init, heuristic, tablepositive=False):
+    global gac2001_goods, gac2001_indices, gac2001_domains_init, TreeNodes
     bestcost=1000000000
     besttree=[]
     
@@ -761,15 +762,33 @@ def generate_tree(ct_nogoods, domains_init, heuristic):
     alltups=[]
     crossprod(domains_init, [], alltups)
     
-    global gac2001_goods, gac2001_indices, gac2001_domains_init, TreeNodes
+    gac2001_goods=[ [ [] for a in dom ] for dom in domains_init ]  # make a list for each ltieral. 
     
-    gac2001_goods=[ [ [] for a in dom ] for dom in domains_init ]
-    for t in alltups:
-        if binary_search(ct_nogoods, t)==-1:
+    if not tablepositive:
+        # we were given a negative table so invert it for gac2001.
+        ct_nogoods=table
+        
+        for t in alltups:
+            if binary_search(ct_nogoods, t)==-1:
+                for var in xrange(len(t)):
+                    val = t[var]
+                    validx=domains_init[var].index(val)
+                    gac2001_goods[var][validx].append(t)
+    
+    else:
+        # given a positive table. Invert it for ct_nogoods.
+        ct_nogoods=[]
+        for t in alltups:
+            if binary_search(table, t)==-1:
+                ct_nogoods.append(t)
+        
+        # Populate supports arrays for gac2001
+        for t in table:
             for var in xrange(len(t)):
                 val = t[var]
                 validx=domains_init[var].index(val)
                 gac2001_goods[var][validx].append(t)
+        
     
     # counter for each domain element
     gac2001_indices=[ [0 for a in dom ] for dom in domains_init  ]
@@ -781,7 +800,7 @@ def generate_tree(ct_nogoods, domains_init, heuristic):
         permlist.append(varvals)
     else:
         gen_all_perms(permlist, [], varvals)
-   
+    
     for perm in permlist:
         tree=dict()
         tree['nodelabel']=getnodenum()
@@ -1416,6 +1435,36 @@ def lifeImmigration():
     
     t=generate_tree(table, domains_init, True)
     choose_print_tree(t)
+
+def readTable():
+    # This one reads the table from standard input. 
+    global Group
+    
+    c=sys.stdin.readlines();
+    c=" ".join(c)
+    c=c.strip()
+    
+    c=eval(c)
+    
+    domains_init=c['doms']
+    table=c['table']
+    tabletype=c['type']
+    
+    if tabletype=='pos':
+        tablepositive=True
+    elif tabletype=='neg':
+        tablepositive=False
+    else:
+        print("// Table type should be pos or neg.")
+        sys.exit(-1)
+    
+    # Do magic Chris stuff here to get the symmetry group.
+    
+    
+    t=generate_tree(table, domains_init, True, tablepositive)
+    choose_print_tree(t)
+    
+    
 
 
 # A tree node is a dictionary containing 'var': 0,1,2.... 'val', 'left', 'right', 'pruning'
