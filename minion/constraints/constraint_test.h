@@ -261,7 +261,7 @@ struct TestConstraint : public AbstractConstraint
   
 #endif
 
-  virtual void propagate(int lit, DomainDelta)
+  virtual void propagate(DomainInt lit, DomainDelta)
   {
    full_propagate();
   }
