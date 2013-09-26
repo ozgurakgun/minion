@@ -9,8 +9,6 @@ def groupFromTuples(tuples):
         edge.append(get_lit(i, t[i]))
       edges.append(edge)
 
-    CAJ_GraphGenerators
-
 def VariablePermSwap(var1, var2):
     L = range(1, get_total_litcount() + 1)
     assert(get_domain(var1) == get_domain(var2))

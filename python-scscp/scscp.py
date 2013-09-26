@@ -97,6 +97,7 @@ def read_reply(socket) :
     while(line != "<?scscp end ?>") :
         outline += line + '\n';
         line = str(file.readline()).strip()
+    print("reply :" + outline)
     return outline
 
 def make_connection():
@@ -109,6 +110,7 @@ def make_connection():
 
 def execute(socket, proc):
     command = '\n<?scscp start ?>\n' + et.tostring(proc) + '\n<?scscp end ?>\n'
+    print(et.tostring(proc))
     socket.sendall(command)
     return et.fromstring(read_reply(socket))
 

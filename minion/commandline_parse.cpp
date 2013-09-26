@@ -135,7 +135,6 @@ This is in general not useful for users, but is provided for other systems.
 */
     else if(command == string("-outputCompressedDomains"))
     {
-      INCREMENT_i(-outputCompressedDomains);
       getOptions(stateObj).outputCompressedDomains = true;
     }
 /** @help switches;-outputCompressed Description

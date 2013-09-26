@@ -129,13 +129,19 @@ void just_domain_dump(StateObj* stateObj, ostream& os)
         }
         else
         {
-            bool first = false;
-            for(DomainInt val = vars[i].getMin(); val < vars[i].getMax(); ++val)
+            bool first = true;
+
+            for(DomainInt val = vars[i].getMin(); val <= vars[i].getMax(); ++val)
             {
                 if(vars[i].inDomain(val))
                 {
                     if(first) first=false; else os << ",";
-                    os << val;
+
+                    DomainInt range_start = val;
+                    ++val;
+                    while(vars[i].inDomain(val))
+                        ++val;
+                    os << range_start << ".." << (val-1);
                 }
             }
         }
