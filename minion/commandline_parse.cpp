@@ -165,7 +165,7 @@ To compress a file 'infile.minion' to a file 'smaller.minion'
       INCREMENT_i(-outputType);
       getOptions(stateObj).outputType = atoi(argv[i]);
     }
-    /** @help switches;-printsols Description
+/** @help switches;-printsols Description
 Print solutions (default).
 */
     else if(command == string("-printsols"))
@@ -182,7 +182,7 @@ Print only solutions and a summary at the end.
 */
     else if(command == string("-printsolsonly"))
     { getOptions(stateObj).silent = true; }
-  /** @help switches;-printonlyoptimal Description
+/** @help switches;-printonlyoptimal Description
 In optimisation problems, only print the optimal value, and
 not intermediate values.
 */
@@ -203,7 +203,7 @@ help switches -quiet
 */
     else if(command == string("-verbose"))
     { getOptions(stateObj).parser_verbose = true; }
-  /** @help switches;-prop-node Description
+/** @help switches;-prop-node Description
 Allows the user to choose the level of consistency to be enforced
 during search.
 
@@ -362,7 +362,6 @@ To stop search after N nodes, do
 /** @help switches;-nodelimit References
 help switches -cpulimit
 help switches -timelimit
-help switches -searchlimit
 help switches -sollimit
 */
     else if(command == string("-nodelimit"))
@@ -389,7 +388,6 @@ To stop search after N solutions have been found, do
 /** @help switches;-sollimit References
 help switches -cpulimit
 help switches -nodelimit
-help switches -searchlimit
 help switches -timelimit
 */
     else if(command == string("-sollimit"))
@@ -416,7 +414,6 @@ To stop search after N seconds (real time), do
 /** @help switches;-timelimit References
 help switches -cpulimit
 help switches -nodelimit
-help switches -searchlimit
 help switches -sollimit
 */
     else if(command == string("-timelimit"))
@@ -424,7 +421,7 @@ help switches -sollimit
       INCREMENT_i(-timelimit);
       if(getOptions(stateObj).timeout_active)
       {
-        cout << "Only one '-cpulimit', '-searchlimit' or '-timelimit' per instance" << endl;
+        cout << "Only one '-cpulimit' or '-timelimit' per instance" << endl;
         exit(1);
       }
       getOptions(stateObj).timeout_active = true;
@@ -456,7 +453,7 @@ help switches -sollimit
       INCREMENT_i(-cpulimit);
       if(getOptions(stateObj).timeout_active)
       {
-        cout << "Only one '-cpulimit', '-searchlimit' or '-timelimit' per instance" << endl;
+        cout << "Only one '-cpulimit', or '-timelimit' per instance" << endl;
         exit(1);
       }
       getOptions(stateObj).timeout_active = true;
@@ -622,7 +619,7 @@ splitting.
 The new input files can be run without any special flags.
 
 This flag is intended to be used with the -timelimit, -sollimit, -nodelimit
-,-searchlimit or -cpulimit flags. Please note that changing other flags between
+or -cpulimit flags. Please note that changing other flags between
 runs (such as -varorder) may have unintended consequences.
 
 Implies -makeresume.
