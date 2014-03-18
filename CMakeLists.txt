@@ -334,7 +334,6 @@ endif()
 
 
 option(COVERAGE "" OFF)
-option(SKYESTATICFIX "" OFF)
 if(COVERAGE)
   set(CFLAGS "${CFLAGS} -ftest-coverage -fprofile-arcs")
   set(BINARY "${BINARY}-coverage")
@@ -358,9 +357,6 @@ else()
         if(MAC_MDYNAMIC)
             set(CFLAGS "${CFLAGS} -mdynamic-no-pic")
         endif()
-    endif()
-    if (NOT SKYESTATICFIX)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s")
     endif()
 endif()
 
