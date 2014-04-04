@@ -124,11 +124,19 @@ void SolveCSP(StateObj* stateObj, CSPInstance& instance, SearchMethod args)
     getState(stateObj).getOldTimer().maybePrintTimestepStore(cout, Output_2, "Build Search Ordering Time: ", "SearchOrderTime", getTableOut(), !getOptions(stateObj).silent);
     try {
 
+      try {
       PropogateCSP(stateObj, args.preprocess, preprocess_vars, !getOptions(stateObj).silent);
+      }
+      catch(EndOfSearch eos)
+      {
+          if(getOptions(stateObj).outputCompressed != "" || getOptions(stateObj).outputCompressedDomains)
+              dump_solver(stateObj, getOptions(stateObj).outputCompressed, getOptions(stateObj).outputCompressedDomains);
+          throw;
+      }
+      
       getState(stateObj).getOldTimer().maybePrintTimestepStore(cout, Output_2, "Preprocess Time: ", "PreprocessTime", getTableOut(), !getOptions(stateObj).silent);
       getState(stateObj).getOldTimer().maybePrintTimestepStore(cout, Output_1, "First node time: ", "FirstNodeTime", getTableOut(), !getOptions(stateObj).silent);
-      
-
+   
       if(getOptions(stateObj).outputCompressed != "" || getOptions(stateObj).outputCompressedDomains)
         dump_solver(stateObj, getOptions(stateObj).outputCompressed, getOptions(stateObj).outputCompressedDomains);
 

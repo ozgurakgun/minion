@@ -51,7 +51,6 @@ inline bool check_sac_timeout(StateObj* stateObj)
         {
             getOptions(stateObj).printLine("Time out in preprocessing.");
             getTableOut().set("TimeOut", 1);
-            getState(stateObj).setFailed(true);
             return true;
         }
     }
