@@ -121,7 +121,9 @@ list(APPEND SRCS ${PROJECT_SOURCE_DIR}/minion/BuildVariables.cpp
                  ${PROJECT_SOURCE_DIR}/minion/system/sha1.cpp
                  ${PROJECT_SOURCE_DIR}/minion/help/help.cpp
                  ${PROJECT_SOURCE_DIR}/minion/inputfile_parse/inputfile_parse.cpp
-                 ${PROJECT_SOURCE_DIR}/minion/dump_state.cpp)
+                 ${PROJECT_SOURCE_DIR}/minion/dump_state.cpp
+                 ${PROJECT_SOURCE_DIR}/minion/minlib/gason/gason.cpp
+)
 
 set(BINARY minion)
 

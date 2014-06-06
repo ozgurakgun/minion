@@ -21,7 +21,7 @@
 
 #include "MinionInputReader.hpp"
 #include "MinionThreeInputReader.hpp"
-
+#include "MinionJSONInputReader.hpp"
 #include <fstream>
 #include <iostream>
 
@@ -37,6 +37,8 @@ void readInputFromFiles(ProbSpec::CSPInstance& instance, vector<string> fnames, 
 {
   MinionThreeInputReader<ConcreteFileReader<CheapStream> > readerThree(parser_verbose, mltts);
   MinionInputReader<ConcreteFileReader<CheapStream> > reader(parser_verbose);
+  MinionJSONInputReader readerJSON(parser_verbose, mltts);
+
   bool needs_finalise_three = false;
   for(vector<string>::const_iterator fname = fnames.begin(); fname != fnames.end(); fname++) {
     const char* filename = fname->c_str();
@@ -60,6 +62,7 @@ void readInputFromFiles(ProbSpec::CSPInstance& instance, vector<string> fnames, 
       file = &cin;
 
     CheapStream cs(*file);
+
     ConcreteFileReader<CheapStream> infile(cs, filename);
 
     if (infile.eof()) {
@@ -68,32 +71,46 @@ void readInputFromFiles(ProbSpec::CSPInstance& instance, vector<string> fnames, 
 
     try
     {
-      string test_name = infile.get_string();
-      if(test_name != "MINION")
-        INPUT_ERROR("All Minion input files must begin 'MINION'");
-
-      SysInt inputFileVersionNumber = infile.read_int();
-
-      if(inputFileVersionNumber > 3)
-        INPUT_ERROR("This version of Minion only supports formats up to 3");
-
-      // C++0x comment : Need MOVE (which is std::move) here to activate r-value references.
-      // Normally we wouldn't, but here the compiler can't figure out it can "steal" instance.
-      if(inputFileVersionNumber == 3)
+      if(cs.peek() == '{' || cs.peek() == '/')
       {
-        readerThree.instance = &instance;
-        ReadCSP(readerThree, &infile);
-        //instance = std::move(readerThree.instance);
-        needs_finalise_three = true;
+          std::string stripped = removeComments(cs.get_raw_string());
+          JsonValue value;
+          JsonAllocator allocator;
+          char* endptr = 0;
+          JsonParseStatus status = jsonParse(&(stripped[0]), &endptr, &value, allocator);
+          if(status != JSON_PARSE_OK)
+          { gason_print_error(filename, status, endptr, &(stripped[0]), stripped.size()); }
+          readerJSON.instance = &instance;
+          readerJSON.read(value);
+          getTableOut().set(string("Filename"), filename);
+          needs_finalise_three = true;
       }
       else
       {
-        reader.instance = &instance;
-        ReadCSP(reader, &infile);
-        //instance = std::move(reader.instance);
-        // fix variable names in case we want to write a resume file (which is
-        // in Minion 3 format)
-        instance.add_variable_names();
+        string test_name = infile.get_string();
+        if(test_name != "MINION")
+          INPUT_ERROR("All Minion input files must begin 'MINION'");
+
+        SysInt inputFileVersionNumber = infile.read_int();
+
+        if(inputFileVersionNumber > 3)
+          INPUT_ERROR("This version of Minion only supports formats up to 3");
+
+        if(inputFileVersionNumber == 3)
+        {
+          readerThree.instance = &instance;
+          ReadCSP(readerThree, &infile);
+          //instance = std::move(readerThree.instance);
+          needs_finalise_three = true;
+        }
+        else
+        {
+          reader.instance = &instance;
+          ReadCSP(reader, &infile);
+          // fix variable names in case we want to write a resume file (which is
+          // in Minion 3 format)
+          instance.add_variable_names();
+        }
       }
     }
     catch(parse_exception s)

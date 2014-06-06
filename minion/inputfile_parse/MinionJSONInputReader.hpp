@@ -17,18 +17,16 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-// Plan here is to generate an instance of a problem (or whatever you have)
-// and return that.
-
 
 #include <string>
 
 #include "MinionInputReader.h"
+#include "../minlib/gason/gason.h"
 
 #define MAYBE_PARSER_INFO(X) { if(this->parser_verbose) { this->parser_info(X); } }
 
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::parser_info(string s)
+
+void MinionJSONInputReader::parser_info(string s)
 {
   if(parser_verbose)
     cout << s << endl;
@@ -37,11 +35,8 @@ void MinionThreeInputReader<FileReader>::parser_info(string s)
 //This function is called to finalise reading an instance that may have
 //consisted of two input files. If the first input file was a "MINION 1" then
 //this function should be safe for it also.
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::finalise() {
-  if(isGadgetReader() && instance->constructionSite.empty())
-    throw parse_exception("Gadgets need a construction site!");
 
+void MinionJSONInputReader::finalise() {
   // Fill in any missing defaults
   if(instance->search_order.empty())
   {
@@ -103,89 +98,83 @@ void MinionThreeInputReader<FileReader>::finalise() {
      throw parse_exception("SYMORDER must contain every variable");
 }
 
+void MinionJSONInputReader::check_tag(JsonValue json, JsonTag tag, std::string place)
+{
+    if(json.getTag() != tag)
+    {
+        std::string error_str = "Expected a " + std::string(jsonTagToString(tag)) +
+        " but found a " + jsonTagToString(json.getTag()) + " when " + place;
+        throw parse_exception(error_str);
+    }
+}
+
+void MinionJSONInputReader::check_keys(JsonValue json,
+                                       const std::set<std::string>& keys)
+{
+    for(auto k : json)
+    {
+        if(keys.count(k->key) == 0)
+        {
+            throw parse_exception("Do not understand '" +std::string(k->key) + "'");
+        }
+    }
+}
+
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // read
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::read(FileReader* infile) {
-  string s = infile->get_asciistring();
-  MAYBE_PARSER_INFO("Read: '" + s + "'");
 
-  string eof, wrong_eof;
+void MinionJSONInputReader::read(JsonValue infile) {
 
-  if(isGadgetReader())
+  check_tag(infile, JSON_TAG_OBJECT, "parsing top level");
+  for(auto i : infile)
   {
-    eof = "**GADGET_END**";
-    wrong_eof = "**EOF**";
-  }
-  else
-  {
-    eof = "**EOF**";
-    wrong_eof = "**GADGET_END**";
-  }
-
-  while(s != eof)
-  {
-    if(s == "**VARIABLES**")
-      readVars(infile);
-    else if(s == "**SEARCH**")
-      readSearch(infile);
-    else if(s == "**TUPLELIST**")
-      readTuples(infile);
-    else if(s == "**SHORTTUPLELIST**")
-      readShortTuples(infile);
-    else if(s =="**CONSTRAINTS**")
-    {
-      while(infile->peek_char() != '*')
-        instance->constraints.push_back(readConstraint(infile, false));
-    }
-    else if(s == "**GADGET**")
-      { readGadget(infile); }
-    else if(s == wrong_eof)
-    {
-      throw parse_exception("Section terminated with " + wrong_eof +
-        " instead of " + eof);
-    }
-    else
-      throw parse_exception("Don't understand '" + s + "' as a section header");
-    s = infile->get_asciistring();
-    MAYBE_PARSER_INFO("Read: '" + s + "'");
-  }
-
+      if(i->key == std::string("variables"))
+          readVars(i->value);
+      else if(i->key == std::string("search"))
+          readSearch(i->value);
+      else if(i->key == std::string("tuplelist"))
+          readTuples(i->value);
+      else if(i->key == std::string("shorttuplelist"))
+          readShortTuples(i->value);
+      else if(i->key == std::string("constraints"))
+      {
+          check_tag(i->value, JSON_TAG_ARRAY, "parsing constraints");
+          for(auto c : i->value)
+          {
+              instance->constraints.push_back(readConstraint(c->value, false));
+          }
+      }
+      else
+        throw parse_exception("Don't understand '" + std::string(i->key) + "' as a section header");
+      }
   MAYBE_PARSER_INFO("Reached end of CSP");
 }
-
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::readGadget(FileReader* infile)
-{
-  MAYBE_PARSER_INFO("Entering gadget parsing");
-  if(isGadgetReader())
-    throw parse_exception("Gadgets can't have gadgets!");
-
-  infile->check_string("NAME");
-  string name = infile->get_string();
-  MAYBE_PARSER_INFO("Gadget name:" + name);
-
-  MinionThreeInputReader gadget(parser_verbose, map_long_short_mode);
-  CSPInstance* new_instance = new CSPInstance;
-  gadget.instance = new_instance;
-  gadget.setGadgetReader();
-  gadget.read(infile);
-
-  // Take the CSPInstance out of the Minion3InputReader, and make a copy of it.
-  instance->addGadgetSymbol(name, shared_ptr<CSPInstance>(new_instance));
-  MAYBE_PARSER_INFO("Exiting gadget parsing");
-}
-
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // readConstraint
 // Recognise constraint by its name, read past name and leading '('
 // Return false if eof or unknown ct. Else true.
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-template<typename FileReader>
-ConstraintBlob MinionThreeInputReader<FileReader>::readConstraint(FileReader* infile, BOOL reified) {
-  string id = infile->getline('(');
+
+ConstraintBlob MinionJSONInputReader::readConstraint(JsonValue infile, BOOL reified) {
+  check_tag(infile, JSON_TAG_OBJECT, "reading a constraint");
+  check_keys(infile, std::set<std::string>{"name","args"});
+  string id;
+
+  for(auto i : infile)
+  {
+    if(i->key == std::string("name"))
+    {
+      check_tag(i->value, JSON_TAG_STRING, "reading a constraint name");
+      id = i->value.toString();
+    }
+  }
+
+  if(id.empty())
+  {
+    throw parse_exception("Constraint has no name");
+  }
 
   SysInt constraint_num = -1;
   for(SysInt i = 0; i < num_of_constraints; ++i)
@@ -198,46 +187,46 @@ ConstraintBlob MinionThreeInputReader<FileReader>::readConstraint(FileReader* in
   }
 
   if(constraint_num == -1)
-  {
-    if (infile->eof())
-    {
-      throw parse_exception(string("Bad Constraint Name or reached end of file: '") + id + "'");
-    }
-    else
-      { throw parse_exception(string("Unknown Constraint: '") + id + string("'")); }
-  }
+  { throw parse_exception(string("Unknown Constraint: '") + id + string("'")); }
   ConstraintDef* constraint = constraint_list + constraint_num;
+
+  JsonValue res;
+
+  for(auto i : infile)
+  {
+    if(i->key == std::string("args"))
+      res = i->value;
+  }
+
+  if(res.getTag() == JSON_TAG_NULL)
+  { throw parse_exception("Constraint has no args"); }
+
 
   switch(constraint->type)
   {
 #ifdef CT_WATCHED_OR_ABC
     case CT_WATCHED_OR:
-    return readConstraintOr(infile, get_constraint(CT_WATCHED_OR));
-    break;
-#endif
-
-#ifdef CT_GADGET_ABC
-    case CT_GADGET:
-    return readConstraintGadget(infile);
+    return readConstraintOr(res, get_constraint(CT_WATCHED_OR));
     break;
 #endif
 
     default:
     if(constraint->number_of_params == 2 &&
          (constraint->read_types[1] == read_tuples || constraint->read_types[1] == read_short_tuples) )
-      return readConstraintTable(infile, constraint);
+      return readConstraintTable(res, constraint);
     else
-      return readGeneralConstraint(infile, constraint);
+      return readGeneralConstraint(res, constraint);
   }
   // g++ seems to think compilation can get here. I disagree, but putting a catch doesn't hurt.
   throw parse_exception("Fatal error in parsing constraints");
 }
 
-template<typename FileReader>
-ConstraintBlob MinionThreeInputReader<FileReader>::readConstraintTable(FileReader* infile, ConstraintDef* def)
-{
-  ConstraintBlob con(def);
 
+ConstraintBlob MinionJSONInputReader::readConstraintTable(JsonValue infile, ConstraintDef* def)
+{
+  assert(0);
+  ConstraintBlob con(def);
+/*
   con.vars.push_back(readLiteralVector(infile));
   infile->check_sym(',');
 
@@ -279,18 +268,21 @@ ConstraintBlob MinionThreeInputReader<FileReader>::readConstraintTable(FileReade
       else throw parse_exception("Not a valid list of short tuples for a constraint with no variables!");
     }
   }
-
+*/
   return con;
 }
 
-template<typename FileReader>
-ConstraintBlob MinionThreeInputReader<FileReader>::readGeneralConstraint(FileReader* infile, ConstraintDef* def)
+
+ConstraintBlob MinionJSONInputReader::readGeneralConstraint(JsonValue infile, ConstraintDef* def)
 {
+  assert(0);
   // This slightly strange code is to save copying the ConstraintBlob as much as possible.
   ConstraintBlob con(def);
+
   vector<vector<Var> >& varsblob = con.vars;
   vector<vector<DomainInt> >& constblob = con.constants;
 
+/*
   for(SysInt i = 0; i < def->number_of_params; ++i)
   {
     switch(def->read_types[i])
@@ -347,23 +339,26 @@ ConstraintBlob MinionThreeInputReader<FileReader>::readGeneralConstraint(FileRea
       infile->check_sym(',');
   }
   infile->check_sym(')');
-
+*/
   return con;
 }
 
-template<typename FileReader>
-ShortTupleList* MinionThreeInputReader<FileReader>::readConstraintShortTupleList(FileReader* infile)
-{
 
+ShortTupleList* MinionJSONInputReader::readConstraintShortTupleList(JsonValue infile)
+{
+  assert(0);
+  /*
   string name = infile->get_string();
   return instance->getShortTableSymbol(name);
+  */
 }
 
-template<typename FileReader>
-TupleList* MinionThreeInputReader<FileReader>::readConstraintTupleList(FileReader* infile)
-{
-  TupleList* tuplelist;
 
+TupleList* MinionJSONInputReader::readConstraintTupleList(JsonValue infile)
+{
+  assert(0);
+  TupleList* tuplelist;
+/*
   if(infile->peek_char() != '{')
   {
     string name = infile->get_string();
@@ -406,48 +401,21 @@ TupleList* MinionThreeInputReader<FileReader>::readConstraintTupleList(FileReade
     tuplelist = instance->tupleListContainer->getNewTupleList(tuples);
     instance->addUnnamedTableSymbol(tuplelist);
   }
-
+*/
   return tuplelist;
 }
-
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-// readConstraintGadget
-// table(<vectorOfVars>, {<tuple> [, <tuple>]})
-// Tuples represented as a vector of SysInt arrays.
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#ifdef CT_GADGET_ABC
-template<typename FileReader>
-ConstraintBlob MinionThreeInputReader<FileReader>::readConstraintGadget(FileReader* infile)
-{
-  MAYBE_PARSER_INFO( "Reading a gadget constraint" ) ;
-
-  vector<Var> vectorOfVars = readLiteralVector(infile) ;
-
-  infile->check_sym(',');
-
-  string s = infile->get_string();
-
-  MAYBE_PARSER_INFO( "Gadget name: '" + s + "'");
-  shared_ptr<CSPInstance> in_gadget = instance->getGadgetSymbol(s);
-  ConstraintBlob gadgetCon( get_constraint(CT_GADGET) , vectorOfVars);
-  gadgetCon.gadget = in_gadget;
-  infile->check_sym(',');
-  gadgetCon.gadget_prop_type = GetPropMethodFromString(infile->get_string());
-  infile->check_sym(')');
-  MAYBE_PARSER_INFO("End gadget reading");
-  return gadgetCon;
-}
-#endif
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 // readConstraintOr
 // or(<vectorOfVars>)
 // SAT clauses represented as literals and negated literals
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-template<typename FileReader>
-ConstraintBlob MinionThreeInputReader<FileReader>::readConstraintOr(FileReader* infile,
+
+ConstraintBlob MinionJSONInputReader::readConstraintOr(JsonValue infile,
   ConstraintDef* ct)
 {
+  assert(0);
+  /*
   MAYBE_PARSER_INFO("Reading a SAT clause");
   infile->check_sym('[');
   vector<DomainInt> negs;
@@ -471,156 +439,53 @@ ConstraintBlob MinionThreeInputReader<FileReader>::readConstraintOr(FileReader* 
   ConstraintBlob cb(ct, clause_vars);
   cb.negs = negs;
   return cb;
+  */
 }
+
 
 /// Reads an identifier which represents a single variable or constant.
-template<typename FileReader>
-Var MinionThreeInputReader<FileReader>::readIdentifier(FileReader* infile) {
-  char idChar = infile->peek_char();
 
-  if ((('0' <= idChar) && ('9' >= idChar)) || idChar == '-') {
-    DomainInt i = infile->read_num();
-    return Var(VAR_CONSTANT, i);
-  }
-  bool negVar = false;
-  // Check to see if this is a negated Boolean
-  if(infile->peek_char() == '!')
-  {
-    negVar = true;
-    infile->get_char();
-  }
+Var MinionJSONInputReader::readIdentifier(JsonValue infile) {
 
-  string name = infile->get_string();
-  Var var = instance->vars.getSymbol(name);
-  if(var.type() == VAR_MATRIX)
-  {
-    vector<DomainInt> params = readConstantVector(infile);
-    vector<DomainInt> max_index = instance->vars.getMatrixSymbol(name);
-    if(params.size() != max_index.size())
-      throw parse_exception("Can't index a " + tostring(max_index.size()) +
-      "-d matrix with " + tostring(params.size()) +
-      " indices.");
-    for(SysInt i = 0; i < params.size(); ++i)
+    switch(infile.getTag())
     {
-      if(params[i] < 0 || params[i] >= max_index[i])
-        throw parse_exception(tostring(i) + string("th index is out of bounds,") +
-        tostring(params[i]) + " is not between 0 and " +
-        tostring(max_index[i] - 1));
-    }
-    name += to_var_name(params);
-    var = instance->vars.getSymbol(name);
-  }
-
-  if(negVar)
-  {
-    if(var.type() != VAR_BOOL)
-    {  throw parse_exception("Only booleans can be negated!"); }
-    else
-      var.setType(VAR_NOTBOOL);
-  }
-
-  MAYBE_PARSER_INFO("Read variable '" + name + "', internally: " + tostring(var));
-  return var;
-}
-
-// This function reads an identifier which might be a single variable,
-// which includes a fully derefenced matrix, or might be a partially or
-// not-at-all dereferenced matrix. It could also just be a number!
-// The code shares a lot with readIdentifier, and at some point the two
-// should probably merge
-template<typename FileReader>
-vector<Var> MinionThreeInputReader<FileReader>::readPossibleMatrixIdentifier(FileReader* infile, bool mustBeMatrix) {
-  char idChar = infile->peek_char();
-
-  vector<Var> returnVec;
-
-  if ((('0' <= idChar) && ('9' >= idChar)) || idChar == '-') {
-    if(mustBeMatrix)
-      throw parse_exception("Must be matrix here, not constant");
-    DomainInt i = infile->read_num();
-    returnVec.push_back(Var(VAR_CONSTANT, i));
-    return returnVec;
-  }
-
-  bool negVar = false;
-  // Check to see if this is a negated Boolean
-  if(infile->peek_char() == '!')
-  {
-    negVar = true;
-  // Swallow the '!'
-    infile->get_char();
-  }
-
-  // Get name of variable.
-  string name = infile->get_string();
-
-  Var var = instance->vars.getSymbol(name);
-
-  if(var.type() == VAR_MATRIX)
-  {
-    vector<DomainInt> params;
-    if(infile->peek_char() == '[')
-    {
-      params = readConstantVector(infile,'[',']',true);
-      returnVec = instance->vars.buildVarList(name, params);
-      if(negVar)
-      {
-          if(returnVec.size()!=1)
-          {
-              throw parse_exception("Sorry, can't negate a matrix");
-          }
-          if(returnVec[0].type()!=VAR_BOOL)
-          {
-              throw parse_exception("Sorry, can't negate a non-Boolean variable");
-          }
-          returnVec[0].setType(VAR_NOTBOOL);
-          // The clever thing to do would be to change type of all of returnVec at the end of the function, if necessary.
-      }
-    }
-    else
-    { // build a vector of all 'nulls'
-        if(negVar)
+      case JSON_TAG_NUMBER:
+        return Var(VAR_CONSTANT, infile.toNumber());
+      case JSON_TAG_STRING:
         {
-            throw parse_exception("Sorry, can't negate a matrix");
+          std::string name = infile.toString();
+          bool negVar = false;
+          // Check to see if this is a negated Boolean
+          if(name.size() > 0 && name[0] == '!')
+          {
+            negVar = true;
+            name.erase(name.begin());
+          }
+
+          Var var = instance->vars.getSymbol(name);
+
+          if(negVar)
+          {
+            if(var.type() != VAR_BOOL)
+            {  throw parse_exception("Only booleans can be negated!"); }
+            else
+              var.setType(VAR_NOTBOOL);
+          }
         }
-
-        vector<DomainInt> maxterms = instance->vars.getMatrixSymbol(name);
-        params = vector<DomainInt>(maxterms.size(), -999);
-        returnVec = instance->vars.buildVarList(name, params);
+      default:
+        throw parse_exception("Invalid variable");
     }
-    MAYBE_PARSER_INFO("Got matrix:" + tostring(returnVec));
-  }
-else
-{
-  if(mustBeMatrix)
-    throw parse_exception("Must give matrix here, not single variable!");
-  if(negVar)
-  {
-    if(var.type() != VAR_BOOL)
-    { throw parse_exception("Sorry, can't negate a non-Boolean variable"); }
-    else
-      var.setType(VAR_NOTBOOL);
-  }
-  returnVec.push_back(var);
-}
-MAYBE_PARSER_INFO("Read variable '" + name + "', internally: " + tostring(var));
-return returnVec;
 }
 
-template<typename FileReader>
-vector<ConstraintBlob> MinionThreeInputReader<FileReader>::readConstraintList(FileReader* infile) {
+
+vector<ConstraintBlob> MinionJSONInputReader::readConstraintList(JsonValue infile) {
   vector<ConstraintBlob> conlist;
 
-  infile->check_sym('{');
-  conlist.push_back(readConstraint(infile));
+  check_tag(infile, JSON_TAG_ARRAY, "constraints must be a list");
 
-  char delim = infile->get_char();
-  while(delim != '}')
+  for(auto con : infile)
   {
-    if(delim != ',')
-      throw parse_exception(string("Expected '}' or ',' , confused by '") + delim + string("'"));
-    conlist.push_back(readConstraint(infile));
-    delim = infile->get_char();
+    conlist.push_back(readConstraint(con->value));
   }
   return conlist;
 }
@@ -629,10 +494,12 @@ vector<ConstraintBlob> MinionThreeInputReader<FileReader>::readConstraintList(Fi
 /// Accepts:
 /// M (for matrix identifer M)
 /// [ M,B,.. ] (for matrix identifers M and variables B)
-template<typename FileReader>
-vector<Var> MinionThreeInputReader<FileReader>::readLiteralVector(FileReader* infile) {
-  vector<Var> newVector;
 
+
+vector<Var> MinionJSONInputReader::readLiteralVector(JsonValue infile) {
+  assert(0);
+  vector<Var> newVector;
+/*
   if(infile->peek_char() != '[')
   { // Must just be a matrix identifier
     return readPossibleMatrixIdentifier(infile, true);
@@ -669,15 +536,17 @@ vector<Var> MinionThreeInputReader<FileReader>::readLiteralVector(FileReader* in
         delim = infile->get_char();
     }
   }
+  */
   return newVector;
 }
 
 
-template<typename FileReader>
-vector<vector<Var> > MinionThreeInputReader<FileReader>::read2DMatrix(FileReader* infile)
-{
-  vector<vector<Var> > return_vals;
 
+vector<vector<Var> > MinionJSONInputReader::read2DMatrix(JsonValue infile)
+{
+  assert(0);
+  vector<vector<Var> > return_vals;
+/*
   if(infile->peek_char() != '[')
     return read2DMatrixVariable(infile);
 
@@ -701,14 +570,17 @@ vector<vector<Var> > MinionThreeInputReader<FileReader>::read2DMatrix(FileReader
   }
 
   infile->check_sym(']');
+*/
   return return_vals;
 }
 
 // This function reads the next identifier, which should be a 1D or 2D matrix,
 // and returns it (if it was 1D, it returns it as a 1 row 2D matrix.
-template<typename FileReader>
-vector<vector<Var> > MinionThreeInputReader<FileReader>::read2DMatrixVariable(FileReader* infile) {
-  string name = infile->get_string();
+
+vector<vector<Var> > MinionJSONInputReader::read2DMatrixVariable(JsonValue infile) {
+  assert(0);
+  string name; /*= infile->get_string();
+/*
   Var var = instance->vars.getSymbol(name);
   // Check it is a matrix
   if(var.type() != VAR_MATRIX)
@@ -731,16 +603,19 @@ vector<vector<Var> > MinionThreeInputReader<FileReader>::read2DMatrixVariable(Fi
   {
     return instance->vars.flattenTo2DMatrix(name);
   }
+*/
 }
 
 // Note: allowNulls maps '_' to -999 (a horrible hack I know).
 // That last parameter defaults to false.
 // The start and end default to '[' and ']'
-template<typename FileReader>
-vector<DomainInt> MinionThreeInputReader<FileReader>::readConstantVector
-  (FileReader* infile, char start, char end, bool allowNulls)
+
+vector<DomainInt> MinionJSONInputReader::readConstantVector
+  (JsonValue infile, char start, char end, bool allowNulls)
 {
+  assert(0);
   vector<DomainInt> newVector;
+  /*
   infile->check_sym(start);
 
   // The reason we peek here is in case this is an empty vector
@@ -769,16 +644,19 @@ vector<DomainInt> MinionThreeInputReader<FileReader>::readConstantVector
         delim + string("'"));
     }
   }
+  */
   return newVector;
 }
 
 // Note: allowNulls maps '_' to -999 (a horrible hack I know).
 // That last parameter defaults to false.
 // The start and end default to '[' and ']'
-template<typename FileReader>
-vector<pair<SysInt,DomainInt> > MinionThreeInputReader<FileReader>::readShortTuple(FileReader* infile)
+
+vector<pair<SysInt,DomainInt> > MinionJSONInputReader::readShortTuple(JsonValue infile)
 {
+  assert(0);
   vector<pair<SysInt, DomainInt> > newVector;
+/*
   infile->check_sym('[');
 
   while(infile->peek_char() == '(')
@@ -793,15 +671,17 @@ vector<pair<SysInt,DomainInt> > MinionThreeInputReader<FileReader>::readShortTup
       infile->check_sym(',');
   }
   infile->check_sym(']');
-
+*/
   return newVector;
 }
 
 /// Read an expression of the type ' {<num>..<num>} '
-template<typename FileReader>
-vector<DomainInt> MinionThreeInputReader<FileReader>::readRange(FileReader* infile)
+
+vector<DomainInt> MinionJSONInputReader::readRange(JsonValue infile)
 {
+  assert(0);
   vector<DomainInt> newVector;
+/*
   infile->check_sym('{');
 
   newVector.push_back(infile->read_num());
@@ -811,14 +691,17 @@ vector<DomainInt> MinionThreeInputReader<FileReader>::readRange(FileReader* infi
   newVector.push_back(infile->read_num());
 
   infile->check_sym('}');
+*/
   return newVector;
 }
 
 
 /// Read a list of tuples
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::readShortTuples(FileReader* infile)
+
+void MinionJSONInputReader::readShortTuples(JsonValue infile)
 {
+  assert(0);
+  /*
   while(infile->peek_char() != '*')
   {
     string name = infile->get_string();
@@ -831,11 +714,14 @@ void MinionThreeInputReader<FileReader>::readShortTuples(FileReader* infile)
     ShortTupleList* stl = instance->shortTupleListContainer->getNewShortTupleList(tups);
     instance->addShortTableSymbol(name, stl);
   }
+  */
 }
 
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::readTuples(FileReader* infile)
+
+void MinionJSONInputReader::readTuples(JsonValue infile)
 {
+  assert(0);
+  /*
   while(infile->peek_char() != '*')
   {
     string name = infile->get_string();
@@ -859,10 +745,13 @@ void MinionThreeInputReader<FileReader>::readTuples(FileReader* infile)
       instance->addShortTableSymbol(name, stl);
     }
   }
+  */
 }
 
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::readSearch(FileReader* infile) {
+
+void MinionJSONInputReader::readSearch(JsonValue infile) {
+  assert(0);
+  /*
   while(infile->peek_char() != '*')
   {
     string var_type = infile->get_string();
@@ -1005,12 +894,15 @@ found: ;
     else
       {  throw parse_exception("Don't understand '" + var_type + "' as a variable type."); }
   }
+  */
 }
 
 
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::readAliasMatrix(FileReader* infile, const vector<DomainInt>& max_indices, vector<DomainInt> indices, string name)
+
+void MinionJSONInputReader::readAliasMatrix(JsonValue infile, const vector<DomainInt>& max_indices, vector<DomainInt> indices, string name)
 {
+  assert(0);
+  /*
   if(infile->peek_char() == '[')
   {
     infile->check_sym('[');
@@ -1049,11 +941,14 @@ void MinionThreeInputReader<FileReader>::readAliasMatrix(FileReader* infile, con
       tostring(indices.size() - 1) + " to have " + tostring(max_indices[indices.size() - 1]) +
       " terms, got " + tostring(indices.back() + 1));
   }
+  */
 }
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-template<typename FileReader>
-void MinionThreeInputReader<FileReader>::readVars(FileReader* infile) {
+
+void MinionJSONInputReader::readVars(JsonValue infile) {
+  assert(0);
+  /*
   while(infile->peek_char() != '*')
   {
     MAYBE_PARSER_INFO("Begin reading variables");
@@ -1173,5 +1068,5 @@ void MinionThreeInputReader<FileReader>::readVars(FileReader* infile) {
       }
     }
   }
-
+*/
 }
