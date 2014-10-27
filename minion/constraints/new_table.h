@@ -123,7 +123,7 @@ public:
     trie_current_support.resize(litcount);
     for(SysInt i = 0; i < litcount; ++i)
     {
-      trie_current_support[i] = new TrieObj*[litcount];
+      trie_current_support[i] = new TrieObj*[checked_cast<SysInt>(data->getVarCount())];
       for(SysInt j = 0; j < data->getVarCount(); ++j)
         trie_current_support[i][j] = NULL;
     }
