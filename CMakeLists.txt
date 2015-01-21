@@ -298,6 +298,8 @@ else()
     # on machines where this doesn't affect debugging
     if(WIN32 AND NOT CYGWIN AND NOT MINGW AND NOT MSYS)
         set(CFLAGS "${CFLAGS} /O2")
+    elseif(WIN32 AND (MINGW OR MSYS))
+        set(CFLAGS "${CFLAGS} -O2")
     elseif(SUNOS AND NOT CMAKE_COMPILER_IS_GNUCXX)
         set(CFLAGS "${CFLAGS} -O3")
     else()
@@ -547,7 +549,7 @@ add_custom_target(test-resume DEPENDS ${BINARY}
 
 add_custom_target(test-quick)
 add_dependencies(test-quick test-instances-quick)
-add_custom_target(test)
-add_dependencies(test test-instances-slow test-random-quick test-resume)
+add_custom_target(test-standard)
+add_dependencies(test-standard test-instances-slow test-random-quick test-resume)
 add_custom_target(test-slow)
 add_dependencies(test-slow test-instances-slow test-random-slow test-resume)
