@@ -13,6 +13,7 @@ case CT_GACALLDIFF: return build_constraint_CT_GACALLDIFF(stateObj, b);
 case CT_GCC: return build_constraint_CT_GCC(stateObj, b);
 case CT_GCCWEAK: return build_constraint_CT_GCCWEAK(stateObj, b);
 case CT_ALLDIFFMATRIX: return build_constraint_CT_ALLDIFFMATRIX(stateObj, b);
+case CT_ALLDIFF_CIARAN: return build_constraint_CT_ALLDIFF_CIARAN(stateObj, b);
 case CT_WATCHED_NEQ: return build_constraint_CT_WATCHED_NEQ(stateObj, b);
 case CT_DISEQ: return build_constraint_CT_DISEQ(stateObj, b);
 case CT_DISEQ_REIFY: return build_constraint_CT_DISEQ_REIFY(stateObj, b);
