@@ -33,6 +33,7 @@ using namespace std;
 #include "constraint_checkassign.h"
 
 // Check domain size -- if it is greater than numvars, then no need to wake the constraint.
+// This could be improved by using |SCC| rather than numvars.
 //#define CHECKDOMSIZE
 
 // Process SCCs independently
@@ -46,9 +47,6 @@ using namespace std;
 
 // Use the special queue
 #define SPECIALQUEUE
-
-// store matching from one run to the next.
-#define INCREMENTALMATCH
 
 // Use BFS instead of HK
 #define BFSMATCHING
@@ -156,7 +154,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
           watches.resize(numvars);
       #endif
       
-      for(SysInt i=0; i<numvars ; i++) //&& i<numvals
+      for(SysInt i=0; i<numvars ; i++)
       {
           varvalmatching[i]=i+dom_min;
           if(i<numvals) valvarmatching[i]=i;
@@ -422,7 +420,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
 
   void do_prop()
   {
-    PROP_INFO_ADDONE(AlldiffGacSlow);
+    PROP_INFO_ADDONE(GacAlldiff);
     
     #ifdef PLONG
     cout << "Entering do_prop."<<endl;
@@ -477,16 +475,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
     }
     #endif
     // end of debug.
-
-    #ifndef INCREMENTALMATCH
-    // clear the matching.
-    for(SysInt i=0; i<numvars && i<numvals; i++)
-    {
-      varvalmatching[i]=i+dom_min;
-      valvarmatching[i]=i;
-    }
-    #endif
-
+    
     sccs_to_process.clear();
     {
     vector<SysInt>& toiterate = to_process.getlist();
@@ -651,17 +640,8 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
   // visit for the whole set of variables.
   void do_prop_noscc()
   {
-    PROP_INFO_ADDONE(AlldiffGacSlow);
+    PROP_INFO_ADDONE(GacAlldiff);
     
-    #ifndef INCREMENTALMATCH
-    // clear the matching.
-    for(SysInt i=0; i<numvars && i<numvals; i++)
-    {
-      varvalmatching[i]=i+dom_min;
-      valvarmatching[i]=i;
-    }
-    #endif
-
     #ifdef PLONG
     cout << "Entering do_prop."<<endl;
     cout << "Varvalmatching:" <<varvalmatching<<endl;
@@ -772,7 +752,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
                     {
                         // arranged in blocks for each variable, with numvals triggers in each block
                         DynamicTrigger* mydt= dt+(var*numvals)+(i-dom_min);
-                        moveTrigger(var_array[var], mydt, DomainRemoval, i);
+                        this->moveTrigger(var_array[var], mydt, DomainRemoval, i);
                     }
                 }
             }
@@ -854,7 +834,7 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
             }
           #endif
 
-          matchok=bfsmatching(0, numvars-1);
+          matchok=matching_wrapper(0, numvars-1);   //  Selects BFS or HK
       }
 
       if(!matchok)
@@ -1510,4 +1490,4 @@ struct GacAlldiffConstraint : public FlowConstraint<VarArray, UseIncGraph>
         return true;
     }
 
-};  // end of AlldiffGacSlow
+};  // end of GacAlldiff
