@@ -88,7 +88,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
   }
 
 
-  void add_triggers(DomainInt index_in, DynamicTrigger* dt)
+  void add_triggers(DomainInt index_in, DomainInt dt)
   {
     const SysInt index = checked_cast<SysInt>(index_in);
     Operator::add_triggers(this, var_array1[index], var_array2[index], dt);
@@ -103,7 +103,6 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
 
     watched_values.resize(checked_cast<SysInt>(num_to_watch));
 
-    DynamicTrigger* dt = dynamic_trigger_start();
     SysInt size = var_array1.size();
     SysInt index = 0;
     SysInt found_matches = 0;
@@ -139,7 +138,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
       {
         propagate_from_var1(watched_values[i]);
         propagate_from_var2(watched_values[i]);
-        add_triggers(watched_values[i], dt + Operator::dynamic_trigger_count()*i);
+        add_triggers(watched_values[i], Operator::dynamic_trigger_count()*i);
       }
       return;
     }
@@ -147,7 +146,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
     // Found enough values to watch, no propagation yet!
     for(SysInt i = 0; i < num_to_watch; ++i)
     {
-      add_triggers(watched_values[i], dt + Operator::dynamic_trigger_count()*i);
+      add_triggers(watched_values[i], Operator::dynamic_trigger_count()*i);
     }
 
     // Setup the 'unwatched values' array.
@@ -257,8 +256,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
 
     swap(watched_values[triggerpair], unwatched_values[index]);
 
-    DynamicTrigger* trigs = dynamic_trigger_start();
-    add_triggers(watched_values[triggerpair], trigs + triggerpair * Operator::dynamic_trigger_count());
+    add_triggers(watched_values[triggerpair], triggerpair * Operator::dynamic_trigger_count());
   }
 
   virtual BOOL check_assignment(DomainInt* v, SysInt v_size)

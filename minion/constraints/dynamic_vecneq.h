@@ -79,12 +79,12 @@ struct EqIterated
   }
 
   template<typename VarType1, typename VarType2>
-  static void add_triggers(AbstractConstraint* ac, VarType1& var1, VarType2& var2, DynamicTrigger* dt)
+  static void add_triggers(AbstractConstraint* ac, VarType1& var1, VarType2& var2, DomainInt dt)
   {
-     ac->moveTrigger(var1, dt, LowerBound);
-     ac->moveTrigger(var1, dt + 1, UpperBound);
-     ac->moveTrigger(var2, dt + 2, LowerBound);
-     ac->moveTrigger(var2, dt + 3, UpperBound);
+     ac->moveTriggerInt(var1, dt, LowerBound);
+     ac->moveTriggerInt(var1, dt + 1, UpperBound);
+     ac->moveTriggerInt(var2, dt + 2, LowerBound);
+     ac->moveTriggerInt(var2, dt + 3, UpperBound);
   }
 
   template<typename Var1, typename Var2>
@@ -148,10 +148,10 @@ struct NeqIterated
   }
 
   template<typename VarType1, typename VarType2>
-  static void add_triggers(AbstractConstraint* ac, VarType1& var1, VarType2& var2, DynamicTrigger* dt)
+  static void add_triggers(AbstractConstraint* ac, VarType1& var1, VarType2& var2, DomainInt dt)
   {
-     ac->moveTrigger(var1, dt, Assigned);
-     ac->moveTrigger(var2, dt + 1, Assigned);
+     ac->moveTriggerInt(var1, 0, Assigned);
+     ac->moveTriggerInt(var2, 1, Assigned);
   }
 
   template<typename Var>
@@ -229,10 +229,10 @@ struct LessIterated
   }
 
   template<typename VarType1, typename VarType2>
-  static void add_triggers(AbstractConstraint* ac, VarType1& var1, VarType2& var2, DynamicTrigger* dt)
+  static void add_triggers(AbstractConstraint* ac, VarType1& var1, VarType2& var2, DomainInt dt)
   {
-     ac->moveTrigger(var1, dt, LowerBound);
-     ac->moveTrigger(var2, dt + 1, UpperBound);
+     ac->moveTriggerInt(var1, 0, LowerBound);
+     ac->moveTriggerInt(var2, 1, UpperBound);
   }
 
   template<typename Var1, typename Var2>
@@ -282,10 +282,10 @@ struct BothNonZeroIterated
   }
 
   template<typename VarType1, typename VarType2>
-  static void add_triggers(AbstractConstraint* ac, VarType1& var1, VarType2& var2, DynamicTrigger* dt)
+  static void add_triggers(AbstractConstraint* ac, VarType1& var1, VarType2& var2, DomainInt dt)
   {
-     ac->moveTrigger(var1, dt, UpperBound);
-     ac->moveTrigger(var2, dt + 1, UpperBound);
+     ac->moveTriggerInt(var1, 0, UpperBound);
+     ac->moveTriggerInt(var2, 1, UpperBound);
   }
 
   template<typename Var1, typename Var2>
@@ -346,7 +346,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
   { return Operator::no_support_for_pair(var_array1[index], var_array2[index]); }
 
 
-  void add_triggers(SysInt index, DynamicTrigger* dt)
+  void add_triggers(SysInt index, DomainInt dt)
   {
     Operator::add_triggers(this, var_array1[index], var_array2[index], dt);
   }
@@ -354,7 +354,6 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
   virtual void full_propagate()
   {
     P("VecNeq full prop");
-    DynamicTrigger* dt = dynamic_trigger_start();
     SysInt size = var_array1.size();
     SysInt index = 0;
 
@@ -384,14 +383,14 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
       propagate_from_var2(watched_index0);
       propagate_mode = true;
       index_to_propagate = watched_index0;
-      add_triggers(watched_index0, dt);
+      add_triggers(watched_index0, 0);
       return;
     }
 
     watched_index1 = index;
 
-    add_triggers(watched_index0, dt);
-    add_triggers(watched_index1, dt + 2);
+    add_triggers(watched_index0, 0);
+    add_triggers(watched_index1, 2);
   }
 
   void propagate_from_var1(SysInt index)
@@ -484,8 +483,7 @@ template<typename VarArray1, typename VarArray2, typename Operator = NeqIterated
       watched_index1 = index;
 
     D_ASSERT(watched_index0 != watched_index1);
-    DynamicTrigger* trigs = dynamic_trigger_start();
-    add_triggers(index, trigs + triggerpair * 2);
+    add_triggers(index, triggerpair * 2);
   }
 
   virtual BOOL check_assignment(DomainInt* v, SysInt v_size)

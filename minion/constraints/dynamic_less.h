@@ -53,8 +53,8 @@ struct WatchLessConstraint : public AbstractConstraint
   {
     DynamicTrigger* dt = dynamic_trigger_start();
 
-    moveTrigger(var1, dt    , LowerBound);
-    moveTrigger(var2, dt + 1, UpperBound);
+    moveTriggerInt(var1, 0, LowerBound);
+    moveTriggerInt(var2, 1, UpperBound);
 
     var2.setMin(var1.getMin() + 1);
     var1.setMax(var2.getMax() - 1);

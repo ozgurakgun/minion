@@ -64,7 +64,6 @@ template<typename Var>
 
   virtual void full_propagate()
   {  
-    DynamicTrigger* dt = dynamic_trigger_start();    
     // Ignore empty ranges
     if(range_min > range_max)
       return;
@@ -83,7 +82,7 @@ template<typename Var>
     
     if(var.isBound())
     {
-      moveTrigger(var, dt, DomainChanged);
+      moveTriggerInt(var, 0, DomainChanged);
       propagate(NULL); 
     }
     else

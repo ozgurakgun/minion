@@ -54,7 +54,6 @@ template<typename Var>
 
   virtual void full_propagate()
   {
-    DynamicTrigger* dt = dynamic_trigger_start();
     if(vals.empty())
     {
         getState().setFailed(true);
@@ -66,7 +65,7 @@ template<typename Var>
     if(var.isBound())
     {
       // May as well pass DomainRemoval
-      moveTrigger(var, dt, DomainChanged);
+      moveTriggerInt(var, 0, DomainChanged);
       propagate(NULL);
     }
     else
