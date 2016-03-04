@@ -448,6 +448,7 @@ def makeRandomTuples(domainlist):
     randchance = random.random()
     return list(filter(lambda x : random.random() < randchance, domainlist))
 
+
 def makeRandomShortTuples(domainlist):
     if len(domainlist) == 0:
         return (domainlist,domainlist)
@@ -484,6 +485,46 @@ def makeRandomShortTuples(domainlist):
     for tup in shorttuples:
         outputshort.append([(i,tup[i]) for i in range(len(tup)) if tup[i] != None])
     return (outputshort, longtuples)
+
+def makeRandomShortCTuples(domainlist):
+    if len(domainlist) == 0:
+        return (domainlist,domainlist)
+    varcount = len(domainlist[0])
+    size = random.randint(0,varcount*3)
+    freechance = random.random()
+    ctuples = []
+    for i in range(size):
+        tup = [ [] for _ in range(varcount) ]
+        for i in range(random.choice(range(varcount*3))):
+            var = random.choice(range(varcount))
+            val = random.choice(domainlist)[var]
+            tup[var] += [val]
+        ctuples += [tup]
+
+    # Now make the long tuples
+
+    longtuples = []
+    for tup in domainlist:
+        found = False
+        for c in ctuples:
+            match = True
+            for i in range(len(tup)):
+                if len(c[i]) > 0 and not (tup[i] in c[i]):
+                    match = False
+            if match == True:
+                found = True
+        if found:
+            longtuples += [tup]
+
+    # Make output short tuples
+
+    outputc = []
+
+
+    for tup in ctuples:
+        outputc.append([(i,j) for i in range(len(tup)) for j in tup[i]])
+
+    return (outputc, longtuples)
 
 
 sys.setrecursionlimit(5000)
@@ -701,6 +742,16 @@ class testshortstr2:
     def runtest(self, options=dict()):
         options['tabletype'] = "shorttable"
         return runtestgeneral("shortstr2", False, options, [4], ["smallnum"], self, not options['reify'])
+
+class testshortstr2ctuple:
+    def printtable(self, domains):
+        cross=[]
+        crossprod(domains, [], cross)
+        return makeRandomShortCTuples(cross)
+
+    def runtest(self, options=dict()):
+        options['tabletype'] = "shortctuple"
+        return runtestgeneral("shortstr2ctuple", False, options, [4], ["smallnum"], self, not options['reify'])
 
 
 class testmddc:
@@ -1882,7 +1933,7 @@ def runtestgeneral(constraintname, boundsallowed, options, varnums, vartypes, ta
                     output2tuples+="%d "%e
                 output2tuples+="\n"
 
-        if tabletype == "shorttable":
+        if tabletype == "shorttable" or tabletype == "shortctuple":
             output2shorttuples="basictable %d \n"%(len(basictable))
             for t in basictable:
                 output2shorttuples += str(t) + "\n"

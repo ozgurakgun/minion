@@ -347,6 +347,7 @@ public:
   SysInt size() const {
     return short_tuples.size();
   }
+  
 
   vector<vector<pair<SysInt, DomainInt>>> const* tuplePtr() const {
     return &short_tuples;
